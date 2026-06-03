@@ -379,10 +379,24 @@ function App() {
           </tbody>
         </table>
       </div>
+    </div>
+  );
 
-      <div className="panel delay-400" style={{marginTop: '24px'}}>
+  const renderAbsences = () => (
+    <div className="animate-fade-in">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Gestion des Absences</h1>
+          <p className="page-subtitle">Suivi des présences et justification des absences.</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => setActiveModal('absence')}>
+          <Icons.Plus /> Signaler une Absence
+        </button>
+      </div>
+
+      <div className="panel delay-100">
         <div className="panel-header">
-          <h3 className="panel-title">Absences du Jour (14)</h3>
+          <h3 className="panel-title">Registre des Absences</h3>
           <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => setActiveModal('message')}>
             <Icons.Mail /> Notifier les parents
           </button>
@@ -393,7 +407,7 @@ function App() {
               <th style={{padding: '12px 0', fontWeight: 500}}>Élève</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>Classe</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>Motif / Justification</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Heure</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Date/Durée</th>
               <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>Actions</th>
             </tr>
           </thead>
@@ -1022,6 +1036,9 @@ function App() {
           <li className={`nav-item ${activeTab === 'students' ? 'active' : ''}`} onClick={() => setActiveTab('students')}>
             <Icons.Users /> Gestion Élèves
           </li>
+          <li className={`nav-item ${activeTab === 'absences' ? 'active' : ''}`} onClick={() => setActiveTab('absences')}>
+            <Icons.Activity /> Gestion Absences
+          </li>
           <li className={`nav-item ${activeTab === 'parents' ? 'active' : ''}`} onClick={() => setActiveTab('parents')}>
             <Icons.Heart /> Parents d'Élèves
           </li>
@@ -1081,6 +1098,7 @@ function App() {
         <div className="dashboard-scroll">
           {activeTab === 'dashboard' && renderDashboard()}
           {activeTab === 'students' && renderStudents()}
+          {activeTab === 'absences' && renderAbsences()}
           {activeTab === 'pedagogy' && renderPedagogy()}
           {activeTab === 'communication' && renderCommunication()}
           {activeTab === 'bulletins' && renderBulletins()}
