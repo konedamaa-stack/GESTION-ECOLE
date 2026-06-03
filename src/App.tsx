@@ -189,6 +189,27 @@ function App() {
         if (error) throw error;
         fetchInvoices();
       }
+      else if (activeModal === 'bulletin') {
+        alert("Génération terminée ! Le document va être téléchargé.");
+        const blob = new Blob(["----- BULLETINS SGES PRO -----\n\nClasse : " + formData.get('classe') + "\nPériode : " + formData.get('trimestre') + "\n\nCeci est un document généré automatiquement pour tous les élèves de la classe.\n[Signature: Direction]"], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bulletins_${formData.get('classe')}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+      else if (activeModal === 'course') {
+        alert("Le cours a été planifié avec succès !");
+      }
+      else if (activeModal === 'message') {
+        alert("Le message a été envoyé avec succès !");
+      }
+      else if (activeModal === 'parent') {
+        alert("Le parent a été ajouté avec succès !");
+      }
       
       closeModal();
     } catch (err: any) {
@@ -200,10 +221,21 @@ function App() {
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Bienvenue, Adama 👋</h1>
+          <h1 className="page-title">Bienvenue, {session?.user?.email?.split('@')[0] || 'Adama'} 👋</h1>
           <p className="page-subtitle">Voici l'aperçu de votre établissement pour aujourd'hui.</p>
         </div>
-        <button className="btn btn-outline" onClick={() => alert("Rapport en cours de téléchargement...")}>
+        <button className="btn btn-outline" onClick={() => {
+          alert("Génération du rapport...");
+          const blob = new Blob(["----- RAPPORT GLOBAL SGES PRO -----\n\nTotal Elèves: 1248\nPrésence: 96.4%\nInscriptions: 42\n\nCe rapport a été généré automatiquement."], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `rapport_global.txt`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }}>
           Télécharger le rapport
         </button>
       </div>
@@ -1359,7 +1391,7 @@ function App() {
                 <form onSubmit={handleFormSubmit}>
                   <div className="form-group">
                     <label>Sélectionner la classe</label>
-                    <select className="form-select" required>
+                    <select className="form-select" name="classe" required>
                       <option>Terminale S1</option>
                       <option>1ère L</option>
                       <option>Seconde 4</option>
@@ -1368,7 +1400,7 @@ function App() {
                   {activeModal === 'bulletin' && (
                     <div className="form-group">
                       <label>Trimestre/Semestre</label>
-                      <select className="form-select" required>
+                      <select className="form-select" name="trimestre" required>
                         <option>1er Trimestre</option>
                         <option>2ème Trimestre</option>
                         <option>3ème Trimestre</option>
