@@ -13,8 +13,8 @@
   
   --font-main: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   
-  --sidebar-width: 260px;
-  --header-height: 70px;
+  --sidebar-width: 240px;
+  --header-height: 60px;
   
   --transition-speed: 0.2s;
 }
@@ -175,5 +175,5 @@ a:hover {
 
 /* Dynamic Responsive Typography */
 html {
-  font-size: clamp(13px, 1.5vw + 8px, 16px);
+  font-size: clamp(12px, 1vw + 6px, 14px);
 }
