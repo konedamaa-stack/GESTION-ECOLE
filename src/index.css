@@ -172,3 +172,8 @@ a:hover {
   color: var(--primary-color);
   border: 1px solid rgba(99, 102, 241, 0.3);
 }
+
+/* Dynamic Responsive Typography */
+html {
+  font-size: clamp(13px, 1.5vw + 8px, 16px);
+}
