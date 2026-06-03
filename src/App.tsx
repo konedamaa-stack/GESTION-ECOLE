@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
+import type { Session } from '@supabase/supabase-js';
+import Auth from './components/Auth';
 import './App.css';
 
 // Custom SVG Icons
@@ -31,6 +33,7 @@ const Icons = {
 };
 
 function App() {
+  const [session, setSession] = useState<Session | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [activeSettingsTab, setActiveSettingsTab] = useState('general');
   const [activeModal, setActiveModal] = useState<string | null>(null);
@@ -44,14 +47,30 @@ function App() {
   const [settingsData, setSettingsData] = useState<any | null>(null);
 
   useEffect(() => {
-    fetchStudents();
-    fetchClasses();
-    fetchTeachers();
-    fetchEmployees();
-    fetchInvoices();
-    fetchAbsences();
-    fetchSettings();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (session) {
+      fetchStudents();
+      fetchClasses();
+      fetchTeachers();
+      fetchEmployees();
+      fetchInvoices();
+      fetchAbsences();
+      fetchSettings();
+    }
+  }, [session]);
 
   const fetchStudents = async () => {
     const { data } = await supabase.from('students').select(`*, classes ( name )`);
@@ -983,6 +1002,10 @@ function App() {
     </div>
   );
 
+  if (!session) {
+    return <Auth />;
+  }
+
   return (
     <div className="app-container">
       {/* Sidebar */}
@@ -1047,8 +1070,8 @@ function App() {
             <div className="user-profile">
               <div className="avatar">A</div>
               <div className="user-info">
-                <span className="user-name">Adama Traoré</span>
-                <span className="user-role">Directeur</span>
+                <span className="user-name">{session.user?.email || 'Adama Traoré'}</span>
+                <span className="user-role" onClick={() => supabase.auth.signOut()} style={{cursor: 'pointer', color: '#ef4444'}}>Se déconnecter</span>
               </div>
             </div>
           </div>
