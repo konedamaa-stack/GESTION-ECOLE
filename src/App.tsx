@@ -129,15 +129,52 @@ function App() {
     
     try {
       if (activeModal === 'student') {
+        // 1. Insert Student
+        const matricule = 'ELV-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000);
         const student = {
           first_name: formData.get('first_name'),
           last_name: formData.get('last_name'),
-          matricule: 'ELV-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
+          matricule: matricule,
           class_id: formData.get('class_id'),
           birth_date: formData.get('birth_date'),
         };
-        const { error } = await supabase.from('students').insert([student]);
-        if (error) throw error;
+        const { data: studentData, error: studentError } = await supabase.from('students').insert([student]).select();
+        if (studentError) throw studentError;
+        
+        const newStudentId = studentData[0].id;
+
+        // 2. Insert Parent if provided
+        if (formData.get('parent_first_name') && formData.get('parent_last_name')) {
+          const parent = {
+            first_name: formData.get('parent_first_name'),
+            last_name: formData.get('parent_last_name'),
+            phone: formData.get('parent_phone'),
+            email: formData.get('parent_email'),
+          };
+          const { data: parentData, error: parentError } = await supabase.from('parents').insert([parent]).select();
+          if (!parentError && parentData && parentData.length > 0) {
+            await supabase.from('student_parents').insert([{
+              student_id: newStudentId,
+              parent_id: parentData[0].id,
+              relation_type: 'Parent'
+            }]);
+          }
+        }
+
+        // 3. Insert Invoice for Registration/Tuition
+        if (formData.get('reg_fee_amount')) {
+          const invoice = {
+            student_id: newStudentId,
+            amount: formData.get('reg_fee_amount'),
+            motif: 'Frais d\'inscription et Scolarité',
+            payment_method: formData.get('reg_fee_method'),
+            status: 'Payée',
+            invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
+          };
+          await supabase.from('invoices').insert([invoice]);
+        }
+
+        alert("Inscription réussie ! L'élève, ses parents et ses frais ont été enregistrés.");
         fetchStudents();
       } 
       else if (activeModal === 'teacher') {
@@ -1310,6 +1347,7 @@ function App() {
               {/* Student Form */}
               {activeModal === 'student' && (
                 <form onSubmit={handleFormSubmit}>
+                  <h3 style={{marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>1. Informations de l'Élève</h3>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
                       <label>Nom</label>
@@ -1320,22 +1358,71 @@ function App() {
                       <input type="text" name="first_name" className="form-input" required />
                     </div>
                   </div>
-                  <div className="form-group">
-                    <label>Date de Naissance</label>
-                    <input type="date" name="birth_date" className="form-input" required />
+                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                    <div className="form-group">
+                      <label>Date de Naissance</label>
+                      <input type="date" name="birth_date" className="form-input" required />
+                    </div>
+                    <div className="form-group">
+                      <label>Classe (Affectation)</label>
+                      <select name="class_id" className="form-select" required>
+                        <option value="">Choisir une classe...</option>
+                        {classesData.map(cls => (
+                          <option key={cls.id} value={cls.id}>{cls.name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label>Classe (Affectation)</label>
-                    <select name="class_id" className="form-select" required>
-                      <option value="">Choisir une classe...</option>
-                      {classesData.map(cls => (
-                        <option key={cls.id} value={cls.id}>{cls.name}</option>
-                      ))}
-                    </select>
+
+                  <h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>2. Informations du Parent / Tuteur</h3>
+                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                    <div className="form-group">
+                      <label>Nom du parent</label>
+                      <input type="text" name="parent_last_name" className="form-input" />
+                    </div>
+                    <div className="form-group">
+                      <label>Prénom du parent</label>
+                      <input type="text" name="parent_first_name" className="form-input" />
+                    </div>
                   </div>
-                  <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
+                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                    <div className="form-group">
+                      <label>Téléphone</label>
+                      <input type="tel" name="parent_phone" className="form-input" />
+                    </div>
+                    <div className="form-group">
+                      <label>Email</label>
+                      <input type="email" name="parent_email" className="form-input" />
+                    </div>
+                  </div>
+
+                  <h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>3. Frais d'Inscription & Scolarité</h3>
+                  <div className="form-group">
+                    <label>Montant des frais d'inscription (CFA)</label>
+                    <input type="number" name="reg_fee_amount" className="form-input" placeholder="Ex: 50000" />
+                  </div>
+                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                    <div className="form-group">
+                      <label>Mode de paiement</label>
+                      <select name="reg_fee_method" className="form-select">
+                        <option value="Espèces">Espèces</option>
+                        <option value="Chèque">Chèque</option>
+                        <option value="Virement">Virement</option>
+                        <option value="Mobile Money">Mobile Money</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Statut</label>
+                      <select name="reg_fee_status" className="form-select">
+                        <option value="Payée">Payée (Immédiatement)</option>
+                        <option value="En attente">En attente (Paiement ultérieur)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
-                    <button type="submit" className="btn btn-primary">Enregistrer l'élève</button>
+                    <button type="submit" className="btn btn-primary">Valider l'inscription complète</button>
                   </div>
                 </form>
               )}
