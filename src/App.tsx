@@ -162,6 +162,7 @@ function App() {
           amount: formData.get('amount'),
           motif: formData.get('motif'),
           payment_method: formData.get('payment_method'),
+          status: 'Payée',
           invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
         };
         const { error } = await supabase.from('invoices').insert([invoice]);
@@ -831,7 +832,7 @@ function App() {
           <h1 className="page-title">Paramètres</h1>
           <p className="page-subtitle">Configuration globale du système et de votre établissement.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => document.getElementById('settingsForm')?.requestSubmit()}>Sauvegarder</button>
+        <button className="btn btn-primary" onClick={() => (document.getElementById('settingsForm') as HTMLFormElement)?.requestSubmit()}>Sauvegarder</button>
       </div>
 
       <div className="dashboard-grid" style={{gridTemplateColumns: '250px 1fr'}}>

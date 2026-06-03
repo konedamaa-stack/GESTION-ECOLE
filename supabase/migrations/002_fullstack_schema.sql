@@ -41,6 +41,7 @@ create table if not exists public.invoices (
     student_id uuid references public.students(id) on delete cascade,
     amount numeric(10, 2) not null,
     motif varchar(255) not null,
+    payment_method varchar(50),
     status varchar(50) default 'En attente', -- 'En attente', 'Payée', 'Annulée'
     issue_date date not null default CURRENT_DATE,
     due_date date,
