@@ -37,6 +37,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [activeSettingsTab, setActiveSettingsTab] = useState('general');
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [studentsData, setStudentsData] = useState<any[]>([]);
   const [classesData, setClassesData] = useState<any[]>([]);
@@ -1022,46 +1023,49 @@ function App() {
 
   return (
     <div className="app-container">
+      {/* Sidebar Overlay for Mobile */}
+      <div className={`sidebar-overlay ${isMobileMenuOpen ? 'open' : ''}`} onClick={() => setIsMobileMenuOpen(false)}></div>
+      
       {/* Sidebar */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-logo">
           <div className="logo-icon">S</div>
           <span className="logo-text">SGES Pro</span>
         </div>
         
         <ul className="nav-menu">
-          <li className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
+          <li className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }}>
             <Icons.Home /> Tableau de bord
           </li>
-          <li className={`nav-item ${activeTab === 'students' ? 'active' : ''}`} onClick={() => setActiveTab('students')}>
+          <li className={`nav-item ${activeTab === 'students' ? 'active' : ''}`} onClick={() => { setActiveTab('students'); setIsMobileMenuOpen(false); }}>
             <Icons.Users /> Gestion Élèves
           </li>
-          <li className={`nav-item ${activeTab === 'absences' ? 'active' : ''}`} onClick={() => setActiveTab('absences')}>
+          <li className={`nav-item ${activeTab === 'absences' ? 'active' : ''}`} onClick={() => { setActiveTab('absences'); setIsMobileMenuOpen(false); }}>
             <Icons.Activity /> Gestion Absences
           </li>
-          <li className={`nav-item ${activeTab === 'parents' ? 'active' : ''}`} onClick={() => setActiveTab('parents')}>
+          <li className={`nav-item ${activeTab === 'parents' ? 'active' : ''}`} onClick={() => { setActiveTab('parents'); setIsMobileMenuOpen(false); }}>
             <Icons.Heart /> Parents d'Élèves
           </li>
-          <li className={`nav-item ${activeTab === 'teachers' ? 'active' : ''}`} onClick={() => setActiveTab('teachers')}>
+          <li className={`nav-item ${activeTab === 'teachers' ? 'active' : ''}`} onClick={() => { setActiveTab('teachers'); setIsMobileMenuOpen(false); }}>
             <Icons.GraduationCap /> Enseignants
           </li>
-          <li className={`nav-item ${activeTab === 'pedagogy' ? 'active' : ''}`} onClick={() => setActiveTab('pedagogy')}>
+          <li className={`nav-item ${activeTab === 'pedagogy' ? 'active' : ''}`} onClick={() => { setActiveTab('pedagogy'); setIsMobileMenuOpen(false); }}>
             <Icons.BookOpen /> Pédagogie
           </li>
-          <li className={`nav-item ${activeTab === 'bulletins' ? 'active' : ''}`} onClick={() => setActiveTab('bulletins')}>
+          <li className={`nav-item ${activeTab === 'bulletins' ? 'active' : ''}`} onClick={() => { setActiveTab('bulletins'); setIsMobileMenuOpen(false); }}>
             <Icons.FileText /> Bulletins
           </li>
-          <li className={`nav-item ${activeTab === 'scolarite' ? 'active' : ''}`} onClick={() => setActiveTab('scolarite')}>
+          <li className={`nav-item ${activeTab === 'scolarite' ? 'active' : ''}`} onClick={() => { setActiveTab('scolarite'); setIsMobileMenuOpen(false); }}>
             <Icons.CreditCard /> Comptabilité & Scolarité
           </li>
-          <li className={`nav-item ${activeTab === 'rh' ? 'active' : ''}`} onClick={() => setActiveTab('rh')}>
+          <li className={`nav-item ${activeTab === 'rh' ? 'active' : ''}`} onClick={() => { setActiveTab('rh'); setIsMobileMenuOpen(false); }}>
             <Icons.Briefcase /> RH & Admin
           </li>
-          <li className={`nav-item ${activeTab === 'communication' ? 'active' : ''}`} onClick={() => setActiveTab('communication')}>
+          <li className={`nav-item ${activeTab === 'communication' ? 'active' : ''}`} onClick={() => { setActiveTab('communication'); setIsMobileMenuOpen(false); }}>
             <Icons.MessageSquare /> Communication
           </li>
           <li style={{flex: 1}}></li>
-          <li className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
+          <li className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}>
             <Icons.Settings /> Paramètres
           </li>
         </ul>
@@ -1071,9 +1075,14 @@ function App() {
       <main className="main-content">
         {/* Top Header */}
         <header className="top-header">
-          <div className="header-search">
-            <Icons.Search />
-            <input type="text" placeholder="Rechercher un élève, un parent, un reçu..." />
+          <div style={{display: 'flex', alignItems: 'center'}}>
+            <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(true)}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <div className="header-search">
+              <Icons.Search />
+              <input type="text" placeholder="Rechercher..." />
+            </div>
           </div>
           
           <div className="header-actions">
