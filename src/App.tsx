@@ -41,6 +41,10 @@ function App() {
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClassForSchedule, setSelectedClassForSchedule] = useState<string>('');
+  
+  const [activeDossierTab, setActiveDossierTab] = useState<'infos' | 'documents'>('infos');
+  const [studentDocumentsData, setStudentDocumentsData] = useState<any[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [studentsData, setStudentsData] = useState<any[]>([]);
   const [classesData, setClassesData] = useState<any[]>([]);
@@ -78,6 +82,12 @@ function App() {
     }
   }, [session]);
 
+  useEffect(() => {
+    if (activeModal === 'studentDossier' && selectedStudent) {
+      fetchStudentDocuments(selectedStudent.id);
+    }
+  }, [activeModal, selectedStudent]);
+
   const fetchStudents = async () => {
     const { data } = await supabase.from('students').select(`*, classes ( name )`);
     if (data) setStudentsData(data);
@@ -106,6 +116,10 @@ function App() {
     // If the table doesn't exist yet, this will fail gracefully or return empty until migration is applied
     const { data } = await supabase.from('schedules').select(`*, classes(name), teachers(first_name, last_name)`);
     if (data) setSchedulesData(data);
+  };
+  const fetchStudentDocuments = async (studentId: string) => {
+    const { data } = await supabase.from('student_documents').select('*').eq('student_id', studentId);
+    if (data) setStudentDocumentsData(data);
   };
   const fetchSettings = async () => {
     const { data } = await supabase.from('school_settings').select('*').single();
@@ -272,8 +286,79 @@ function App() {
       }
       
       closeModal();
-    } catch (err: any) {
-      alert("Erreur : " + err.message);
+    } catch (error: any) {
+      alert("Erreur: " + error.message);
+    }
+  };
+
+  const handleDocumentUpload = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedStudent) return;
+    
+    const formData = new FormData(e.currentTarget);
+    const file = formData.get('file') as File;
+    const documentType = formData.get('document_type') as string;
+    const documentName = formData.get('document_name') as string;
+
+    if (!file || file.size === 0) {
+      alert("Veuillez sélectionner un fichier.");
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${selectedStudent.id}/${Date.now()}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('student-documents')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('student-documents')
+        .getPublicUrl(fileName);
+
+      // Save to database
+      const { error: dbError } = await supabase.from('student_documents').insert([{
+        student_id: selectedStudent.id,
+        document_type: documentType,
+        document_name: documentName,
+        file_path: publicUrl
+      }]);
+
+      if (dbError) throw dbError;
+
+      // Refresh list
+      fetchStudentDocuments(selectedStudent.id);
+      (e.target as HTMLFormElement).reset();
+      
+    } catch (error: any) {
+      alert("Erreur lors de l'upload: " + error.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const deleteDocument = async (id: string, filePath: string) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce document ?")) return;
+    try {
+      // Extract filename from URL (it's the part after 'student-documents/')
+      const pathParts = filePath.split('student-documents/');
+      if (pathParts.length > 1) {
+        const storagePath = pathParts[1];
+        await supabase.storage.from('student-documents').remove([storagePath]);
+      }
+      
+      const { error } = await supabase.from('student_documents').delete().eq('id', id);
+      if (error) throw error;
+      
+      if (selectedStudent) fetchStudentDocuments(selectedStudent.id);
+    } catch (error: any) {
+      alert("Erreur lors de la suppression: " + error.message);
     }
   };
 
@@ -1629,7 +1714,7 @@ function App() {
 
               {/* Student Dossier Modal */}
               {activeModal === 'studentDossier' && selectedStudent && (
-                <div style={{maxHeight: '75vh', overflowY: 'auto', paddingRight: '12px'}}>
+                <div style={{maxHeight: '75vh', overflowY: 'auto', paddingRight: '12px', minWidth: '600px'}}>
                   <div style={{display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '24px'}}>
                     <div className="avatar" style={{width: 64, height: 64, fontSize: '1.5rem'}}>
                       {selectedStudent.first_name[0]}{selectedStudent.last_name[0]}
@@ -1643,45 +1728,132 @@ function App() {
                     </div>
                   </div>
                   
-                  <h3 style={{marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', fontSize: '1.1rem'}}>Informations Scolaires</h3>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px'}}>
-                    <div>
-                      <span style={{color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'block'}}>Classe Actuelle</span>
-                      <strong>{selectedStudent.classes?.name || 'Non assigné'}</strong>
-                    </div>
-                    <div>
-                      <span style={{color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'block'}}>Date de naissance</span>
-                      <strong>{new Date(selectedStudent.birth_date).toLocaleDateString('fr-FR')}</strong>
-                    </div>
+                  {/* Tabs */}
+                  <div style={{display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '24px'}}>
+                    <button 
+                      className={`btn ${activeDossierTab === 'infos' ? '' : 'btn-outline'}`}
+                      style={{borderBottom: activeDossierTab === 'infos' ? '2px solid var(--primary-color)' : 'none', borderRadius: '4px 4px 0 0', border: 'none', background: activeDossierTab === 'infos' ? 'rgba(59, 130, 246, 0.1)' : 'transparent', color: activeDossierTab === 'infos' ? 'var(--primary-color)' : 'var(--text-secondary)'}}
+                      onClick={() => setActiveDossierTab('infos')}
+                    >
+                      Informations & Planning
+                    </button>
+                    <button 
+                      className={`btn ${activeDossierTab === 'documents' ? '' : 'btn-outline'}`}
+                      style={{borderBottom: activeDossierTab === 'documents' ? '2px solid var(--primary-color)' : 'none', borderRadius: '4px 4px 0 0', border: 'none', background: activeDossierTab === 'documents' ? 'rgba(59, 130, 246, 0.1)' : 'transparent', color: activeDossierTab === 'documents' ? 'var(--primary-color)' : 'var(--text-secondary)'}}
+                      onClick={() => setActiveDossierTab('documents')}
+                    >
+                      Documents & Annexes
+                    </button>
                   </div>
 
-                  {/* Emploi du temps de la classe */}
-                  <h3 style={{marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', fontSize: '1.1rem'}}>Emploi du temps ({selectedStudent.classes?.name})</h3>
-                  <div style={{marginBottom: '24px'}}>
-                    {schedulesData.filter(s => s.class_id === selectedStudent.class_id).length > 0 ? (
-                      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px'}}>
-                        {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'].map(day => {
-                          const dayCourses = schedulesData.filter(s => s.class_id === selectedStudent.class_id && s.day_of_week === day).sort((a,b) => a.start_time.localeCompare(b.start_time));
-                          if (dayCourses.length === 0) return null;
-                          return (
-                            <div key={day} style={{border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px'}}>
-                              <div style={{fontWeight: 600, borderBottom: '1px solid var(--border-color)', paddingBottom: '4px', marginBottom: '8px', textAlign: 'center'}}>{day}</div>
-                              {dayCourses.map((course, idx) => (
-                                <div key={idx} style={{background: 'var(--surface-color-hover)', padding: '6px', borderRadius: '4px', marginBottom: '4px', fontSize: '0.8rem'}}>
-                                  <div style={{fontWeight: 600, color: 'var(--primary-color)'}}>{course.subject}</div>
-                                  <div>{course.start_time.substring(0,5)} - {course.end_time.substring(0,5)}</div>
+                  {activeDossierTab === 'infos' && (
+                    <div>
+                      <h3 style={{marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', fontSize: '1.1rem'}}>Informations Scolaires</h3>
+                      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px'}}>
+                        <div>
+                          <span style={{color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'block'}}>Classe Actuelle</span>
+                          <strong>{selectedStudent.classes?.name || 'Non assigné'}</strong>
+                        </div>
+                        <div>
+                          <span style={{color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'block'}}>Date de naissance</span>
+                          <strong>{new Date(selectedStudent.birth_date).toLocaleDateString('fr-FR')}</strong>
+                        </div>
+                      </div>
+
+                      {/* Emploi du temps de la classe */}
+                      <h3 style={{marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', fontSize: '1.1rem'}}>Emploi du temps ({selectedStudent.classes?.name})</h3>
+                      <div style={{marginBottom: '24px'}}>
+                        {schedulesData.filter(s => s.class_id === selectedStudent.class_id).length > 0 ? (
+                          <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px'}}>
+                            {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'].map(day => {
+                              const dayCourses = schedulesData.filter(s => s.class_id === selectedStudent.class_id && s.day_of_week === day).sort((a,b) => a.start_time.localeCompare(b.start_time));
+                              if (dayCourses.length === 0) return null;
+                              return (
+                                <div key={day} style={{border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px'}}>
+                                  <div style={{fontWeight: 600, borderBottom: '1px solid var(--border-color)', paddingBottom: '4px', marginBottom: '8px', textAlign: 'center'}}>{day}</div>
+                                  {dayCourses.map((course, idx) => (
+                                    <div key={idx} style={{background: 'var(--surface-color-hover)', padding: '6px', borderRadius: '4px', marginBottom: '4px', fontSize: '0.8rem'}}>
+                                      <div style={{fontWeight: 600, color: 'var(--primary-color)'}}>{course.subject}</div>
+                                      <div>{course.start_time.substring(0,5)} - {course.end_time.substring(0,5)}</div>
+                                    </div>
+                                  ))}
                                 </div>
-                              ))}
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div style={{padding: '16px', background: 'var(--surface-color-hover)', borderRadius: '8px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
+                            Aucun emploi du temps n'a encore été configuré pour cette classe.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeDossierTab === 'documents' && (
+                    <div>
+                      {/* Upload Form */}
+                      <div style={{background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px', marginBottom: '24px'}}>
+                        <h4 style={{marginTop: 0, marginBottom: '16px'}}>Ajouter un document</h4>
+                        <form onSubmit={handleDocumentUpload} style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
+                            <div className="form-group">
+                              <label>Type de document</label>
+                              <select name="document_type" className="form-select" required>
+                                <option value="Administratif">Administratif (Exeat, Naissance)</option>
+                                <option value="Médical">Médical (Vaccin, Certificat)</option>
+                                <option value="Pédagogique">Pédagogique (Bulletins)</option>
+                                <option value="Autre">Autre (Autorisations)</option>
+                              </select>
                             </div>
-                          );
-                        })}
+                            <div className="form-group">
+                              <label>Nom du document</label>
+                              <input type="text" name="document_name" className="form-input" required placeholder="Ex: Extrait de naissance" />
+                            </div>
+                          </div>
+                          <div className="form-group">
+                            <label>Fichier (PDF, JPG, PNG)</label>
+                            <input type="file" name="file" className="form-input" accept=".pdf,image/*" required style={{padding: '8px'}} />
+                          </div>
+                          <button type="submit" className="btn btn-primary" disabled={isUploading} style={{alignSelf: 'flex-start'}}>
+                            {isUploading ? 'Envoi en cours...' : 'Ajouter aux annexes'}
+                          </button>
+                        </form>
                       </div>
-                    ) : (
-                      <div style={{padding: '16px', background: 'var(--surface-color-hover)', borderRadius: '8px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
-                        Aucun emploi du temps n'a encore été configuré pour cette classe.
-                      </div>
-                    )}
-                  </div>
+
+                      {/* Documents List */}
+                      <h4 style={{marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>Fichiers joints ({studentDocumentsData.length})</h4>
+                      {studentDocumentsData.length > 0 ? (
+                        <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                          {studentDocumentsData.map(doc => (
+                            <div key={doc.id} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', border: '1px solid var(--border-color)', borderRadius: '6px', background: 'var(--surface-color)'}}>
+                              <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                                <div style={{width: '40px', height: '40px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary-color)'}}>
+                                  <Icons.FileText />
+                                </div>
+                                <div>
+                                  <div style={{fontWeight: 600}}>{doc.document_name}</div>
+                                  <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
+                                    {doc.document_type} • Ajouté le {new Date(doc.created_at).toLocaleDateString('fr-FR')}
+                                  </div>
+                                </div>
+                              </div>
+                              <div style={{display: 'flex', gap: '8px'}}>
+                                <a href={doc.file_path} target="_blank" rel="noopener noreferrer" className="btn btn-outline" style={{padding: '6px 12px', textDecoration: 'none'}}>Voir</a>
+                                <button className="btn btn-outline" style={{padding: '6px 12px', color: 'var(--danger-color)', borderColor: 'var(--danger-color)'}} onClick={() => deleteDocument(doc.id, doc.file_path)}>
+                                  <Icons.X />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', background: 'var(--surface-color-hover)', borderRadius: '8px'}}>
+                          Aucun document n'a été ajouté pour cet élève.
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end'}}>
                     <button type="button" className="btn btn-primary" onClick={closeModal}>Fermer le dossier</button>
