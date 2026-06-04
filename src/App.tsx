@@ -38,6 +38,8 @@ function App() {
   const [activeSettingsTab, setActiveSettingsTab] = useState('general');
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [studentsData, setStudentsData] = useState<any[]>([]);
   const [classesData, setClassesData] = useState<any[]>([]);
@@ -377,7 +379,12 @@ function App() {
     </div>
   );
 
-  const renderStudents = () => (
+  const renderStudents = () => {
+    const filteredStudents = studentsData.filter(s => 
+      (s.first_name + ' ' + s.last_name + ' ' + s.matricule).toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    return (
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
@@ -401,16 +408,16 @@ function App() {
             <span className="stat-label">Effectif Total</span>
             <Icons.Users />
           </div>
-          <div className="stat-value">1,248</div>
-          <div className="stat-trend trend-up">52% Filles / 48% Garçons</div>
+          <div className="stat-value">{studentsData.length}</div>
+          <div className="stat-trend trend-up">Mise à jour en temps réel</div>
         </div>
         <div className="stat-card delay-200">
           <div className="stat-header">
             <span className="stat-label">Absences Non Justifiées</span>
             <Icons.Activity />
           </div>
-          <div className="stat-value">14</div>
-          <div className="stat-trend trend-down">Alerte : 3 élèves en décrochage</div>
+          <div className="stat-value">{absencesData.length}</div>
+          <div className="stat-trend trend-down">Alerte : vérifier les présences</div>
         </div>
       </div>
 
@@ -419,7 +426,12 @@ function App() {
           <h3 className="panel-title">Annuaire des Élèves</h3>
           <div className="header-search" style={{width: 300}}>
             <Icons.Search />
-            <input type="text" placeholder="Rechercher par nom, matricule..." />
+            <input 
+              type="text" 
+              placeholder="Rechercher par nom, matricule..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
         <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
@@ -433,24 +445,24 @@ function App() {
             </tr>
           </thead>
           <tbody>
-            {studentsData.length > 0 ? studentsData.map((row, i) => (
+            {filteredStudents.length > 0 ? filteredStudents.map((row, i) => (
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
                 <td style={{padding: '16px 0', fontFamily: 'monospace', color: 'var(--primary-color)'}}>{row.matricule}</td>
                 <td style={{padding: '16px 0', fontWeight: 600}}>{row.first_name} {row.last_name}</td>
                 <td style={{padding: '16px 0'}}>{row.classes?.name || 'Non assigné'}</td>
                 <td style={{padding: '16px 0'}}><span className={`badge ${row.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`}>{row.status}</span></td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
-                  <button className="btn btn-outline" style={{padding: '6px 12px'}} onClick={() => setActiveModal('studentDossier')}>Dossier</button>
+                  <button className="btn btn-outline" style={{padding: '6px 12px'}} onClick={() => { setSelectedStudent(row); setActiveModal('studentDossier'); }}>Dossier</button>
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan={5} style={{padding: '24px 0', textAlign: 'center', color: 'var(--text-secondary)'}}>Aucun élève trouvé. Cliquez sur Inscrire.</td></tr>
+              <tr><td colSpan={5} style={{padding: '24px 0', textAlign: 'center', color: 'var(--text-secondary)'}}>Aucun élève trouvé.</td></tr>
             )}
           </tbody>
         </table>
       </div>
     </div>
-  );
+  )};
 
   const renderAbsences = () => (
     <div className="animate-fade-in">
@@ -1514,6 +1526,41 @@ function App() {
                   </div>
                 </form>
               )}
+
+              {/* Student Dossier Modal */}
+              {activeModal === 'studentDossier' && selectedStudent && (
+                <div>
+                  <div style={{display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '24px'}}>
+                    <div className="avatar" style={{width: 64, height: 64, fontSize: '1.5rem'}}>
+                      {selectedStudent.first_name[0]}{selectedStudent.last_name[0]}
+                    </div>
+                    <div>
+                      <h2 style={{margin: 0, fontSize: '1.5rem'}}>{selectedStudent.first_name} {selectedStudent.last_name}</h2>
+                      <p style={{margin: '4px 0 0', color: 'var(--text-secondary)'}}>Matricule: {selectedStudent.matricule}</p>
+                      <span className={`badge ${selectedStudent.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`} style={{marginTop: '8px', display: 'inline-block'}}>
+                        {selectedStudent.status}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <h3 style={{marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', fontSize: '1.1rem'}}>Informations Scolaires</h3>
+                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px'}}>
+                    <div>
+                      <span style={{color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'block'}}>Classe Actuelle</span>
+                      <strong>{selectedStudent.classes?.name || 'Non assigné'}</strong>
+                    </div>
+                    <div>
+                      <span style={{color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'block'}}>Date de naissance</span>
+                      <strong>{new Date(selectedStudent.birth_date).toLocaleDateString('fr-FR')}</strong>
+                    </div>
+                  </div>
+
+                  <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end'}}>
+                    <button type="button" className="btn btn-primary" onClick={closeModal}>Fermer le dossier</button>
+                  </div>
+                </div>
+              )}
+
 
             </div>
           </div>
