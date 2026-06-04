@@ -40,6 +40,7 @@ function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedClassForSchedule, setSelectedClassForSchedule] = useState<string>('');
 
   const [studentsData, setStudentsData] = useState<any[]>([]);
   const [classesData, setClassesData] = useState<any[]>([]);
@@ -47,6 +48,7 @@ function App() {
   const [employeesData, setEmployeesData] = useState<any[]>([]);
   const [invoicesData, setInvoicesData] = useState<any[]>([]);
   const [absencesData, setAbsencesData] = useState<any[]>([]);
+  const [schedulesData, setSchedulesData] = useState<any[]>([]);
   const [settingsData, setSettingsData] = useState<any | null>(null);
 
   useEffect(() => {
@@ -71,6 +73,7 @@ function App() {
       fetchEmployees();
       fetchInvoices();
       fetchAbsences();
+      fetchSchedules();
       fetchSettings();
     }
   }, [session]);
@@ -98,6 +101,11 @@ function App() {
   const fetchAbsences = async () => {
     const { data } = await supabase.from('absences').select(`*, students ( first_name, last_name, classes(name) )`);
     if (data) setAbsencesData(data);
+  };
+  const fetchSchedules = async () => {
+    // If the table doesn't exist yet, this will fail gracefully or return empty until migration is applied
+    const { data } = await supabase.from('schedules').select(`*, classes(name), teachers(first_name, last_name)`);
+    if (data) setSchedulesData(data);
   };
   const fetchSettings = async () => {
     const { data } = await supabase.from('school_settings').select('*').single();
@@ -227,6 +235,19 @@ function App() {
         const { error } = await supabase.from('invoices').insert([invoice]);
         if (error) throw error;
         fetchInvoices();
+      }
+      else if (activeModal === 'schedule') {
+        const schedule = {
+          class_id: formData.get('class_id'),
+          subject: formData.get('subject'),
+          teacher_id: formData.get('teacher_id') || null,
+          day_of_week: formData.get('day_of_week'),
+          start_time: formData.get('start_time'),
+          end_time: formData.get('end_time'),
+        };
+        const { error } = await supabase.from('schedules').insert([schedule]);
+        if (error) throw error;
+        fetchSchedules();
       }
       else if (activeModal === 'bulletin') {
         alert("Génération terminée ! Le document va être téléchargé.");
@@ -850,6 +871,81 @@ function App() {
     </div>
   );
 
+  const renderSchedules = () => {
+    const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    const currentSchedules = schedulesData.filter(s => s.class_id === selectedClassForSchedule);
+    
+    return (
+    <div className="animate-fade-in">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Emplois du Temps</h1>
+          <p className="page-subtitle">Gestion des plannings par classe.</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => setActiveModal('schedule')}>
+          <Icons.Plus /> Ajouter un cours
+        </button>
+      </div>
+
+      <div className="panel delay-100">
+        <div className="panel-header" style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
+          <h3 className="panel-title" style={{margin: 0}}>Planning de la classe</h3>
+          <select 
+            className="form-select" 
+            style={{width: '250px'}} 
+            value={selectedClassForSchedule} 
+            onChange={(e) => setSelectedClassForSchedule(e.target.value)}
+          >
+            <option value="">-- Sélectionner une classe --</option>
+            {classesData.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {selectedClassForSchedule ? (
+          <div style={{overflowX: 'auto', marginTop: '16px'}}>
+            <table style={{width: '100%', borderCollapse: 'collapse', minWidth: '800px'}}>
+              <thead>
+                <tr>
+                  <th style={{padding: '12px', border: '1px solid var(--border-color)', background: 'var(--surface-color-hover)', width: '10%'}}>Heure</th>
+                  {days.map(day => (
+                    <th key={day} style={{padding: '12px', border: '1px solid var(--border-color)', background: 'var(--surface-color-hover)', width: '15%', textAlign: 'center'}}>{day}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map(hour => (
+                  <tr key={hour}>
+                    <td style={{padding: '12px', border: '1px solid var(--border-color)', textAlign: 'center', fontWeight: 500, color: 'var(--text-secondary)'}}>{hour}</td>
+                    {days.map(day => {
+                      const courses = currentSchedules.filter(s => s.day_of_week === day && s.start_time.startsWith(hour));
+                      return (
+                        <td key={day} style={{padding: '8px', border: '1px solid var(--border-color)', verticalAlign: 'top', height: '80px'}}>
+                          {courses.map((course, idx) => (
+                            <div key={idx} style={{background: 'rgba(59, 130, 246, 0.1)', borderLeft: '3px solid var(--primary-color)', padding: '6px', borderRadius: '4px', marginBottom: '4px', fontSize: '0.85rem'}}>
+                              <div style={{fontWeight: 600, color: 'var(--primary-color)'}}>{course.subject}</div>
+                              <div style={{color: 'var(--text-secondary)', fontSize: '0.75rem'}}>{course.start_time.substring(0,5)} - {course.end_time.substring(0,5)}</div>
+                              <div style={{color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '2px'}}>{course.teachers?.first_name} {course.teachers?.last_name}</div>
+                            </div>
+                          ))}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{padding: '40px', textAlign: 'center', color: 'var(--text-secondary)'}}>
+            Veuillez sélectionner une classe pour afficher son emploi du temps.
+          </div>
+        )}
+      </div>
+    </div>
+  )};
+
   const renderScolarite = () => (
     <div className="animate-fade-in">
       <div className="page-header">
@@ -1133,6 +1229,9 @@ function App() {
           <li className={`nav-item ${activeTab === 'pedagogy' ? 'active' : ''}`} onClick={() => { setActiveTab('pedagogy'); setIsMobileMenuOpen(false); }}>
             <Icons.BookOpen /> Pédagogie
           </li>
+          <li className={`nav-item ${activeTab === 'schedules' ? 'active' : ''}`} onClick={() => { setActiveTab('schedules'); setIsMobileMenuOpen(false); }}>
+            <Icons.Calendar /> Emplois du Temps
+          </li>
           <li className={`nav-item ${activeTab === 'bulletins' ? 'active' : ''}`} onClick={() => { setActiveTab('bulletins'); setIsMobileMenuOpen(false); }}>
             <Icons.FileText /> Bulletins
           </li>
@@ -1190,6 +1289,7 @@ function App() {
           {activeTab === 'students' && renderStudents()}
           {activeTab === 'absences' && renderAbsences()}
           {activeTab === 'pedagogy' && renderPedagogy()}
+          {activeTab === 'schedules' && renderSchedules()}
           {activeTab === 'communication' && renderCommunication()}
           {activeTab === 'bulletins' && renderBulletins()}
           {activeTab === 'rh' && renderRH()}
@@ -1529,7 +1629,7 @@ function App() {
 
               {/* Student Dossier Modal */}
               {activeModal === 'studentDossier' && selectedStudent && (
-                <div>
+                <div style={{maxHeight: '75vh', overflowY: 'auto', paddingRight: '12px'}}>
                   <div style={{display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '24px'}}>
                     <div className="avatar" style={{width: 64, height: 64, fontSize: '1.5rem'}}>
                       {selectedStudent.first_name[0]}{selectedStudent.last_name[0]}
@@ -1555,13 +1655,92 @@ function App() {
                     </div>
                   </div>
 
+                  {/* Emploi du temps de la classe */}
+                  <h3 style={{marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', fontSize: '1.1rem'}}>Emploi du temps ({selectedStudent.classes?.name})</h3>
+                  <div style={{marginBottom: '24px'}}>
+                    {schedulesData.filter(s => s.class_id === selectedStudent.class_id).length > 0 ? (
+                      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px'}}>
+                        {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'].map(day => {
+                          const dayCourses = schedulesData.filter(s => s.class_id === selectedStudent.class_id && s.day_of_week === day).sort((a,b) => a.start_time.localeCompare(b.start_time));
+                          if (dayCourses.length === 0) return null;
+                          return (
+                            <div key={day} style={{border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px'}}>
+                              <div style={{fontWeight: 600, borderBottom: '1px solid var(--border-color)', paddingBottom: '4px', marginBottom: '8px', textAlign: 'center'}}>{day}</div>
+                              {dayCourses.map((course, idx) => (
+                                <div key={idx} style={{background: 'var(--surface-color-hover)', padding: '6px', borderRadius: '4px', marginBottom: '4px', fontSize: '0.8rem'}}>
+                                  <div style={{fontWeight: 600, color: 'var(--primary-color)'}}>{course.subject}</div>
+                                  <div>{course.start_time.substring(0,5)} - {course.end_time.substring(0,5)}</div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{padding: '16px', background: 'var(--surface-color-hover)', borderRadius: '8px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
+                        Aucun emploi du temps n'a encore été configuré pour cette classe.
+                      </div>
+                    )}
+                  </div>
+
                   <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end'}}>
                     <button type="button" className="btn btn-primary" onClick={closeModal}>Fermer le dossier</button>
                   </div>
                 </div>
               )}
 
-
+              {/* Schedule Form */}
+              {activeModal === 'schedule' && (
+                <form onSubmit={handleFormSubmit}>
+                  <div className="form-group">
+                    <label>Classe</label>
+                    <select name="class_id" className="form-select" required>
+                      <option value="">Choisir une classe...</option>
+                      {classesData.map(cls => (
+                        <option key={cls.id} value={cls.id}>{cls.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Matière</label>
+                    <input type="text" name="subject" className="form-input" required placeholder="Ex: Mathématiques" />
+                  </div>
+                  <div className="form-group">
+                    <label>Professeur (Optionnel)</label>
+                    <select name="teacher_id" className="form-select">
+                      <option value="">Non assigné</option>
+                      {teachersData.map(t => (
+                        <option key={t.id} value={t.id}>{t.first_name} {t.last_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Jour</label>
+                    <select name="day_of_week" className="form-select" required>
+                      <option value="Lundi">Lundi</option>
+                      <option value="Mardi">Mardi</option>
+                      <option value="Mercredi">Mercredi</option>
+                      <option value="Jeudi">Jeudi</option>
+                      <option value="Vendredi">Vendredi</option>
+                      <option value="Samedi">Samedi</option>
+                    </select>
+                  </div>
+                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                    <div className="form-group">
+                      <label>Heure de début</label>
+                      <input type="time" name="start_time" className="form-input" required defaultValue="08:00" />
+                    </div>
+                    <div className="form-group">
+                      <label>Heure de fin</label>
+                      <input type="time" name="end_time" className="form-input" required defaultValue="10:00" />
+                    </div>
+                  </div>
+                  <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
+                    <button type="submit" className="btn btn-primary">Enregistrer le cours</button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         </div>
