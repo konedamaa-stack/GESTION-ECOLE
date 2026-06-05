@@ -971,7 +971,7 @@ function App() {
           </div>
           <div className="activity-list">
             <div style={{textAlign: 'center', padding: '40px', color: 'var(--text-secondary)'}}>
-              <Icons.Mail size={48} style={{opacity: 0.2, marginBottom: '16px'}} />
+              <div style={{opacity: 0.2, marginBottom: '16px'}}><Icons.Mail /></div>
               <p>Aucun message. Votre boîte de réception est vide.</p>
             </div>
           </div>
