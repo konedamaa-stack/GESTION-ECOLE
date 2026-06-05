@@ -98,10 +98,4 @@ create policy "Allow public read access on transactions" on public.transactions 
 create policy "Allow public insert on transactions" on public.transactions for insert with check (true);
 create policy "Allow public update on transactions" on public.transactions for update using (true);
 
--- Insert some default classes to bootstrap the system
-insert into public.classes (name, level) values 
-('Terminale S1', 'Terminale'),
-('Terminale L2', 'Terminale'),
-('1ère S3', 'Première'),
-('1ère L', 'Première'),
-('Seconde 4', 'Seconde');
+

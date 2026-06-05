@@ -30,6 +30,7 @@ const Icons = {
   Database: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>,
   X: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>,
   Mail: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
+  LogOut: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline strokeLinecap="round" strokeLinejoin="round" points="16 17 21 12 16 7"/><line strokeLinecap="round" strokeLinejoin="round" x1="21" y1="12" x2="9" y2="12"/></svg>,
   GraduationCap: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>,
   Heart: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
   CreditCard: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" strokeLinecap="round" strokeLinejoin="round" /><line x1="1" y1="10" x2="23" y2="10" strokeLinecap="round" strokeLinejoin="round" /></svg>,
@@ -864,16 +865,16 @@ function App() {
             <span className="stat-label">Classes Actives</span>
             <Icons.BookOpen />
           </div>
-          <div className="stat-value">24</div>
-          <div className="stat-trend trend-up">Toutes les classes ont un emploi du temps</div>
+          <div className="stat-value">{classesData.length}</div>
+          <div className="stat-trend trend-up">Toutes les classes</div>
         </div>
         <div className="stat-card delay-200">
           <div className="stat-header">
             <span className="stat-label">Évaluations cette semaine</span>
             <Icons.FileText />
           </div>
-          <div className="stat-value">18</div>
-          <div className="stat-trend trend-up">5 devoirs sur table, 13 contrôles continus</div>
+          <div className="stat-value">{evaluationsData?.length || 0}</div>
+          <div className="stat-trend trend-up">Évaluations planifiées ou passées</div>
         </div>
       </div>
 
@@ -892,20 +893,17 @@ function App() {
             </tr>
           </thead>
           <tbody>
-            {[
-              { date: 'Demain, 08:00', subject: 'Mathématiques', class: 'Terminale S1', prof: 'Mme. Fall', status: 'Planifié', badge: 'badge-primary' },
-              { date: 'Vendredi, 10:00', subject: 'SVT', class: '1ère S3', prof: 'M. Dubois', status: 'Planifié', badge: 'badge-primary' },
-              { date: 'Hier', subject: 'Français', class: 'Seconde 4', prof: 'Mme. Kone', status: 'Correction', badge: 'badge-warning' },
-              { date: 'Lundi dernier', subject: 'Physique', class: 'Terminale S1', prof: 'M. Diallo', status: 'Notes publiées', badge: 'badge-success' },
-            ].map((row, i) => (
+            {evaluationsData && evaluationsData.length > 0 ? evaluationsData.map((row, i) => (
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
-                <td style={{padding: '16px 0', fontWeight: 600}}>{row.date}</td>
+                <td style={{padding: '16px 0', fontWeight: 600}}>{new Date(row.date).toLocaleDateString('fr-FR')}</td>
                 <td style={{padding: '16px 0'}}>{row.subject}</td>
-                <td style={{padding: '16px 0', color: 'var(--text-secondary)'}}>{row.class}</td>
-                <td style={{padding: '16px 0'}}>{row.prof}</td>
-                <td style={{padding: '16px 0'}}><span className={`badge ${row.badge}`}>{row.status}</span></td>
+                <td style={{padding: '16px 0', color: 'var(--text-secondary)'}}>{row.classes?.name || 'N/A'}</td>
+                <td style={{padding: '16px 0'}}>{row.teachers?.first_name} {row.teachers?.last_name}</td>
+                <td style={{padding: '16px 0'}}><span className={`badge badge-primary`}>{row.status || 'Planifié'}</span></td>
               </tr>
-            ))}
+            )) : (
+              <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucune évaluation enregistrée.</td></tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -933,23 +931,10 @@ function App() {
             </div>
           </div>
           <div className="activity-list">
-            {[
-              { sender: 'Mme. Dubois (Parent)', subject: 'Absence de Thomas - Certificat médical', time: '10:45', read: false },
-              { sender: 'Direction', subject: 'Rappel : Conseil de classe Term S1', time: 'Hier, 16:20', read: true },
-              { sender: 'M. Diallo (Prof)', subject: 'Demande de matériel pour TP de physique', time: 'Lundi, 09:15', read: true },
-              { sender: 'Système ENT', subject: 'Rapport hebdomadaire des absences', time: 'Dimanche, 23:59', read: true },
-            ].map((msg, i) => (
-              <div key={i} className="activity-item" style={{cursor: 'pointer', padding: '16px', borderRadius: '12px', background: msg.read ? 'transparent' : 'var(--surface-color-hover)', border: msg.read ? '1px solid var(--border-color)' : '1px solid var(--primary-color)'}}>
-                <div className="activity-dot" style={{backgroundColor: msg.read ? 'transparent' : 'var(--primary-color)', width: 12, height: 12, border: msg.read ? '2px solid var(--text-secondary)' : 'none'}}></div>
-                <div className="activity-content" style={{flex: 1, marginLeft: '8px'}}>
-                  <div className="flex-between">
-                    <h4 style={{fontWeight: msg.read ? 500 : 700}}>{msg.sender}</h4>
-                    <span className="activity-time">{msg.time}</span>
-                  </div>
-                  <p style={{color: msg.read ? 'var(--text-secondary)' : 'var(--text-primary)', marginTop: '4px'}}>{msg.subject}</p>
-                </div>
-              </div>
-            ))}
+            <div style={{textAlign: 'center', padding: '40px', color: 'var(--text-secondary)'}}>
+              <Icons.Mail size={48} style={{opacity: 0.2, marginBottom: '16px'}} />
+              <p>Aucun message. Votre boîte de réception est vide.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -983,22 +968,19 @@ function App() {
             </tr>
           </thead>
           <tbody>
-            {[
-              { class: 'Terminale S1', prof: 'M. Dubois', moy: '13.4', status: 'Terminé', badge: 'badge-success' },
-              { class: 'Terminale L2', prof: 'Mme. Martin', moy: '12.1', status: 'En attente conseils', badge: 'badge-warning' },
-              { class: '1ère S3', prof: 'M. Diallo', moy: '11.8', status: 'Saisie en cours', badge: 'badge-primary' },
-              { class: 'Seconde 4', prof: 'Mme. Fall', moy: '14.2', status: 'Terminé', badge: 'badge-success' },
-            ].map((row, i) => (
+            {classesData && classesData.length > 0 ? classesData.map((row, i) => (
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
-                <td style={{padding: '16px 0', fontWeight: 600}}>{row.class}</td>
-                <td style={{padding: '16px 0'}}>{row.prof}</td>
-                <td style={{padding: '16px 0', fontWeight: 'bold'}}>{row.moy}</td>
-                <td style={{padding: '16px 0'}}><span className={`badge ${row.badge}`}>{row.status}</span></td>
+                <td style={{padding: '16px 0', fontWeight: 600}}>{row.name}</td>
+                <td style={{padding: '16px 0'}}>{row.level}</td>
+                <td style={{padding: '16px 0', fontWeight: 'bold'}}>-</td>
+                <td style={{padding: '16px 0'}}><span className={`badge badge-warning`}>En attente</span></td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
                   <button className="btn btn-outline" style={{padding: '6px 12px'}} onClick={() => alert("Génération du PDF en cours...")}><Icons.Download /> Exporter</button>
                 </td>
               </tr>
-            ))}
+            )) : (
+              <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucune classe trouvée.</td></tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -1023,8 +1005,8 @@ function App() {
             <span className="stat-label">Personnel Admin.</span>
             <Icons.Briefcase />
           </div>
-          <div className="stat-value">28</div>
-          <div className="stat-trend trend-up">Secrétariat, Direction, etc.</div>
+          <div className="stat-value">{employeesData.length}</div>
+          <div className="stat-trend trend-up">Membres du personnel</div>
         </div>
         
         <div className="stat-card delay-200">
@@ -1032,8 +1014,8 @@ function App() {
             <span className="stat-label">Congés en cours</span>
             <Icons.Activity />
           </div>
-          <div className="stat-value">2</div>
-          <div className="stat-trend trend-down">Sur 112 personnels total</div>
+          <div className="stat-value">0</div>
+          <div className="stat-trend trend-down">Sur {employeesData.length} personnels total</div>
         </div>
       </div>
 
@@ -1150,30 +1132,7 @@ function App() {
             </tr>
           </thead>
           <tbody>
-            {[
-              { parent: 'Mme. Fatou N\'Diaye', students: ['Karim N\'Diaye (1ère L)'], phone: '+221 77 123 45 67', ent: 'Connecté (hier)' },
-              { parent: 'M. Alioune Fall', students: ['Aïssatou Fall (Term S1)', 'Moussa Fall (4ème)'], phone: '+221 78 987 65 43', ent: 'Connecté (Aujourd\'hui)' },
-              { parent: 'Mme. Claire Dubois', students: ['Thomas Dubois (Seconde)'], phone: '+33 6 12 34 56 78', ent: 'Jamais connecté' },
-            ].map((row, i) => (
-              <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
-                <td style={{padding: '16px 0', fontWeight: 600}}>
-                  {row.parent}
-                </td>
-                <td style={{padding: '16px 0'}}>
-                  {row.students.map((s, idx) => <div key={idx} style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>{s}</div>)}
-                </td>
-                <td style={{padding: '16px 0', fontFamily: 'monospace'}}>{row.phone}</td>
-                <td style={{padding: '16px 0'}}>
-                  <span className={`badge ${row.ent.includes('Jamais') ? 'badge-warning' : 'badge-success'}`}>
-                    {row.ent.includes('Jamais') ? 'Inactif' : 'Actif'}
-                  </span>
-                  <div style={{fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px'}}>{row.ent}</div>
-                </td>
-                <td style={{padding: '16px 0', textAlign: 'right'}}>
-                  <button className="btn btn-primary" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => setActiveModal('message')}>Contacter</button>
-                </td>
-              </tr>
-            ))}
+            <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucun parent enregistré.</td></tr>
           </tbody>
         </table>
       </div>
@@ -1273,9 +1232,9 @@ function App() {
             <span className="stat-label">Taux de Recouvrement</span>
             <Icons.TrendingUp />
           </div>
-          <div className="stat-value">84.5%</div>
+          <div className="stat-value">0%</div>
           <div className="stat-trend trend-up">
-            ↑ 2.1% ce mois-ci
+            Ce mois-ci
           </div>
         </div>
         
@@ -1284,9 +1243,9 @@ function App() {
             <span className="stat-label">Reste à Recouvrer</span>
             <Icons.Database />
           </div>
-          <div className="stat-value">12.5M</div>
+          <div className="stat-value">0</div>
           <div className="stat-trend trend-down">
-            FCFA pour le 3ème Trimestre
+            FCFA
           </div>
         </div>
 
@@ -1295,9 +1254,9 @@ function App() {
             <span className="stat-label">Paiements du Jour</span>
             <Icons.CreditCard />
           </div>
-          <div className="stat-value">48</div>
+          <div className="stat-value">0</div>
           <div className="stat-trend trend-up">
-            Pour un total de 1.4M FCFA
+            FCFA aujourd'hui
           </div>
         </div>
       </div>
@@ -1760,6 +1719,9 @@ function App() {
           <li className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}>
             <Icons.Settings /> Paramètres
           </li>
+          <li className="nav-item" onClick={() => supabase.auth.signOut()} style={{color: '#ef4444'}}>
+            <Icons.LogOut /> Déconnexion
+          </li>
         </ul>
       </aside>
 
@@ -1810,7 +1772,7 @@ function App() {
               <div className="avatar">A</div>
               <div className="user-info">
                 <span className="user-name">{session?.user?.email || 'Adama Traoré'}</span>
-                <span className="user-role" onClick={() => supabase.auth.signOut()} style={{cursor: 'pointer', color: '#ef4444'}}>Se déconnecter</span>
+                <span className="user-role">Directeur</span>
               </div>
             </div>
           </div>

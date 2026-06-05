@@ -83,7 +83,4 @@ create policy "Allow public insert on invoices" on public.invoices for insert wi
 drop policy if exists "Allow public update on invoices" on public.invoices;
 create policy "Allow public update on invoices" on public.invoices for update using (true);
 
--- Insert default settings row
-insert into public.school_settings (id, school_name, address, phone, email, director_name) 
-values (1, 'Mon Établissement', '123 Rue de l''École, Dakar', '+221 77 000 00 00', 'contact@ecole.com', 'Adama Traoré')
-on conflict (id) do nothing;
+
