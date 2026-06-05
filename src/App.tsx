@@ -45,6 +45,8 @@ function App() {
   const [activeSettingsTab, setActiveSettingsTab] = useState('general');
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [currentSchoolPlan, setCurrentSchoolPlan] = useState<string>('Standard');
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClassForSchedule, setSelectedClassForSchedule] = useState<string>('');
@@ -88,16 +90,28 @@ function App() {
   useEffect(() => {
     if (session) {
       const getSchoolId = async () => {
-        const { data, error } = await supabase.from('school_admins').select('school_id, schools(name)').eq('user_id', session.user.id);
+        const { data, error } = await supabase.from('school_admins').select('school_id, schools(name, subscription_plan)').eq('user_id', session.user.id);
         if (data && data.length > 0 && !error) {
-          const schoolsList = data.map((d: any) => ({ id: d.school_id, name: d.schools?.name || 'École' }));
+          const schoolsList = data.map((d: any) => ({ 
+            id: d.school_id, 
+            name: d.schools?.name || 'École',
+            plan: d.schools?.subscription_plan || 'Standard' 
+          }));
           setAdminSchools(schoolsList);
-          setCurrentSchoolId(prev => (prev && schoolsList.some(s => s.id === prev)) ? prev : schoolsList[0].id);
+          
+          const newCurrentId = (currentSchoolId && schoolsList.some(s => s.id === currentSchoolId)) ? currentSchoolId : schoolsList[0].id;
+          setCurrentSchoolId(newCurrentId);
+          
+          const activeSchool = schoolsList.find(s => s.id === newCurrentId);
+          if (activeSchool) {
+            setCurrentSchoolPlan(activeSchool.plan);
+          }
         }
       };
       getSchoolId();
     } else {
       setCurrentSchoolId(null);
+      setCurrentSchoolPlan('Standard');
       setAdminSchools([]);
     }
   }, [session]);
@@ -910,7 +924,32 @@ function App() {
     </div>
   );
 
-  const renderCommunication = () => (
+  const renderPremiumOverlay = (title: string, description: string) => (
+    <div className="animate-fade-in" style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{title}</h1>
+          <p className="page-subtitle">Fonctionnalité Premium</p>
+        </div>
+      </div>
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
+        flex: 1, padding: '40px', textAlign: 'center', background: 'var(--surface-color)', 
+        borderRadius: '16px', border: '1px solid var(--border-color)'
+      }}>
+        <div style={{width: '64px', height: '64px', borderRadius: '16px', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px'}}>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </div>
+        <h2 style={{fontSize: '1.5rem', marginBottom: '12px'}}>Passez à la vitesse supérieure</h2>
+        <p style={{color: 'var(--text-secondary)', maxWidth: '400px', marginBottom: '32px', lineHeight: '1.5'}}>{description}</p>
+        <button className="btn btn-primary" onClick={() => { setActiveTab('settings'); setActiveSettingsTab('abonnement'); }}>
+          Découvrir le Plan Pro
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderCommunication = () => currentSchoolPlan !== 'Pro' ? renderPremiumOverlay("Communication", "Envoyez des SMS, emails et notifications aux parents avec le plan Pro.") : (
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
@@ -987,7 +1026,7 @@ function App() {
     </div>
   );
 
-  const renderRH = () => (
+  const renderRH = () => currentSchoolPlan !== 'Pro' ? renderPremiumOverlay("Ressources Humaines", "Gérez les contrats, salaires et plannings de vos employés avec le plan Pro.") : (
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
@@ -1214,7 +1253,7 @@ function App() {
     </div>
   )};
 
-  const renderScolarite = () => (
+  const renderScolarite = () => currentSchoolPlan !== 'Pro' ? renderPremiumOverlay("Comptabilité & Scolarité", "Gérez les factures, les paiements de scolarité et suivez votre trésorerie avec le plan Pro.") : (
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
@@ -1522,6 +1561,9 @@ function App() {
             <li className={`nav-item ${activeSettingsTab === 'database' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('database')} style={{marginBottom: '4px'}}>
               <Icons.Database /> Base de Données
             </li>
+            <li className={`nav-item ${activeSettingsTab === 'abonnement' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('abonnement')} style={{marginBottom: '4px'}}>
+              <Icons.TrendingUp /> Abonnement
+            </li>
           </ul>
         </div>
 
@@ -1649,6 +1691,69 @@ function App() {
               </div>
             </div>
           )}
+
+          {activeSettingsTab === 'abonnement' && (
+            <div className="animate-fade-in">
+              <h3 className="panel-title" style={{marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>Gérer mon Abonnement</h3>
+              <div style={{display: 'flex', gap: '24px'}}>
+                <div style={{
+                  flex: 1, padding: '24px', borderRadius: '16px', 
+                  border: `2px solid ${currentSchoolPlan === 'Standard' ? 'var(--primary-color)' : 'var(--border-color)'}`,
+                  background: currentSchoolPlan === 'Standard' ? 'rgba(99, 102, 241, 0.05)' : 'var(--surface-color)',
+                  position: 'relative'
+                }}>
+                  {currentSchoolPlan === 'Standard' && <div style={{position: 'absolute', top: '-12px', right: '24px', background: 'var(--primary-color)', color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold'}}>Plan Actuel</div>}
+                  <h4 style={{fontSize: '1.2rem', marginBottom: '8px'}}>Standard</h4>
+                  <p style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '16px'}}>0 FCFA <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 'normal'}}>/mois</span></p>
+                  <ul style={{listStyle: 'none', padding: 0, margin: '0 0 24px 0', display: 'flex', flexDirection: 'column', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
+                    <li>✓ Gestion des élèves et absences</li>
+                    <li>✓ Gestion des professeurs</li>
+                    <li>✓ Notes et bulletins</li>
+                  </ul>
+                  {currentSchoolPlan === 'Standard' ? (
+                    <button className="btn" disabled style={{width: '100%', background: 'var(--border-color)', color: 'var(--text-secondary)'}}>Plan Actif</button>
+                  ) : (
+                    <button className="btn" style={{width: '100%', border: '1px solid var(--border-color)'}} onClick={async () => {
+                      const { error } = await supabase.from('schools').update({ subscription_plan: 'Standard' }).eq('id', currentSchoolId);
+                      if (!error) {
+                        setCurrentSchoolPlan('Standard');
+                        setAdminSchools(adminSchools.map(s => s.id === currentSchoolId ? {...s, plan: 'Standard'} : s));
+                      }
+                    }}>Rétrograder</button>
+                  )}
+                </div>
+
+                <div style={{
+                  flex: 1, padding: '24px', borderRadius: '16px', 
+                  border: `2px solid ${currentSchoolPlan === 'Pro' ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                  background: currentSchoolPlan === 'Pro' ? 'rgba(16, 185, 129, 0.05)' : 'var(--surface-color)',
+                  position: 'relative'
+                }}>
+                  {currentSchoolPlan === 'Pro' && <div style={{position: 'absolute', top: '-12px', right: '24px', background: 'var(--accent-color)', color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold'}}>Plan Actuel</div>}
+                  <h4 style={{fontSize: '1.2rem', marginBottom: '8px'}}>Pro</h4>
+                  <p style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '16px'}}>25 000 FCFA <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 'normal'}}>/mois</span></p>
+                  <ul style={{listStyle: 'none', padding: 0, margin: '0 0 24px 0', display: 'flex', flexDirection: 'column', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
+                    <li>✓ Toutes les fonctions Standard</li>
+                    <li>✓ Comptabilité & Facturation</li>
+                    <li>✓ Ressources Humaines</li>
+                    <li>✓ Communication (SMS/Email)</li>
+                  </ul>
+                  {currentSchoolPlan === 'Pro' ? (
+                    <button className="btn" disabled style={{width: '100%', background: 'var(--border-color)', color: 'var(--text-secondary)'}}>Plan Actif</button>
+                  ) : (
+                    <button className="btn btn-primary" style={{width: '100%', background: 'var(--accent-color)', borderColor: 'var(--accent-color)'}} onClick={async () => {
+                      const { error } = await supabase.from('schools').update({ subscription_plan: 'Pro' }).eq('id', currentSchoolId);
+                      if (!error) {
+                        setCurrentSchoolPlan('Pro');
+                        setAdminSchools(adminSchools.map(s => s.id === currentSchoolId ? {...s, plan: 'Pro'} : s));
+                        alert('Félicitations ! Vous avez débloqué le plan Pro.');
+                      }
+                    }}>Passer en Pro</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1719,9 +1824,6 @@ function App() {
           <li className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}>
             <Icons.Settings /> Paramètres
           </li>
-          <li className="nav-item" onClick={() => supabase.auth.signOut()} style={{color: '#ef4444'}}>
-            <Icons.LogOut /> Déconnexion
-          </li>
         </ul>
       </aside>
 
@@ -1768,12 +1870,42 @@ function App() {
               <Icons.Bell />
               <span className="action-badge"></span>
             </button>
-            <div className="user-profile">
+            <div className="user-profile" onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)} style={{position: 'relative', cursor: 'pointer'}}>
               <div className="avatar">A</div>
               <div className="user-info">
                 <span className="user-name">{session?.user?.email || 'Adama Traoré'}</span>
                 <span className="user-role">Directeur</span>
               </div>
+              
+              {isProfileMenuOpen && (
+                <div className="profile-dropdown" style={{
+                  position: 'absolute', 
+                  top: '100%', 
+                  right: 0, 
+                  marginTop: '10px', 
+                  background: 'var(--surface-color)', 
+                  border: '1px solid var(--border-color)', 
+                  borderRadius: '12px', 
+                  padding: '8px', 
+                  minWidth: '200px', 
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                  zIndex: 100
+                }}>
+                  <div className="dropdown-item" onClick={() => supabase.auth.signOut()} style={{
+                    padding: '10px 16px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '12px', 
+                    cursor: 'pointer', 
+                    color: 'var(--danger-color, #ef4444)',
+                    borderRadius: '8px',
+                    fontWeight: 500,
+                  }} onMouseOver={(e) => e.currentTarget.style.background = 'var(--surface-color-hover)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
+                    <Icons.LogOut />
+                    <span>Déconnexion</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>
