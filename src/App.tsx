@@ -2,9 +2,13 @@ import { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import Auth from './components/Auth';
+import StudentPortal from './components/StudentPortal';
+import TeacherPortal from './components/TeacherPortal';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import './App.css';
 
 // Custom SVG Icons
+// ...
 const Icons = {
   Home: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline strokeLinecap="round" strokeLinejoin="round" d="M9 22V12h6v10" /></svg>,
   Users: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path strokeLinecap="round" strokeLinejoin="round" d="M23 21v-2a4 4 0 0 0-3-3.87" /><path strokeLinecap="round" strokeLinejoin="round" d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>,
@@ -34,6 +38,8 @@ const Icons = {
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
+  const [studentSession, setStudentSession] = useState<any>(null);
+  const [teacherSession, setTeacherSession] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [activeSettingsTab, setActiveSettingsTab] = useState('general');
   const [activeModal, setActiveModal] = useState<string | null>(null);
@@ -45,6 +51,15 @@ function App() {
   const [activeDossierTab, setActiveDossierTab] = useState<'infos' | 'documents'>('infos');
   const [studentDocumentsData, setStudentDocumentsData] = useState<any[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  
+  const [selectedClassForGrades, setSelectedClassForGrades] = useState<string>('');
+  const [selectedSubjectForGrades, setSelectedSubjectForGrades] = useState<string>('');
+  const [selectedPeriodForGrades, setSelectedPeriodForGrades] = useState<string>('1er Trimestre');
+  const [evaluationsData, setEvaluationsData] = useState<any[]>([]);
+  const [activeEvaluation, setActiveEvaluation] = useState<any>(null);
+  const [gradesInput, setGradesInput] = useState<Record<string, {score: string, comment: string}>>({});
+  const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
+  const [adminSchools, setAdminSchools] = useState<{id: string, name: string}[]>([]);
 
   const [studentsData, setStudentsData] = useState<any[]>([]);
   const [classesData, setClassesData] = useState<any[]>([]);
@@ -71,16 +86,34 @@ function App() {
 
   useEffect(() => {
     if (session) {
-      fetchStudents();
-      fetchClasses();
-      fetchTeachers();
-      fetchEmployees();
-      fetchInvoices();
-      fetchAbsences();
-      fetchSchedules();
-      fetchSettings();
+      const getSchoolId = async () => {
+        const { data, error } = await supabase.from('school_admins').select('school_id, schools(name)').eq('user_id', session.user.id);
+        if (data && data.length > 0 && !error) {
+          const schoolsList = data.map((d: any) => ({ id: d.school_id, name: d.schools?.name || 'École' }));
+          setAdminSchools(schoolsList);
+          setCurrentSchoolId(prev => (prev && schoolsList.some(s => s.id === prev)) ? prev : schoolsList[0].id);
+        }
+      };
+      getSchoolId();
+    } else {
+      setCurrentSchoolId(null);
+      setAdminSchools([]);
     }
   }, [session]);
+
+  useEffect(() => {
+    if (session && currentSchoolId) {
+      fetchStudents(currentSchoolId);
+      fetchClasses(currentSchoolId);
+      fetchTeachers(currentSchoolId);
+      fetchEmployees(currentSchoolId);
+      fetchInvoices(currentSchoolId);
+      fetchAbsences(currentSchoolId);
+      fetchSchedules(currentSchoolId);
+      fetchEvaluations(currentSchoolId);
+      fetchSettings(currentSchoolId);
+    }
+  }, [session, currentSchoolId]);
 
   useEffect(() => {
     if (activeModal === 'studentDossier' && selectedStudent) {
@@ -88,60 +121,75 @@ function App() {
     }
   }, [activeModal, selectedStudent]);
 
-  const fetchStudents = async () => {
-    const { data } = await supabase.from('students').select(`*, classes ( name )`);
+  const fetchStudents = async (schoolId: string) => {
+    const { data } = await supabase.from('students').select(`*, classes ( name )`).eq('school_id', schoolId);
     if (data) setStudentsData(data);
   };
-  const fetchClasses = async () => {
-    const { data } = await supabase.from('classes').select('*');
+  const fetchClasses = async (schoolId: string) => {
+    const { data } = await supabase.from('classes').select('*').eq('school_id', schoolId);
     if (data) setClassesData(data);
   };
-  const fetchTeachers = async () => {
-    const { data } = await supabase.from('teachers').select('*');
+  const fetchTeachers = async (schoolId: string) => {
+    const { data } = await supabase.from('teachers').select('*').eq('school_id', schoolId);
     if (data) setTeachersData(data);
   };
-  const fetchEmployees = async () => {
-    const { data } = await supabase.from('employees').select('*');
+  const fetchEmployees = async (schoolId: string) => {
+    const { data } = await supabase.from('employees').select('*').eq('school_id', schoolId);
     if (data) setEmployeesData(data);
   };
-  const fetchInvoices = async () => {
-    const { data } = await supabase.from('invoices').select(`*, students ( first_name, last_name, matricule )`);
+  const fetchInvoices = async (schoolId: string) => {
+    const { data } = await supabase.from('invoices').select(`*, students ( first_name, last_name, matricule )`).eq('school_id', schoolId);
     if (data) setInvoicesData(data);
   };
-  const fetchAbsences = async () => {
-    const { data } = await supabase.from('absences').select(`*, students ( first_name, last_name, classes(name) )`);
+  const fetchAbsences = async (schoolId: string) => {
+    const { data } = await supabase.from('absences').select(`*, students ( first_name, last_name, classes(name) )`).eq('school_id', schoolId);
     if (data) setAbsencesData(data);
   };
-  const fetchSchedules = async () => {
-    // If the table doesn't exist yet, this will fail gracefully or return empty until migration is applied
-    const { data } = await supabase.from('schedules').select(`*, classes(name), teachers(first_name, last_name)`);
+  const fetchSchedules = async (schoolId: string) => {
+    const { data } = await supabase.from('schedules').select(`*, classes(name), teachers(first_name, last_name)`).eq('school_id', schoolId);
     if (data) setSchedulesData(data);
   };
   const fetchStudentDocuments = async (studentId: string) => {
     const { data } = await supabase.from('student_documents').select('*').eq('student_id', studentId);
     if (data) setStudentDocumentsData(data);
   };
-  const fetchSettings = async () => {
-    const { data } = await supabase.from('school_settings').select('*').single();
+  const fetchEvaluations = async (schoolId: string) => {
+    const { data } = await supabase.from('evaluations').select(`*, classes(name)`).eq('school_id', schoolId);
+    if (data) setEvaluationsData(data);
+  };
+  const fetchSettings = async (schoolId: string) => {
+    const { data } = await supabase.from('school_settings').select('*').eq('school_id', schoolId).single();
     if (data) setSettingsData(data);
   };
 
   const saveSettings = async (e: any) => {
     e.preventDefault();
+    if (!currentSchoolId) return;
     const formData = new FormData(e.target);
-    const updates = {
+    const settingsObj = {
+      school_id: currentSchoolId,
       school_name: formData.get('school_name'),
       address: formData.get('address'),
       phone: formData.get('phone'),
       email: formData.get('email'),
       director_name: formData.get('director_name'),
     };
-    const { error } = await supabase.from('school_settings').update(updates).eq('id', 1);
+    
+    const { data: existing } = await supabase.from('school_settings').select('id').eq('school_id', currentSchoolId).single();
+    let error;
+    if (existing) {
+      const { error: err } = await supabase.from('school_settings').update(settingsObj).eq('school_id', currentSchoolId);
+      error = err;
+    } else {
+      const { error: err } = await supabase.from('school_settings').insert([settingsObj]);
+      error = err;
+    }
+    
     if (error) {
       alert("Erreur de sauvegarde: " + error.message);
     } else {
       alert("Paramètres sauvegardés avec succès !");
-      fetchSettings();
+      fetchSettings(currentSchoolId);
     }
   };
 
@@ -151,25 +199,77 @@ function App() {
     e.preventDefault();
     const formData = new FormData(e.target);
     
+    if (activeModal === 'newSchool') {
+      try {
+        const schoolName = formData.get('name') as string;
+        if (!schoolName) return;
+        const { data: newSchool, error: schoolError } = await supabase.from('schools').insert([{ name: schoolName }]).select().single();
+        if (schoolError) throw schoolError;
+        
+        const { error: adminError } = await supabase.from('school_admins').insert([{
+          user_id: session?.user.id,
+          school_id: newSchool.id
+        }]);
+        if (adminError) throw adminError;
+        
+        alert("Nouvel établissement créé avec succès !");
+        
+        const { data } = await supabase.from('school_admins').select('school_id, schools(name)').eq('user_id', session?.user.id);
+        if (data) {
+          const schoolsList = data.map((d: any) => ({ id: d.school_id, name: d.schools?.name || 'École' }));
+          setAdminSchools(schoolsList);
+          setCurrentSchoolId(newSchool.id);
+        }
+        closeModal();
+      } catch (err: any) {
+        alert("Erreur lors de la création : " + err.message);
+      }
+      return;
+    }
+
+    if (!currentSchoolId) {
+      alert("Erreur: ID de l'établissement introuvable.");
+      return;
+    }
+    
     try {
+      if (activeModal === 'class') {
+        const className = formData.get('name') as string;
+        const classLevel = formData.get('level') as string;
+        if (!className) return;
+        const { error } = await supabase.from('classes').insert([{ 
+          name: className, 
+          level: classLevel || 'Non défini',
+          school_id: currentSchoolId 
+        }]);
+        if (error) throw error;
+        alert("Classe créée avec succès !");
+        fetchClasses(currentSchoolId);
+        closeModal();
+        return;
+      }
+
       if (activeModal === 'student') {
-        // 1. Insert Student
         const matricule = 'ELV-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000);
+        const password = formData.get('password') || 'passer123';
         const student = {
+          school_id: currentSchoolId,
           first_name: formData.get('first_name'),
           last_name: formData.get('last_name'),
           matricule: matricule,
           class_id: formData.get('class_id'),
           birth_date: formData.get('birth_date'),
+          email: formData.get('email'),
+          password: password,
         };
         const { data: studentData, error: studentError } = await supabase.from('students').insert([student]).select();
         if (studentError) throw studentError;
         
         const newStudentId = studentData[0].id;
 
-        // 2. Insert Parent if provided
         if (formData.get('parent_first_name') && formData.get('parent_last_name')) {
           const parent = {
+            school_id: currentSchoolId,
             first_name: formData.get('parent_first_name'),
             last_name: formData.get('parent_last_name'),
             phone: formData.get('parent_phone'),
@@ -185,9 +285,9 @@ function App() {
           }
         }
 
-        // 3. Insert Invoice for Registration/Tuition
         if (formData.get('reg_fee_amount')) {
           const invoice = {
+            school_id: currentSchoolId,
             student_id: newStudentId,
             amount: formData.get('reg_fee_amount'),
             motif: 'Frais d\'inscription et Scolarité',
@@ -199,22 +299,30 @@ function App() {
         }
 
         alert("Inscription réussie ! L'élève, ses parents et ses frais ont été enregistrés.");
-        fetchStudents();
+        fetchStudents(currentSchoolId);
       } 
       else if (activeModal === 'teacher') {
+        const teacherMatricule = 'PRF-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000);
+        const password = formData.get('password') || Math.random().toString(36).slice(-8);
+
         const teacher = {
+          school_id: currentSchoolId,
           first_name: formData.get('first_name'),
           last_name: formData.get('last_name'),
           subject: formData.get('subject'),
           phone: formData.get('phone'),
           email: formData.get('email'),
+          matricule: teacherMatricule,
+          password: password,
         };
         const { error } = await supabase.from('teachers').insert([teacher]);
         if (error) throw error;
-        fetchTeachers();
+        alert(`Le professeur a été créé.\n\nEmail : ${teacher.email}\nMot de passe : ${password}\n\nVeuillez transmettre ces informations au professeur.`);
+        fetchTeachers(currentSchoolId);
       }
       else if (activeModal === 'employee') {
         const employee = {
+          school_id: currentSchoolId,
           first_name: formData.get('first_name'),
           last_name: formData.get('last_name'),
           role: formData.get('role'),
@@ -223,10 +331,11 @@ function App() {
         };
         const { error } = await supabase.from('employees').insert([employee]);
         if (error) throw error;
-        fetchEmployees();
+        fetchEmployees(currentSchoolId);
       }
       else if (activeModal === 'absence') {
         const absence = {
+          school_id: currentSchoolId,
           student_id: formData.get('student_id'),
           absence_date: formData.get('absence_date'),
           duration: formData.get('duration'),
@@ -235,10 +344,11 @@ function App() {
         };
         const { error } = await supabase.from('absences').insert([absence]);
         if (error) throw error;
-        fetchAbsences();
+        fetchAbsences(currentSchoolId);
       }
       else if (activeModal === 'payment') {
         const invoice = {
+          school_id: currentSchoolId,
           student_id: formData.get('student_id'),
           amount: formData.get('amount'),
           motif: formData.get('motif'),
@@ -248,10 +358,11 @@ function App() {
         };
         const { error } = await supabase.from('invoices').insert([invoice]);
         if (error) throw error;
-        fetchInvoices();
+        fetchInvoices(currentSchoolId);
       }
       else if (activeModal === 'schedule') {
         const schedule = {
+          school_id: currentSchoolId,
           class_id: formData.get('class_id'),
           subject: formData.get('subject'),
           teacher_id: formData.get('teacher_id') || null,
@@ -261,7 +372,22 @@ function App() {
         };
         const { error } = await supabase.from('schedules').insert([schedule]);
         if (error) throw error;
-        fetchSchedules();
+        fetchSchedules(currentSchoolId);
+      }
+      else if (activeModal === 'evaluation') {
+        const evaluation = {
+          school_id: currentSchoolId,
+          class_id: formData.get('class_id'),
+          subject: formData.get('subject'),
+          period: formData.get('period'),
+          name: formData.get('name'),
+          type: formData.get('type'),
+          date: formData.get('date'),
+          max_score: formData.get('max_score') || 20,
+        };
+        const { error } = await supabase.from('evaluations').insert([evaluation]);
+        if (error) throw error;
+        fetchEvaluations(currentSchoolId);
       }
       else if (activeModal === 'bulletin') {
         alert("Génération terminée ! Le document va être téléchargé.");
@@ -293,7 +419,7 @@ function App() {
 
   const handleDocumentUpload = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!selectedStudent) return;
+    if (!selectedStudent || !currentSchoolId) return;
     
     const formData = new FormData(e.currentTarget);
     const file = formData.get('file') as File;
@@ -324,6 +450,7 @@ function App() {
 
       // Save to database
       const { error: dbError } = await supabase.from('student_documents').insert([{
+        school_id: currentSchoolId,
         student_id: selectedStudent.id,
         document_type: documentType,
         document_name: documentName,
@@ -346,7 +473,6 @@ function App() {
   const deleteDocument = async (id: string, filePath: string) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce document ?")) return;
     try {
-      // Extract filename from URL (it's the part after 'student-documents/')
       const pathParts = filePath.split('student-documents/');
       if (pathParts.length > 1) {
         const storagePath = pathParts[1];
@@ -362,128 +488,227 @@ function App() {
     }
   };
 
-  const renderDashboard = () => (
-    <div className="animate-fade-in">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Bienvenue, {session?.user?.email?.split('@')[0] || 'Adama'} 👋</h1>
-          <p className="page-subtitle">Voici l'aperçu de votre établissement pour aujourd'hui.</p>
+  const handleGradeChange = (studentId: string, field: 'score' | 'comment', value: string) => {
+    setGradesInput(prev => ({
+      ...prev,
+      [studentId]: {
+        ...prev[studentId],
+        [field]: value
+      }
+    }));
+  };
+
+  const saveGrades = async () => {
+    if (!activeEvaluation) return;
+    try {
+      const gradesToUpsert = Object.entries(gradesInput).map(([studentId, data]) => {
+        return {
+          evaluation_id: activeEvaluation.id,
+          student_id: studentId,
+          score: data.score ? parseFloat(data.score) : null,
+          comment: data.comment || ''
+        };
+      });
+
+      if (gradesToUpsert.length === 0) {
+        alert("Aucune note à sauvegarder.");
+        return;
+      }
+
+      const { error } = await supabase.from('grades').upsert(gradesToUpsert, { onConflict: 'evaluation_id,student_id' });
+      if (error) throw error;
+
+      alert("Notes sauvegardées avec succès !");
+      setActiveEvaluation(null); // Back to evaluations list
+      setGradesInput({});
+    } catch (error: any) {
+      alert("Erreur lors de la sauvegarde : " + error.message);
+    }
+  };
+
+  const startGrading = async (evaluation: any) => {
+    setActiveEvaluation(evaluation);
+    // Fetch existing grades for this evaluation
+    const { data: existingGrades } = await supabase.from('grades').select('*').eq('evaluation_id', evaluation.id);
+    if (existingGrades) {
+      const initialGrades: Record<string, {score: string, comment: string}> = {};
+      existingGrades.forEach(g => {
+        initialGrades[g.student_id] = {
+          score: g.score !== null ? g.score.toString() : '',
+          comment: g.comment || ''
+        };
+      });
+      setGradesInput(initialGrades);
+    }
+  };
+
+  const renderDashboard = () => {
+    // Computing Dynamic Data
+    const totalStudents = studentsData.length;
+    const totalTeachers = teachersData.length;
+    const totalClasses = classesData.length;
+    const totalAbsences = absencesData.length;
+
+    // Last 3 absences
+    const recentAbsences = [...absencesData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 4);
+    
+    // Upcoming evaluations
+    const upcomingEvals = [...evaluationsData]
+      .filter(e => new Date(e.date) >= new Date())
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(0, 4);
+
+    // Data for PieChart
+    const classDistribution = classesData.map(c => ({
+      name: c.name,
+      value: studentsData.filter(s => s.class_id === c.id).length
+    })).filter(c => c.value > 0);
+    const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'];
+
+    return (
+      <div className="animate-fade-in">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Bienvenue, {session?.user?.email?.split('@')[0] || 'Adama'} 👋</h1>
+            <p className="page-subtitle">Voici l'aperçu de votre établissement pour aujourd'hui.</p>
+          </div>
+          <button className="btn btn-outline" onClick={() => {
+            alert("Génération du rapport en cours...");
+            const blob = new Blob([`----- RAPPORT GLOBAL SGES PRO -----\n\nTotal Elèves: ${totalStudents}\nProfesseurs: ${totalTeachers}\nClasses: ${totalClasses}\nAbsences Totales: ${totalAbsences}\n\nCe rapport a été généré automatiquement.`], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `rapport_global.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }}>
+            Télécharger le rapport
+          </button>
         </div>
-        <button className="btn btn-outline" onClick={() => {
-          alert("Génération du rapport...");
-          const blob = new Blob(["----- RAPPORT GLOBAL SGES PRO -----\n\nTotal Elèves: 1248\nPrésence: 96.4%\nInscriptions: 42\n\nCe rapport a été généré automatiquement."], { type: 'text/plain' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `rapport_global.txt`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }}>
-          Télécharger le rapport
-        </button>
+
+        {/* Dynamic Stats */}
+        <div className="stats-grid">
+          <div className="stat-card delay-100" onClick={() => setActiveTab('students')} style={{cursor: 'pointer'}}>
+            <div className="stat-header">
+              <span className="stat-label">Total Élèves</span>
+              <Icons.Users />
+            </div>
+            <div className="stat-value">{totalStudents}</div>
+            <div className="stat-trend trend-up">Mise à jour en temps réel</div>
+          </div>
+          
+          <div className="stat-card delay-200" onClick={() => setActiveTab('teachers')} style={{cursor: 'pointer'}}>
+            <div className="stat-header">
+              <span className="stat-label">Professeurs</span>
+              <Icons.GraduationCap />
+            </div>
+            <div className="stat-value">{totalTeachers}</div>
+            <div className="stat-trend trend-up">Mise à jour en temps réel</div>
+          </div>
+
+          <div className="stat-card delay-300" onClick={() => setActiveTab('absences')} style={{cursor: 'pointer'}}>
+            <div className="stat-header">
+              <span className="stat-label">Absences Enregistrées</span>
+              <Icons.Activity />
+            </div>
+            <div className="stat-value">{totalAbsences}</div>
+            <div className="stat-trend trend-down">À surveiller de près</div>
+          </div>
+          
+          <div className="stat-card delay-300">
+            <div className="stat-header">
+              <span className="stat-label">Classes Actives</span>
+              <Icons.BookOpen />
+            </div>
+            <div className="stat-value">{totalClasses}</div>
+            <div className="stat-trend trend-up">Salles occupées</div>
+          </div>
+        </div>
+
+        {/* Grid Panels */}
+        <div className="dashboard-grid">
+          {/* Recent Activity (Absences) */}
+          <div className="panel delay-200">
+            <div className="panel-header">
+              <h3 className="panel-title">Absences Récentes</h3>
+              <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => setActiveTab('absences')}>Voir tout</button>
+            </div>
+            <div className="activity-list">
+              {recentAbsences.length > 0 ? recentAbsences.map(abs => (
+                <div className="activity-item" key={abs.id}>
+                  <div className="activity-dot" style={{backgroundColor: abs.justified ? 'var(--primary-color)' : 'var(--warning-color)'}}></div>
+                  <div className="activity-content">
+                    <h4>{abs.students?.first_name} {abs.students?.last_name} ({abs.students?.classes?.name})</h4>
+                    <p>{abs.reason || "Aucun motif précisé"}</p>
+                    <span className="activity-time">{new Date(abs.date).toLocaleDateString('fr-FR')} - {abs.justified ? 'Justifiée' : 'Non justifiée'}</span>
+                  </div>
+                </div>
+              )) : (
+                <div style={{color: 'var(--text-secondary)', textAlign: 'center', padding: '24px 0'}}>Aucune absence récente</div>
+              )}
+            </div>
+          </div>
+
+          {/* Upcoming Evaluations */}
+          <div className="panel delay-300">
+            <div className="panel-header">
+              <h3 className="panel-title">Prochaines Évaluations</h3>
+              <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => setActiveTab('grades')}>Voir tout</button>
+            </div>
+            <div className="activity-list">
+              {upcomingEvals.length > 0 ? upcomingEvals.map(ev => (
+                <div className="activity-item" key={ev.id}>
+                  <div className="activity-dot" style={{backgroundColor: 'var(--accent-color)'}}></div>
+                  <div className="activity-content">
+                    <h4>{ev.name} - {ev.subject}</h4>
+                    <p>Classe : {ev.classes?.name} | {ev.period}</p>
+                    <span className="activity-time">Prévue le {new Date(ev.date).toLocaleDateString('fr-FR')}</span>
+                  </div>
+                </div>
+              )) : (
+                <div style={{color: 'var(--text-secondary)', textAlign: 'center', padding: '24px 0'}}>Aucune évaluation prévue prochainement</div>
+              )}
+            </div>
+          </div>
+          
+          {/* Chart */}
+          <div className="panel delay-300" style={{gridColumn: '1 / -1'}}>
+             <div className="panel-header">
+              <h3 className="panel-title">Répartition des Élèves par Classe</h3>
+            </div>
+            <div style={{width: '100%', height: 300, marginTop: 16}}>
+              {classDistribution.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={classDistribution}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {classDistribution.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={{color: 'var(--text-secondary)', textAlign: 'center', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>Aucune donnée disponible</div>
+              )}
+            </div>
+          </div>
+
+        </div>
       </div>
-
-      {/* Stats */}
-      <div className="stats-grid">
-        <div className="stat-card delay-100" onClick={() => setActiveTab('students')} style={{cursor: 'pointer'}}>
-          <div className="stat-header">
-            <span className="stat-label">Total Élèves</span>
-            <Icons.Users />
-          </div>
-          <div className="stat-value">1,248</div>
-          <div className="stat-trend trend-up">
-            ↑ 12% vs le mois dernier
-          </div>
-        </div>
-        
-        <div className="stat-card delay-200">
-          <div className="stat-header">
-            <span className="stat-label">Présence Aujourd'hui</span>
-            <Icons.CheckCircle />
-          </div>
-          <div className="stat-value">96.4%</div>
-          <div className="stat-trend trend-up">
-            ↑ 0.5% vs hier
-          </div>
-        </div>
-
-        <div className="stat-card delay-300">
-          <div className="stat-header">
-            <span className="stat-label">Nouvelles Inscriptions</span>
-            <Icons.UserPlus />
-          </div>
-          <div className="stat-value">42</div>
-          <div className="stat-trend trend-up">
-            ↑ 5% vs l'année dernière
-          </div>
-        </div>
-      </div>
-
-      {/* Grid Panels */}
-      <div className="dashboard-grid">
-        {/* Recent Activity */}
-        <div className="panel delay-200">
-          <div className="panel-header">
-            <h3 className="panel-title">Activité Récente</h3>
-            <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}}>Tout voir</button>
-          </div>
-          <div className="activity-list">
-            <div className="activity-item">
-              <div className="activity-dot" style={{backgroundColor: 'var(--primary-color)'}}></div>
-              <div className="activity-content">
-                <h4>Bulletin trimestriel publié</h4>
-                <p>Les bulletins du 2ème trimestre pour la classe Terminale S1 ont été générés.</p>
-                <span className="activity-time">Il y a 2 heures</span>
-              </div>
-            </div>
-            <div className="activity-item">
-              <div className="activity-dot" style={{backgroundColor: 'var(--accent-color)'}}></div>
-              <div className="activity-content">
-                <h4>Nouveau message parent</h4>
-                <p>Mme. Dubois a envoyé un message concernant l'absence de Thomas.</p>
-                <span className="activity-time">Il y a 4 heures</span>
-              </div>
-            </div>
-            <div className="activity-item">
-              <div className="activity-dot" style={{backgroundColor: 'var(--warning-color)'}}></div>
-              <div className="activity-content">
-                <h4>Alerte absence</h4>
-                <p>L'élève Karim N'Diaye (1ère L) a dépassé le seuil de 5 absences non justifiées.</p>
-                <span className="activity-time">Il y a 1 jour</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="panel delay-300">
-          <div className="panel-header">
-            <h3 className="panel-title">Actions Rapides</h3>
-          </div>
-          <div className="quick-actions">
-            <div className="quick-action-btn" onClick={() => setActiveModal('student')}>
-              <div className="stat-icon" style={{width: 48, height: 48, marginBottom: 8}}><Icons.Plus /></div>
-              Inscrire Élève
-            </div>
-            <div className="quick-action-btn" onClick={() => setActiveModal('absence')}>
-              <div className="stat-icon" style={{width: 48, height: 48, marginBottom: 8, color: 'var(--warning-color)', background: 'rgba(245, 158, 11, 0.1)'}}><Icons.Activity /></div>
-              Signaler Absence
-            </div>
-            <div className="quick-action-btn" onClick={() => setActiveModal('message')}>
-              <div className="stat-icon" style={{width: 48, height: 48, marginBottom: 8, color: 'var(--warning-color)', background: 'rgba(245, 158, 11, 0.1)'}}><Icons.Send /></div>
-              SMS Parents
-            </div>
-            <div className="quick-action-btn" onClick={() => setActiveTab('scolarite')}>
-              <div className="stat-icon" style={{width: 48, height: 48, marginBottom: 8, color: '#ec4899', background: 'rgba(236, 72, 153, 0.1)'}}><Icons.CreditCard /></div>
-              Scolarité
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderStudents = () => {
     const filteredStudents = studentsData.filter(s => 
@@ -861,8 +1086,8 @@ function App() {
             <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
               <th style={{padding: '12px 0', fontWeight: 500}}>Nom & Prénom</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>Matière Principale</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Prof. Principal</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Heures/Semaine</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Matricule</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Mot de passe</th>
               <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>Actions</th>
             </tr>
           </thead>
@@ -872,13 +1097,12 @@ function App() {
                 <td style={{padding: '16px 0', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '12px'}}>
                   <div className="avatar" style={{width: 32, height: 32, fontSize: '0.9rem'}}>{row.first_name.charAt(0)}{row.last_name.charAt(0)}</div>
                   {row.first_name} {row.last_name}
-                  {row.status === 'En congé' && <span style={{width: 8, height: 8, borderRadius: '50%', background: 'var(--warning-color)'}}></span>}
                 </td>
                 <td style={{padding: '16px 0'}}><span className="badge badge-primary" style={{background: 'transparent', border: '1px solid var(--border-color)'}}>{row.subject}</span></td>
-                <td style={{padding: '16px 0', fontWeight: '500'}}>-</td>
-                <td style={{padding: '16px 0'}}>-</td>
+                <td style={{padding: '16px 0', fontWeight: '500'}}>{row.matricule || '-'}</td>
+                <td style={{padding: '16px 0'}}>{row.password ? '••••••••' : '-'}</td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
-                  <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => alert("Affichage de l'emploi du temps...")}>Voir l'emploi du temps</button>
+                  <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => alert(`Identifiants pour ${row.first_name} ${row.last_name}:\n\nMatricule: ${row.matricule}\nMot de passe: ${row.password}`)}>Voir les identifiants</button>
                 </td>
               </tr>
             )) : (
@@ -1120,6 +1344,198 @@ function App() {
       </div>
     </div>
   );
+  const renderGrades = () => {
+    // Determine which evaluations to show based on selected class
+    const filteredEvaluations = evaluationsData.filter(e => 
+      (!selectedClassForGrades || e.class_id === selectedClassForGrades) &&
+      (!selectedSubjectForGrades || e.subject === selectedSubjectForGrades) &&
+      (!selectedPeriodForGrades || e.period === selectedPeriodForGrades)
+    );
+
+    return (
+      <div className="animate-fade-in">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Saisie des Notes</h1>
+            <p className="page-subtitle">Gérez les évaluations et saisissez les notes par classe.</p>
+          </div>
+          <button className="btn btn-primary" onClick={() => setActiveModal('evaluation')}>
+            <Icons.Plus /> Nouvelle Évaluation
+          </button>
+        </div>
+
+        {!activeEvaluation ? (
+          <>
+            <div className="filters-bar delay-100" style={{marginBottom: '24px'}}>
+              <select className="form-select" value={selectedClassForGrades} onChange={e => setSelectedClassForGrades(e.target.value)}>
+                <option value="">Toutes les classes</option>
+                {classesData.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <select className="form-select" value={selectedPeriodForGrades} onChange={e => setSelectedPeriodForGrades(e.target.value)}>
+                <option value="1er Trimestre">1er Trimestre</option>
+                <option value="2ème Trimestre">2ème Trimestre</option>
+                <option value="3ème Trimestre">3ème Trimestre</option>
+                <option value="1er Semestre">1er Semestre</option>
+                <option value="2ème Semestre">2ème Semestre</option>
+              </select>
+              <input type="text" placeholder="Filtrer par matière..." className="form-input search-input" value={selectedSubjectForGrades} onChange={e => setSelectedSubjectForGrades(e.target.value)} />
+            </div>
+
+            <div className="panel delay-200">
+              <h3 className="panel-title">Évaluations existantes</h3>
+              <div className="table-responsive">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Classe</th>
+                      <th>Matière</th>
+                      <th>Nom de l'évaluation</th>
+                      <th>Type</th>
+                      <th>Notes sur</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredEvaluations.map(evalu => (
+                      <tr key={evalu.id}>
+                        <td>{new Date(evalu.date).toLocaleDateString('fr-FR')}</td>
+                        <td>{evalu.classes?.name}</td>
+                        <td style={{fontWeight: 600}}>{evalu.subject}</td>
+                        <td>{evalu.name}</td>
+                        <td><span className="badge" style={{background: 'var(--surface-color-hover)'}}>{evalu.type}</span></td>
+                        <td>{evalu.max_score}</td>
+                        <td>
+                          <button className="btn btn-primary" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => startGrading(evalu)}>Saisir les notes</button>
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredEvaluations.length === 0 && (
+                      <tr><td colSpan={7} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucune évaluation trouvée pour ces filtres.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="panel delay-100">
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>
+              <div>
+                <h3 style={{margin: '0 0 8px 0'}}>{activeEvaluation.name} ({activeEvaluation.subject})</h3>
+                <div style={{color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
+                  Classe : {activeEvaluation.classes?.name} • Date : {new Date(activeEvaluation.date).toLocaleDateString('fr-FR')} • Noté sur : {activeEvaluation.max_score}
+                </div>
+              </div>
+              <div style={{display: 'flex', gap: '12px'}}>
+                <button className="btn btn-outline" onClick={() => setActiveEvaluation(null)}>Retour</button>
+                <button className="btn btn-primary" onClick={saveGrades}>Sauvegarder les notes</button>
+              </div>
+            </div>
+
+            <div style={{background: '#fff', border: '1px solid #d4d4d4', borderRadius: '4px', overflow: 'hidden', fontSize: '13px', fontFamily: 'Arial, sans-serif'}}>
+              {/* Table Toolbar */}
+              <div style={{padding: '8px 12px', background: '#f5f5f5', borderBottom: '1px solid #d4d4d4', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                <div style={{display: 'flex', gap: '4px', alignItems: 'center'}}>
+                  <button style={{background: '#e9ecef', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333'}}>{studentsData.filter(s => s.class_id === activeEvaluation.class_id).length} résultats</button>
+                  <button style={{background: '#fff', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333', marginLeft: '4px'}}>1</button>
+                  <button style={{background: '#fff', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333'}}>2</button>
+                  <button style={{background: '#fff', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333'}}>3</button>
+                  <button style={{background: '#e9ecef', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#0066cc', marginLeft: '4px'}}>Tout afficher</button>
+                </div>
+                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                  <div style={{position: 'relative', display: 'flex', alignItems: 'center'}}>
+                    <input 
+                      type="text" 
+                      style={{padding: '4px 28px 4px 8px', border: '1px solid #ccc', borderRadius: '15px', fontSize: '12px', width: '220px', outline: 'none'}} 
+                    />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#00a8ff" strokeWidth="2" style={{position: 'absolute', right: '10px', width: '14px', height: '14px'}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  </div>
+                  <button style={{background: '#f8f9fa', border: '1px solid #ccc', padding: '4px 12px', borderRadius: '3px', fontSize: '12px', color: '#0066cc'}}>Filtre</button>
+                </div>
+              </div>
+              
+              {/* Data Table */}
+              <div style={{overflowX: 'auto'}}>
+                <table style={{width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed'}}>
+                  <colgroup>
+                    <col style={{width: '30px'}} />
+                    <col style={{width: '100px'}} />
+                    <col style={{width: '150px'}} />
+                    <col style={{width: '180px'}} />
+                    <col style={{width: '100px'}} />
+                    <col style={{width: '150px'}} />
+                    <col style={{width: '180px'}} />
+                  </colgroup>
+                  <thead>
+                    <tr style={{background: '#f9f9f9', borderBottom: '1px solid #d4d4d4', textAlign: 'left', color: '#333'}}>
+                      <th style={{padding: '8px 4px', borderRight: '1px solid #d4d4d4', textAlign: 'center', fontWeight: 'bold'}}><input type="checkbox" /></th>
+                      <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>Matricule</th>
+                      <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>Nom</th>
+                      <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>Prénoms</th>
+                      <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>Classe</th>
+                      <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>Note (/{activeEvaluation.max_score})</th>
+                      <th style={{padding: '8px', fontWeight: 'bold'}}>Appréciation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {studentsData.filter(s => s.class_id === activeEvaluation.class_id).map((student) => (
+                      <tr key={student.id} style={{borderBottom: '1px solid #eee', background: '#fff', color: '#333'}}>
+                        <td style={{padding: '8px 4px', borderRight: '1px solid #eee', textAlign: 'center'}}><input type="checkbox" /></td>
+                        <td style={{padding: '8px', borderRight: '1px solid #eee', fontWeight: 'bold'}}>{student.matricule || `MAT-${student.id.substring(0,4)}`}</td>
+                        <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{student.last_name.toUpperCase()}</td>
+                        <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{student.first_name}</td>
+                        <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{activeEvaluation.classes?.name}</td>
+                        <td style={{padding: '8px', borderRight: '1px solid #eee'}}>
+                          <input 
+                            type="number" 
+                            step="0.25" 
+                            min="0" 
+                            max={activeEvaluation.max_score}
+                            style={{width: '100%', padding: '4px', fontSize: '13px', border: '1px solid #ccc', borderRadius: '3px', outline: 'none'}}
+                            value={gradesInput[student.id]?.score || ''}
+                            onChange={(e) => handleGradeChange(student.id, 'score', e.target.value)}
+                          />
+                        </td>
+                        <td style={{padding: '8px'}}>
+                          <select 
+                            style={{width: '100%', padding: '4px', fontSize: '13px', border: '1px solid #ccc', borderRadius: '3px', outline: 'none', background: '#fff'}}
+                            value={gradesInput[student.id]?.comment || ''}
+                            onChange={(e) => handleGradeChange(student.id, 'comment', e.target.value)}
+                          >
+                            <option value="">---------</option>
+                            <option value="Excellent travail">Excellent travail</option>
+                            <option value="Très bien">Très bien</option>
+                            <option value="Bien">Bien</option>
+                            <option value="Assez bien">Assez bien</option>
+                            <option value="Passable">Passable</option>
+                            <option value="Insuffisant">Insuffisant</option>
+                            <option value="Peut mieux faire">Peut mieux faire</option>
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                    {studentsData.filter(s => s.class_id === activeEvaluation.class_id).length === 0 && (
+                      <tr>
+                        <td colSpan={7} style={{padding: '16px', textAlign: 'center', color: '#666'}}>
+                          Aucun élève dans cette classe.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Footer Bar */}
+              <div style={{background: '#2c3e50', color: '#fff', padding: '6px 12px', fontSize: '12px', display: 'flex', justifyContent: 'flex-start'}}>
+                0 sur {studentsData.filter(s => s.class_id === activeEvaluation.class_id).length} sélectionné
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderSettings = () => (
     <div className="animate-fade-in">
@@ -1279,8 +1695,16 @@ function App() {
     </div>
   );
 
-  if (!session) {
-    return <Auth />;
+  if (!session && !studentSession && !teacherSession) {
+    return <Auth onStudentLogin={(s) => setStudentSession(s)} onTeacherLogin={(t) => setTeacherSession(t)} />;
+  }
+
+  if (studentSession) {
+    return <StudentPortal student={studentSession} onLogout={() => setStudentSession(null)} />;
+  }
+
+  if (teacherSession) {
+    return <TeacherPortal session={teacherSession} onLogout={() => setTeacherSession(null)} />;
   }
 
   return (
@@ -1317,6 +1741,9 @@ function App() {
           <li className={`nav-item ${activeTab === 'schedules' ? 'active' : ''}`} onClick={() => { setActiveTab('schedules'); setIsMobileMenuOpen(false); }}>
             <Icons.Calendar /> Emplois du Temps
           </li>
+          <li className={`nav-item ${activeTab === 'grades' ? 'active' : ''}`} onClick={() => { setActiveTab('grades'); setIsMobileMenuOpen(false); }}>
+            <Icons.FileText /> Notes & Bulletins
+          </li>
           <li className={`nav-item ${activeTab === 'bulletins' ? 'active' : ''}`} onClick={() => { setActiveTab('bulletins'); setIsMobileMenuOpen(false); }}>
             <Icons.FileText /> Bulletins
           </li>
@@ -1351,6 +1778,27 @@ function App() {
           </div>
           
           <div className="header-actions">
+            <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginRight: '16px', background: 'var(--surface-color-hover)', padding: '4px 8px', borderRadius: '8px'}}>
+              <Icons.Briefcase />
+              <select 
+                className="form-select" 
+                style={{padding: '4px 24px 4px 8px', fontSize: '0.85rem', width: 'auto', border: 'none', background: 'transparent', fontWeight: 600, color: 'var(--text-color)'}}
+                value={currentSchoolId || 'PLACEHOLDER'}
+                onChange={(e) => {
+                  if (e.target.value === 'NEW') {
+                    setActiveModal('newSchool');
+                  } else if (e.target.value !== 'PLACEHOLDER') {
+                    setCurrentSchoolId(e.target.value);
+                  }
+                }}
+              >
+                {adminSchools.length === 0 && <option value="PLACEHOLDER" disabled>Aucun établissement</option>}
+                {adminSchools.map(school => (
+                  <option key={school.id} value={school.id}>{school.name}</option>
+                ))}
+                <option value="NEW">+ Nouvel établissement</option>
+              </select>
+            </div>
             <button className="btn btn-primary" onClick={() => setActiveModal('quickCreate')}>
               <Icons.Plus /> Nouveau
             </button>
@@ -1361,7 +1809,7 @@ function App() {
             <div className="user-profile">
               <div className="avatar">A</div>
               <div className="user-info">
-                <span className="user-name">{session.user?.email || 'Adama Traoré'}</span>
+                <span className="user-name">{session?.user?.email || 'Adama Traoré'}</span>
                 <span className="user-role" onClick={() => supabase.auth.signOut()} style={{cursor: 'pointer', color: '#ef4444'}}>Se déconnecter</span>
               </div>
             </div>
@@ -1381,6 +1829,7 @@ function App() {
           {activeTab === 'teachers' && renderTeachers()}
           {activeTab === 'parents' && renderParents()}
           {activeTab === 'scolarite' && renderScolarite()}
+          {activeTab === 'grades' && renderGrades()}
           {activeTab === 'settings' && renderSettings()}
         </div>
       </main>
@@ -1401,6 +1850,8 @@ function App() {
                 {activeModal === 'message' && "Nouveau Message"}
                 {activeModal === 'bulletin' && "Générer Bulletins"}
                 {activeModal === 'course' && "Planifier un cours"}
+                {activeModal === 'newSchool' && "Créer un Établissement"}
+                {activeModal === 'class' && "Créer une Classe"}
               </h2>
               <button className="close-btn" onClick={closeModal}>
                 <Icons.X />
@@ -1427,7 +1878,49 @@ function App() {
                     <div className="creation-icon" style={{color: '#ec4899', background: 'rgba(236, 72, 153, 0.1)'}}><Icons.FileText /></div>
                     <div><h4>Nouveau Bulletin</h4><p>Générer des notes.</p></div>
                   </div>
+                  <div className="creation-card" onClick={() => { closeModal(); setActiveTab('pedagogy'); setActiveModal('class'); }}>
+                    <div className="creation-icon" style={{color: '#8b5cf6', background: 'rgba(139, 92, 246, 0.1)'}}><Icons.BookOpen /></div>
+                    <div><h4>Nouvelle Classe</h4><p>Ajouter une classe.</p></div>
+                  </div>
                 </div>
+              )}
+
+              {/* New School Form */}
+              {activeModal === 'newSchool' && (
+                <form onSubmit={handleFormSubmit}>
+                  <div className="form-group">
+                    <label>Nom du nouvel établissement</label>
+                    <input type="text" name="name" className="form-input" placeholder="Ex: Groupe Scolaire d'Excellence" required />
+                  </div>
+                  <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
+                    <button type="submit" className="btn btn-primary">Créer</button>
+                  </div>
+                </form>
+              )}
+
+              {/* Class Form */}
+              {activeModal === 'class' && (
+                <form onSubmit={handleFormSubmit}>
+                  <div className="form-group">
+                    <label>Nom de la classe</label>
+                    <input type="text" name="name" className="form-input" placeholder="Ex: 6ème A, Terminale S1" required />
+                  </div>
+                  <div className="form-group">
+                    <label>Niveau</label>
+                    <select name="level" className="form-select" required>
+                      <option value="Maternelle">Maternelle</option>
+                      <option value="Primaire">Primaire</option>
+                      <option value="Collège">Collège</option>
+                      <option value="Lycée">Lycée</option>
+                      <option value="Autre">Autre</option>
+                    </select>
+                  </div>
+                  <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
+                    <button type="submit" className="btn btn-primary">Créer la classe</button>
+                  </div>
+                </form>
               )}
 
               {/* Payment Form */}
@@ -1570,6 +2063,16 @@ function App() {
                       </select>
                     </div>
                   </div>
+                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px'}}>
+                    <div className="form-group">
+                      <label>Email de l'Élève</label>
+                      <input type="email" name="email" className="form-input" required />
+                    </div>
+                    <div className="form-group">
+                      <label>Mot de passe (par défaut: passer123)</label>
+                      <input type="text" name="password" className="form-input" placeholder="passer123" />
+                    </div>
+                  </div>
 
                   <h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>2. Informations du Parent / Tuteur</h3>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
@@ -1641,9 +2144,17 @@ function App() {
                     <label>Numéro de Téléphone</label>
                     <input type="tel" name="phone" className="form-input" placeholder="+221 77 000 00 00" required />
                   </div>
-                  <div className="form-group">
-                    <label>Email</label>
-                    <input type="email" name="email" className="form-input" />
+                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                    <div className="form-group">
+                      <label>Email</label>
+                      <input type="email" name="email" className="form-input" required={activeModal === 'teacher'} />
+                    </div>
+                    {['teacher', 'employee'].includes(activeModal) && (
+                      <div className="form-group">
+                        <label>Mot de passe (facultatif)</label>
+                        <input type="text" name="password" className="form-input" placeholder="Généré automatiquement" />
+                      </div>
+                    )}
                   </div>
                   {activeModal === 'teacher' && (
                     <div className="form-group">
@@ -1666,6 +2177,65 @@ function App() {
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
                     <button type="submit" className="btn btn-primary">Créer le profil</button>
+                  </div>
+                </form>
+              )}
+
+              {/* Evaluation Form */}
+              {activeModal === 'evaluation' && (
+                <form onSubmit={handleFormSubmit}>
+                  <div className="form-group">
+                    <label>Nom de l'évaluation</label>
+                    <input type="text" name="name" className="form-input" required placeholder="Ex: Devoir de Mathématiques N°1" />
+                  </div>
+                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                    <div className="form-group">
+                      <label>Classe</label>
+                      <select name="class_id" className="form-select" required>
+                        {classesData.map(cls => (
+                          <option key={cls.id} value={cls.id}>{cls.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Matière</label>
+                      <input type="text" name="subject" className="form-input" required placeholder="Ex: Mathématiques" />
+                    </div>
+                  </div>
+                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                    <div className="form-group">
+                      <label>Période</label>
+                      <select name="period" className="form-select" required>
+                        <option value="1er Trimestre">1er Trimestre</option>
+                        <option value="2ème Trimestre">2ème Trimestre</option>
+                        <option value="3ème Trimestre">3ème Trimestre</option>
+                        <option value="1er Semestre">1er Semestre</option>
+                        <option value="2ème Semestre">2ème Semestre</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Type d'évaluation</label>
+                      <select name="type" className="form-select" required>
+                        <option value="Devoir de classe">Devoir de classe</option>
+                        <option value="Devoir à la maison">Devoir à la maison</option>
+                        <option value="Composition">Composition</option>
+                        <option value="Examen blanc">Examen blanc</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                    <div className="form-group">
+                      <label>Date</label>
+                      <input type="date" name="date" className="form-input" required defaultValue={new Date().toISOString().split('T')[0]} />
+                    </div>
+                    <div className="form-group">
+                      <label>Noté sur (Maximum)</label>
+                      <input type="number" name="max_score" className="form-input" required defaultValue="20" min="1" />
+                    </div>
+                  </div>
+                  <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
+                    <button type="submit" className="btn btn-primary">Créer l'évaluation</button>
                   </div>
                 </form>
               )}
