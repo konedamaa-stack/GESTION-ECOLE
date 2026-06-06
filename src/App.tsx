@@ -35,7 +35,8 @@ const Icons = {
   GraduationCap: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>,
   Heart: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
   CreditCard: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" strokeLinecap="round" strokeLinejoin="round" /><line x1="1" y1="10" x2="23" y2="10" strokeLinecap="round" strokeLinejoin="round" /></svg>,
-  TrendingUp: () => <svg className="stat-icon" style={{color: 'var(--accent-color)', background: 'rgba(16, 185, 129, 0.1)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" strokeLinecap="round" strokeLinejoin="round"/><polyline points="17 6 23 6 23 12" strokeLinecap="round" strokeLinejoin="round"/></svg>
+  TrendingUp: () => <svg className="stat-icon" style={{color: 'var(--accent-color)', background: 'rgba(16, 185, 129, 0.1)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" strokeLinecap="round" strokeLinejoin="round"/><polyline points="17 6 23 6 23 12" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  Upload: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" strokeLinecap="round" strokeLinejoin="round"/><polyline points="17 8 12 3 7 8" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="3" x2="12" y2="15" strokeLinecap="round" strokeLinejoin="round"/></svg>
 };
 
 function App() {
@@ -1204,7 +1205,6 @@ function App() {
   );
 
   const renderSchedules = () => {
-    const daysKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const daysValues = [
       t('admin.schedules.days.monday', 'Lundi'),
       t('admin.schedules.days.tuesday', 'Mardi'),
@@ -1260,7 +1260,7 @@ function App() {
                 {['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map(hour => (
                   <tr key={hour}>
                     <td style={{padding: '12px', border: '1px solid var(--border-color)', textAlign: 'center', fontWeight: 500, color: 'var(--text-secondary)'}}>{formatNum(hour)}</td>
-                    {days.map((day, idx) => {
+                    {days.map((day) => {
                       const courses = currentSchedules.filter(s => s.day_of_week === day && s.start_time.startsWith(hour));
                       return (
                         <td key={day} style={{padding: '8px', border: '1px solid var(--border-color)', verticalAlign: 'top', height: '80px'}}>
@@ -2518,7 +2518,7 @@ function App() {
                             <input type="file" name="file" className="form-input" accept=".pdf,image/*" required style={{padding: '8px'}} />
                           </div>
                           <button type="submit" className="btn btn-primary" disabled={isUploading} style={{alignSelf: 'flex-start'}}>
-                            {isUploading ? t('admin.modals.uploading', 'Envoi en cours...') : <><Icons.Upload size={16} /> {t('admin.modals.upload_btn', 'Ajouter le document')}</>}
+                            {isUploading ? t('admin.modals.uploading', 'Envoi en cours...') : <><Icons.Upload /> {t('admin.modals.upload_btn', 'Ajouter le document')}</>}
                           </button>
                         </form>
                       </div>

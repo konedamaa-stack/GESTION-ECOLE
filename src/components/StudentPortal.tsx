@@ -196,7 +196,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
                         <td style={{fontWeight: 600}}>{ev.subject}</td>
                         <td>{ev.name}</td>
                         <td><span className="badge" style={{background: 'var(--surface-color-hover)'}}>{g.score !== null ? `${formatNum(g.score)} / ${formatNum(ev.max_score)}` : t('student.absent', 'Absent')}</span></td>
-                        <td>{t(`teacher.c_${g.comment === 'Excellent travail' ? 'excellent' : g.comment === 'Très bien' ? 'very_good' : g.comment === 'Bien' ? 'good' : g.comment === 'Assez bien' ? 'fair' : g.comment === 'Passable' ? 'passable' : g.comment === 'Insuffisant' ? 'insufficient' : g.comment === 'Peut mieux faire' ? 'can_do_better' : ''}`, g.comment)}</td>
+                        <td>{t(`teacher.c_${g.comment === 'Excellent travail' ? 'excellent' : g.comment === 'Très bien' ? 'very_good' : g.comment === 'Bien' ? 'good' : g.comment === 'Assez bien' ? 'fair' : g.comment === 'Passable' ? 'passable' : g.comment === 'Insuffisant' ? 'insufficient' : g.comment === 'Peut mieux faire' ? 'can_do_better' : ''}`, g.comment as any) as any}</td>
                       </tr>
                     );
                   })}

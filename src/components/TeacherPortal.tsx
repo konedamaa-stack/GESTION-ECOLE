@@ -318,7 +318,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                 </div>
                 {/* Footer Toolbar */}
                 <div style={{padding: '6px 12px', background: '#f5f5f5', borderTop: '1px solid #d4d4d4', display: 'flex', alignItems: 'center'}}>
-                  <span style={{background: '#333', color: '#fff', padding: '4px 12px', borderRadius: '3px', fontSize: '12px', fontWeight: 'bold'}}>{t('teacher.selected_count', "0 sur {{count}} sélectionné", {count: formatNum(studentsData.filter(s => s.class_id === selectedClass).length)})}</span>
+                  <span style={{background: '#333', color: '#fff', padding: '4px 12px', borderRadius: '3px', fontSize: '12px', fontWeight: 'bold'}}>{t('teacher.selected_count', "0 sur {{count}} sélectionné", {count: studentsData.filter(s => s.class_id === selectedClass).length})}</span>
                 </div>
               </div>
             ) : (
