@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
+import { useTranslation } from 'react-i18next';
 import Auth from './components/Auth';
 import StudentPortal from './components/StudentPortal';
 import TeacherPortal from './components/TeacherPortal';
@@ -38,6 +39,7 @@ const Icons = {
 };
 
 function App() {
+  const { t, i18n } = useTranslation();
   const [session, setSession] = useState<Session | null>(null);
   const [studentSession, setStudentSession] = useState<any>(null);
   const [teacherSession, setTeacherSession] = useState<any>(null);
@@ -72,6 +74,23 @@ function App() {
   const [absencesData, setAbsencesData] = useState<any[]>([]);
   const [schedulesData, setSchedulesData] = useState<any[]>([]);
   const [settingsData, setSettingsData] = useState<any | null>(null);
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language.startsWith('ar') ? 'fr' : 'ar';
+    i18n.changeLanguage(newLang);
+    document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = newLang;
+  };
+
+  const formatNum = (num: number | string | undefined) => {
+    if (num === undefined || num === null) return '';
+    return new Intl.NumberFormat(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR', { useGrouping: false }).format(Number(num));
+  };
+
+  useEffect(() => {
+    document.documentElement.dir = i18n.language.startsWith('ar') ? 'rtl' : 'ltr';
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -584,12 +603,18 @@ function App() {
       <div className="animate-fade-in">
         <div className="page-header">
           <div>
-            <h1 className="page-title">Bienvenue, {session?.user?.email?.split('@')[0] || 'Adama'} 👋</h1>
-            <p className="page-subtitle">Voici l'aperçu de votre établissement pour aujourd'hui.</p>
+            <h1 className="page-title">{t('dashboard.welcome', 'Bienvenue, {{name}} 👋', {name: session?.user?.email?.split('@')[0] || 'Adama'})}</h1>
+            <p className="page-subtitle">{t('dashboard.overview', "Voici l'aperçu de votre établissement pour aujourd'hui.")}</p>
           </div>
           <button className="btn btn-outline" onClick={() => {
-            alert("Génération du rapport en cours...");
-            const blob = new Blob([`----- RAPPORT GLOBAL SGES PRO -----\n\nTotal Elèves: ${totalStudents}\nProfesseurs: ${totalTeachers}\nClasses: ${totalClasses}\nAbsences Totales: ${totalAbsences}\n\nCe rapport a été généré automatiquement.`], { type: 'text/plain' });
+            alert(t('dashboard.generating_report', "Génération du rapport en cours..."));
+            const reportContent = t('dashboard.report_content', "----- RAPPORT GLOBAL SGES PRO -----\n\nTotal Élèves: {{students}}\nProfesseurs: {{teachers}}\nClasses: {{classes}}\nAbsences Totales: {{absences}}\n\nCe rapport a été généré automatiquement.", {
+              students: formatNum(totalStudents),
+              teachers: formatNum(totalTeachers),
+              classes: formatNum(totalClasses),
+              absences: formatNum(totalAbsences)
+            });
+            const blob = new Blob([reportContent], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -599,7 +624,7 @@ function App() {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
           }}>
-            Télécharger le rapport
+            {t('dashboard.download_report', "Télécharger le rapport")}
           </button>
         </div>
 
@@ -607,38 +632,38 @@ function App() {
         <div className="stats-grid">
           <div className="stat-card delay-100" onClick={() => setActiveTab('students')} style={{cursor: 'pointer'}}>
             <div className="stat-header">
-              <span className="stat-label">Total Élèves</span>
+              <span className="stat-label">{t('dashboard.total_students', 'Total Élèves')}</span>
               <Icons.Users />
             </div>
-            <div className="stat-value">{totalStudents}</div>
-            <div className="stat-trend trend-up">Mise à jour en temps réel</div>
+            <div className="stat-value">{formatNum(totalStudents)}</div>
+            <div className="stat-trend trend-up">{t('dashboard.real_time_update', 'Mise à jour en temps réel')}</div>
           </div>
           
           <div className="stat-card delay-200" onClick={() => setActiveTab('teachers')} style={{cursor: 'pointer'}}>
             <div className="stat-header">
-              <span className="stat-label">Professeurs</span>
+              <span className="stat-label">{t('dashboard.teachers', 'Professeurs')}</span>
               <Icons.GraduationCap />
             </div>
-            <div className="stat-value">{totalTeachers}</div>
-            <div className="stat-trend trend-up">Mise à jour en temps réel</div>
+            <div className="stat-value">{formatNum(totalTeachers)}</div>
+            <div className="stat-trend trend-up">{t('dashboard.real_time_update', 'Mise à jour en temps réel')}</div>
           </div>
 
           <div className="stat-card delay-300" onClick={() => setActiveTab('absences')} style={{cursor: 'pointer'}}>
             <div className="stat-header">
-              <span className="stat-label">Absences Enregistrées</span>
+              <span className="stat-label">{t('dashboard.recorded_absences', 'Absences Enregistrées')}</span>
               <Icons.Activity />
             </div>
-            <div className="stat-value">{totalAbsences}</div>
-            <div className="stat-trend trend-down">À surveiller de près</div>
+            <div className="stat-value">{formatNum(totalAbsences)}</div>
+            <div className="stat-trend trend-down">{t('dashboard.monitor_closely', 'À surveiller de près')}</div>
           </div>
           
           <div className="stat-card delay-300">
             <div className="stat-header">
-              <span className="stat-label">Classes Actives</span>
+              <span className="stat-label">{t('dashboard.active_classes', 'Classes Actives')}</span>
               <Icons.BookOpen />
             </div>
-            <div className="stat-value">{totalClasses}</div>
-            <div className="stat-trend trend-up">Salles occupées</div>
+            <div className="stat-value">{formatNum(totalClasses)}</div>
+            <div className="stat-trend trend-up">{t('dashboard.occupied_rooms', 'Salles occupées')}</div>
           </div>
         </div>
 
@@ -647,8 +672,8 @@ function App() {
           {/* Recent Activity (Absences) */}
           <div className="panel delay-200">
             <div className="panel-header">
-              <h3 className="panel-title">Absences Récentes</h3>
-              <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => setActiveTab('absences')}>Voir tout</button>
+              <h3 className="panel-title">{t('dashboard.recent_absences', 'Absences Récentes')}</h3>
+              <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => setActiveTab('absences')}>{t('dashboard.see_all', 'Voir tout')}</button>
             </div>
             <div className="activity-list">
               {recentAbsences.length > 0 ? recentAbsences.map(abs => (
@@ -656,12 +681,12 @@ function App() {
                   <div className="activity-dot" style={{backgroundColor: abs.justified ? 'var(--primary-color)' : 'var(--warning-color)'}}></div>
                   <div className="activity-content">
                     <h4>{abs.students?.first_name} {abs.students?.last_name} ({abs.students?.classes?.name})</h4>
-                    <p>{abs.reason || "Aucun motif précisé"}</p>
-                    <span className="activity-time">{new Date(abs.date).toLocaleDateString('fr-FR')} - {abs.justified ? 'Justifiée' : 'Non justifiée'}</span>
+                    <p>{abs.reason || t('dashboard.no_reason_specified', "Aucun motif précisé")}</p>
+                    <span className="activity-time">{new Date(abs.date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR')} - {abs.justified ? t('dashboard.justified', 'Justifiée') : t('dashboard.unjustified', 'Non justifiée')}</span>
                   </div>
                 </div>
               )) : (
-                <div style={{color: 'var(--text-secondary)', textAlign: 'center', padding: '24px 0'}}>Aucune absence récente</div>
+                <div style={{color: 'var(--text-secondary)', textAlign: 'center', padding: '24px 0'}}>{t('dashboard.no_recent_absences', 'Aucune absence récente')}</div>
               )}
             </div>
           </div>
@@ -669,8 +694,8 @@ function App() {
           {/* Upcoming Evaluations */}
           <div className="panel delay-300">
             <div className="panel-header">
-              <h3 className="panel-title">Prochaines Évaluations</h3>
-              <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => setActiveTab('grades')}>Voir tout</button>
+              <h3 className="panel-title">{t('dashboard.upcoming_evaluations', 'Prochaines Évaluations')}</h3>
+              <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => setActiveTab('grades')}>{t('dashboard.see_all', 'Voir tout')}</button>
             </div>
             <div className="activity-list">
               {upcomingEvals.length > 0 ? upcomingEvals.map(ev => (
@@ -678,12 +703,12 @@ function App() {
                   <div className="activity-dot" style={{backgroundColor: 'var(--accent-color)'}}></div>
                   <div className="activity-content">
                     <h4>{ev.name} - {ev.subject}</h4>
-                    <p>Classe : {ev.classes?.name} | {ev.period}</p>
-                    <span className="activity-time">Prévue le {new Date(ev.date).toLocaleDateString('fr-FR')}</span>
+                    <p>{t('dashboard.class_label', 'Classe : {{name}} | {{period}}', {name: ev.classes?.name, period: ev.period})}</p>
+                    <span className="activity-time">{t('dashboard.scheduled_on', 'Prévue le {{date}}', {date: new Date(ev.date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR')})}</span>
                   </div>
                 </div>
               )) : (
-                <div style={{color: 'var(--text-secondary)', textAlign: 'center', padding: '24px 0'}}>Aucune évaluation prévue prochainement</div>
+                <div style={{color: 'var(--text-secondary)', textAlign: 'center', padding: '24px 0'}}>{t('dashboard.no_upcoming_evaluations', 'Aucune évaluation prévue prochainement')}</div>
               )}
             </div>
           </div>
@@ -691,7 +716,7 @@ function App() {
           {/* Chart */}
           <div className="panel delay-300" style={{gridColumn: '1 / -1'}}>
              <div className="panel-header">
-              <h3 className="panel-title">Répartition des Élèves par Classe</h3>
+              <h3 className="panel-title">{t('dashboard.student_distribution', 'Répartition des Élèves par Classe')}</h3>
             </div>
             <div style={{width: '100%', height: 300, marginTop: 16}}>
               {classDistribution.length > 0 ? (
@@ -702,7 +727,7 @@ function App() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
+                      label={({ name, percent }) => `${name} (${formatNum(((percent || 0) * 100).toFixed(0))}%)`}
                       outerRadius={100}
                       fill="#8884d8"
                       dataKey="value"
@@ -711,11 +736,11 @@ function App() {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip formatter={(value) => formatNum(value as number)} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div style={{color: 'var(--text-secondary)', textAlign: 'center', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>Aucune donnée disponible</div>
+                <div style={{color: 'var(--text-secondary)', textAlign: 'center', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>{t('dashboard.no_data_available', 'Aucune donnée disponible')}</div>
               )}
             </div>
           </div>
@@ -734,16 +759,16 @@ function App() {
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Gestion des Élèves</h1>
-          <p className="page-subtitle">Annuaire complet, dossiers scolaires et suivi des absences.</p>
+          <h1 className="page-title">{t('admin.students.title', 'Gestion des Élèves')}</h1>
+          <p className="page-subtitle">{t('admin.students.subtitle', 'Annuaire complet, dossiers scolaires et suivi des absences.')}</p>
         </div>
         <div style={{display: 'flex', gap: '12px'}}>
           <button className="btn btn-outline" onClick={() => setActiveModal('absence')} style={{color: 'var(--warning-color)', borderColor: 'var(--warning-color)'}}>
-            <Icons.Activity /> Signaler Absence
+            <Icons.Activity /> {t('admin.students.btn_absence', 'Signaler Absence')}
           </button>
-          <button className="btn btn-outline" onClick={() => setActiveModal('import')}><Icons.Download /> Importer</button>
+          <button className="btn btn-outline" onClick={() => setActiveModal('import')}><Icons.Download /> {t('admin.students.btn_import', 'Importer')}</button>
           <button className="btn btn-primary" onClick={() => setActiveModal('student')}>
-            <Icons.Plus /> Inscrire
+            <Icons.Plus /> {t('admin.students.btn_enroll', 'Inscrire')}
           </button>
         </div>
       </div>
@@ -751,30 +776,30 @@ function App() {
       <div className="stats-grid">
         <div className="stat-card delay-100">
           <div className="stat-header">
-            <span className="stat-label">Effectif Total</span>
+            <span className="stat-label">{t('admin.students.stat_total', 'Effectif Total')}</span>
             <Icons.Users />
           </div>
-          <div className="stat-value">{studentsData.length}</div>
-          <div className="stat-trend trend-up">Mise à jour en temps réel</div>
+          <div className="stat-value">{formatNum(studentsData.length)}</div>
+          <div className="stat-trend trend-up">{t('dashboard.real_time_update', 'Mise à jour en temps réel')}</div>
         </div>
         <div className="stat-card delay-200">
           <div className="stat-header">
-            <span className="stat-label">Absences Non Justifiées</span>
+            <span className="stat-label">{t('admin.students.stat_unjustified', 'Absences Non Justifiées')}</span>
             <Icons.Activity />
           </div>
-          <div className="stat-value">{absencesData.length}</div>
-          <div className="stat-trend trend-down">Alerte : vérifier les présences</div>
+          <div className="stat-value">{formatNum(absencesData.length)}</div>
+          <div className="stat-trend trend-down">{t('admin.students.alert_presence', 'Alerte : vérifier les présences')}</div>
         </div>
       </div>
 
       <div className="panel delay-300">
         <div className="panel-header">
-          <h3 className="panel-title">Annuaire des Élèves</h3>
+          <h3 className="panel-title">{t('admin.students.panel_title', 'Annuaire des Élèves')}</h3>
           <div className="header-search" style={{width: 300}}>
             <Icons.Search />
             <input 
               type="text" 
-              placeholder="Rechercher par nom, matricule..." 
+              placeholder={t('admin.students.search_ph', 'Rechercher par nom, matricule...')} 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -783,26 +808,26 @@ function App() {
         <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
           <thead>
             <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Matricule</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Nom & Prénom</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Classe</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Statut</th>
-              <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>Actions</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.students.col_matricule', 'Matricule')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.students.col_name', 'Nom & Prénom')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.students.col_class', 'Classe')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.students.col_status', 'Statut')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>{t('admin.students.col_actions', 'Actions')}</th>
             </tr>
           </thead>
           <tbody>
             {filteredStudents.length > 0 ? filteredStudents.map((row, i) => (
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
-                <td style={{padding: '16px 0', fontFamily: 'monospace', color: 'var(--primary-color)'}}>{row.matricule}</td>
+                <td style={{padding: '16px 0', fontFamily: 'monospace', color: 'var(--primary-color)'}}>{formatNum(row.matricule)}</td>
                 <td style={{padding: '16px 0', fontWeight: 600}}>{row.first_name} {row.last_name}</td>
-                <td style={{padding: '16px 0'}}>{row.classes?.name || 'Non assigné'}</td>
+                <td style={{padding: '16px 0'}}>{row.classes?.name || t('admin.students.unassigned', 'Non assigné')}</td>
                 <td style={{padding: '16px 0'}}><span className={`badge ${row.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`}>{row.status}</span></td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
-                  <button className="btn btn-outline" style={{padding: '6px 12px'}} onClick={() => { setSelectedStudent(row); setActiveModal('studentDossier'); }}>Dossier</button>
+                  <button className="btn btn-outline" style={{padding: '6px 12px'}} onClick={() => { setSelectedStudent(row); setActiveModal('studentDossier'); }}>{t('admin.students.btn_dossier', 'Dossier')}</button>
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan={5} style={{padding: '24px 0', textAlign: 'center', color: 'var(--text-secondary)'}}>Aucun élève trouvé.</td></tr>
+              <tr><td colSpan={5} style={{padding: '24px 0', textAlign: 'center', color: 'var(--text-secondary)'}}>{t('admin.students.empty_state', 'Aucun élève trouvé.')}</td></tr>
             )}
           </tbody>
         </table>
@@ -814,46 +839,46 @@ function App() {
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Gestion des Absences</h1>
-          <p className="page-subtitle">Suivi des présences et justification des absences.</p>
+          <h1 className="page-title">{t('admin.absences.title', 'Gestion des Absences')}</h1>
+          <p className="page-subtitle">{t('admin.absences.subtitle', 'Suivi des présences et justification des absences.')}</p>
         </div>
         <button className="btn btn-primary" onClick={() => setActiveModal('absence')}>
-          <Icons.Plus /> Signaler une Absence
+          <Icons.Plus /> {t('admin.absences.btn_report', 'Signaler une Absence')}
         </button>
       </div>
 
       <div className="panel delay-100">
         <div className="panel-header">
-          <h3 className="panel-title">Registre des Absences</h3>
+          <h3 className="panel-title">{t('admin.absences.panel_title', 'Registre des Absences')}</h3>
           <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => setActiveModal('message')}>
-            <Icons.Mail /> Notifier les parents
+            <Icons.Mail /> {t('admin.absences.btn_notify', 'Notifier les parents')}
           </button>
         </div>
         <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
           <thead>
             <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Élève</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Classe</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Motif / Justification</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Date/Durée</th>
-              <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>Actions</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.absences.col_student', 'Élève')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.absences.col_class', 'Classe')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.absences.col_motif', 'Motif / Justification')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.absences.col_date', 'Date/Durée')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>{t('admin.absences.col_actions', 'Actions')}</th>
             </tr>
           </thead>
           <tbody>
             {absencesData.length > 0 ? absencesData.map((row, i) => (
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
                 <td style={{padding: '16px 0', fontWeight: 600}}>{row.students?.first_name} {row.students?.last_name}</td>
-                <td style={{padding: '16px 0'}}>{row.students?.classes?.name || 'Non assigné'}</td>
+                <td style={{padding: '16px 0'}}>{row.students?.classes?.name || t('admin.students.unassigned', 'Non assigné')}</td>
                 <td style={{padding: '16px 0'}}>
                   <span className="badge badge-warning">{row.motif}</span>
                 </td>
                 <td style={{padding: '16px 0', color: 'var(--text-secondary)'}}>{row.duration}</td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
-                  <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => setActiveModal('message')}>Contacter Parent</button>
+                  <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => setActiveModal('message')}>{t('admin.absences.btn_contact', 'Contacter Parent')}</button>
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucune absence enregistrée.</td></tr>
+              <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.absences.empty_state', 'Aucune absence enregistrée.')}</td></tr>
             )}
           </tbody>
         </table>
@@ -865,58 +890,58 @@ function App() {
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Pédagogie & Évaluations</h1>
-          <p className="page-subtitle">Suivi des cours, cahiers de textes et gestion des devoirs.</p>
+          <h1 className="page-title">{t('admin.pedagogy.title', 'Pédagogie & Évaluations')}</h1>
+          <p className="page-subtitle">{t('admin.pedagogy.subtitle', 'Suivi des cours, cahiers de textes et gestion des devoirs.')}</p>
         </div>
         <button className="btn btn-primary" onClick={() => setActiveModal('course')}>
-          <Icons.Plus /> Planifier un cours
+          <Icons.Plus /> {t('admin.pedagogy.btn_plan', 'Planifier un cours')}
         </button>
       </div>
 
       <div className="stats-grid">
         <div className="stat-card delay-100">
           <div className="stat-header">
-            <span className="stat-label">Classes Actives</span>
+            <span className="stat-label">{t('admin.pedagogy.stat_active', 'Classes Actives')}</span>
             <Icons.BookOpen />
           </div>
-          <div className="stat-value">{classesData.length}</div>
-          <div className="stat-trend trend-up">Toutes les classes</div>
+          <div className="stat-value">{formatNum(classesData.length)}</div>
+          <div className="stat-trend trend-up">{t('admin.pedagogy.stat_active_desc', 'Toutes les classes')}</div>
         </div>
         <div className="stat-card delay-200">
           <div className="stat-header">
-            <span className="stat-label">Évaluations cette semaine</span>
+            <span className="stat-label">{t('admin.pedagogy.stat_evals', 'Évaluations cette semaine')}</span>
             <Icons.FileText />
           </div>
-          <div className="stat-value">{evaluationsData?.length || 0}</div>
-          <div className="stat-trend trend-up">Évaluations planifiées ou passées</div>
+          <div className="stat-value">{formatNum(evaluationsData?.length || 0)}</div>
+          <div className="stat-trend trend-up">{t('admin.pedagogy.stat_evals_desc', 'Évaluations planifiées ou passées')}</div>
         </div>
       </div>
 
       <div className="panel delay-300">
         <div className="panel-header">
-          <h3 className="panel-title">Prochaines Évaluations</h3>
+          <h3 className="panel-title">{t('admin.pedagogy.panel_title', 'Prochaines Évaluations')}</h3>
         </div>
         <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
           <thead>
             <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Date</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Matière</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Classe</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Professeur</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Statut</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.pedagogy.col_date', 'Date')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.pedagogy.col_subject', 'Matière')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.pedagogy.col_class', 'Classe')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.pedagogy.col_teacher', 'Professeur')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.pedagogy.col_status', 'Statut')}</th>
             </tr>
           </thead>
           <tbody>
             {evaluationsData && evaluationsData.length > 0 ? evaluationsData.map((row, i) => (
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
-                <td style={{padding: '16px 0', fontWeight: 600}}>{new Date(row.date).toLocaleDateString('fr-FR')}</td>
+                <td style={{padding: '16px 0', fontWeight: 600}}>{new Date(row.date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</td>
                 <td style={{padding: '16px 0'}}>{row.subject}</td>
                 <td style={{padding: '16px 0', color: 'var(--text-secondary)'}}>{row.classes?.name || 'N/A'}</td>
                 <td style={{padding: '16px 0'}}>{row.teachers?.first_name} {row.teachers?.last_name}</td>
-                <td style={{padding: '16px 0'}}><span className={`badge badge-primary`}>{row.status || 'Planifié'}</span></td>
+                <td style={{padding: '16px 0'}}><span className={`badge badge-primary`}>{row.status || t('admin.pedagogy.planned', 'Planifié')}</span></td>
               </tr>
             )) : (
-              <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucune évaluation enregistrée.</td></tr>
+              <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.pedagogy.empty_state', 'Aucune évaluation enregistrée.')}</td></tr>
             )}
           </tbody>
         </table>
@@ -949,30 +974,30 @@ function App() {
     </div>
   );
 
-  const renderCommunication = () => currentSchoolPlan !== 'Pro' ? renderPremiumOverlay("Communication", "Envoyez des SMS, emails et notifications aux parents avec le plan Pro.") : (
+  const renderCommunication = () => currentSchoolPlan !== 'Pro' ? renderPremiumOverlay(t('admin.communication.premium_title', "Communication"), t('admin.communication.premium_desc', "Envoyez des SMS, emails et notifications aux parents avec le plan Pro.")) : (
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Communication ENT</h1>
-          <p className="page-subtitle">Messagerie interne, annonces et liaison avec les familles.</p>
+          <h1 className="page-title">{t('admin.communication.title', 'Communication ENT')}</h1>
+          <p className="page-subtitle">{t('admin.communication.subtitle', 'Messagerie interne, annonces et liaison avec les familles.')}</p>
         </div>
         <button className="btn btn-primary" onClick={() => setActiveModal('message')}>
-          <Icons.Mail /> Nouveau Message
+          <Icons.Mail /> {t('admin.communication.btn_new', 'Nouveau Message')}
         </button>
       </div>
 
       <div className="dashboard-grid">
         <div className="panel delay-100" style={{gridColumn: 'span 2'}}>
           <div className="panel-header">
-            <h3 className="panel-title">Boîte de réception & Annonces</h3>
+            <h3 className="panel-title">{t('admin.communication.panel_title', 'Boîte de réception & Annonces')}</h3>
             <div style={{display: 'flex', gap: '8px'}}>
-              <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => alert('Tous les messages marqués comme lus.')}>Tout marquer comme lu</button>
+              <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => alert('Tous les messages marqués comme lus.')}>{t('admin.communication.btn_read_all', 'Tout marquer comme lu')}</button>
             </div>
           </div>
           <div className="activity-list">
             <div style={{textAlign: 'center', padding: '40px', color: 'var(--text-secondary)'}}>
               <div style={{opacity: 0.2, marginBottom: '16px'}}><Icons.Mail /></div>
-              <p>Aucun message. Votre boîte de réception est vide.</p>
+              <p>{t('admin.communication.msg_empty', 'Aucun message. Votre boîte de réception est vide.')}</p>
             </div>
           </div>
         </div>
@@ -984,26 +1009,26 @@ function App() {
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Gestion des Bulletins</h1>
-          <p className="page-subtitle">Édition, calcul des moyennes et envois aux parents.</p>
+          <h1 className="page-title">{t('admin.bulletins.title', 'Gestion des Bulletins')}</h1>
+          <p className="page-subtitle">{t('admin.bulletins.subtitle', 'Édition, calcul des moyennes et envois aux parents.')}</p>
         </div>
         <button className="btn btn-primary" onClick={() => setActiveModal('bulletin')}>
-          <Icons.Plus /> Générer Bulletins
+          <Icons.Plus /> {t('admin.bulletins.btn_generate', 'Générer Bulletins')}
         </button>
       </div>
 
       <div className="panel delay-100">
         <div className="panel-header">
-          <h3 className="panel-title">Trimestre en cours (T2)</h3>
+          <h3 className="panel-title">{t('admin.bulletins.panel_title', 'Trimestre en cours (T2)')}</h3>
         </div>
         <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
           <thead>
             <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Classe</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Prof. Principal</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Moy. Classe</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Statut</th>
-              <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>Actions</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.bulletins.col_class', 'Classe')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.bulletins.col_teacher', 'Prof. Principal')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.bulletins.col_avg', 'Moy. Classe')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.bulletins.col_status', 'Statut')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>{t('admin.bulletins.col_actions', 'Actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -1012,13 +1037,13 @@ function App() {
                 <td style={{padding: '16px 0', fontWeight: 600}}>{row.name}</td>
                 <td style={{padding: '16px 0'}}>{row.level}</td>
                 <td style={{padding: '16px 0', fontWeight: 'bold'}}>-</td>
-                <td style={{padding: '16px 0'}}><span className={`badge badge-warning`}>En attente</span></td>
+                <td style={{padding: '16px 0'}}><span className={`badge badge-warning`}>{t('admin.bulletins.status_pending', 'En attente')}</span></td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
-                  <button className="btn btn-outline" style={{padding: '6px 12px'}} onClick={() => alert("Génération du PDF en cours...")}><Icons.Download /> Exporter</button>
+                  <button className="btn btn-outline" style={{padding: '6px 12px'}} onClick={() => alert("Génération du PDF en cours...")}><Icons.Download /> {t('admin.bulletins.btn_export', 'Exporter')}</button>
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucune classe trouvée.</td></tr>
+              <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.bulletins.empty_state', 'Aucune classe trouvée.')}</td></tr>
             )}
           </tbody>
         </table>
@@ -1026,44 +1051,44 @@ function App() {
     </div>
   );
 
-  const renderRH = () => currentSchoolPlan !== 'Pro' ? renderPremiumOverlay("Ressources Humaines", "Gérez les contrats, salaires et plannings de vos employés avec le plan Pro.") : (
+  const renderRH = () => currentSchoolPlan !== 'Pro' ? renderPremiumOverlay(t('admin.rh.premium_title', "Ressources Humaines"), t('admin.rh.premium_desc', "Gérez les contrats, salaires et plannings de vos employés avec le plan Pro.")) : (
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Ressources Humaines</h1>
-          <p className="page-subtitle">Gestion globale du personnel (Administratif, Survie, etc.).</p>
+          <h1 className="page-title">{t('admin.rh.title', 'Ressources Humaines')}</h1>
+          <p className="page-subtitle">{t('admin.rh.subtitle', 'Gestion globale du personnel (Administratif, Survie, etc.).')}</p>
         </div>
         <button className="btn btn-primary" onClick={() => setActiveModal('employee')}>
-          <Icons.Plus /> Ajouter Employé
+          <Icons.Plus /> {t('admin.rh.btn_add', 'Ajouter Employé')}
         </button>
       </div>
 
       <div className="stats-grid">
         <div className="stat-card delay-100">
           <div className="stat-header">
-            <span className="stat-label">Personnel Admin.</span>
+            <span className="stat-label">{t('admin.rh.stat_admin', 'Personnel Admin.')}</span>
             <Icons.Briefcase />
           </div>
-          <div className="stat-value">{employeesData.length}</div>
-          <div className="stat-trend trend-up">Membres du personnel</div>
+          <div className="stat-value">{formatNum(employeesData.length)}</div>
+          <div className="stat-trend trend-up">{t('admin.rh.stat_admin_desc', 'Membres du personnel')}</div>
         </div>
         
         <div className="stat-card delay-200">
           <div className="stat-header">
-            <span className="stat-label">Congés en cours</span>
+            <span className="stat-label">{t('admin.rh.stat_leave', 'Congés en cours')}</span>
             <Icons.Activity />
           </div>
-          <div className="stat-value">0</div>
-          <div className="stat-trend trend-down">Sur {employeesData.length} personnels total</div>
+          <div className="stat-value">{formatNum(0)}</div>
+          <div className="stat-trend trend-down">{t('admin.rh.stat_leave_desc', 'Sur {{count}} personnels total', { count: employeesData.length })}</div>
         </div>
       </div>
 
       <div className="panel delay-300">
         <div className="panel-header">
-          <h3 className="panel-title">Personnel Administratif</h3>
+          <h3 className="panel-title">{t('admin.rh.panel_title', 'Personnel Administratif')}</h3>
           <div className="header-search" style={{width: 250}}>
             <Icons.Search />
-            <input type="text" placeholder="Rechercher..." />
+            <input type="text" placeholder={t('admin.rh.search_ph', 'Rechercher...')} />
           </div>
         </div>
         <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px', marginTop: '20px'}}>
@@ -1075,7 +1100,7 @@ function App() {
               <span className={`badge ${staff.status === 'Actif' ? 'badge-success' : 'badge-warning'}`}>{staff.status}</span>
             </div>
           )) : (
-            <div style={{gridColumn: '1 / -1', textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucun employé trouvé. Cliquez sur Ajouter.</div>
+            <div style={{gridColumn: '1 / -1', textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.rh.empty_state', 'Aucun employé trouvé. Cliquez sur Ajouter.')}</div>
           )}
         </div>
       </div>
@@ -1086,30 +1111,30 @@ function App() {
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Enseignants</h1>
-          <p className="page-subtitle">Gestion du corps professoral, emplois du temps et affectations.</p>
+          <h1 className="page-title">{t('admin.teachers.title', 'Enseignants')}</h1>
+          <p className="page-subtitle">{t('admin.teachers.subtitle', 'Gestion du corps professoral, emplois du temps et affectations.')}</p>
         </div>
         <button className="btn btn-primary" onClick={() => setActiveModal('teacher')}>
-          <Icons.Plus /> Ajouter Enseignant
+          <Icons.Plus /> {t('admin.teachers.btn_add', 'Ajouter Enseignant')}
         </button>
       </div>
 
       <div className="panel delay-100">
         <div className="panel-header">
-          <h3 className="panel-title">Liste des Enseignants (84)</h3>
+          <h3 className="panel-title">{t('admin.teachers.panel_title', 'Liste des Enseignants ({{count}})', { count: teachersData.length })}</h3>
           <div className="header-search" style={{width: 300}}>
             <Icons.Search />
-            <input type="text" placeholder="Rechercher par nom ou matière..." />
+            <input type="text" placeholder={t('admin.teachers.search_ph', 'Rechercher par nom ou matière...')} />
           </div>
         </div>
         <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
           <thead>
             <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Nom & Prénom</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Matière Principale</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Matricule</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Mot de passe</th>
-              <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>Actions</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.teachers.col_name', 'Nom & Prénom')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.teachers.col_subject', 'Matière Principale')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.teachers.col_matricule', 'Matricule')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.teachers.col_pwd', 'Mot de passe')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>{t('admin.teachers.col_actions', 'Actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -1120,14 +1145,14 @@ function App() {
                   {row.first_name} {row.last_name}
                 </td>
                 <td style={{padding: '16px 0'}}><span className="badge badge-primary" style={{background: 'transparent', border: '1px solid var(--border-color)'}}>{row.subject}</span></td>
-                <td style={{padding: '16px 0', fontWeight: '500'}}>{row.matricule || '-'}</td>
+                <td style={{padding: '16px 0', fontWeight: '500'}}>{formatNum(row.matricule) || '-'}</td>
                 <td style={{padding: '16px 0'}}>{row.password ? '••••••••' : '-'}</td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
-                  <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => alert(`Identifiants pour ${row.first_name} ${row.last_name}:\n\nMatricule: ${row.matricule}\nMot de passe: ${row.password}`)}>Voir les identifiants</button>
+                  <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => alert(`Identifiants pour ${row.first_name} ${row.last_name}:\n\nMatricule: ${row.matricule}\nMot de passe: ${row.password}`)}>{t('admin.teachers.btn_view_ids', 'Voir les identifiants')}</button>
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0'}}>Aucun enseignant trouvé. Cliquez sur Ajouter.</td></tr>
+              <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0'}}>{t('admin.teachers.empty_state', 'Aucun enseignant trouvé. Cliquez sur Ajouter.')}</td></tr>
             )}
           </tbody>
         </table>
@@ -1139,39 +1164,39 @@ function App() {
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Parents d'Élèves</h1>
-          <p className="page-subtitle">Annuaire des tuteurs légaux, contacts d'urgence et accès ENT.</p>
+          <h1 className="page-title">{t('admin.parents.title', "Parents d'Élèves")}</h1>
+          <p className="page-subtitle">{t('admin.parents.subtitle', "Annuaire des tuteurs légaux, contacts d'urgence et accès ENT.")}</p>
         </div>
         <div style={{display: 'flex', gap: '12px'}}>
           <button className="btn btn-primary" onClick={() => setActiveModal('parent')}>
-            <Icons.Plus /> Ajouter un Parent
+            <Icons.Plus /> {t('admin.parents.btn_add', 'Ajouter un Parent')}
           </button>
           <button className="btn btn-outline" onClick={() => setActiveModal('message')}>
-            <Icons.Mail /> Envoyer un message
+            <Icons.Mail /> {t('admin.parents.btn_msg', 'Envoyer un message')}
           </button>
         </div>
       </div>
 
       <div className="panel delay-100">
         <div className="panel-header">
-          <h3 className="panel-title">Base de données Parents</h3>
+          <h3 className="panel-title">{t('admin.parents.panel_title', 'Base de données Parents')}</h3>
           <div className="header-search" style={{width: 300}}>
             <Icons.Search />
-            <input type="text" placeholder="Rechercher un parent ou un élève..." />
+            <input type="text" placeholder={t('admin.parents.search_ph', 'Rechercher un parent ou un élève...')} />
           </div>
         </div>
         <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
           <thead>
             <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Nom du Parent</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Enfant(s) Associé(s)</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Téléphone</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Accès ENT</th>
-              <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>Actions</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.parents.col_name', 'Nom du Parent')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.parents.col_child', 'Enfant(s) Associé(s)')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.parents.col_phone', 'Téléphone')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.parents.col_access', 'Accès ENT')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>{t('admin.parents.col_actions', 'Actions')}</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucun parent enregistré.</td></tr>
+            <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.parents.empty_state', 'Aucun parent enregistré.')}</td></tr>
           </tbody>
         </table>
       </div>
@@ -1179,6 +1204,16 @@ function App() {
   );
 
   const renderSchedules = () => {
+    const daysKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const daysValues = [
+      t('admin.schedules.days.monday', 'Lundi'),
+      t('admin.schedules.days.tuesday', 'Mardi'),
+      t('admin.schedules.days.wednesday', 'Mercredi'),
+      t('admin.schedules.days.thursday', 'Jeudi'),
+      t('admin.schedules.days.friday', 'Vendredi'),
+      t('admin.schedules.days.saturday', 'Samedi')
+    ];
+    // Map them up
     const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
     const currentSchedules = schedulesData.filter(s => s.class_id === selectedClassForSchedule);
     
@@ -1186,24 +1221,24 @@ function App() {
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Emplois du Temps</h1>
-          <p className="page-subtitle">Gestion des plannings par classe.</p>
+          <h1 className="page-title">{t('admin.schedules.title', 'Emplois du Temps')}</h1>
+          <p className="page-subtitle">{t('admin.schedules.subtitle', 'Gestion des plannings par classe.')}</p>
         </div>
         <button className="btn btn-primary" onClick={() => setActiveModal('schedule')}>
-          <Icons.Plus /> Ajouter un cours
+          <Icons.Plus /> {t('admin.schedules.btn_add', 'Ajouter un cours')}
         </button>
       </div>
 
       <div className="panel delay-100">
         <div className="panel-header" style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-          <h3 className="panel-title" style={{margin: 0}}>Planning de la classe</h3>
+          <h3 className="panel-title" style={{margin: 0}}>{t('admin.schedules.panel_title', 'Planning de la classe')}</h3>
           <select 
             className="form-select" 
             style={{width: '250px'}} 
             value={selectedClassForSchedule} 
             onChange={(e) => setSelectedClassForSchedule(e.target.value)}
           >
-            <option value="">-- Sélectionner une classe --</option>
+            <option value="">{t('admin.schedules.select_class', '-- Sélectionner une classe --')}</option>
             {classesData.map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -1215,8 +1250,8 @@ function App() {
             <table style={{width: '100%', borderCollapse: 'collapse', minWidth: '800px'}}>
               <thead>
                 <tr>
-                  <th style={{padding: '12px', border: '1px solid var(--border-color)', background: 'var(--surface-color-hover)', width: '10%'}}>Heure</th>
-                  {days.map(day => (
+                  <th style={{padding: '12px', border: '1px solid var(--border-color)', background: 'var(--surface-color-hover)', width: '10%'}}>{t('admin.schedules.col_time', 'Heure')}</th>
+                  {daysValues.map(day => (
                     <th key={day} style={{padding: '12px', border: '1px solid var(--border-color)', background: 'var(--surface-color-hover)', width: '15%', textAlign: 'center'}}>{day}</th>
                   ))}
                 </tr>
@@ -1224,15 +1259,15 @@ function App() {
               <tbody>
                 {['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map(hour => (
                   <tr key={hour}>
-                    <td style={{padding: '12px', border: '1px solid var(--border-color)', textAlign: 'center', fontWeight: 500, color: 'var(--text-secondary)'}}>{hour}</td>
-                    {days.map(day => {
+                    <td style={{padding: '12px', border: '1px solid var(--border-color)', textAlign: 'center', fontWeight: 500, color: 'var(--text-secondary)'}}>{formatNum(hour)}</td>
+                    {days.map((day, idx) => {
                       const courses = currentSchedules.filter(s => s.day_of_week === day && s.start_time.startsWith(hour));
                       return (
                         <td key={day} style={{padding: '8px', border: '1px solid var(--border-color)', verticalAlign: 'top', height: '80px'}}>
-                          {courses.map((course, idx) => (
-                            <div key={idx} style={{background: 'rgba(59, 130, 246, 0.1)', borderLeft: '3px solid var(--primary-color)', padding: '6px', borderRadius: '4px', marginBottom: '4px', fontSize: '0.85rem'}}>
+                          {courses.map((course, i) => (
+                            <div key={i} style={{background: 'rgba(59, 130, 246, 0.1)', borderLeft: '3px solid var(--primary-color)', padding: '6px', borderRadius: '4px', marginBottom: '4px', fontSize: '0.85rem'}}>
                               <div style={{fontWeight: 600, color: 'var(--primary-color)'}}>{course.subject}</div>
-                              <div style={{color: 'var(--text-secondary)', fontSize: '0.75rem'}}>{course.start_time.substring(0,5)} - {course.end_time.substring(0,5)}</div>
+                              <div style={{color: 'var(--text-secondary)', fontSize: '0.75rem'}}>{formatNum(course.start_time.substring(0,5))} - {formatNum(course.end_time.substring(0,5))}</div>
                               <div style={{color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '2px'}}>{course.teachers?.first_name} {course.teachers?.last_name}</div>
                             </div>
                           ))}
@@ -1246,43 +1281,43 @@ function App() {
           </div>
         ) : (
           <div style={{padding: '40px', textAlign: 'center', color: 'var(--text-secondary)'}}>
-            Veuillez sélectionner une classe pour afficher son emploi du temps.
+            {t('admin.schedules.empty_state', 'Veuillez sélectionner une classe pour afficher son emploi du temps.')}
           </div>
         )}
       </div>
     </div>
   )};
 
-  const renderScolarite = () => currentSchoolPlan !== 'Pro' ? renderPremiumOverlay("Comptabilité & Scolarité", "Gérez les factures, les paiements de scolarité et suivez votre trésorerie avec le plan Pro.") : (
+  const renderScolarite = () => currentSchoolPlan !== 'Pro' ? renderPremiumOverlay(t('admin.finance.premium_title', "Comptabilité & Scolarité"), t('admin.finance.premium_desc', "Gérez les factures, les paiements de scolarité et suivez votre trésorerie avec le plan Pro.")) : (
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Comptabilité & Scolarité</h1>
-          <p className="page-subtitle">Suivi des paiements, encaissements et relances de frais de scolarité.</p>
+          <h1 className="page-title">{t('admin.finance.title', 'Comptabilité & Scolarité')}</h1>
+          <p className="page-subtitle">{t('admin.finance.subtitle', 'Suivi des paiements, encaissements et relances de frais de scolarité.')}</p>
         </div>
         <button className="btn btn-primary" onClick={() => setActiveModal('payment')}>
-          <Icons.Plus /> Enregistrer un Paiement
+          <Icons.Plus /> {t('admin.finance.btn_add', 'Enregistrer un Paiement')}
         </button>
       </div>
 
       <div className="stats-grid">
         <div className="stat-card delay-100">
           <div className="stat-header">
-            <span className="stat-label">Taux de Recouvrement</span>
+            <span className="stat-label">{t('admin.finance.stat_rate', 'Taux de Recouvrement')}</span>
             <Icons.TrendingUp />
           </div>
-          <div className="stat-value">0%</div>
+          <div className="stat-value">{formatNum(0)}%</div>
           <div className="stat-trend trend-up">
-            Ce mois-ci
+            {t('admin.finance.stat_rate_desc', 'Ce mois-ci')}
           </div>
         </div>
         
         <div className="stat-card delay-200">
           <div className="stat-header">
-            <span className="stat-label">Reste à Recouvrer</span>
+            <span className="stat-label">{t('admin.finance.stat_rem', 'Reste à Recouvrer')}</span>
             <Icons.Database />
           </div>
-          <div className="stat-value">0</div>
+          <div className="stat-value">{formatNum(0)}</div>
           <div className="stat-trend trend-down">
             FCFA
           </div>
@@ -1290,52 +1325,52 @@ function App() {
 
         <div className="stat-card delay-300">
           <div className="stat-header">
-            <span className="stat-label">Paiements du Jour</span>
+            <span className="stat-label">{t('admin.finance.stat_today', 'Paiements du Jour')}</span>
             <Icons.CreditCard />
           </div>
-          <div className="stat-value">0</div>
+          <div className="stat-value">{formatNum(0)}</div>
           <div className="stat-trend trend-up">
-            FCFA aujourd'hui
+            FCFA {t('admin.finance.stat_today_desc', "aujourd'hui")}
           </div>
         </div>
       </div>
 
       <div className="panel delay-300">
         <div className="panel-header">
-          <h3 className="panel-title">Dernières Transactions</h3>
+          <h3 className="panel-title">{t('admin.finance.panel_title', 'Dernières Transactions')}</h3>
           <div className="header-search" style={{width: 300}}>
             <Icons.Search />
-            <input type="text" placeholder="Rechercher un reçu, un élève..." />
+            <input type="text" placeholder={t('admin.finance.search_ph', 'Rechercher un reçu, un élève...')} />
           </div>
         </div>
         <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
           <thead>
             <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
-              <th style={{padding: '12px 0', fontWeight: 500}}>N° Reçu</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Élève & Classe</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Motif</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Montant</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Date</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Statut</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.finance.col_invoice', 'N° Reçu')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.finance.col_student', 'Élève & Classe')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.finance.col_motif', 'Motif')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.finance.col_amount', 'Montant')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.finance.col_date', 'Date')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.finance.col_status', 'Statut')}</th>
             </tr>
           </thead>
           <tbody>
             {invoicesData.length > 0 ? invoicesData.map((row, i) => (
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
-                <td style={{padding: '16px 0', fontFamily: 'monospace', fontWeight: 500, color: 'var(--primary-color)'}}>{row.invoice_number}</td>
+                <td style={{padding: '16px 0', fontFamily: 'monospace', fontWeight: 500, color: 'var(--primary-color)'}}>{formatNum(row.invoice_number)}</td>
                 <td style={{padding: '16px 0'}}>
                   <div style={{fontWeight: 600}}>{row.students?.first_name} {row.students?.last_name}</div>
-                  <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>{row.students?.matricule}</div>
+                  <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>{formatNum(row.students?.matricule)}</div>
                 </td>
                 <td style={{padding: '16px 0'}}>{row.motif}</td>
-                <td style={{padding: '16px 0', fontWeight: 'bold'}}>{row.amount} FCFA</td>
-                <td style={{padding: '16px 0', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{new Date(row.issue_date).toLocaleDateString()}</td>
+                <td style={{padding: '16px 0', fontWeight: 'bold'}}>{formatNum(row.amount)} FCFA</td>
+                <td style={{padding: '16px 0', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{new Date(row.issue_date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</td>
                 <td style={{padding: '16px 0'}}>
                   <span className={`badge ${row.status === 'Payée' ? 'badge-success' : 'badge-warning'}`}>{row.status}</span>
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan={6} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucun paiement enregistré.</td></tr>
+              <tr><td colSpan={6} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.finance.empty_state', 'Aucun paiement enregistré.')}</td></tr>
             )}
           </tbody>
         </table>
@@ -1354,11 +1389,11 @@ function App() {
       <div className="animate-fade-in">
         <div className="page-header">
           <div>
-            <h1 className="page-title">Saisie des Notes</h1>
-            <p className="page-subtitle">Gérez les évaluations et saisissez les notes par classe.</p>
+            <h1 className="page-title">{t('admin.grades.title', 'Saisie des Notes')}</h1>
+            <p className="page-subtitle">{t('admin.grades.subtitle', 'Gérez les évaluations et saisissez les notes par classe.')}</p>
           </div>
           <button className="btn btn-primary" onClick={() => setActiveModal('evaluation')}>
-            <Icons.Plus /> Nouvelle Évaluation
+            <Icons.Plus /> {t('admin.grades.btn_add', 'Nouvelle Évaluation')}
           </button>
         </div>
 
@@ -1366,50 +1401,50 @@ function App() {
           <>
             <div className="filters-bar delay-100" style={{marginBottom: '24px'}}>
               <select className="form-select" value={selectedClassForGrades} onChange={e => setSelectedClassForGrades(e.target.value)}>
-                <option value="">Toutes les classes</option>
+                <option value="">{t('admin.grades.filter_class', 'Toutes les classes')}</option>
                 {classesData.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
               <select className="form-select" value={selectedPeriodForGrades} onChange={e => setSelectedPeriodForGrades(e.target.value)}>
-                <option value="1er Trimestre">1er Trimestre</option>
-                <option value="2ème Trimestre">2ème Trimestre</option>
-                <option value="3ème Trimestre">3ème Trimestre</option>
-                <option value="1er Semestre">1er Semestre</option>
-                <option value="2ème Semestre">2ème Semestre</option>
+                <option value="1er Trimestre">{t('admin.grades.filter_term1', '1er Trimestre')}</option>
+                <option value="2ème Trimestre">{t('admin.grades.filter_term2', '2ème Trimestre')}</option>
+                <option value="3ème Trimestre">{t('admin.grades.filter_term3', '3ème Trimestre')}</option>
+                <option value="1er Semestre">{t('admin.grades.filter_sem1', '1er Semestre')}</option>
+                <option value="2ème Semestre">{t('admin.grades.filter_sem2', '2ème Semestre')}</option>
               </select>
-              <input type="text" placeholder="Filtrer par matière..." className="form-input search-input" value={selectedSubjectForGrades} onChange={e => setSelectedSubjectForGrades(e.target.value)} />
+              <input type="text" placeholder={t('admin.grades.filter_subject', 'Filtrer par matière...')} className="form-input search-input" value={selectedSubjectForGrades} onChange={e => setSelectedSubjectForGrades(e.target.value)} />
             </div>
 
             <div className="panel delay-200">
-              <h3 className="panel-title">Évaluations existantes</h3>
+              <h3 className="panel-title">{t('admin.grades.panel_title', 'Évaluations existantes')}</h3>
               <div className="table-responsive">
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>Date</th>
-                      <th>Classe</th>
-                      <th>Matière</th>
-                      <th>Nom de l'évaluation</th>
-                      <th>Type</th>
-                      <th>Notes sur</th>
-                      <th>Action</th>
+                      <th>{t('admin.grades.col_date', 'Date')}</th>
+                      <th>{t('admin.grades.col_class', 'Classe')}</th>
+                      <th>{t('admin.grades.col_subject', 'Matière')}</th>
+                      <th>{t('admin.grades.col_name', "Nom de l'évaluation")}</th>
+                      <th>{t('admin.grades.col_type', 'Type')}</th>
+                      <th>{t('admin.grades.col_max', 'Notes sur')}</th>
+                      <th>{t('admin.grades.col_action', 'Action')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredEvaluations.map(evalu => (
                       <tr key={evalu.id}>
-                        <td>{new Date(evalu.date).toLocaleDateString('fr-FR')}</td>
+                        <td>{new Date(evalu.date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</td>
                         <td>{evalu.classes?.name}</td>
                         <td style={{fontWeight: 600}}>{evalu.subject}</td>
                         <td>{evalu.name}</td>
                         <td><span className="badge" style={{background: 'var(--surface-color-hover)'}}>{evalu.type}</span></td>
-                        <td>{evalu.max_score}</td>
+                        <td>{formatNum(evalu.max_score)}</td>
                         <td>
-                          <button className="btn btn-primary" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => startGrading(evalu)}>Saisir les notes</button>
+                          <button className="btn btn-primary" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => startGrading(evalu)}>{t('admin.grades.btn_grade', 'Saisir les notes')}</button>
                         </td>
                       </tr>
                     ))}
                     {filteredEvaluations.length === 0 && (
-                      <tr><td colSpan={7} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucune évaluation trouvée pour ces filtres.</td></tr>
+                      <tr><td colSpan={7} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.grades.empty_state', 'Aucune évaluation trouvée pour ces filtres.')}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1422,12 +1457,12 @@ function App() {
               <div>
                 <h3 style={{margin: '0 0 8px 0'}}>{activeEvaluation.name} ({activeEvaluation.subject})</h3>
                 <div style={{color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
-                  Classe : {activeEvaluation.classes?.name} • Date : {new Date(activeEvaluation.date).toLocaleDateString('fr-FR')} • Noté sur : {activeEvaluation.max_score}
+                  {t('admin.grades.col_class', 'Classe')} : {activeEvaluation.classes?.name} • {t('admin.grades.col_date', 'Date')} : {new Date(activeEvaluation.date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')} • {t('admin.grades.col_max', 'Notes sur')} : {formatNum(activeEvaluation.max_score)}
                 </div>
               </div>
               <div style={{display: 'flex', gap: '12px'}}>
-                <button className="btn btn-outline" onClick={() => setActiveEvaluation(null)}>Retour</button>
-                <button className="btn btn-primary" onClick={saveGrades}>Sauvegarder les notes</button>
+                <button className="btn btn-outline" onClick={() => setActiveEvaluation(null)}>{t('admin.grades.btn_back', 'Retour')}</button>
+                <button className="btn btn-primary" onClick={saveGrades}>{t('admin.grades.btn_save', 'Sauvegarder les notes')}</button>
               </div>
             </div>
 
@@ -1435,11 +1470,11 @@ function App() {
               {/* Table Toolbar */}
               <div style={{padding: '8px 12px', background: '#f5f5f5', borderBottom: '1px solid #d4d4d4', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                 <div style={{display: 'flex', gap: '4px', alignItems: 'center'}}>
-                  <button style={{background: '#e9ecef', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333'}}>{studentsData.filter(s => s.class_id === activeEvaluation.class_id).length} résultats</button>
-                  <button style={{background: '#fff', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333', marginLeft: '4px'}}>1</button>
-                  <button style={{background: '#fff', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333'}}>2</button>
-                  <button style={{background: '#fff', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333'}}>3</button>
-                  <button style={{background: '#e9ecef', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#0066cc', marginLeft: '4px'}}>Tout afficher</button>
+                  <button style={{background: '#e9ecef', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333'}}>{formatNum(studentsData.filter(s => s.class_id === activeEvaluation.class_id).length)} {t('admin.grades.results', 'résultats')}</button>
+                  <button style={{background: '#fff', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333', marginLeft: '4px'}}>{formatNum(1)}</button>
+                  <button style={{background: '#fff', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333'}}>{formatNum(2)}</button>
+                  <button style={{background: '#fff', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333'}}>{formatNum(3)}</button>
+                  <button style={{background: '#e9ecef', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#0066cc', marginLeft: '4px'}}>{t('admin.grades.show_all', 'Tout afficher')}</button>
                 </div>
                 <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
                   <div style={{position: 'relative', display: 'flex', alignItems: 'center'}}>
@@ -1449,7 +1484,7 @@ function App() {
                     />
                     <svg viewBox="0 0 24 24" fill="none" stroke="#00a8ff" strokeWidth="2" style={{position: 'absolute', right: '10px', width: '14px', height: '14px'}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                   </div>
-                  <button style={{background: '#f8f9fa', border: '1px solid #ccc', padding: '4px 12px', borderRadius: '3px', fontSize: '12px', color: '#0066cc'}}>Filtre</button>
+                  <button style={{background: '#f8f9fa', border: '1px solid #ccc', padding: '4px 12px', borderRadius: '3px', fontSize: '12px', color: '#0066cc'}}>{t('admin.grades.filter', 'Filtre')}</button>
                 </div>
               </div>
               
@@ -1468,19 +1503,19 @@ function App() {
                   <thead>
                     <tr style={{background: '#f9f9f9', borderBottom: '1px solid #d4d4d4', textAlign: 'left', color: '#333'}}>
                       <th style={{padding: '8px 4px', borderRight: '1px solid #d4d4d4', textAlign: 'center', fontWeight: 'bold'}}><input type="checkbox" /></th>
-                      <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>Matricule</th>
-                      <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>Nom</th>
-                      <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>Prénoms</th>
-                      <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>Classe</th>
-                      <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>Note (/{activeEvaluation.max_score})</th>
-                      <th style={{padding: '8px', fontWeight: 'bold'}}>Appréciation</th>
+                      <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('admin.grades.col_matricule', 'Matricule')}</th>
+                      <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('admin.grades.col_lastname', 'Nom')}</th>
+                      <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('admin.grades.col_firstname', 'Prénoms')}</th>
+                      <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('admin.grades.col_class', 'Classe')}</th>
+                      <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('admin.grades.col_note', 'Note')} (/{formatNum(activeEvaluation.max_score)})</th>
+                      <th style={{padding: '8px', fontWeight: 'bold'}}>{t('admin.grades.col_appreciation', 'Appréciation')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {studentsData.filter(s => s.class_id === activeEvaluation.class_id).map((student) => (
                       <tr key={student.id} style={{borderBottom: '1px solid #eee', background: '#fff', color: '#333'}}>
                         <td style={{padding: '8px 4px', borderRight: '1px solid #eee', textAlign: 'center'}}><input type="checkbox" /></td>
-                        <td style={{padding: '8px', borderRight: '1px solid #eee', fontWeight: 'bold'}}>{student.matricule || `MAT-${student.id.substring(0,4)}`}</td>
+                        <td style={{padding: '8px', borderRight: '1px solid #eee', fontWeight: 'bold'}}>{formatNum(student.matricule) || `MAT-${formatNum(student.id.substring(0,4))}`}</td>
                         <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{student.last_name.toUpperCase()}</td>
                         <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{student.first_name}</td>
                         <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{activeEvaluation.classes?.name}</td>
@@ -1502,13 +1537,13 @@ function App() {
                             onChange={(e) => handleGradeChange(student.id, 'comment', e.target.value)}
                           >
                             <option value="">---------</option>
-                            <option value="Excellent travail">Excellent travail</option>
-                            <option value="Très bien">Très bien</option>
-                            <option value="Bien">Bien</option>
-                            <option value="Assez bien">Assez bien</option>
-                            <option value="Passable">Passable</option>
-                            <option value="Insuffisant">Insuffisant</option>
-                            <option value="Peut mieux faire">Peut mieux faire</option>
+                            <option value={t('admin.grades.appr_excellent', 'Excellent travail')}>{t('admin.grades.appr_excellent', 'Excellent travail')}</option>
+                            <option value={t('admin.grades.appr_very_good', 'Très bien')}>{t('admin.grades.appr_very_good', 'Très bien')}</option>
+                            <option value={t('admin.grades.appr_good', 'Bien')}>{t('admin.grades.appr_good', 'Bien')}</option>
+                            <option value={t('admin.grades.appr_fairly_good', 'Assez bien')}>{t('admin.grades.appr_fairly_good', 'Assez bien')}</option>
+                            <option value={t('admin.grades.appr_passable', 'Passable')}>{t('admin.grades.appr_passable', 'Passable')}</option>
+                            <option value={t('admin.grades.appr_insufficient', 'Insuffisant')}>{t('admin.grades.appr_insufficient', 'Insuffisant')}</option>
+                            <option value={t('admin.grades.appr_better', 'Peut mieux faire')}>{t('admin.grades.appr_better', 'Peut mieux faire')}</option>
                           </select>
                         </td>
                       </tr>
@@ -1516,7 +1551,7 @@ function App() {
                     {studentsData.filter(s => s.class_id === activeEvaluation.class_id).length === 0 && (
                       <tr>
                         <td colSpan={7} style={{padding: '16px', textAlign: 'center', color: '#666'}}>
-                          Aucun élève dans cette classe.
+                          {t('admin.grades.empty_students', 'Aucun élève dans cette classe.')}
                         </td>
                       </tr>
                     )}
@@ -1526,7 +1561,7 @@ function App() {
               
               {/* Footer Bar */}
               <div style={{background: '#2c3e50', color: '#fff', padding: '6px 12px', fontSize: '12px', display: 'flex', justifyContent: 'flex-start'}}>
-                0 sur {studentsData.filter(s => s.class_id === activeEvaluation.class_id).length} sélectionné
+                {formatNum(0)} sur {formatNum(studentsData.filter(s => s.class_id === activeEvaluation.class_id).length)} {t('admin.grades.selected', 'sélectionné')}
               </div>
             </div>
           </div>
@@ -1539,10 +1574,10 @@ function App() {
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Paramètres</h1>
-          <p className="page-subtitle">Configuration globale du système et de votre établissement.</p>
+          <h1 className="page-title">{t('admin.settings.title', 'Paramètres')}</h1>
+          <p className="page-subtitle">{t('admin.settings.subtitle', 'Configuration globale du système et de votre établissement.')}</p>
         </div>
-        <button className="btn btn-primary" onClick={() => (document.getElementById('settingsForm') as HTMLFormElement)?.requestSubmit()}>Sauvegarder</button>
+        <button className="btn btn-primary" onClick={() => (document.getElementById('settingsForm') as HTMLFormElement)?.requestSubmit()}>{t('admin.settings.btn_save', 'Sauvegarder')}</button>
       </div>
 
       <div className="dashboard-grid" style={{gridTemplateColumns: '250px 1fr'}}>
@@ -1550,19 +1585,19 @@ function App() {
         <div className="panel delay-100" style={{padding: '16px'}}>
           <ul className="nav-menu" style={{padding: 0}}>
             <li className={`nav-item ${activeSettingsTab === 'general' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('general')} style={{marginBottom: '4px'}}>
-              <Icons.Settings /> Général
+              <Icons.Settings /> {t('admin.settings.tab_general', 'Général')}
             </li>
             <li className={`nav-item ${activeSettingsTab === 'academic' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('academic')} style={{marginBottom: '4px'}}>
-              <Icons.BookOpen /> Pédagogique
+              <Icons.BookOpen /> {t('admin.settings.tab_academic', 'Pédagogique')}
             </li>
             <li className={`nav-item ${activeSettingsTab === 'security' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('security')} style={{marginBottom: '4px'}}>
-              <Icons.Shield /> Sécurité & Accès
+              <Icons.Shield /> {t('admin.settings.tab_security', 'Sécurité & Accès')}
             </li>
             <li className={`nav-item ${activeSettingsTab === 'database' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('database')} style={{marginBottom: '4px'}}>
-              <Icons.Database /> Base de Données
+              <Icons.Database /> {t('admin.settings.tab_database', 'Base de Données')}
             </li>
             <li className={`nav-item ${activeSettingsTab === 'abonnement' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('abonnement')} style={{marginBottom: '4px'}}>
-              <Icons.TrendingUp /> Abonnement
+              <Icons.TrendingUp /> {t('admin.settings.tab_subscription', 'Abonnement')}
             </li>
           </ul>
         </div>
@@ -1571,26 +1606,26 @@ function App() {
         <div className="panel delay-200">
           {activeSettingsTab === 'general' && (
             <form id="settingsForm" onSubmit={saveSettings}>
-              <h3 className="panel-title" style={{marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>Paramètres Généraux</h3>
+              <h3 className="panel-title" style={{marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>{t('admin.settings.gen_title', 'Paramètres Généraux')}</h3>
               <div style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Nom de l'établissement</label>
+                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{t('admin.settings.gen_name', "Nom de l'établissement")}</label>
                   <input type="text" name="school_name" defaultValue={settingsData?.school_name || ''} className="form-input" required />
                 </div>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Directeur</label>
+                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{t('admin.settings.gen_director', 'Directeur')}</label>
                   <input type="text" name="director_name" defaultValue={settingsData?.director_name || ''} className="form-input" required />
                 </div>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Téléphone</label>
+                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{t('admin.settings.gen_phone', 'Téléphone')}</label>
                   <input type="text" name="phone" defaultValue={settingsData?.phone || ''} className="form-input" required />
                 </div>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Adresse Email Principale</label>
+                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{t('admin.settings.gen_email', 'Adresse Email Principale')}</label>
                   <input type="email" name="email" defaultValue={settingsData?.email || ''} className="form-input" />
                 </div>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Adresse</label>
+                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{t('admin.settings.gen_address', 'Adresse')}</label>
                   <input type="text" name="address" defaultValue={settingsData?.address || ''} className="form-input" />
                 </div>
               </div>
@@ -1599,26 +1634,26 @@ function App() {
 
           {activeSettingsTab === 'academic' && (
             <div>
-              <h3 className="panel-title" style={{marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>Paramètres Pédagogiques</h3>
+              <h3 className="panel-title" style={{marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>{t('admin.settings.acad_title', 'Paramètres Pédagogiques')}</h3>
               <div style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Année Scolaire en cours</label>
+                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{t('admin.settings.acad_year', 'Année Scolaire en cours')}</label>
                   <select className="form-select">
-                    <option>2026 - 2027</option>
-                    <option>2025 - 2026</option>
+                    <option>{formatNum(2026)} - {formatNum(2027)}</option>
+                    <option>{formatNum(2025)} - {formatNum(2026)}</option>
                   </select>
                 </div>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Système d'évaluation</label>
+                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{t('admin.settings.acad_sys', "Système d'évaluation")}</label>
                   <select className="form-select">
-                    <option>Notes sur 20</option>
-                    <option>Compétences (Acquis/En cours/Non acquis)</option>
-                    <option>Lettres (A, B, C, D)</option>
+                    <option>{t('admin.settings.acad_sys_note', 'Notes sur 20')}</option>
+                    <option>{t('admin.settings.acad_sys_comp', 'Compétences (Acquis/En cours/Non acquis)')}</option>
+                    <option>{t('admin.settings.acad_sys_let', 'Lettres (A, B, C, D)')}</option>
                   </select>
                 </div>
                 <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px'}}>
                   <input type="checkbox" defaultChecked id="sms-abs" style={{width: '18px', height: '18px'}} />
-                  <label htmlFor="sms-abs" style={{fontSize: '0.95rem', cursor: 'pointer'}}>Envoyer un SMS automatique aux parents après 2 absences non justifiées</label>
+                  <label htmlFor="sms-abs" style={{fontSize: '0.95rem', cursor: 'pointer'}}>{t('admin.settings.acad_sms', 'Envoyer un SMS automatique aux parents après 2 absences non justifiées')}</label>
                 </div>
               </div>
             </div>
@@ -1626,35 +1661,35 @@ function App() {
 
           {activeSettingsTab === 'security' && (
             <div>
-              <h3 className="panel-title" style={{marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>Sécurité & Accès</h3>
+              <h3 className="panel-title" style={{marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>{t('admin.settings.sec_title', 'Sécurité & Accès')}</h3>
               <div style={{display: 'flex', flexDirection: 'column', gap: '24px'}}>
                 <div>
-                  <h4 style={{marginBottom: '12px'}}>Authentification à deux facteurs (2FA)</h4>
+                  <h4 style={{marginBottom: '12px'}}>{t('admin.settings.sec_2fa', 'Authentification à deux facteurs (2FA)')}</h4>
                   <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
                     <div style={{width: 44, height: 24, borderRadius: 12, background: 'var(--primary-color)', position: 'relative', cursor: 'pointer'}}>
                       <div style={{width: 20, height: 20, borderRadius: '50%', background: 'white', position: 'absolute', top: 2, right: 2}}></div>
                     </div>
-                    <span style={{fontSize: '0.95rem'}}>Exiger le 2FA pour tous les administrateurs</span>
+                    <span style={{fontSize: '0.95rem'}}>{t('admin.settings.sec_2fa_desc', 'Exiger le 2FA pour tous les administrateurs')}</span>
                   </div>
                 </div>
                 <div>
-                  <h4 style={{marginBottom: '12px'}}>Gestion des Rôles</h4>
+                  <h4 style={{marginBottom: '12px'}}>{t('admin.settings.sec_roles', 'Gestion des Rôles')}</h4>
                   <div style={{display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
-                    <span className="badge badge-primary">Directeur</span>
-                    <span className="badge badge-success">Administrateur DSI</span>
-                    <span className="badge" style={{border: '1px solid var(--border-color)', background: 'transparent'}}>Enseignant</span>
-                    <span className="badge" style={{border: '1px solid var(--border-color)', background: 'transparent'}}>Parent</span>
+                    <span className="badge badge-primary">{t('admin.settings.sec_role_dir', 'Directeur')}</span>
+                    <span className="badge badge-success">{t('admin.settings.sec_role_dsi', 'Administrateur DSI')}</span>
+                    <span className="badge" style={{border: '1px solid var(--border-color)', background: 'transparent'}}>{t('admin.settings.sec_role_teacher', 'Enseignant')}</span>
+                    <span className="badge" style={{border: '1px solid var(--border-color)', background: 'transparent'}}>{t('admin.settings.sec_role_parent', 'Parent')}</span>
                   </div>
-                  <button className="btn btn-outline" style={{marginTop: '12px', fontSize: '0.8rem'}}>Configurer les permissions</button>
+                  <button className="btn btn-outline" style={{marginTop: '12px', fontSize: '0.8rem'}}>{t('admin.settings.sec_btn_perm', 'Configurer les permissions')}</button>
                 </div>
                 <div>
-                  <h4 style={{marginBottom: '12px'}}>Sessions Actives</h4>
+                  <h4 style={{marginBottom: '12px'}}>{t('admin.settings.sec_sessions', 'Sessions Actives')}</h4>
                   <div style={{padding: '12px', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'var(--surface-color-hover)', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                     <div>
                       <div style={{fontWeight: 500}}>Windows PC - Chrome</div>
-                      <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Dakar, SN • Actif maintenant</div>
+                      <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Dakar, SN • {t('admin.settings.sec_active', 'Actif maintenant')}</div>
                     </div>
-                    <button className="btn btn-outline" style={{color: 'var(--danger-color)', borderColor: 'var(--danger-color)'}}>Déconnecter</button>
+                    <button className="btn btn-outline" style={{color: 'var(--danger-color)', borderColor: 'var(--danger-color)'}}>{t('admin.settings.sec_btn_logout', 'Déconnecter')}</button>
                   </div>
                 </div>
               </div>
@@ -1663,29 +1698,29 @@ function App() {
 
           {activeSettingsTab === 'database' && (
             <div>
-              <h3 className="panel-title" style={{marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>Connexion Base de Données (Supabase)</h3>
+              <h3 className="panel-title" style={{marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>{t('admin.settings.db_title', 'Connexion Base de Données (Supabase)')}</h3>
               <div style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
                 <div style={{padding: '16px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--accent-color)', display: 'flex', alignItems: 'center', gap: '12px'}}>
                   <Icons.CheckCircle />
                   <div>
-                    <div style={{fontWeight: 600, color: 'var(--accent-color)'}}>Connecté à Supabase (Projet: xyz-sgpro)</div>
-                    <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>Dernière synchronisation : il y a 2 minutes</div>
+                    <div style={{fontWeight: 600, color: 'var(--accent-color)'}}>{t('admin.settings.db_connected', 'Connecté à Supabase')} (Projet: xyz-sgpro)</div>
+                    <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>{t('admin.settings.db_sync', 'Dernière synchronisation : il y a 2 minutes')}</div>
                   </div>
                 </div>
                 <div className="form-group">
-                  <label>URL du Projet</label>
+                  <label>{t('admin.settings.db_url', 'URL du Projet')}</label>
                   <input type="text" defaultValue="https://xyzabcdef.supabase.co" disabled className="form-input" style={{opacity: 0.7}} />
                 </div>
                 <div className="form-group">
-                  <label>Clé API (Anon)</label>
+                  <label>{t('admin.settings.db_key', 'Clé API (Anon)')}</label>
                   <input type="password" defaultValue="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." disabled className="form-input" style={{opacity: 0.7}} />
                 </div>
                 <div style={{display: 'flex', gap: '12px', marginTop: '10px'}}>
                   <button className="btn btn-primary" onClick={() => alert("Sauvegarde en cours...")}>
-                    <Icons.Download /> Forcer la sauvegarde
+                    <Icons.Download /> {t('admin.settings.db_btn_sync', 'Forcer la sauvegarde')}
                   </button>
                   <button className="btn btn-outline" style={{color: 'var(--danger-color)', borderColor: 'var(--danger-color)'}}>
-                    Réinitialiser la connexion
+                    {t('admin.settings.db_btn_reset', 'Réinitialiser la connexion')}
                   </button>
                 </div>
               </div>
@@ -1694,24 +1729,24 @@ function App() {
 
           {activeSettingsTab === 'abonnement' && (
             <div className="animate-fade-in">
-              <h3 className="panel-title" style={{marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>Gérer mon Abonnement</h3>
-              <div style={{display: 'flex', gap: '24px'}}>
+              <h3 className="panel-title" style={{marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>{t('admin.settings.sub_title', 'Gérer mon Abonnement')}</h3>
+              <div style={{display: 'flex', gap: '24px', flexWrap: 'wrap'}}>
                 <div style={{
-                  flex: 1, padding: '24px', borderRadius: '16px', 
+                  flex: 1, padding: '24px', borderRadius: '16px', minWidth: '250px',
                   border: `2px solid ${currentSchoolPlan === 'Standard' ? 'var(--primary-color)' : 'var(--border-color)'}`,
                   background: currentSchoolPlan === 'Standard' ? 'rgba(99, 102, 241, 0.05)' : 'var(--surface-color)',
                   position: 'relative'
                 }}>
-                  {currentSchoolPlan === 'Standard' && <div style={{position: 'absolute', top: '-12px', right: '24px', background: 'var(--primary-color)', color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold'}}>Plan Actuel</div>}
+                  {currentSchoolPlan === 'Standard' && <div style={{position: 'absolute', top: '-12px', right: '24px', background: 'var(--primary-color)', color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold'}}>{t('admin.settings.sub_current', 'Plan Actuel')}</div>}
                   <h4 style={{fontSize: '1.2rem', marginBottom: '8px'}}>Standard</h4>
-                  <p style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '16px'}}>0 FCFA <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 'normal'}}>/mois</span></p>
+                  <p style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '16px'}}>{formatNum(0)} FCFA <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 'normal'}}>{t('admin.settings.sub_month', '/mois')}</span></p>
                   <ul style={{listStyle: 'none', padding: 0, margin: '0 0 24px 0', display: 'flex', flexDirection: 'column', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
-                    <li>✓ Gestion des élèves et absences</li>
-                    <li>✓ Gestion des professeurs</li>
-                    <li>✓ Notes et bulletins</li>
+                    <li>✓ {t('admin.settings.sub_std_f1', 'Gestion des élèves et absences')}</li>
+                    <li>✓ {t('admin.settings.sub_std_f2', 'Gestion des professeurs')}</li>
+                    <li>✓ {t('admin.settings.sub_std_f3', 'Notes et bulletins')}</li>
                   </ul>
                   {currentSchoolPlan === 'Standard' ? (
-                    <button className="btn" disabled style={{width: '100%', background: 'var(--border-color)', color: 'var(--text-secondary)'}}>Plan Actif</button>
+                    <button className="btn" disabled style={{width: '100%', background: 'var(--border-color)', color: 'var(--text-secondary)'}}>{t('admin.settings.sub_btn_active', 'Plan Actif')}</button>
                   ) : (
                     <button className="btn" style={{width: '100%', border: '1px solid var(--border-color)'}} onClick={async () => {
                       const { error } = await supabase.from('schools').update({ subscription_plan: 'Standard' }).eq('id', currentSchoolId);
@@ -1719,27 +1754,27 @@ function App() {
                         setCurrentSchoolPlan('Standard');
                         setAdminSchools(adminSchools.map(s => s.id === currentSchoolId ? {...s, plan: 'Standard'} : s));
                       }
-                    }}>Rétrograder</button>
+                    }}>{t('admin.settings.sub_btn_downgrade', 'Rétrograder')}</button>
                   )}
                 </div>
 
                 <div style={{
-                  flex: 1, padding: '24px', borderRadius: '16px', 
+                  flex: 1, padding: '24px', borderRadius: '16px', minWidth: '250px',
                   border: `2px solid ${currentSchoolPlan === 'Pro' ? 'var(--accent-color)' : 'var(--border-color)'}`,
                   background: currentSchoolPlan === 'Pro' ? 'rgba(16, 185, 129, 0.05)' : 'var(--surface-color)',
                   position: 'relative'
                 }}>
-                  {currentSchoolPlan === 'Pro' && <div style={{position: 'absolute', top: '-12px', right: '24px', background: 'var(--accent-color)', color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold'}}>Plan Actuel</div>}
+                  {currentSchoolPlan === 'Pro' && <div style={{position: 'absolute', top: '-12px', right: '24px', background: 'var(--accent-color)', color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold'}}>{t('admin.settings.sub_current', 'Plan Actuel')}</div>}
                   <h4 style={{fontSize: '1.2rem', marginBottom: '8px'}}>Pro</h4>
-                  <p style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '16px'}}>25 000 FCFA <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 'normal'}}>/mois</span></p>
+                  <p style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '16px'}}>{formatNum(25000)} FCFA <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 'normal'}}>{t('admin.settings.sub_month', '/mois')}</span></p>
                   <ul style={{listStyle: 'none', padding: 0, margin: '0 0 24px 0', display: 'flex', flexDirection: 'column', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
-                    <li>✓ Toutes les fonctions Standard</li>
-                    <li>✓ Comptabilité & Facturation</li>
-                    <li>✓ Ressources Humaines</li>
-                    <li>✓ Communication (SMS/Email)</li>
+                    <li>✓ {t('admin.settings.sub_pro_f1', 'Toutes les fonctions Standard')}</li>
+                    <li>✓ {t('admin.settings.sub_pro_f2', 'Comptabilité & Facturation')}</li>
+                    <li>✓ {t('admin.settings.sub_pro_f3', 'Ressources Humaines')}</li>
+                    <li>✓ {t('admin.settings.sub_pro_f4', 'Communication (SMS/Email)')}</li>
                   </ul>
                   {currentSchoolPlan === 'Pro' ? (
-                    <button className="btn" disabled style={{width: '100%', background: 'var(--border-color)', color: 'var(--text-secondary)'}}>Plan Actif</button>
+                    <button className="btn" disabled style={{width: '100%', background: 'var(--border-color)', color: 'var(--text-secondary)'}}>{t('admin.settings.sub_btn_active', 'Plan Actif')}</button>
                   ) : (
                     <button className="btn btn-primary" style={{width: '100%', background: 'var(--accent-color)', borderColor: 'var(--accent-color)'}} onClick={async () => {
                       const { error } = await supabase.from('schools').update({ subscription_plan: 'Pro' }).eq('id', currentSchoolId);
@@ -1748,7 +1783,7 @@ function App() {
                         setAdminSchools(adminSchools.map(s => s.id === currentSchoolId ? {...s, plan: 'Pro'} : s));
                         alert('Félicitations ! Vous avez débloqué le plan Pro.');
                       }
-                    }}>Passer en Pro</button>
+                    }}>{t('admin.settings.sub_btn_upgrade', 'Passer en Pro')}</button>
                   )}
                 </div>
               </div>
@@ -1785,44 +1820,44 @@ function App() {
         
         <ul className="nav-menu">
           <li className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }}>
-            <Icons.Home /> Tableau de bord
+            <Icons.Home /> {t('admin.sidebar.dashboard', 'Tableau de bord')}
           </li>
           <li className={`nav-item ${activeTab === 'students' ? 'active' : ''}`} onClick={() => { setActiveTab('students'); setIsMobileMenuOpen(false); }}>
-            <Icons.Users /> Gestion Élèves
+            <Icons.Users /> {t('admin.sidebar.students', 'Gestion Élèves')}
           </li>
           <li className={`nav-item ${activeTab === 'absences' ? 'active' : ''}`} onClick={() => { setActiveTab('absences'); setIsMobileMenuOpen(false); }}>
-            <Icons.Activity /> Gestion Absences
+            <Icons.Activity /> {t('admin.sidebar.absences', 'Gestion Absences')}
           </li>
           <li className={`nav-item ${activeTab === 'parents' ? 'active' : ''}`} onClick={() => { setActiveTab('parents'); setIsMobileMenuOpen(false); }}>
-            <Icons.Heart /> Parents d'Élèves
+            <Icons.Heart /> {t('admin.sidebar.parents', "Parents d'Élèves")}
           </li>
           <li className={`nav-item ${activeTab === 'teachers' ? 'active' : ''}`} onClick={() => { setActiveTab('teachers'); setIsMobileMenuOpen(false); }}>
-            <Icons.GraduationCap /> Enseignants
+            <Icons.GraduationCap /> {t('admin.sidebar.teachers', 'Enseignants')}
           </li>
           <li className={`nav-item ${activeTab === 'pedagogy' ? 'active' : ''}`} onClick={() => { setActiveTab('pedagogy'); setIsMobileMenuOpen(false); }}>
-            <Icons.BookOpen /> Pédagogie
+            <Icons.BookOpen /> {t('admin.sidebar.pedagogy', 'Pédagogie')}
           </li>
           <li className={`nav-item ${activeTab === 'schedules' ? 'active' : ''}`} onClick={() => { setActiveTab('schedules'); setIsMobileMenuOpen(false); }}>
-            <Icons.Calendar /> Emplois du Temps
+            <Icons.Calendar /> {t('admin.sidebar.schedules', 'Emplois du Temps')}
           </li>
           <li className={`nav-item ${activeTab === 'grades' ? 'active' : ''}`} onClick={() => { setActiveTab('grades'); setIsMobileMenuOpen(false); }}>
-            <Icons.FileText /> Notes & Bulletins
+            <Icons.FileText /> {t('admin.sidebar.grades', 'Notes & Bulletins')}
           </li>
           <li className={`nav-item ${activeTab === 'bulletins' ? 'active' : ''}`} onClick={() => { setActiveTab('bulletins'); setIsMobileMenuOpen(false); }}>
-            <Icons.FileText /> Bulletins
+            <Icons.FileText /> {t('admin.sidebar.bulletins', 'Bulletins')}
           </li>
           <li className={`nav-item ${activeTab === 'scolarite' ? 'active' : ''}`} onClick={() => { setActiveTab('scolarite'); setIsMobileMenuOpen(false); }}>
-            <Icons.CreditCard /> Comptabilité & Scolarité
+            <Icons.CreditCard /> {t('admin.sidebar.finance', 'Comptabilité & Scolarité')}
           </li>
           <li className={`nav-item ${activeTab === 'rh' ? 'active' : ''}`} onClick={() => { setActiveTab('rh'); setIsMobileMenuOpen(false); }}>
-            <Icons.Briefcase /> RH & Admin
+            <Icons.Briefcase /> {t('admin.sidebar.rh', 'RH & Admin')}
           </li>
           <li className={`nav-item ${activeTab === 'communication' ? 'active' : ''}`} onClick={() => { setActiveTab('communication'); setIsMobileMenuOpen(false); }}>
-            <Icons.MessageSquare /> Communication
+            <Icons.MessageSquare /> {t('admin.sidebar.communication', 'Communication')}
           </li>
           <li style={{flex: 1}}></li>
           <li className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}>
-            <Icons.Settings /> Paramètres
+            <Icons.Settings /> {t('admin.sidebar.settings', 'Paramètres')}
           </li>
         </ul>
       </aside>
@@ -1837,11 +1872,14 @@ function App() {
             </button>
             <div className="header-search">
               <Icons.Search />
-              <input type="text" placeholder="Rechercher..." />
+              <input type="text" placeholder={t('admin.header.search', 'Rechercher...')} />
             </div>
           </div>
           
           <div className="header-actions">
+            <button className="btn btn-outline" style={{padding: '4px 8px'}} onClick={toggleLanguage}>
+              {i18n.language.startsWith('ar') ? 'Français' : 'العربية'}
+            </button>
             <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginRight: '16px', background: 'var(--surface-color-hover)', padding: '4px 8px', borderRadius: '8px'}}>
               <Icons.Briefcase />
               <select 
@@ -1856,17 +1894,17 @@ function App() {
                   }
                 }}
               >
-                {adminSchools.length === 0 && <option value="PLACEHOLDER" disabled>Aucun établissement</option>}
+                {adminSchools.length === 0 && <option value="PLACEHOLDER" disabled>{t('admin.header.no_school', 'Aucun établissement')}</option>}
                 {adminSchools.map(school => (
                   <option key={school.id} value={school.id}>{school.name}</option>
                 ))}
-                <option value="NEW">+ Nouvel établissement</option>
+                <option value="NEW">{t('admin.header.new_school', '+ Nouvel établissement')}</option>
               </select>
             </div>
             <button className="btn btn-primary" onClick={() => setActiveModal('quickCreate')}>
-              <Icons.Plus /> Nouveau
+              <Icons.Plus /> {t('admin.header.new', 'Nouveau')}
             </button>
-            <button className="action-btn" onClick={() => alert("Vous n'avez pas de nouvelles notifications.")}>
+            <button className="action-btn" onClick={() => alert(t('admin.header.no_notifications', "Vous n'avez pas de nouvelles notifications."))}>
               <Icons.Bell />
               <span className="action-badge"></span>
             </button>
@@ -1874,7 +1912,7 @@ function App() {
               <div className="avatar">A</div>
               <div className="user-info">
                 <span className="user-name">{session?.user?.email || 'Adama Traoré'}</span>
-                <span className="user-role">Directeur</span>
+                <span className="user-role">{t('admin.header.director', 'Directeur')}</span>
               </div>
               
               {isProfileMenuOpen && (
@@ -1902,7 +1940,7 @@ function App() {
                     fontWeight: 500,
                   }} onMouseOver={(e) => e.currentTarget.style.background = 'var(--surface-color-hover)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
                     <Icons.LogOut />
-                    <span>Déconnexion</span>
+                    <span>{t('admin.header.logout', 'Déconnexion')}</span>
                   </div>
                 </div>
               )}
@@ -1934,18 +1972,18 @@ function App() {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>
-                {activeModal === 'quickCreate' && "Menu de Création Rapide"}
-                {activeModal === 'payment' && "Enregistrer un Paiement"}
-                {activeModal === 'absence' && "Signaler une Absence"}
-                {activeModal === 'student' && "Nouvelle Inscription"}
-                {activeModal === 'teacher' && "Ajouter un Enseignant"}
-                {activeModal === 'employee' && "Ajouter un Employé"}
-                {activeModal === 'parent' && "Ajouter un Parent"}
-                {activeModal === 'message' && "Nouveau Message"}
-                {activeModal === 'bulletin' && "Générer Bulletins"}
-                {activeModal === 'course' && "Planifier un cours"}
-                {activeModal === 'newSchool' && "Créer un Établissement"}
-                {activeModal === 'class' && "Créer une Classe"}
+                {activeModal === 'quickCreate' && t('admin.modals.quickCreate', "Menu de Création Rapide")}
+                {activeModal === 'payment' && t('admin.modals.payment', "Enregistrer un Paiement")}
+                {activeModal === 'absence' && t('admin.modals.absence', "Signaler une Absence")}
+                {activeModal === 'student' && t('admin.modals.student', "Nouvelle Inscription")}
+                {activeModal === 'teacher' && t('admin.modals.teacher', "Ajouter un Enseignant")}
+                {activeModal === 'employee' && t('admin.modals.employee', "Ajouter un Employé")}
+                {activeModal === 'parent' && t('admin.modals.parent', "Ajouter un Parent")}
+                {activeModal === 'message' && t('admin.modals.message', "Nouveau Message")}
+                {activeModal === 'bulletin' && t('admin.modals.bulletin', "Générer Bulletins")}
+                {activeModal === 'course' && t('admin.modals.course', "Planifier un cours")}
+                {activeModal === 'newSchool' && t('admin.modals.newSchool', "Créer un Établissement")}
+                {activeModal === 'class' && t('admin.modals.class', "Créer une Classe")}
               </h2>
               <button className="close-btn" onClick={closeModal}>
                 <Icons.X />
@@ -1958,23 +1996,23 @@ function App() {
                 <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                   <div className="creation-card" onClick={() => { closeModal(); setActiveTab('students'); setActiveModal('student'); }}>
                     <div className="creation-icon"><Icons.UserPlus /></div>
-                    <div><h4>Nouvel Élève</h4><p>Inscrire un étudiant.</p></div>
+                    <div><h4>{t('admin.modals.quick_student_title', 'Nouvel Élève')}</h4><p>{t('admin.modals.quick_student_desc', 'Inscrire un étudiant.')}</p></div>
                   </div>
                   <div className="creation-card" onClick={() => { closeModal(); setActiveTab('scolarite'); setActiveModal('payment'); }}>
                     <div className="creation-icon" style={{color: 'var(--accent-color)', background: 'rgba(16, 185, 129, 0.1)'}}><Icons.CreditCard /></div>
-                    <div><h4>Encaisser Paiement</h4><p>Frais de scolarité.</p></div>
+                    <div><h4>{t('admin.modals.quick_payment_title', 'Encaisser Paiement')}</h4><p>{t('admin.modals.quick_payment_desc', 'Frais de scolarité.')}</p></div>
                   </div>
                   <div className="creation-card" onClick={() => { closeModal(); setActiveTab('communication'); setActiveModal('message'); }}>
                     <div className="creation-icon" style={{color: 'var(--warning-color)', background: 'rgba(245, 158, 11, 0.1)'}}><Icons.Mail /></div>
-                    <div><h4>Nouveau Message</h4><p>Contacter les parents.</p></div>
+                    <div><h4>{t('admin.modals.quick_message_title', 'Nouveau Message')}</h4><p>{t('admin.modals.quick_message_desc', 'Contacter les parents.')}</p></div>
                   </div>
                   <div className="creation-card" onClick={() => { closeModal(); setActiveTab('bulletins'); setActiveModal('bulletin'); }}>
                     <div className="creation-icon" style={{color: '#ec4899', background: 'rgba(236, 72, 153, 0.1)'}}><Icons.FileText /></div>
-                    <div><h4>Nouveau Bulletin</h4><p>Générer des notes.</p></div>
+                    <div><h4>{t('admin.modals.quick_bulletin_title', 'Nouveau Bulletin')}</h4><p>{t('admin.modals.quick_bulletin_desc', 'Générer des notes.')}</p></div>
                   </div>
                   <div className="creation-card" onClick={() => { closeModal(); setActiveTab('pedagogy'); setActiveModal('class'); }}>
                     <div className="creation-icon" style={{color: '#8b5cf6', background: 'rgba(139, 92, 246, 0.1)'}}><Icons.BookOpen /></div>
-                    <div><h4>Nouvelle Classe</h4><p>Ajouter une classe.</p></div>
+                    <div><h4>{t('admin.modals.quick_class_title', 'Nouvelle Classe')}</h4><p>{t('admin.modals.quick_class_desc', 'Ajouter une classe.')}</p></div>
                   </div>
                 </div>
               )}
@@ -1983,12 +2021,12 @@ function App() {
               {activeModal === 'newSchool' && (
                 <form onSubmit={handleFormSubmit}>
                   <div className="form-group">
-                    <label>Nom du nouvel établissement</label>
+                    <label>{t('admin.modals.school_name', 'Nom du nouvel établissement')}</label>
                     <input type="text" name="name" className="form-input" placeholder="Ex: Groupe Scolaire d'Excellence" required />
                   </div>
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
-                    <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
-                    <button type="submit" className="btn btn-primary">Créer</button>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
+                    <button type="submit" className="btn btn-primary">{t('admin.modals.create', 'Créer')}</button>
                   </div>
                 </form>
               )}
@@ -1997,11 +2035,11 @@ function App() {
               {activeModal === 'class' && (
                 <form onSubmit={handleFormSubmit}>
                   <div className="form-group">
-                    <label>Nom de la classe</label>
+                    <label>{t('admin.modals.class_name', 'Nom de la classe')}</label>
                     <input type="text" name="name" className="form-input" placeholder="Ex: 6ème A, Terminale S1" required />
                   </div>
                   <div className="form-group">
-                    <label>Niveau</label>
+                    <label>{t('admin.modals.class_level', 'Niveau')}</label>
                     <select name="level" className="form-select" required>
                       <option value="Maternelle">Maternelle</option>
                       <option value="Primaire">Primaire</option>
@@ -2011,8 +2049,8 @@ function App() {
                     </select>
                   </div>
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
-                    <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
-                    <button type="submit" className="btn btn-primary">Créer la classe</button>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
+                    <button type="submit" className="btn btn-primary">{t('admin.modals.create', 'Créer la classe')}</button>
                   </div>
                 </form>
               )}
@@ -2021,14 +2059,14 @@ function App() {
               {activeModal === 'payment' && (
                 <form onSubmit={handleFormSubmit}>
                   <div className="form-group">
-                    <label>Élève</label>
+                    <label>{t('admin.modals.student_select', 'Élève')}</label>
                     <select name="student_id" className="form-select" required>
                       <option value="">Sélectionner un élève...</option>
                       {studentsData.map(s => <option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>)}
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>Motif du paiement</label>
+                    <label>{t('admin.modals.motif', 'Motif du paiement')}</label>
                     <select name="motif" className="form-select" required>
                       <option>Frais d'inscription</option>
                       <option>Mensualité (Scolarité)</option>
@@ -2037,11 +2075,11 @@ function App() {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>Montant (FCFA)</label>
+                    <label>{t('admin.modals.amount', 'Montant (FCFA)')}</label>
                     <input type="number" name="amount" className="form-input" placeholder="Ex: 25000" required />
                   </div>
                   <div className="form-group">
-                    <label>Mode de paiement</label>
+                    <label>{t('admin.modals.payment_method', 'Mode de paiement')}</label>
                     <select name="payment_method" className="form-select" required>
                       <option>Espèces</option>
                       <option>Chèque</option>
@@ -2049,8 +2087,8 @@ function App() {
                     </select>
                   </div>
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
-                    <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
-                    <button type="submit" className="btn btn-primary">Valider le paiement</button>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
+                    <button type="submit" className="btn btn-primary">{t('admin.modals.submit', 'Valider le paiement')}</button>
                   </div>
                 </form>
               )}
@@ -2059,7 +2097,7 @@ function App() {
               {activeModal === 'message' && (
                 <form onSubmit={handleFormSubmit}>
                   <div className="form-group">
-                    <label>Destinataire(s)</label>
+                    <label>{t('admin.modals.recipient', 'Destinataire(s)')}</label>
                     <select className="form-select" required>
                       <option>Tous les parents d'une classe...</option>
                       <option>Parents - Terminale S1</option>
@@ -2068,16 +2106,16 @@ function App() {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>Sujet</label>
+                    <label>{t('admin.modals.subject', 'Sujet')}</label>
                     <input type="text" className="form-input" placeholder="Sujet de votre message" required />
                   </div>
                   <div className="form-group">
-                    <label>Message</label>
+                    <label>{t('admin.modals.message_body', 'Message')}</label>
                     <textarea className="form-textarea" placeholder="Rédigez votre message ici..." required></textarea>
                   </div>
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
-                    <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
-                    <button type="submit" className="btn btn-primary"><Icons.Send /> Envoyer</button>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
+                    <button type="submit" className="btn btn-primary"><Icons.Send /> {t('admin.modals.send', 'Envoyer')}</button>
                   </div>
                 </form>
               )}
@@ -2086,7 +2124,7 @@ function App() {
               {activeModal === 'absence' && (
                 <form onSubmit={handleFormSubmit}>
                   <div className="form-group">
-                    <label>Élève concerné</label>
+                    <label>{t('admin.modals.student_concerned', 'Élève concerné')}</label>
                     <select name="student_id" className="form-select" required>
                       <option value="">Rechercher un élève...</option>
                       {studentsData.map(s => <option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>)}
@@ -2094,11 +2132,11 @@ function App() {
                   </div>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
-                      <label>Date</label>
+                      <label>{t('admin.modals.date', 'Date')}</label>
                       <input type="date" name="absence_date" className="form-input" required defaultValue={new Date().toISOString().split('T')[0]} />
                     </div>
                     <div className="form-group">
-                      <label>Durée / Heure</label>
+                      <label>{t('admin.modals.duration', 'Durée / Heure')}</label>
                       <select name="duration" className="form-select" required>
                         <option>Journée entière</option>
                         <option>Matinée</option>
@@ -2108,7 +2146,7 @@ function App() {
                     </div>
                   </div>
                   <div className="form-group">
-                    <label>Motif</label>
+                    <label>{t('admin.modals.absence_motif', 'Motif')}</label>
                     <select name="motif" className="form-select" required>
                       <option>Non justifié</option>
                       <option>Maladie</option>
@@ -2118,12 +2156,12 @@ function App() {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>Commentaire (Optionnel)</label>
+                    <label>{t('admin.modals.comments', 'Commentaire (Optionnel)')}</label>
                     <textarea name="comments" className="form-textarea" placeholder="Détails supplémentaires..." style={{minHeight: '80px'}}></textarea>
                   </div>
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
-                    <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
-                    <button type="submit" className="btn btn-primary" style={{background: 'var(--warning-color)', color: 'black', border: 'none'}}>Enregistrer l'absence</button>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
+                    <button type="submit" className="btn btn-primary" style={{background: 'var(--warning-color)', color: 'black', border: 'none'}}>{t('admin.modals.save_absence', "Enregistrer l'absence")}</button>
                   </div>
                 </form>
               )}
@@ -2131,24 +2169,24 @@ function App() {
               {/* Student Form */}
               {activeModal === 'student' && (
                 <form onSubmit={handleFormSubmit}>
-                  <h3 style={{marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>1. Informations de l'Élève</h3>
+                  <h3 style={{marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>{t('admin.modals.student_info', "1. Informations de l'Élève")}</h3>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
-                      <label>Nom</label>
+                      <label>{t('admin.modals.last_name', 'Nom')}</label>
                       <input type="text" name="last_name" className="form-input" required />
                     </div>
                     <div className="form-group">
-                      <label>Prénom(s)</label>
+                      <label>{t('admin.modals.first_name', 'Prénom(s)')}</label>
                       <input type="text" name="first_name" className="form-input" required />
                     </div>
                   </div>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
-                      <label>Date de Naissance</label>
+                      <label>{t('admin.modals.birth_date', 'Date de Naissance')}</label>
                       <input type="date" name="birth_date" className="form-input" required />
                     </div>
                     <div className="form-group">
-                      <label>Classe (Affectation)</label>
+                      <label>{t('admin.modals.class_assign', 'Classe (Affectation)')}</label>
                       <select name="class_id" className="form-select" required>
                         <option value="">Choisir une classe...</option>
                         {classesData.map(cls => (
@@ -2159,45 +2197,45 @@ function App() {
                   </div>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px'}}>
                     <div className="form-group">
-                      <label>Email de l'Élève</label>
+                      <label>{t('admin.modals.email', 'Email de l\'Élève')}</label>
                       <input type="email" name="email" className="form-input" required />
                     </div>
                     <div className="form-group">
-                      <label>Mot de passe (par défaut: passer123)</label>
+                      <label>{t('admin.modals.password_default', 'Mot de passe (par défaut: passer123)')}</label>
                       <input type="text" name="password" className="form-input" placeholder="passer123" />
                     </div>
                   </div>
 
-                  <h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>2. Informations du Parent / Tuteur</h3>
+                  <h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>{t('admin.modals.parent_info', '2. Informations du Parent / Tuteur')}</h3>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
-                      <label>Nom du parent</label>
+                      <label>{t('admin.modals.parent_last_name', 'Nom du parent')}</label>
                       <input type="text" name="parent_last_name" className="form-input" />
                     </div>
                     <div className="form-group">
-                      <label>Prénom du parent</label>
+                      <label>{t('admin.modals.parent_first_name', 'Prénom du parent')}</label>
                       <input type="text" name="parent_first_name" className="form-input" />
                     </div>
                   </div>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
-                      <label>Téléphone</label>
+                      <label>{t('admin.modals.phone', 'Téléphone')}</label>
                       <input type="tel" name="parent_phone" className="form-input" />
                     </div>
                     <div className="form-group">
-                      <label>Email</label>
+                      <label>{t('admin.modals.email', 'Email')}</label>
                       <input type="email" name="parent_email" className="form-input" />
                     </div>
                   </div>
 
-                  <h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>3. Frais d'Inscription & Scolarité</h3>
+                  <h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>{t('admin.modals.fees_info', "3. Frais d'Inscription & Scolarité")}</h3>
                   <div className="form-group">
-                    <label>Montant des frais d'inscription (CFA)</label>
+                    <label>{t('admin.modals.reg_fee_amount', "Montant des frais d'inscription (CFA)")}</label>
                     <input type="number" name="reg_fee_amount" className="form-input" placeholder="Ex: 50000" />
                   </div>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
-                      <label>Mode de paiement</label>
+                      <label>{t('admin.modals.payment_method', 'Mode de paiement')}</label>
                       <select name="reg_fee_method" className="form-select">
                         <option value="Espèces">Espèces</option>
                         <option value="Chèque">Chèque</option>
@@ -2206,7 +2244,7 @@ function App() {
                       </select>
                     </div>
                     <div className="form-group">
-                      <label>Statut</label>
+                      <label>{t('admin.modals.status', 'Statut')}</label>
                       <select name="reg_fee_status" className="form-select">
                         <option value="Payée">Payée (Immédiatement)</option>
                         <option value="En attente">En attente (Paiement ultérieur)</option>
@@ -2215,8 +2253,8 @@ function App() {
                   </div>
 
                   <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
-                    <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
-                    <button type="submit" className="btn btn-primary">Valider l'inscription complète</button>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
+                    <button type="submit" className="btn btn-primary">{t('admin.modals.complete_registration', "Valider l'inscription complète")}</button>
                   </div>
                 </form>
               )}
@@ -2226,51 +2264,51 @@ function App() {
                 <form onSubmit={handleFormSubmit}>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
-                      <label>Nom</label>
+                      <label>{t('admin.modals.last_name', 'Nom')}</label>
                       <input type="text" name="last_name" className="form-input" required />
                     </div>
                     <div className="form-group">
-                      <label>Prénom(s)</label>
+                      <label>{t('admin.modals.first_name', 'Prénom(s)')}</label>
                       <input type="text" name="first_name" className="form-input" required />
                     </div>
                   </div>
                   <div className="form-group">
-                    <label>Numéro de Téléphone</label>
+                    <label>{t('admin.modals.phone', 'Numéro de Téléphone')}</label>
                     <input type="tel" name="phone" className="form-input" placeholder="+221 77 000 00 00" required />
                   </div>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
-                      <label>Email</label>
+                      <label>{t('admin.modals.email', 'Email')}</label>
                       <input type="email" name="email" className="form-input" required={activeModal === 'teacher'} />
                     </div>
                     {['teacher', 'employee'].includes(activeModal) && (
                       <div className="form-group">
-                        <label>Mot de passe (facultatif)</label>
+                        <label>{t('admin.modals.password_optional', 'Mot de passe (facultatif)')}</label>
                         <input type="text" name="password" className="form-input" placeholder="Généré automatiquement" />
                       </div>
                     )}
                   </div>
                   {activeModal === 'teacher' && (
                     <div className="form-group">
-                      <label>Matière enseignée</label>
+                      <label>{t('admin.modals.taught_subject', 'Matière enseignée')}</label>
                       <input type="text" name="subject" className="form-input" required />
                     </div>
                   )}
                   {activeModal === 'employee' && (
                     <div className="form-group">
-                      <label>Poste / Rôle</label>
+                      <label>{t('admin.modals.role', 'Poste / Rôle')}</label>
                       <input type="text" name="role" className="form-input" required />
                     </div>
                   )}
                   {activeModal === 'parent' && (
                     <div className="form-group">
-                      <label>Lier à un élève (Matricule ou Nom)</label>
+                      <label>{t('admin.modals.link_to_student', 'Lier à un élève (Matricule ou Nom)')}</label>
                       <input type="text" className="form-input" />
                     </div>
                   )}
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
-                    <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
-                    <button type="submit" className="btn btn-primary">Créer le profil</button>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
+                    <button type="submit" className="btn btn-primary">{t('admin.modals.create_profile', 'Créer le profil')}</button>
                   </div>
                 </form>
               )}
@@ -2279,12 +2317,12 @@ function App() {
               {activeModal === 'evaluation' && (
                 <form onSubmit={handleFormSubmit}>
                   <div className="form-group">
-                    <label>Nom de l'évaluation</label>
+                    <label>{t('admin.modals.eval_name', "Nom de l'évaluation")}</label>
                     <input type="text" name="name" className="form-input" required placeholder="Ex: Devoir de Mathématiques N°1" />
                   </div>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
-                      <label>Classe</label>
+                      <label>{t('admin.modals.class_assign', 'Classe')}</label>
                       <select name="class_id" className="form-select" required>
                         {classesData.map(cls => (
                           <option key={cls.id} value={cls.id}>{cls.name}</option>
@@ -2292,13 +2330,13 @@ function App() {
                       </select>
                     </div>
                     <div className="form-group">
-                      <label>Matière</label>
+                      <label>{t('admin.modals.taught_subject', 'Matière')}</label>
                       <input type="text" name="subject" className="form-input" required placeholder="Ex: Mathématiques" />
                     </div>
                   </div>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
-                      <label>Période</label>
+                      <label>{t('admin.modals.term', 'Période')}</label>
                       <select name="period" className="form-select" required>
                         <option value="1er Trimestre">1er Trimestre</option>
                         <option value="2ème Trimestre">2ème Trimestre</option>
@@ -2308,7 +2346,7 @@ function App() {
                       </select>
                     </div>
                     <div className="form-group">
-                      <label>Type d'évaluation</label>
+                      <label>{t('admin.modals.eval_type', "Type d'évaluation")}</label>
                       <select name="type" className="form-select" required>
                         <option value="Devoir de classe">Devoir de classe</option>
                         <option value="Devoir à la maison">Devoir à la maison</option>
@@ -2319,17 +2357,17 @@ function App() {
                   </div>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
-                      <label>Date</label>
+                      <label>{t('admin.modals.date', 'Date')}</label>
                       <input type="date" name="date" className="form-input" required defaultValue={new Date().toISOString().split('T')[0]} />
                     </div>
                     <div className="form-group">
-                      <label>Noté sur (Maximum)</label>
+                      <label>{t('admin.modals.max_score', 'Noté sur (Maximum)')}</label>
                       <input type="number" name="max_score" className="form-input" required defaultValue="20" min="1" />
                     </div>
                   </div>
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
-                    <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
-                    <button type="submit" className="btn btn-primary">Créer l'évaluation</button>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
+                    <button type="submit" className="btn btn-primary">{t('admin.modals.create_eval', "Créer l'évaluation")}</button>
                   </div>
                 </form>
               )}
@@ -2338,7 +2376,7 @@ function App() {
               {['bulletin', 'course'].includes(activeModal) && (
                 <form onSubmit={handleFormSubmit}>
                   <div className="form-group">
-                    <label>Sélectionner la classe</label>
+                    <label>{t('admin.modals.class_assign', 'Sélectionner la classe')}</label>
                     <select className="form-select" name="classe" required>
                       <option>Terminale S1</option>
                       <option>1ère L</option>
@@ -2347,7 +2385,7 @@ function App() {
                   </div>
                   {activeModal === 'bulletin' && (
                     <div className="form-group">
-                      <label>Trimestre/Semestre</label>
+                      <label>{t('admin.modals.term', 'Trimestre/Semestre')}</label>
                       <select className="form-select" name="trimestre" required>
                         <option>1er Trimestre</option>
                         <option>2ème Trimestre</option>
@@ -2358,19 +2396,19 @@ function App() {
                   {activeModal === 'course' && (
                     <>
                       <div className="form-group">
-                        <label>Matière</label>
+                        <label>{t('admin.modals.taught_subject', 'Matière')}</label>
                         <input type="text" className="form-input" required />
                       </div>
                       <div className="form-group">
-                        <label>Date et Heure</label>
+                        <label>{t('admin.modals.date_time', 'Date et Heure')}</label>
                         <input type="datetime-local" className="form-input" required />
                       </div>
                     </>
                   )}
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
-                    <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
                     <button type="submit" className="btn btn-primary">
-                      {activeModal === 'bulletin' ? 'Lancer la génération' : 'Planifier'}
+                      {activeModal === 'bulletin' ? t('admin.modals.generate', 'Lancer la génération') : t('admin.modals.plan', 'Planifier')}
                     </button>
                   </div>
                 </form>
@@ -2399,33 +2437,33 @@ function App() {
                       style={{borderBottom: activeDossierTab === 'infos' ? '2px solid var(--primary-color)' : 'none', borderRadius: '4px 4px 0 0', border: 'none', background: activeDossierTab === 'infos' ? 'rgba(59, 130, 246, 0.1)' : 'transparent', color: activeDossierTab === 'infos' ? 'var(--primary-color)' : 'var(--text-secondary)'}}
                       onClick={() => setActiveDossierTab('infos')}
                     >
-                      Informations & Planning
+                      {t('admin.modals.dossier_title_infos', 'Informations & Planning')}
                     </button>
                     <button 
                       className={`btn ${activeDossierTab === 'documents' ? '' : 'btn-outline'}`}
                       style={{borderBottom: activeDossierTab === 'documents' ? '2px solid var(--primary-color)' : 'none', borderRadius: '4px 4px 0 0', border: 'none', background: activeDossierTab === 'documents' ? 'rgba(59, 130, 246, 0.1)' : 'transparent', color: activeDossierTab === 'documents' ? 'var(--primary-color)' : 'var(--text-secondary)'}}
                       onClick={() => setActiveDossierTab('documents')}
                     >
-                      Documents & Annexes
+                      {t('admin.modals.dossier_title_docs', 'Documents & Annexes')}
                     </button>
                   </div>
 
                   {activeDossierTab === 'infos' && (
                     <div>
-                      <h3 style={{marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', fontSize: '1.1rem'}}>Informations Scolaires</h3>
+                      <h3 style={{marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', fontSize: '1.1rem'}}>{t('admin.modals.school_infos', 'Informations Scolaires')}</h3>
                       <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px'}}>
                         <div>
-                          <span style={{color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'block'}}>Classe Actuelle</span>
-                          <strong>{selectedStudent.classes?.name || 'Non assigné'}</strong>
+                          <span style={{color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'block'}}>{t('admin.modals.current_class', 'Classe Actuelle')}</span>
+                          <strong>{selectedStudent.classes?.name || t('admin.modals.unassigned', 'Non assigné')}</strong>
                         </div>
                         <div>
-                          <span style={{color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'block'}}>Date de naissance</span>
-                          <strong>{new Date(selectedStudent.birth_date).toLocaleDateString('fr-FR')}</strong>
+                          <span style={{color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'block'}}>{t('admin.modals.birth_date_title', 'Date de naissance')}</span>
+                          <strong>{new Date(selectedStudent.birth_date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR')}</strong>
                         </div>
                       </div>
 
                       {/* Emploi du temps de la classe */}
-                      <h3 style={{marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', fontSize: '1.1rem'}}>Emploi du temps ({selectedStudent.classes?.name})</h3>
+                      <h3 style={{marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', fontSize: '1.1rem'}}>{t('admin.modals.class_schedule', 'Emploi du temps')} ({selectedStudent.classes?.name})</h3>
                       <div style={{marginBottom: '24px'}}>
                         {schedulesData.filter(s => s.class_id === selectedStudent.class_id).length > 0 ? (
                           <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px'}}>
@@ -2447,7 +2485,7 @@ function App() {
                           </div>
                         ) : (
                           <div style={{padding: '16px', background: 'var(--surface-color-hover)', borderRadius: '8px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
-                            Aucun emploi du temps n'a encore été configuré pour cette classe.
+                            {t('admin.modals.no_schedule', "Aucun emploi du temps n'a encore été configuré pour cette classe.")}
                           </div>
                         )}
                       </div>
@@ -2458,35 +2496,34 @@ function App() {
                     <div>
                       {/* Upload Form */}
                       <div style={{background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px', marginBottom: '24px'}}>
-                        <h4 style={{marginTop: 0, marginBottom: '16px'}}>Ajouter un document</h4>
+                        <h4 style={{marginTop: 0, marginBottom: '16px'}}>{t('admin.modals.add_doc', 'Ajouter un document')}</h4>
                         <form onSubmit={handleDocumentUpload} style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
                           <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
                             <div className="form-group">
-                              <label>Type de document</label>
+                              <label>{t('admin.modals.doc_type', 'Type de document')}</label>
                               <select name="document_type" className="form-select" required>
-                                <option value="Administratif">Administratif (Exeat, Naissance)</option>
-                                <option value="Médical">Médical (Vaccin, Certificat)</option>
-                                <option value="Pédagogique">Pédagogique (Bulletins)</option>
-                                <option value="Autre">Autre (Autorisations)</option>
+                                <option value="Administratif">{t('admin.modals.doc_type_admin', 'Administratif (Exeat, Naissance)')}</option>
+                                <option value="Médical">{t('admin.modals.doc_type_med', 'Médical (Vaccin, Certificat)')}</option>
+                                <option value="Pédagogique">{t('admin.modals.doc_type_pedag', 'Pédagogique (Bulletins)')}</option>
+                                <option value="Autre">{t('admin.modals.doc_type_other', 'Autre (Autorisations)')}</option>
                               </select>
                             </div>
                             <div className="form-group">
-                              <label>Nom du document</label>
+                              <label>{t('admin.modals.doc_name', 'Nom du document')}</label>
                               <input type="text" name="document_name" className="form-input" required placeholder="Ex: Extrait de naissance" />
                             </div>
                           </div>
                           <div className="form-group">
-                            <label>Fichier (PDF, JPG, PNG)</label>
+                            <label>{t('admin.modals.file', 'Fichier (PDF, JPG, PNG)')}</label>
                             <input type="file" name="file" className="form-input" accept=".pdf,image/*" required style={{padding: '8px'}} />
                           </div>
                           <button type="submit" className="btn btn-primary" disabled={isUploading} style={{alignSelf: 'flex-start'}}>
-                            {isUploading ? 'Envoi en cours...' : 'Ajouter aux annexes'}
+                            {isUploading ? t('admin.modals.uploading', 'Envoi en cours...') : <><Icons.Upload size={16} /> {t('admin.modals.upload_btn', 'Ajouter le document')}</>}
                           </button>
                         </form>
                       </div>
 
                       {/* Documents List */}
-                      <h4 style={{marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>Fichiers joints ({studentDocumentsData.length})</h4>
                       {studentDocumentsData.length > 0 ? (
                         <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
                           {studentDocumentsData.map(doc => (
@@ -2498,12 +2535,12 @@ function App() {
                                 <div>
                                   <div style={{fontWeight: 600}}>{doc.document_name}</div>
                                   <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
-                                    {doc.document_type} • Ajouté le {new Date(doc.created_at).toLocaleDateString('fr-FR')}
+                                    {doc.document_type} • {t('admin.modals.added_on', 'Ajouté le')} {new Date(doc.created_at).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR')}
                                   </div>
                                 </div>
                               </div>
                               <div style={{display: 'flex', gap: '8px'}}>
-                                <a href={doc.file_path} target="_blank" rel="noopener noreferrer" className="btn btn-outline" style={{padding: '6px 12px', textDecoration: 'none'}}>Voir</a>
+                                <a href={doc.file_path} target="_blank" rel="noopener noreferrer" className="btn btn-outline" style={{padding: '6px 12px', textDecoration: 'none'}}>{t('admin.modals.view', 'Voir')}</a>
                                 <button className="btn btn-outline" style={{padding: '6px 12px', color: 'var(--danger-color)', borderColor: 'var(--danger-color)'}} onClick={() => deleteDocument(doc.id, doc.file_path)}>
                                   <Icons.X />
                                 </button>
@@ -2513,14 +2550,14 @@ function App() {
                         </div>
                       ) : (
                         <div style={{padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', background: 'var(--surface-color-hover)', borderRadius: '8px'}}>
-                          Aucun document n'a été ajouté pour cet élève.
+                          {t('admin.modals.no_doc', "Aucun document n'a été ajouté pour cet élève.")}
                         </div>
                       )}
                     </div>
                   )}
 
                   <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end'}}>
-                    <button type="button" className="btn btn-primary" onClick={closeModal}>Fermer le dossier</button>
+                    <button type="button" className="btn btn-primary" onClick={closeModal}>{t('admin.modals.close_dossier', 'Fermer le dossier')}</button>
                   </div>
                 </div>
               )}
@@ -2529,7 +2566,7 @@ function App() {
               {activeModal === 'schedule' && (
                 <form onSubmit={handleFormSubmit}>
                   <div className="form-group">
-                    <label>Classe</label>
+                    <label>{t('admin.modals.class_assign', 'Classe')}</label>
                     <select name="class_id" className="form-select" required>
                       <option value="">Choisir une classe...</option>
                       {classesData.map(cls => (
@@ -2538,7 +2575,7 @@ function App() {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>Matière</label>
+                    <label>{t('admin.modals.taught_subject', 'Matière')}</label>
                     <input type="text" name="subject" className="form-input" required placeholder="Ex: Mathématiques" />
                   </div>
                   <div className="form-group">
@@ -2551,7 +2588,7 @@ function App() {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>Jour</label>
+                    <label>{t('admin.modals.day', 'Jour')}</label>
                     <select name="day_of_week" className="form-select" required>
                       <option value="Lundi">Lundi</option>
                       <option value="Mardi">Mardi</option>
@@ -2563,17 +2600,17 @@ function App() {
                   </div>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
-                      <label>Heure de début</label>
+                      <label>{t('admin.modals.start_time', 'Heure de début')}</label>
                       <input type="time" name="start_time" className="form-input" required defaultValue="08:00" />
                     </div>
                     <div className="form-group">
-                      <label>Heure de fin</label>
+                      <label>{t('admin.modals.end_time', 'Heure de fin')}</label>
                       <input type="time" name="end_time" className="form-input" required defaultValue="10:00" />
                     </div>
                   </div>
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
-                    <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
-                    <button type="submit" className="btn btn-primary">Enregistrer le cours</button>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
+                    <button type="submit" className="btn btn-primary">{t('admin.modals.save_course', 'Enregistrer le cours')}</button>
                   </div>
                 </form>
               )}

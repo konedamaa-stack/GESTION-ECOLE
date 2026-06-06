@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useTranslation } from 'react-i18next';
 import './Auth.css';
 
 type AuthMode = 'login' | 'register' | 'forgot_password' | 'student_login' | 'teacher_login';
 
 export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogin?: (student: any) => void, onTeacherLogin?: (teacher: any) => void }) {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,7 +40,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
         
         if (error) throw error;
         if (!students || students.length === 0) {
-          throw new Error("Email ou mot de passe incorrect.");
+          throw new Error(t('auth.invalid_credentials', "Email ou mot de passe incorrect."));
         }
         if (onStudentLogin) {
           onStudentLogin(students[0]);
@@ -52,7 +54,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
         
         if (error) throw error;
         if (!teachers || teachers.length === 0) {
-          throw new Error("Email ou mot de passe incorrect.");
+          throw new Error(t('auth.invalid_credentials', "Email ou mot de passe incorrect."));
         }
         if (onTeacherLogin) {
           onTeacherLogin(teachers[0]);
@@ -83,7 +85,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
           if (linkError) throw linkError;
         }
 
-        setMessage('Inscription réussie ! Veuillez vérifier votre boîte mail pour confirmer votre compte.');
+        setMessage(t('auth.register_success', 'Inscription réussie ! Veuillez vérifier votre boîte mail pour confirmer votre compte.'));
       } else if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -95,10 +97,10 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
           redirectTo: window.location.origin,
         });
         if (error) throw error;
-        setMessage('Un lien de réinitialisation a été envoyé à votre adresse email.');
+        setMessage(t('auth.reset_link_sent', 'Un lien de réinitialisation a été envoyé à votre adresse email.'));
       }
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue.');
+      setError(err.message || t('auth.generic_error', 'Une erreur est survenue.'));
     } finally {
       setLoading(false);
     }
@@ -109,36 +111,36 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
       case 'login':
         return (
           <>
-            <h1 className="auth-title">Administration</h1>
-            <p className="auth-subtitle">Connectez-vous pour gérer l'établissement</p>
+            <h1 className="auth-title">{t('auth.admin_title', 'Administration')}</h1>
+            <p className="auth-subtitle">{t('auth.admin_subtitle', "Connectez-vous pour gérer l'établissement")}</p>
           </>
         );
       case 'teacher_login':
         return (
           <>
-            <h1 className="auth-title">Espace Enseignant</h1>
-            <p className="auth-subtitle">Saisissez vos notes et gérez vos classes.</p>
+            <h1 className="auth-title">{t('auth.teacher_title', 'Espace Enseignant')}</h1>
+            <p className="auth-subtitle">{t('auth.teacher_subtitle', "Saisissez vos notes et gérez vos classes.")}</p>
           </>
         );
       case 'student_login':
         return (
           <>
-            <h1 className="auth-title">Espace Élève</h1>
-            <p className="auth-subtitle">Consultez votre bulletin et emploi du temps.</p>
+            <h1 className="auth-title">{t('auth.student_title', 'Espace Élève')}</h1>
+            <p className="auth-subtitle">{t('auth.student_subtitle', "Consultez votre bulletin et emploi du temps.")}</p>
           </>
         );
       case 'register':
         return (
           <>
-            <h1 className="auth-title">Créer un compte</h1>
-            <p className="auth-subtitle">Rejoignez SGES Pro dès aujourd'hui</p>
+            <h1 className="auth-title">{t('auth.register_title', 'Créer un compte')}</h1>
+            <p className="auth-subtitle">{t('auth.register_subtitle', "Rejoignez SGES Pro dès aujourd'hui")}</p>
           </>
         );
       case 'forgot_password':
         return (
           <>
-            <h1 className="auth-title">Mot de passe oublié ?</h1>
-            <p className="auth-subtitle">Entrez votre email pour réinitialiser votre mot de passe</p>
+            <h1 className="auth-title">{t('auth.forgot_password_title', 'Mot de passe oublié ?')}</h1>
+            <p className="auth-subtitle">{t('auth.forgot_password_subtitle', "Entrez votre email pour réinitialiser votre mot de passe")}</p>
           </>
         );
     }
@@ -159,17 +161,17 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
             className={`btn ${mode === 'login' ? 'btn-primary' : 'btn-outline'}`} 
             style={{flex: 1, border: 'none', padding: '8px 4px', fontSize: '0.85rem', background: mode === 'login' ? 'var(--primary-color)' : 'transparent', color: mode === 'login' ? 'white' : 'var(--text-secondary)'}}
             onClick={() => handleModeSwitch('login')}
-          >Admin</button>
+          >{t('auth.tab_admin', 'Admin')}</button>
           <button 
             className={`btn ${mode === 'teacher_login' ? 'btn-primary' : 'btn-outline'}`} 
             style={{flex: 1, border: 'none', padding: '8px 4px', fontSize: '0.85rem', background: mode === 'teacher_login' ? 'var(--primary-color)' : 'transparent', color: mode === 'teacher_login' ? 'white' : 'var(--text-secondary)'}}
             onClick={() => handleModeSwitch('teacher_login')}
-          >Professeur</button>
+          >{t('auth.tab_teacher', 'Professeur')}</button>
           <button 
             className={`btn ${mode === 'student_login' ? 'btn-primary' : 'btn-outline'}`} 
             style={{flex: 1, border: 'none', padding: '8px 4px', fontSize: '0.85rem', background: mode === 'student_login' ? 'var(--primary-color)' : 'transparent', color: mode === 'student_login' ? 'white' : 'var(--text-secondary)'}}
             onClick={() => handleModeSwitch('student_login')}
-          >Élève</button>
+          >{t('auth.tab_student', 'Élève')}</button>
         </div>
 
         {renderContent()}
@@ -181,18 +183,18 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
           {mode === 'student_login' || mode === 'teacher_login' ? (
             <>
               <div className="auth-input-group">
-                <label>Email</label>
+                <label>{t('auth.email_label', 'Email')}</label>
                 <input
                   type="email"
                   className="auth-input"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="votre.email@ecole.com"
+                  placeholder={t('auth.email_placeholder', "votre.email@ecole.com")}
                   required
                 />
               </div>
               <div className="auth-input-group">
-                <label>Mot de passe</label>
+                <label>{t('auth.password_label', 'Mot de passe')}</label>
                 <input
                   type="password"
                   className="auth-input"
@@ -207,19 +209,19 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
             <>
               {mode === 'register' && (
                 <div className="auth-input-group">
-                  <label>Nom de l'établissement</label>
+                  <label>{t('auth.school_name_label', "Nom de l'établissement")}</label>
                   <input
                     type="text"
                     className="auth-input"
                     value={schoolName}
                     onChange={(e) => setSchoolName(e.target.value)}
-                    placeholder="Ex: Lycée d'Excellence"
+                    placeholder={t('auth.school_name_placeholder', "Ex: Lycée d'Excellence")}
                     required
                   />
                 </div>
               )}
               <div className="auth-input-group">
-                <label>Email Administrateur</label>
+                <label>{t('auth.admin_email_label', 'Email Administrateur')}</label>
                 <input
                   type="email"
                   className="auth-input"
@@ -232,7 +234,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
 
               {mode !== 'forgot_password' && (
                 <div className="auth-input-group">
-                  <label>Mot de passe</label>
+                  <label>{t('auth.password_label', 'Mot de passe')}</label>
                   <input
                     type="password"
                     className="auth-input"
@@ -247,7 +249,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
           )}
 
           <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? 'Chargement...' : mode === 'login' || mode === 'student_login' || mode === 'teacher_login' ? 'Se connecter' : mode === 'register' ? "S'inscrire" : 'Envoyer le lien'}
+            {loading ? t('auth.loading', 'Chargement...') : mode === 'login' || mode === 'student_login' || mode === 'teacher_login' ? t('auth.btn_login', 'Se connecter') : mode === 'register' ? t('auth.btn_register', "S'inscrire") : t('auth.btn_send_link', 'Envoyer le lien')}
           </button>
         </form>
 
@@ -255,15 +257,15 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
           {mode === 'login' ? (
             <>
               <button className="auth-link" onClick={() => handleModeSwitch('forgot_password')}>
-                Mot de passe oublié ?
+                {t('auth.forgot_password_link', 'Mot de passe oublié ?')}
               </button>
               <button className="auth-link" onClick={() => handleModeSwitch('register')}>
-                S'inscrire
+                {t('auth.register_link', "S'inscrire")}
               </button>
             </>
           ) : mode !== 'student_login' && mode !== 'teacher_login' ? (
             <button className="auth-link" style={{ margin: '0 auto' }} onClick={() => handleModeSwitch('login')}>
-              Retour à la connexion
+              {t('auth.back_to_login', 'Retour à la connexion')}
             </button>
           ) : null}
         </div>

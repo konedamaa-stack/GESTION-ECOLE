@@ -2,13 +2,20 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { useTranslation } from 'react-i18next';
 
 export default function StudentPortal({ student, onLogout }: { student: any; onLogout: () => void }) {
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<'grades' | 'schedule'>('grades');
   const [schedules, setSchedules] = useState<any[]>([]);
   const [evaluations, setEvaluations] = useState<any[]>([]);
   const [grades, setGrades] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
+
+  const formatNum = (num: number | string | undefined) => {
+    if (num === undefined || num === null) return '';
+    return new Intl.NumberFormat(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR', { useGrouping: false }).format(Number(num));
+  };
 
   useEffect(() => {
     fetchData();
@@ -45,15 +52,15 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
     
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
-    doc.text(`Bulletin de notes - ${period}`, pageWidth / 2, 28, { align: "center" });
-    doc.text(`Année Académique : ${settings?.academic_year || "2025-2026"}`, pageWidth / 2, 34, { align: "center" });
+    doc.text(`${t('student.report_card', 'Bulletin de notes')} - ${period}`, pageWidth / 2, 28, { align: "center" });
+    doc.text(`${t('student.academic_year', 'Année Académique')} : ${settings?.academic_year || "2025-2026"}`, pageWidth / 2, 34, { align: "center" });
 
     // Student Info
     doc.setFontSize(11);
-    doc.text(`Élève : ${student.first_name} ${student.last_name}`, 14, 50);
-    doc.text(`Matricule : ${student.matricule}`, 14, 56);
-    doc.text(`Classe : (Voir ID ${student.class_id})`, 120, 50); // Optionally fetch class name
-    doc.text(`Date de naissance : ${new Date(student.date_of_birth).toLocaleDateString()}`, 120, 56);
+    doc.text(`${t('student.student_label', 'Élève')} : ${student.first_name} ${student.last_name}`, 14, 50);
+    doc.text(`${t('student.matricule_label', 'Matricule')} : ${student.matricule}`, 14, 56);
+    doc.text(`${t('student.class_label', 'Classe')} : (${student.class_id})`, 120, 50); // Optionally fetch class name
+    doc.text(`${t('student.dob_label', 'Date de naissance')} : ${new Date(student.date_of_birth).toLocaleDateString()}`, 120, 56);
 
     // Get evaluations for this period
     const periodEvals = evaluations.filter(e => e.period === period);
@@ -95,7 +102,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
 
     (doc as any).autoTable({
       startY: 65,
-      head: [['Matière', 'Notes Obtenues', 'Moyenne (/20)', 'Appréciations']],
+      head: [[t('student.subject', 'Matière'), t('student.marks_obtained', 'Notes Obtenues'), t('student.average_20', 'Moyenne (/20)'), t('student.appreciations', 'Appréciations')]],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [59, 130, 246] }
@@ -104,17 +111,17 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
     const finalY = (doc as any).lastAutoTable.finalY || 65;
 
     doc.setFont("helvetica", "bold");
-    doc.text(`Moyenne Générale : ${generalAvg.toFixed(2)} / 20`, 14, finalY + 15);
+    doc.text(`${t('student.general_avg', 'Moyenne Générale')} : ${generalAvg.toFixed(2)} / 20`, 14, finalY + 15);
 
     // Footer signature
     doc.setFont("helvetica", "normal");
-    doc.text("Le Directeur", pageWidth - 50, finalY + 30);
+    doc.text(t('student.director', "Le Directeur"), pageWidth - 50, finalY + 30);
     doc.text(settings?.director_name || "", pageWidth - 50, finalY + 45);
 
     doc.save(`Bulletin_${student.matricule}_${period}.pdf`);
   };
 
-  const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+  const days = [t('student.monday', 'Lundi'), t('student.tuesday', 'Mardi'), t('student.wednesday', 'Mercredi'), t('student.thursday', 'Jeudi'), t('student.friday', 'Vendredi'), t('student.saturday', 'Samedi')];
 
   return (
     <div style={{minHeight: '100vh', background: 'var(--background-color)'}}>
@@ -124,7 +131,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
             S
           </div>
           <div>
-            <h1 style={{margin: 0, fontSize: '1.2rem'}}>Portail Élève</h1>
+            <h1 style={{margin: 0, fontSize: '1.2rem'}}>{t('student.portal_title', 'Portail Élève')}</h1>
             <p style={{margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem'}}>{settings?.school_name}</p>
           </div>
         </div>
@@ -133,7 +140,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
             <div style={{fontWeight: 600}}>{student.first_name} {student.last_name}</div>
             <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>{student.matricule}</div>
           </div>
-          <button className="btn btn-outline" onClick={onLogout}>Déconnexion</button>
+          <button className="btn btn-outline" onClick={onLogout}>{t('app.logout', 'Déconnexion')}</button>
         </div>
       </header>
 
@@ -143,40 +150,40 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
             className={`btn ${activeTab === 'grades' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => setActiveTab('grades')}
           >
-            Mes Notes & Bulletins
+            {t('student.tab_grades', 'Mes Notes & Bulletins')}
           </button>
           <button 
             className={`btn ${activeTab === 'schedule' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => setActiveTab('schedule')}
           >
-            Mon Emploi du Temps
+            {t('student.tab_schedule', 'Mon Emploi du Temps')}
           </button>
         </div>
 
         {activeTab === 'grades' && (
           <div className="panel">
-            <h2 style={{marginTop: 0}}>Bulletins Périodiques</h2>
+            <h2 style={{marginTop: 0}}>{t('student.periodic_reports', 'Bulletins Périodiques')}</h2>
             <div style={{display: 'flex', gap: '16px', flexWrap: 'wrap'}}>
-              {['1er Trimestre', '2ème Trimestre', '3ème Trimestre'].map(period => (
-                <div key={period} style={{padding: '24px', border: '1px solid var(--border-color)', borderRadius: '12px', flex: '1', minWidth: '250px', background: 'var(--background-color)', display: 'flex', flexDirection: 'column', gap: '16px'}}>
-                  <h3 style={{margin: 0, fontSize: '1.1rem'}}>{period}</h3>
-                  <button className="btn btn-primary" onClick={() => generatePDF(period)}>
-                    Télécharger le PDF
+              {[{key: '1er Trimestre', t_key: 'teacher.term_1'}, {key: '2ème Trimestre', t_key: 'teacher.term_2'}, {key: '3ème Trimestre', t_key: 'teacher.term_3'}].map(period => (
+                <div key={period.key} style={{padding: '24px', border: '1px solid var(--border-color)', borderRadius: '12px', flex: '1', minWidth: '250px', background: 'var(--background-color)', display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                  <h3 style={{margin: 0, fontSize: '1.1rem'}}>{t(period.t_key, period.key)}</h3>
+                  <button className="btn btn-primary" onClick={() => generatePDF(period.key)}>
+                    {t('student.download_pdf', 'Télécharger le PDF')}
                   </button>
                 </div>
               ))}
             </div>
 
-            <h3 style={{marginTop: '48px'}}>Détail des notes récentes</h3>
+            <h3 style={{marginTop: '48px'}}>{t('student.recent_grades', 'Détail des notes récentes')}</h3>
             <div className="table-responsive">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Matière</th>
-                    <th>Évaluation</th>
-                    <th>Note</th>
-                    <th>Appréciation</th>
+                    <th>{t('student.date', 'Date')}</th>
+                    <th>{t('student.subject', 'Matière')}</th>
+                    <th>{t('student.evaluation', 'Évaluation')}</th>
+                    <th>{t('student.score', 'Note')}</th>
+                    <th>{t('student.appreciation', 'Appréciation')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -185,16 +192,16 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
                     if (!ev) return null;
                     return (
                       <tr key={g.id}>
-                        <td>{new Date(ev.date).toLocaleDateString('fr-FR')}</td>
+                        <td>{new Date(ev.date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR')}</td>
                         <td style={{fontWeight: 600}}>{ev.subject}</td>
                         <td>{ev.name}</td>
-                        <td><span className="badge" style={{background: 'var(--surface-color-hover)'}}>{g.score !== null ? `${g.score} / ${ev.max_score}` : 'Absent'}</span></td>
-                        <td>{g.comment}</td>
+                        <td><span className="badge" style={{background: 'var(--surface-color-hover)'}}>{g.score !== null ? `${formatNum(g.score)} / ${formatNum(ev.max_score)}` : t('student.absent', 'Absent')}</span></td>
+                        <td>{t(`teacher.c_${g.comment === 'Excellent travail' ? 'excellent' : g.comment === 'Très bien' ? 'very_good' : g.comment === 'Bien' ? 'good' : g.comment === 'Assez bien' ? 'fair' : g.comment === 'Passable' ? 'passable' : g.comment === 'Insuffisant' ? 'insufficient' : g.comment === 'Peut mieux faire' ? 'can_do_better' : ''}`, g.comment)}</td>
                       </tr>
                     );
                   })}
                   {grades.length === 0 && (
-                    <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0'}}>Aucune note enregistrée pour le moment.</td></tr>
+                    <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0'}}>{t('student.no_recent_grades', 'Aucune note enregistrée pour le moment.')}</td></tr>
                   )}
                 </tbody>
               </table>
@@ -204,10 +211,11 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
 
         {activeTab === 'schedule' && (
           <div className="panel">
-            <h2 style={{marginTop: 0}}>Mon Emploi du Temps</h2>
+            <h2 style={{marginTop: 0}}>{t('student.tab_schedule', 'Mon Emploi du Temps')}</h2>
             <div style={{display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '16px'}}>
-              {days.map(day => {
-                const daySchedules = schedules.filter(s => s.day_of_week === day);
+              {days.map((day, index) => {
+                const dayKey = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][index];
+                const daySchedules = schedules.filter(s => s.day_of_week === dayKey);
                 return (
                   <div key={day} style={{flex: 1, minWidth: '200px'}}>
                     <h4 style={{textAlign: 'center', background: 'var(--surface-color-hover)', padding: '8px', borderRadius: '4px', margin: '0 0 12px 0'}}>{day}</h4>
@@ -217,11 +225,11 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
                           <div style={{fontWeight: 600, color: 'var(--text-color)', marginBottom: '4px'}}>{course.subject}</div>
                           <div style={{color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px'}}>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                            {course.start_time.slice(0,5)} - {course.end_time.slice(0,5)}
+                            {formatNum(course.start_time.slice(0,5))} - {formatNum(course.end_time.slice(0,5))}
                           </div>
                         </div>
                       )) : (
-                        <div style={{textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', padding: '16px 0'}}>Libre</div>
+                        <div style={{textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', padding: '16px 0'}}>{t('student.free_time', 'Libre')}</div>
                       )}
                     </div>
                   </div>

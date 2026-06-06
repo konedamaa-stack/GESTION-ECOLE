@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useTranslation } from 'react-i18next';
 
 export default function TeacherPortal({ session, onLogout }: { session: any, onLogout: () => void }) {
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [classesData, setClassesData] = useState<any[]>([]);
   const [evaluationsData, setEvaluationsData] = useState<any[]>([]);
@@ -12,6 +14,11 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedEvaluation, setSelectedEvaluation] = useState<any>(null);
   const [gradesInput, setGradesInput] = useState<Record<string, {score: string, comment: string}>>({});
+
+  const formatNum = (num: number | string | undefined) => {
+    if (num === undefined || num === null) return '';
+    return new Intl.NumberFormat(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR', { useGrouping: false }).format(Number(num));
+  };
 
   useEffect(() => {
     fetchData();
@@ -53,11 +60,11 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
 
     const { error } = await supabase.from('evaluations').insert([newEval]);
     if (!error) {
-      alert("Évaluation créée avec succès");
+      alert(t('teacher.eval_created', "Évaluation créée avec succès"));
       e.currentTarget.reset();
       fetchData();
     } else {
-      alert("Erreur: " + error.message);
+      alert(t('teacher.error', "Erreur: ") + error.message);
     }
   };
 
@@ -105,16 +112,16 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     }).filter(g => g.score !== null); // Only save where a score was entered
 
     if (gradesToUpsert.length === 0) {
-      alert("Aucune note à enregistrer");
+      alert(t('teacher.no_grades_to_save', "Aucune note à enregistrer"));
       return;
     }
 
     const { error } = await supabase.from('grades').upsert(gradesToUpsert);
     if (!error) {
-      alert("Notes enregistrées avec succès !");
+      alert(t('teacher.grades_saved', "Notes enregistrées avec succès !"));
       fetchData();
     } else {
-      alert("Erreur lors de l'enregistrement : " + error.message);
+      alert(t('teacher.save_error', "Erreur lors de l'enregistrement : ") + error.message);
     }
   };
 
@@ -128,61 +135,61 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
           SGES Pro
         </div>
         <div className="portal-nav-links">
-          <button className={`portal-nav-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>Tableau de Bord</button>
-          <button className={`portal-nav-link ${activeTab === 'evaluations' ? 'active' : ''}`} onClick={() => setActiveTab('evaluations')}>Mes Évaluations</button>
+          <button className={`portal-nav-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>{t('teacher.tab_dashboard', "Tableau de Bord")}</button>
+          <button className={`portal-nav-link ${activeTab === 'evaluations' ? 'active' : ''}`} onClick={() => setActiveTab('evaluations')}>{t('teacher.tab_evaluations', "Mes Évaluations")}</button>
         </div>
         <div style={{marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '16px'}}>
           <div style={{textAlign: 'right'}}>
             <div style={{fontWeight: 600}}>{session.first_name} {session.last_name}</div>
-            <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Professeur de {session.subject}</div>
+            <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>{t('teacher.teacher_of', "Professeur de")} {session.subject}</div>
           </div>
-          <button className="btn btn-outline" onClick={onLogout}>Déconnexion</button>
+          <button className="btn btn-outline" onClick={onLogout}>{t('app.logout', "Déconnexion")}</button>
         </div>
       </nav>
 
       <div className="portal-content">
         {activeTab === 'dashboard' && (
           <div className="animate-fade-in">
-            <h2>Bienvenue dans votre espace, {session.first_name}</h2>
+            <h2>{t('teacher.welcome', "Bienvenue dans votre espace, {{name}}", {name: session.first_name})}</h2>
             <div className="stats-grid" style={{marginTop: '24px'}}>
               <div className="stat-card">
-                <div className="stat-label">Votre Matière</div>
+                <div className="stat-label">{t('teacher.your_subject', "Votre Matière")}</div>
                 <div className="stat-value" style={{fontSize: '1.5rem'}}>{session.subject}</div>
               </div>
               <div className="stat-card">
-                <div className="stat-label">Évaluations Créées</div>
-                <div className="stat-value">{evaluationsData.length}</div>
+                <div className="stat-label">{t('teacher.created_evals', "Évaluations Créées")}</div>
+                <div className="stat-value">{formatNum(evaluationsData.length)}</div>
               </div>
             </div>
 
             <div className="panel" style={{marginTop: '24px'}}>
-              <h3 className="panel-title">Créer une nouvelle évaluation</h3>
+              <h3 className="panel-title">{t('teacher.create_eval', "Créer une nouvelle évaluation")}</h3>
               <form onSubmit={handleCreateEvaluation} style={{display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end', marginTop: '16px'}}>
                 <div className="form-group">
-                  <label>Titre de l'évaluation</label>
-                  <input type="text" name="name" className="input-field" placeholder="ex: Devoir Surveillé N°1" required />
+                  <label>{t('teacher.eval_title', "Titre de l'évaluation")}</label>
+                  <input type="text" name="name" className="input-field" placeholder={t('teacher.eval_title_ph', "ex: Devoir Surveillé N°1")} required />
                 </div>
                 <div className="form-group">
-                  <label>Classe</label>
+                  <label>{t('teacher.class', "Classe")}</label>
                   <select name="class_id" className="input-field" required>
-                    <option value="">Sélectionner une classe</option>
+                    <option value="">{t('teacher.select_class', "Sélectionner une classe")}</option>
                     {classesData.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Période</label>
+                  <label>{t('teacher.period', "Période")}</label>
                   <select name="period" className="input-field" required>
-                    <option value="1er Trimestre">1er Trimestre</option>
-                    <option value="2ème Trimestre">2ème Trimestre</option>
-                    <option value="3ème Trimestre">3ème Trimestre</option>
+                    <option value="1er Trimestre">{t('teacher.term_1', "1er Trimestre")}</option>
+                    <option value="2ème Trimestre">{t('teacher.term_2', "2ème Trimestre")}</option>
+                    <option value="3ème Trimestre">{t('teacher.term_3', "3ème Trimestre")}</option>
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Date</label>
+                  <label>{t('teacher.date', "Date")}</label>
                   <input type="date" name="date" className="input-field" required />
                 </div>
                 <div className="form-group">
-                  <button type="submit" className="btn btn-primary">Créer</button>
+                  <button type="submit" className="btn btn-primary">{t('teacher.btn_create', "Créer")}</button>
                 </div>
               </form>
             </div>
@@ -194,7 +201,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
             {/* Top Bar for Selection */}
             <div className="panel" style={{marginBottom: '20px', display: 'flex', gap: '24px', alignItems: 'center', background: '#f8f9fa', border: '1px solid #e0e0e0'}}>
               <div style={{flex: 1}}>
-                <label style={{display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px'}}>Sélectionner une évaluation :</label>
+                <label style={{display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px'}}>{t('teacher.select_eval', "Sélectionner une évaluation :")}</label>
                 <select 
                   className="input-field" 
                   style={{width: '100%', maxWidth: '400px'}}
@@ -204,16 +211,16 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                     if (ev) handleSelectEvaluation(ev);
                   }}
                 >
-                  <option value="" disabled>-- Choisir une évaluation --</option>
+                  <option value="" disabled>{t('teacher.choose_eval', "-- Choisir une évaluation --")}</option>
                   {evaluationsData.map(ev => (
-                    <option key={ev.id} value={ev.id}>{ev.name} ({ev.classes?.name} - {new Date(ev.date).toLocaleDateString('fr-FR')})</option>
+                    <option key={ev.id} value={ev.id}>{ev.name} ({ev.classes?.name} - {new Date(ev.date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR')})</option>
                   ))}
                 </select>
               </div>
               
               {selectedEvaluation && (
                 <div style={{display: 'flex', gap: '12px', alignItems: 'flex-end'}}>
-                  <button className="btn btn-primary" onClick={handleSaveGrades} style={{height: '42px'}}>Enregistrer les notes</button>
+                  <button className="btn btn-primary" onClick={handleSaveGrades} style={{height: '42px'}}>{t('teacher.save_grades', "Enregistrer les notes")}</button>
                 </div>
               )}
             </div>
@@ -223,11 +230,11 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                 {/* Table Toolbar */}
                 <div style={{padding: '8px 12px', background: '#f5f5f5', borderBottom: '1px solid #d4d4d4', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                   <div style={{display: 'flex', gap: '4px', alignItems: 'center'}}>
-                    <button style={{background: '#e9ecef', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333'}}>{studentsData.filter(s => s.class_id === selectedClass).length} résultats</button>
-                    <button style={{background: '#fff', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333', marginLeft: '4px'}}>1</button>
-                    <button style={{background: '#fff', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333'}}>2</button>
-                    <button style={{background: '#fff', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333'}}>3</button>
-                    <button style={{background: '#e9ecef', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#0066cc', marginLeft: '4px'}}>Tout afficher</button>
+                    <button style={{background: '#e9ecef', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333'}}>{formatNum(studentsData.filter(s => s.class_id === selectedClass).length)} {t('teacher.results', "résultats")}</button>
+                    <button style={{background: '#fff', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333', marginLeft: '4px'}}>{formatNum(1)}</button>
+                    <button style={{background: '#fff', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333'}}>{formatNum(2)}</button>
+                    <button style={{background: '#fff', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333'}}>{formatNum(3)}</button>
+                    <button style={{background: '#e9ecef', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#0066cc', marginLeft: '4px'}}>{t('teacher.show_all', "Tout afficher")}</button>
                   </div>
                   <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
                     <div style={{position: 'relative', display: 'flex', alignItems: 'center'}}>
@@ -237,7 +244,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                       />
                       <svg viewBox="0 0 24 24" fill="none" stroke="#00a8ff" strokeWidth="2" style={{position: 'absolute', right: '10px', width: '14px', height: '14px'}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                     </div>
-                    <button style={{background: '#f8f9fa', border: '1px solid #ccc', padding: '4px 12px', borderRadius: '3px', fontSize: '12px', color: '#0066cc'}}>Filtre</button>
+                    <button style={{background: '#f8f9fa', border: '1px solid #ccc', padding: '4px 12px', borderRadius: '3px', fontSize: '12px', color: '#0066cc'}}>{t('teacher.filter', "Filtre")}</button>
                   </div>
                 </div>
                 
@@ -256,12 +263,12 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                     <thead>
                       <tr style={{background: '#f9f9f9', borderBottom: '1px solid #d4d4d4', textAlign: 'left', color: '#333'}}>
                         <th style={{padding: '8px 4px', borderRight: '1px solid #d4d4d4', textAlign: 'center', fontWeight: 'bold'}}><input type="checkbox" /></th>
-                        <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>Matricule</th>
-                        <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>Nom</th>
-                        <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>Prénoms</th>
-                        <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>Classe</th>
-                        <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>Note /20</th>
-                        <th style={{padding: '8px', fontWeight: 'bold'}}>Appréciation</th>
+                        <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.matricule', "Matricule")}</th>
+                        <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.last_name', "Nom")}</th>
+                        <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.first_name', "Prénoms")}</th>
+                        <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.class', "Classe")}</th>
+                        <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.score_20', "Note /20")}</th>
+                        <th style={{padding: '8px', fontWeight: 'bold'}}>{t('teacher.appreciation', "Appréciation")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -290,20 +297,20 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                               onChange={(e) => handleGradeChange(student.id, 'comment', e.target.value)}
                             >
                               <option value="">---------</option>
-                              <option value="Excellent travail">Excellent travail</option>
-                              <option value="Très bien">Très bien</option>
-                              <option value="Bien">Bien</option>
-                              <option value="Assez bien">Assez bien</option>
-                              <option value="Passable">Passable</option>
-                              <option value="Insuffisant">Insuffisant</option>
-                              <option value="Peut mieux faire">Peut mieux faire</option>
+                              <option value="Excellent travail">{t('teacher.c_excellent', "Excellent travail")}</option>
+                              <option value="Très bien">{t('teacher.c_very_good', "Très bien")}</option>
+                              <option value="Bien">{t('teacher.c_good', "Bien")}</option>
+                              <option value="Assez bien">{t('teacher.c_fair', "Assez bien")}</option>
+                              <option value="Passable">{t('teacher.c_passable', "Passable")}</option>
+                              <option value="Insuffisant">{t('teacher.c_insufficient', "Insuffisant")}</option>
+                              <option value="Peut mieux faire">{t('teacher.c_can_do_better', "Peut mieux faire")}</option>
                             </select>
                           </td>
                         </tr>
                       ))}
                       {studentsData.filter(s => s.class_id === selectedClass).length === 0 && (
                         <tr>
-                          <td colSpan={7} style={{textAlign: 'center', padding: '24px', color: '#777'}}>Aucun élève trouvé dans cette classe.</td>
+                          <td colSpan={7} style={{textAlign: 'center', padding: '24px', color: '#777'}}>{t('teacher.no_student_found', "Aucun élève trouvé dans cette classe.")}</td>
                         </tr>
                       )}
                     </tbody>
@@ -311,7 +318,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                 </div>
                 {/* Footer Toolbar */}
                 <div style={{padding: '6px 12px', background: '#f5f5f5', borderTop: '1px solid #d4d4d4', display: 'flex', alignItems: 'center'}}>
-                  <span style={{background: '#333', color: '#fff', padding: '4px 12px', borderRadius: '3px', fontSize: '12px', fontWeight: 'bold'}}>0 sur {studentsData.filter(s => s.class_id === selectedClass).length} sélectionné</span>
+                  <span style={{background: '#333', color: '#fff', padding: '4px 12px', borderRadius: '3px', fontSize: '12px', fontWeight: 'bold'}}>{t('teacher.selected_count', "0 sur {{count}} sélectionné", {count: formatNum(studentsData.filter(s => s.class_id === selectedClass).length)})}</span>
                 </div>
               </div>
             ) : (
@@ -323,8 +330,8 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                   <line x1="16" y1="17" x2="8" y2="17"></line>
                   <polyline points="10 9 9 9 8 9"></polyline>
                 </svg>
-                <h3>Aucune évaluation sélectionnée</h3>
-                <p>Veuillez choisir une évaluation dans le menu déroulant ci-dessus pour commencer la saisie des notes.</p>
+                <h3>{t('teacher.no_eval_selected', "Aucune évaluation sélectionnée")}</h3>
+                <p>{t('teacher.select_eval_to_start', "Veuillez choisir une évaluation dans le menu déroulant ci-dessus pour commencer la saisie des notes.")}</p>
               </div>
             )}
           </div>

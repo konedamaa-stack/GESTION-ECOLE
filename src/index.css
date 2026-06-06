@@ -177,3 +177,34 @@ a:hover {
 html {
   font-size: clamp(12px, 1vw + 6px, 14px);
 }
+
+/* RTL Support */
+[dir="rtl"] {
+  --font-main: 'Tajawal', 'Cairo', system-ui, sans-serif;
+  text-align: right;
+}
+
+[dir="rtl"] .btn {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .header-search input {
+  padding-left: 16px;
+  padding-right: 40px;
+}
+
+[dir="rtl"] .header-search svg {
+  left: auto;
+  right: 12px;
+}
+
+[dir="rtl"] .sidebar-nav .nav-item {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+[dir="rtl"] .sidebar-nav .nav-icon {
+  margin-right: 0;
+  margin-left: 12px;
+}
+
