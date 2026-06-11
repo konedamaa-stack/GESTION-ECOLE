@@ -1921,22 +1921,38 @@ function App() {
               <Icons.Search />
               <input type="text" placeholder={t('admin.header.search', 'Rechercher...')} />
             </div>
-            {adminSchools && adminSchools.length > 0 && (
-              <select 
-                className="form-select" 
-                style={{marginLeft: 16, maxWidth: 200, padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: '6px', background: 'var(--surface-color)', color: 'var(--text-color)'}}
-                value={currentSchoolId || ''}
-                onChange={(e) => setCurrentSchoolId(e.target.value)}
+            <div style={{display: 'flex', gap: '10px', marginLeft: '20px'}}>
+              {adminSchools && adminSchools.length > 0 && (
+                <select 
+                  className="form-select" 
+                  style={{padding: '8px 12px', border: '2px solid var(--primary-color)', borderRadius: '6px', background: 'var(--surface-color)', color: 'var(--text-color)'}}
+                  value={currentSchoolId || ''}
+                  onChange={(e) => setCurrentSchoolId(e.target.value)}
+                >
+                  {adminSchools.map((s: any) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              )}
+              <button 
+                type="button" 
+                onClick={() => setShowSchoolModal(true)} 
+                style={{
+                  background: '#ff4b4b', 
+                  color: 'white', 
+                  padding: '8px 16px', 
+                  borderRadius: '6px', 
+                  fontWeight: 'bold', 
+                  border: 'none', 
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 6px rgba(255, 75, 75, 0.3)'
+                }}
               >
-                {adminSchools.map((s: any) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            )}
-            <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.9rem', marginLeft: '8px'}} onClick={() => setShowSchoolModal(true)}>
-              + Établissement
-            </button>
+                + CRÉER ÉTABLISSEMENT
+              </button>
+            </div>
           </div>
+          
           
           <div className="header-actions">
             <button className="btn btn-outline" style={{padding: '4px 8px'}} onClick={toggleLanguage}>
