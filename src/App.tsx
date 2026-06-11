@@ -298,7 +298,7 @@ function App() {
       loadSchools();
       alert("Établissement créé avec succès !");
     } catch (error: any) {
-      alert("Erreur lors de la création de l'établissement: " + error.message);
+      alert("Erreur: " + error.message);
     }
   };
 
@@ -313,7 +313,7 @@ function App() {
         if (!className) return;
         const { error } = await supabase.from('classes').insert([{ 
           name: className, 
-          level: classLevel || 'Non défini',
+          level: classLevel || 'Non défini', school_id: currentSchoolId,
           }]);
         if (error) throw error;
         alert("Classe créée avec succès !");
@@ -349,7 +349,7 @@ function App() {
           email: formData.get('email'),
           password: password,
         };
-        const { data: studentData, error: studentError } = await supabase.from('students').insert([student]).select();
+        const { data: studentData, error: studentError } = await supabase.from('students').insert([{...student, school_id: currentSchoolId}]).select();
         if (studentError) throw studentError;
         
         const newStudentId = studentData[0].id;
@@ -361,7 +361,7 @@ function App() {
             phone: formData.get('parent_phone'),
             email: formData.get('parent_email'),
           };
-          const { data: parentData, error: parentError } = await supabase.from('parents').insert([parent]).select();
+          const { data: parentData, error: parentError } = await supabase.from('parents').insert([{...parent, school_id: currentSchoolId}]).select();
           if (!parentError && parentData && parentData.length > 0) {
             await supabase.from('student_parents').insert([{
               student_id: newStudentId,
@@ -380,7 +380,7 @@ function App() {
             status: 'Payée',
             invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
           };
-          await supabase.from('invoices').insert([invoice]);
+          await supabase.from('invoices').insert([{...invoice, school_id: currentSchoolId}]);
         }
 
         alert("Inscription réussie ! L'élève, ses parents et ses frais ont été enregistrés.");
@@ -415,7 +415,7 @@ function App() {
           matricule: teacherMatricule,
           password: password,
         };
-        const { error } = await supabase.from('teachers').insert([teacher]);
+        const { error } = await supabase.from('teachers').insert([{...teacher, school_id: currentSchoolId}]);
         if (error) throw error;
         alert(`Le professeur a été créé.\n\nEmail : ${teacher.email}\nMot de passe : ${password}\n\nVeuillez transmettre ces informations au professeur.`);
         fetchTeachers();
@@ -428,7 +428,7 @@ function App() {
           phone: formData.get('phone'),
           email: formData.get('email'),
         };
-        const { error } = await supabase.from('employees').insert([employee]);
+        const { error } = await supabase.from('employees').insert([{...employee, school_id: currentSchoolId}]);
         if (error) throw error;
         fetchEmployees();
       }
@@ -440,7 +440,7 @@ function App() {
           motif: formData.get('motif'),
           comments: formData.get('comments'),
         };
-        const { error } = await supabase.from('absences').insert([absence]);
+        const { error } = await supabase.from('absences').insert([{...absence, school_id: currentSchoolId}]);
         if (error) throw error;
         fetchAbsences();
       }
@@ -453,7 +453,7 @@ function App() {
           status: 'Payée',
           invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
         };
-        const { error } = await supabase.from('invoices').insert([invoice]);
+        const { error } = await supabase.from('invoices').insert([{...invoice, school_id: currentSchoolId}]);
         if (error) throw error;
         fetchInvoices();
       }
@@ -466,7 +466,7 @@ function App() {
           start_time: formData.get('start_time'),
           end_time: formData.get('end_time'),
         };
-        const { error } = await supabase.from('schedules').insert([schedule]);
+        const { error } = await supabase.from('schedules').insert([{...schedule, school_id: currentSchoolId}]);
         if (error) throw error;
         fetchSchedules();
       }
@@ -480,7 +480,7 @@ function App() {
           date: formData.get('date'),
           max_score: formData.get('max_score') || 20,
         };
-        const { error } = await supabase.from('evaluations').insert([evaluation]);
+        const { error } = await supabase.from('evaluations').insert([{...evaluation, school_id: currentSchoolId}]);
         if (error) throw error;
         fetchEvaluations();
       }
