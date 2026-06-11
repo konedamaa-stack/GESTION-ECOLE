@@ -70,8 +70,6 @@ function App() {
   const [evaluationsData, setEvaluationsData] = useState<any[]>([]);
   const [activeEvaluation, setActiveEvaluation] = useState<any>(null);
   const [gradesInput, setGradesInput] = useState<Record<string, {score: string, comment: string}>>({});
-  const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
-  const [adminSchools, setAdminSchools] = useState<{id: string, name: string}[]>([]);
 
   const [studentsData, setStudentsData] = useState<any[]>([]);
   const [classesData, setClassesData] = useState<any[]>([]);
@@ -128,17 +126,18 @@ function App() {
   }, [activeTab]);
 
   useEffect(() => {
-    if (currentSchoolId) localStorage.setItem('sges_school_id', currentSchoolId);
-  }, [currentSchoolId]);
-
-  useEffect(() => {
     if (session) {
-      setCurrentSchoolPlan('Standard');
     }
   }, [session]);
 
   useEffect(() => {
-    if (session && currentSchoolId) {
+    if (session) {
+      setCurrentSchoolPlan('Premium');
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (session) {
       fetchStudents();
       fetchClasses();
       fetchTeachers();
@@ -149,7 +148,7 @@ function App() {
       fetchEvaluations();
       fetchSettings();
     }
-  }, [session, currentSchoolId]);
+  }, [session]);
 
   useEffect(() => {
     if (activeModal === 'studentDossier' && selectedStudent) {
@@ -200,7 +199,7 @@ function App() {
 
   const saveSettings = async (e: any) => {
     e.preventDefault();
-    if (!currentSchoolId) return;
+    
     const formData = new FormData(e.target);
     const settingsObj = {
       school_name: formData.get('school_name'),
@@ -233,38 +232,6 @@ function App() {
   const handleFormSubmit = async (e: any) => {
     e.preventDefault();
     const formData = new FormData(e.target);
-    
-    if (activeModal === 'newSchool') {
-      try {
-        const schoolName = formData.get('name') as string;
-        if (!schoolName) return;
-        const { data: newSchool, error: schoolError } = await supabase.from('schools').insert([{ name: schoolName }]).select().single();
-        if (schoolError) throw schoolError;
-        
-        const { error: adminError } = await supabase.from('school_admins').insert([{
-          user_id: session?.user.id,
-          }]);
-        if (adminError) throw adminError;
-        
-        alert("Nouvel établissement créé avec succès !");
-        
-        const { data } = await supabase.from('school_admins').select('school_id, schools(name)').eq('user_id', session?.user.id);
-        if (data) {
-          const schoolsList = data.map((d: any) => ({ id: d.school_id, name: d.schools?.name || 'École' }));
-          setAdminSchools(schoolsList);
-          setCurrentSchoolId(newSchool.id);
-        }
-        closeModal();
-      } catch (err: any) {
-        alert("Erreur lors de la création : " + err.message);
-      }
-      return;
-    }
-
-    if (!currentSchoolId) {
-      alert("Erreur: ID de l'établissement introuvable.");
-      return;
-    }
     
     try {
       if (activeModal === 'class') {
@@ -443,7 +410,7 @@ function App() {
 
   const handleDocumentUpload = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!selectedStudent || !currentSchoolId) return;
+    if (!selectedStudent) return;
     
     const formData = new FormData(e.currentTarget);
     const file = formData.get('file') as File;
@@ -1737,11 +1704,7 @@ function App() {
                     <button className="btn" disabled style={{width: '100%', background: 'var(--border-color)', color: 'var(--text-secondary)'}}>{t('admin.settings.sub_btn_active', 'Plan Actif')}</button>
                   ) : (
                     <button className="btn" style={{width: '100%', border: '1px solid var(--border-color)'}} onClick={async () => {
-                      const { error } = await supabase.from('schools').update({ subscription_plan: 'Standard' }).eq('id', currentSchoolId);
-                      if (!error) {
-                        setCurrentSchoolPlan('Standard');
-                        setAdminSchools(adminSchools.map(s => s.id === currentSchoolId ? {...s, plan: 'Standard'} : s));
-                      }
+                      setCurrentSchoolPlan('Standard');
                     }}>{t('admin.settings.sub_btn_downgrade', 'Rétrograder')}</button>
                   )}
                 </div>
@@ -1765,12 +1728,8 @@ function App() {
                     <button className="btn" disabled style={{width: '100%', background: 'var(--border-color)', color: 'var(--text-secondary)'}}>{t('admin.settings.sub_btn_active', 'Plan Actif')}</button>
                   ) : (
                     <button className="btn btn-primary" style={{width: '100%', background: 'var(--accent-color)', borderColor: 'var(--accent-color)'}} onClick={async () => {
-                      const { error } = await supabase.from('schools').update({ subscription_plan: 'Pro' }).eq('id', currentSchoolId);
-                      if (!error) {
-                        setCurrentSchoolPlan('Pro');
-                        setAdminSchools(adminSchools.map(s => s.id === currentSchoolId ? {...s, plan: 'Pro'} : s));
-                        alert('Félicitations ! Vous avez débloqué le plan Pro.');
-                      }
+                      setCurrentSchoolPlan('Pro');
+                      alert('Félicitations ! Vous avez débloqué le plan Pro.');
                     }}>{t('admin.settings.sub_btn_upgrade', 'Passer en Pro')}</button>
                   )}
                 </div>
@@ -1802,7 +1761,7 @@ function App() {
       {/* Sidebar */}
       <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-logo">
-          <div className="logo-icon">{adminSchools.find(s => s.id === currentSchoolId)?.name?.charAt(0) || 'S'}</div>
+          <div className="logo-icon">S</div>
           <span className="logo-text" style={{ fontSize: '1.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{settingsData?.school_name || 'SGES Pro'}</span>
         </div>
         
@@ -1868,27 +1827,6 @@ function App() {
             <button className="btn btn-outline" style={{padding: '4px 8px'}} onClick={toggleLanguage}>
               {i18n.language.startsWith('ar') ? 'Français' : 'العربية'}
             </button>
-            <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginRight: '16px', background: 'var(--surface-color-hover)', padding: '4px 8px', borderRadius: '8px'}}>
-              <Icons.Briefcase />
-              <select 
-                className="form-select" 
-                style={{padding: '4px 24px 4px 8px', fontSize: '0.85rem', width: 'auto', border: 'none', background: 'transparent', fontWeight: 600, color: 'var(--text-color)'}}
-                value={currentSchoolId || 'PLACEHOLDER'}
-                onChange={(e) => {
-                  if (e.target.value === 'NEW') {
-                    setActiveModal('newSchool');
-                  } else if (e.target.value !== 'PLACEHOLDER') {
-                    setCurrentSchoolId(e.target.value);
-                  }
-                }}
-              >
-                {adminSchools.length === 0 && <option value="PLACEHOLDER" disabled>{t('admin.header.no_school', 'Aucun établissement')}</option>}
-                {adminSchools.map(school => (
-                  <option key={school.id} value={school.id}>{school.name}</option>
-                ))}
-                <option value="NEW">{t('admin.header.new_school', '+ Nouvel établissement')}</option>
-              </select>
-            </div>
             <button className="btn btn-primary" onClick={() => setActiveModal('quickCreate')}>
               <Icons.Plus /> {t('admin.header.new', 'Nouveau')}
             </button>
@@ -1970,7 +1908,7 @@ function App() {
                 {activeModal === 'message' && t('admin.modals.message', "Nouveau Message")}
                 {activeModal === 'bulletin' && t('admin.modals.bulletin', "Générer Bulletins")}
                 {activeModal === 'course' && t('admin.modals.course', "Planifier un cours")}
-                {activeModal === 'newSchool' && t('admin.modals.newSchool', "Créer un Établissement")}
+
                 {activeModal === 'class' && t('admin.modals.class', "Créer une Classe")}
               </h2>
               <button className="close-btn" onClick={closeModal}>
