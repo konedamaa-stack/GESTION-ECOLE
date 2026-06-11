@@ -48,7 +48,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
     // Header
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.text(settings?.school_name || "SGES Pro", pageWidth / 2, 20, { align: "center" });
+    doc.text(settings?.school_name || "Établissement", pageWidth / 2, 20, { align: "center" });
     
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");

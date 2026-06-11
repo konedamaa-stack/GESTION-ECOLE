@@ -231,6 +231,24 @@ function App() {
     e.preventDefault();
     
     const formData = new FormData(e.target);
+    
+    const logoFile = formData.get('logo_file') as File;
+    if (logoFile && logoFile.size > 0 && currentSchoolId) {
+      if (logoFile.size > 2 * 1024 * 1024) {
+        window.alert('Le logo est trop volumineux. Maximum 2 Mo.');
+        return;
+      }
+      const fileExt = logoFile.name.split('.').pop();
+      const fileName = `${currentSchoolId}-${Math.random()}.${fileExt}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage.from('logos').upload(fileName, logoFile);
+      if (!uploadError && uploadData) {
+         const { data: urlData } = supabase.storage.from('logos').getPublicUrl(fileName);
+         if (urlData) {
+           await supabase.from('schools').update({ logo_url: urlData.publicUrl }).eq('id', currentSchoolId);
+         }
+      }
+    }
+
     const settingsObj = {
       school_name: formData.get('school_name'),
       address: formData.get('address'),
@@ -468,7 +486,7 @@ function App() {
       }
       else if (activeModal === 'bulletin') {
         alert("Génération terminée ! Le document va être téléchargé.");
-        const blob = new Blob(["----- BULLETINS SGES PRO -----\n\nClasse : " + formData.get('classe') + "\nPériode : " + formData.get('trimestre') + "\n\nCeci est un document généré automatiquement pour tous les élèves de la classe.\n[Signature: Direction]"], { type: 'text/plain' });
+        const blob = new Blob(["----- BULLETINS ${settingsData?.school_name?.toUpperCase() || 'ÉTABLISSEMENT'} -----\n\nClasse : " + formData.get('classe') + "\nPériode : " + formData.get('trimestre') + "\n\nCeci est un document généré automatiquement pour tous les élèves de la classe.\n[Signature: Direction]"], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -650,7 +668,7 @@ function App() {
           </div>
           <button className="btn btn-outline" onClick={() => {
             alert(t('dashboard.generating_report', "Génération du rapport en cours..."));
-            const reportContent = t('dashboard.report_content', "----- RAPPORT GLOBAL SGES PRO -----\n\nTotal Élèves: {{students}}\nProfesseurs: {{teachers}}\nClasses: {{classes}}\nAbsences Totales: {{absences}}\n\nCe rapport a été généré automatiquement.", {
+            const reportContent = t('dashboard.report_content', "----- RAPPORT GLOBAL ${settingsData?.school_name?.toUpperCase() || 'ÉTABLISSEMENT'} -----\n\nTotal Élèves: {{students}}\nProfesseurs: {{teachers}}\nClasses: {{classes}}\nAbsences Totales: {{absences}}\n\nCe rapport a été généré automatiquement.", {
               students: formatNum(totalStudents),
               teachers: formatNum(totalTeachers),
               classes: formatNum(totalClasses),
@@ -1666,6 +1684,8 @@ function App() {
               <h3 className="panel-title" style={{marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>{t('admin.settings.gen_title', 'Paramètres Généraux')}</h3>
               <div style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Logo de l'établissement (Image, Max 2Mo)</label>
+                  <input type="file" name="logo_file" accept="image/*" className="form-input" style={{marginBottom: '10px'}} />
                   <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{t('admin.settings.gen_name', "Nom de l'établissement")}</label>
                   <input type="text" name="school_name" defaultValue={settingsData?.school_name || ''} className="form-input" required />
                 </div>
@@ -1867,7 +1887,11 @@ function App() {
       {/* Sidebar */}
       <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-logo">
-          <div className="logo-icon">{(adminSchools?.find((s: any) => s.id === currentSchoolId)?.name || settingsData?.school_name || 'É').charAt(0).toUpperCase()}</div>
+          {(adminSchools?.find((s: any) => s.id === currentSchoolId) as any)?.logo_url ? (
+            <img src={(adminSchools?.find((s: any) => s.id === currentSchoolId) as any).logo_url} alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '8px', objectFit: 'cover' }} />
+          ) : (
+            <div className="logo-icon">{(adminSchools?.find((s: any) => s.id === currentSchoolId)?.name || settingsData?.school_name || 'É').charAt(0).toUpperCase()}</div>
+          )}
           <span className="logo-text" style={{ fontSize: '1.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{adminSchools?.find((s: any) => s.id === currentSchoolId)?.name || settingsData?.school_name || 'Établissement'}</span>
         </div>
         

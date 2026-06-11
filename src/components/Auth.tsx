@@ -114,7 +114,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onBack }: { onStu
         return (
           <>
             <h1 className="auth-title">{t('auth.register_title', 'Créer un compte')}</h1>
-            <p className="auth-subtitle">{t('auth.register_subtitle', "Rejoignez SGES Pro dès aujourd'hui")}</p>
+            <p className="auth-subtitle">{t('auth.register_subtitle', "Rejoignez-nous dès aujourd'hui")}</p>
           </>
         );
       case 'forgot_password':
