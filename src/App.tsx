@@ -133,35 +133,7 @@ function App() {
 
   useEffect(() => {
     if (session) {
-      const getSchoolId = async () => {
-        const { data, error } = await supabase.from('school_admins').select('school_id, schools(name, subscription_plan)').eq('user_id', session.user.id);
-        if (data && data.length > 0 && !error) {
-          const schoolsList = data.map((d: any) => ({ 
-            id: d.school_id, 
-            name: d.schools?.name || 'École',
-            plan: d.schools?.subscription_plan || 'Standard' 
-          }));
-          setAdminSchools(schoolsList);
-          
-          const savedSchoolId = localStorage.getItem('sges_school_id');
-          const newCurrentId = (savedSchoolId && schoolsList.some(s => s.id === savedSchoolId)) 
-            ? savedSchoolId 
-            : ((currentSchoolId && schoolsList.some(s => s.id === currentSchoolId)) ? currentSchoolId : schoolsList[0].id);
-          setCurrentSchoolId(newCurrentId);
-          
-          const activeSchool = schoolsList.find(s => s.id === newCurrentId);
-          if (activeSchool) {
-            setCurrentSchoolPlan(activeSchool.plan);
-          }
-        } else {
-          setActiveModal('newSchool');
-        }
-      };
-      getSchoolId();
-    } else {
-      setCurrentSchoolId(null);
       setCurrentSchoolPlan('Standard');
-      setAdminSchools([]);
     }
   }, [session]);
 
@@ -2034,18 +2006,6 @@ function App() {
               )}
 
               {/* New School Form */}
-              {activeModal === 'newSchool' && (
-                <form onSubmit={handleFormSubmit}>
-                  <div className="form-group">
-                    <label>{t('admin.modals.school_name', 'Nom du nouvel établissement')}</label>
-                    <input type="text" name="name" className="form-input" placeholder="Ex: Groupe Scolaire d'Excellence" required />
-                  </div>
-                  <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
-                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
-                    <button type="submit" className="btn btn-primary">{t('admin.modals.create', 'Créer')}</button>
-                  </div>
-                </form>
-              )}
 
               {/* Class Form */}
               {activeModal === 'class' && (
