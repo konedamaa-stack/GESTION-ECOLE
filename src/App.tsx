@@ -42,9 +42,15 @@ const Icons = {
 function App() {
   const { t, i18n } = useTranslation();
   const [session, setSession] = useState<Session | null>(null);
-  const [studentSession, setStudentSession] = useState<any>(null);
-  const [teacherSession, setTeacherSession] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [studentSession, setStudentSession] = useState<any>(() => {
+    const saved = localStorage.getItem('sges_student');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [teacherSession, setTeacherSession] = useState<any>(() => {
+    const saved = localStorage.getItem('sges_teacher');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sges_tab') || 'dashboard');
   const [activeSettingsTab, setActiveSettingsTab] = useState('general');
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -108,6 +114,24 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (studentSession) localStorage.setItem('sges_student', JSON.stringify(studentSession));
+    else localStorage.removeItem('sges_student');
+  }, [studentSession]);
+
+  useEffect(() => {
+    if (teacherSession) localStorage.setItem('sges_teacher', JSON.stringify(teacherSession));
+    else localStorage.removeItem('sges_teacher');
+  }, [teacherSession]);
+
+  useEffect(() => {
+    localStorage.setItem('sges_tab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (currentSchoolId) localStorage.setItem('sges_school_id', currentSchoolId);
+  }, [currentSchoolId]);
+
+  useEffect(() => {
     if (session) {
       const getSchoolId = async () => {
         const { data, error } = await supabase.from('school_admins').select('school_id, schools(name, subscription_plan)').eq('user_id', session.user.id);
@@ -119,7 +143,10 @@ function App() {
           }));
           setAdminSchools(schoolsList);
           
-          const newCurrentId = (currentSchoolId && schoolsList.some(s => s.id === currentSchoolId)) ? currentSchoolId : schoolsList[0].id;
+          const savedSchoolId = localStorage.getItem('sges_school_id');
+          const newCurrentId = (savedSchoolId && schoolsList.some(s => s.id === savedSchoolId)) 
+            ? savedSchoolId 
+            : ((currentSchoolId && schoolsList.some(s => s.id === currentSchoolId)) ? currentSchoolId : schoolsList[0].id);
           setCurrentSchoolId(newCurrentId);
           
           const activeSchool = schoolsList.find(s => s.id === newCurrentId);
