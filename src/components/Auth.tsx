@@ -32,10 +32,11 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
 
     try {
       if (mode === 'student_login') {
+        const identifier = email.trim();
         const { data: students, error } = await supabase
           .from('students')
           .select('*')
-          .eq('email', email)
+          .eq('matricule', identifier.toUpperCase())
           .eq('password', password);
         
         if (error) throw error;
@@ -182,17 +183,31 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
         <form onSubmit={handleAuth} className="auth-form">
           {mode === 'student_login' || mode === 'teacher_login' ? (
             <>
-              <div className="auth-input-group">
-                <label>{t('auth.email_label', 'Email')}</label>
-                <input
-                  type="email"
-                  className="auth-input"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t('auth.email_placeholder', "votre.email@ecole.com")}
-                  required
-                />
-              </div>
+              {mode === 'student_login' ? (
+                <div className="auth-input-group">
+                  <label>{t('auth.matricule_label', 'Matricule de l\'élève')}</label>
+                  <input
+                    type="text"
+                    className="auth-input"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Ex: ELV-2024-1234"
+                    required
+                  />
+                </div>
+              ) : (
+                <div className="auth-input-group">
+                  <label>{t('auth.email_label', 'Email')}</label>
+                  <input
+                    type="email"
+                    className="auth-input"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t('auth.email_placeholder', "votre.email@ecole.com")}
+                    required
+                  />
+                </div>
+              )}
               <div className="auth-input-group">
                 <label>{t('auth.password_label', 'Mot de passe')}</label>
                 <input
