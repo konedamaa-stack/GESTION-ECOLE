@@ -53,6 +53,9 @@ function App() {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sges_tab') || 'dashboard');
   const [activeSettingsTab, setActiveSettingsTab] = useState('general');
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [adminSchools, setAdminSchools] = useState<any[]>([]);
+  const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
+  const [showSchoolModal, setShowSchoolModal] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [currentSchoolPlan, setCurrentSchoolPlan] = useState<string>('Standard');
@@ -79,6 +82,12 @@ function App() {
   const [absencesData, setAbsencesData] = useState<any[]>([]);
   const [schedulesData, setSchedulesData] = useState<any[]>([]);
   const [settingsData, setSettingsData] = useState<any | null>(null);
+  const [editEntity, setEditEntity] = useState<any>(null);
+  const [parentsData, setParentsData] = useState<any[]>([]);
+  const fetchParents = async () => {
+    const { data } = await supabase.from('parents').select('*').eq('school_id', currentSchoolId || '');
+    if (data) setParentsData(data);
+  };
 
   const toggleLanguage = () => {
     const newLang = i18n.language.startsWith('ar') ? 'fr' : 'ar';
@@ -136,19 +145,38 @@ function App() {
     }
   }, [session]);
 
-  useEffect(() => {
+    useEffect(() => {
     if (session) {
+      loadSchools();
+    }
+  }, [session]);
+
+  const loadSchools = async () => {
+    if (!session) return;
+    const { data: adminLinks } = await supabase.from('school_admins').select('school_id, schools(*)').eq('user_id', session.user.id);
+    if (adminLinks && adminLinks.length > 0) {
+      const schools = adminLinks.map((link: any) => link.schools);
+      setAdminSchools(schools);
+      setCurrentSchoolId(schools[0].id);
+    } else {
+      setShowSchoolModal(true);
+    }
+  };
+
+  useEffect(() => {
+    if (currentSchoolId) {
       fetchStudents();
       fetchClasses();
       fetchTeachers();
       fetchEmployees();
+      fetchParents();
       fetchInvoices();
       fetchAbsences();
       fetchSchedules();
       fetchEvaluations();
       fetchSettings();
     }
-  }, [session]);
+  }, [currentSchoolId]);
 
   useEffect(() => {
     if (activeModal === 'studentDossier' && selectedStudent) {
@@ -157,23 +185,23 @@ function App() {
   }, [activeModal, selectedStudent]);
 
   const fetchStudents = async () => {
-    const { data } = await supabase.from('students').select(`*, classes ( name )`);
+    const { data } = await supabase.from('students').select(`*, classes ( name )`).eq('school_id', currentSchoolId);
     if (data) setStudentsData(data);
   };
   const fetchClasses = async () => {
-    const { data } = await supabase.from('classes').select('*');
+    const { data } = await supabase.from('classes').select('*').eq('school_id', currentSchoolId);
     if (data) setClassesData(data);
   };
   const fetchTeachers = async () => {
-    const { data } = await supabase.from('teachers').select('*');
+    const { data } = await supabase.from('teachers').select('*').eq('school_id', currentSchoolId);
     if (data) setTeachersData(data);
   };
   const fetchEmployees = async () => {
-    const { data } = await supabase.from('employees').select('*');
+    const { data } = await supabase.from('employees').select('*').eq('school_id', currentSchoolId);
     if (data) setEmployeesData(data);
   };
   const fetchInvoices = async () => {
-    const { data } = await supabase.from('invoices').select(`*, students ( first_name, last_name, matricule )`);
+    const { data } = await supabase.from('invoices').select(`*, students ( first_name, last_name, matricule )`).eq('school_id', currentSchoolId);
     if (data) setInvoicesData(data);
   };
   const fetchAbsences = async () => {
@@ -193,7 +221,7 @@ function App() {
     if (data) setEvaluationsData(data);
   };
   const fetchSettings = async () => {
-    const { data } = await supabase.from('school_settings').select('*').single();
+    const { data } = await supabase.from('school_settings').select('*').eq('school_id', currentSchoolId).single();
     if (data) setSettingsData(data);
   };
 
@@ -229,6 +257,31 @@ function App() {
 
   const closeModal = () => setActiveModal(null);
 
+  const handleCreateSchool = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const schoolName = formData.get('name') as string;
+    
+    try {
+      const { data: newSchool, error: schoolError } = await supabase.from('schools').insert([{ name: schoolName }]).select();
+      if (schoolError) throw schoolError;
+      
+      const newSchoolId = newSchool[0].id;
+      
+      const { error: adminError } = await supabase.from('school_admins').insert([{
+        user_id: session?.user.id,
+        school_id: newSchoolId
+      }]);
+      if (adminError) throw adminError;
+      
+      setShowSchoolModal(false);
+      loadSchools();
+      alert("Établissement créé avec succès !");
+    } catch (error: any) {
+      alert("Erreur lors de la création de l'établissement: " + error.message);
+    }
+  };
+
   const handleFormSubmit = async (e: any) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -250,6 +303,21 @@ function App() {
       }
 
       if (activeModal === 'student') {
+        if (editEntity) {
+          const studentUpdate: any = {
+            first_name: formData.get('first_name'),
+            last_name: formData.get('last_name'),
+            class_id: formData.get('class_id'),
+            birth_date: formData.get('birth_date')
+          };
+          if (formData.get('password')) studentUpdate.password = formData.get('password');
+          const { error } = await supabase.from('students').update(studentUpdate).eq('id', editEntity.id);
+          if (error) throw error;
+          alert("Élève mis à jour !");
+          fetchStudents();
+          closeModal();
+          return;
+        }
         const matricule = 'ELV-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000);
         const password = formData.get('password') || 'passer123';
         const student = {
@@ -299,6 +367,22 @@ function App() {
         fetchStudents();
       } 
       else if (activeModal === 'teacher') {
+        if (editEntity) {
+          const teacherUpdate: any = {
+            first_name: formData.get('first_name'),
+            last_name: formData.get('last_name'),
+            subject: formData.get('subject'),
+            phone: formData.get('phone'),
+            email: formData.get('email')
+          };
+          if (formData.get('password')) teacherUpdate.password = formData.get('password');
+          const { error } = await supabase.from('teachers').update(teacherUpdate).eq('id', editEntity.id);
+          if (error) throw error;
+          alert("Professeur mis à jour !");
+          fetchTeachers();
+          closeModal();
+          return;
+        }
         const teacherMatricule = 'PRF-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000);
         const password = formData.get('password') || Math.random().toString(36).slice(-8);
 
@@ -779,6 +863,8 @@ function App() {
                 <td style={{padding: '16px 0'}}>{row.classes?.name || t('admin.students.unassigned', 'Non assigné')}</td>
                 <td style={{padding: '16px 0'}}><span className={`badge ${row.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`}>{row.status}</span></td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
+                  <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('student'); }}>✏️</button>
+                  <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('student'); }}>✏️</button>
                   <button className="btn btn-outline" style={{padding: '6px 12px'}} onClick={() => { setSelectedStudent(row); setActiveModal('studentDossier'); }}>{t('admin.students.btn_dossier', 'Dossier')}</button>
                 </td>
               </tr>
@@ -1104,6 +1190,8 @@ function App() {
                 <td style={{padding: '16px 0', fontWeight: '500'}}>{formatNum(row.matricule) || '-'}</td>
                 <td style={{padding: '16px 0'}}>{row.password ? '••••••••' : '-'}</td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
+                  <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('teacher'); }}>✏️</button>
+                  <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('teacher'); }}>✏️</button>
                   <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => alert(`Identifiants pour ${row.first_name} ${row.last_name}:\n\nMatricule: ${row.matricule}\nMot de passe: ${row.password}`)}>{t('admin.teachers.btn_view_ids', 'Voir les identifiants')}</button>
                 </td>
               </tr>
@@ -1152,7 +1240,19 @@ function App() {
             </tr>
           </thead>
           <tbody>
-            <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.parents.empty_state', 'Aucun parent enregistré.')}</td></tr>
+            {parentsData && parentsData.length > 0 ? parentsData.map((row, i) => (
+              <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
+                <td style={{padding: '16px 0', fontWeight: 600}}>{row.first_name} {row.last_name}</td>
+                <td style={{padding: '16px 0'}}>-</td>
+                <td style={{padding: '16px 0'}}>{row.phone || '-'}</td>
+                <td style={{padding: '16px 0'}}>{row.email ? 'Actif' : 'Non configuré'}</td>
+                <td style={{padding: '16px 0', textAlign: 'right'}}>
+                  <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('parent'); }}>✏️ Modifier</button>
+                </td>
+              </tr>
+            )) : (
+              <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.parents.empty_state', 'Aucun parent enregistré.')}</td></tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -1821,6 +1921,21 @@ function App() {
               <Icons.Search />
               <input type="text" placeholder={t('admin.header.search', 'Rechercher...')} />
             </div>
+            {adminSchools && adminSchools.length > 0 && (
+              <select 
+                className="form-select" 
+                style={{marginLeft: 16, maxWidth: 200, padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: '6px', background: 'var(--surface-color)', color: 'var(--text-color)'}}
+                value={currentSchoolId || ''}
+                onChange={(e) => setCurrentSchoolId(e.target.value)}
+              >
+                {adminSchools.map((s: any) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            )}
+            <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.9rem', marginLeft: '8px'}} onClick={() => setShowSchoolModal(true)}>
+              + Établissement
+            </button>
           </div>
           
           <div className="header-actions">
@@ -2087,21 +2202,21 @@ function App() {
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
                       <label>{t('admin.modals.last_name', 'Nom')}</label>
-                      <input type="text" name="last_name" className="form-input" required />
+                      <input type="text" name="last_name" className="form-input" required defaultValue={editEntity?.last_name || ""} />
                     </div>
                     <div className="form-group">
                       <label>{t('admin.modals.first_name', 'Prénom(s)')}</label>
-                      <input type="text" name="first_name" className="form-input" required />
+                      <input type="text" name="first_name" className="form-input" required defaultValue={editEntity?.first_name || ""} />
                     </div>
                   </div>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
                       <label>{t('admin.modals.birth_date', 'Date de Naissance')}</label>
-                      <input type="date" name="birth_date" className="form-input" required />
+                      <input type="date" name="birth_date" className="form-input" required defaultValue={editEntity?.birth_date || ""} />
                     </div>
                     <div className="form-group">
                       <label>{t('admin.modals.class_assign', 'Classe (Affectation)')}</label>
-                      <select name="class_id" className="form-select" required>
+                      <select name="class_id" className="form-select" required defaultValue={editEntity?.class_id || ""}>
                         <option value="">Choisir une classe...</option>
                         {classesData.map(cls => (
                           <option key={cls.id} value={cls.id}>{cls.name}</option>
@@ -2112,11 +2227,11 @@ function App() {
                   <div style={{marginTop: '16px'}}>
                     <div className="form-group">
                       <label>{t('admin.modals.password_default', 'Mot de passe (par défaut: passer123)')}</label>
-                      <input type="text" name="password" className="form-input" placeholder="passer123" />
+                      <input type="text" name="password" className="form-input" placeholder={editEntity ? "Laisser vide pour ne pas changer" : "passer123"} />
                     </div>
                   </div>
 
-                  <h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>{t('admin.modals.parent_info', '2. Informations du Parent / Tuteur')}</h3>
+                  {!editEntity && (<><h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>{t('admin.modals.parent_info', '2. Informations du Parent / Tuteur')}</h3>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
                       <label>{t('admin.modals.parent_last_name', 'Nom du parent')}</label>
@@ -2162,9 +2277,10 @@ function App() {
                     </div>
                   </div>
 
+                  </>)}
                   <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
-                    <button type="submit" className="btn btn-primary">{t('admin.modals.complete_registration', "Valider l'inscription complète")}</button>
+                    <button type="submit" className="btn btn-primary">{editEntity ? 'Mettre à jour' : t('admin.modals.complete_registration', "Valider l'inscription complète")}</button>
                   </div>
                 </form>
               )}
@@ -2184,24 +2300,24 @@ function App() {
                   </div>
                   <div className="form-group">
                     <label>{t('admin.modals.phone', 'Numéro de Téléphone')}</label>
-                    <input type="tel" name="phone" className="form-input" placeholder="+221 77 000 00 00" required />
+                    <input type="tel" name="phone" className="form-input" placeholder="+221 77 000 00 00" required defaultValue={editEntity?.phone || ""} />
                   </div>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
                       <label>{t('admin.modals.email', 'Email')}</label>
-                      <input type="email" name="email" className="form-input" required={activeModal === 'teacher'} />
+                      <input type="email" name="email" className="form-input" required={activeModal === 'teacher'} defaultValue={editEntity?.email || ""} />
                     </div>
                     {['teacher', 'employee'].includes(activeModal) && (
                       <div className="form-group">
                         <label>{t('admin.modals.password_optional', 'Mot de passe (facultatif)')}</label>
-                        <input type="text" name="password" className="form-input" placeholder="Généré automatiquement" />
+                        <input type="text" name="password" className="form-input" placeholder={editEntity ? "Laisser vide pour ne pas changer" : "Généré automatiquement"} />
                       </div>
                     )}
                   </div>
                   {activeModal === 'teacher' && (
                     <div className="form-group">
                       <label>{t('admin.modals.taught_subject', 'Matière enseignée')}</label>
-                      <input type="text" name="subject" className="form-input" required />
+                      <input type="text" name="subject" className="form-input" required defaultValue={editEntity?.subject || ""} />
                     </div>
                   )}
                   {activeModal === 'employee' && (
@@ -2218,7 +2334,7 @@ function App() {
                   )}
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
-                    <button type="submit" className="btn btn-primary">{t('admin.modals.create_profile', 'Créer le profil')}</button>
+                    <button type="submit" className="btn btn-primary">{editEntity ? 'Mettre à jour' : t('admin.modals.create_profile', 'Créer le profil')}</button>
                   </div>
                 </form>
               )}
@@ -2524,6 +2640,32 @@ function App() {
                   </div>
                 </form>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* School Creation Modal */}
+      {showSchoolModal && (
+        <div className="modal-overlay" style={{zIndex: 9999}}>
+          <div className="modal-content animate-scale">
+            <div className="modal-header">
+              <h2>Créer un Établissement</h2>
+            </div>
+            <div className="modal-body">
+              <p style={{marginBottom: '20px', color: 'var(--text-secondary)'}}>
+                Bienvenue ! Veuillez créer votre premier établissement pour commencer à utiliser l'application.
+              </p>
+              <form onSubmit={handleCreateSchool}>
+                <div className="form-group">
+                  <label>Nom de l'établissement</label>
+                  <input type="text" name="name" className="form-input" required placeholder="Ex: École de l'Excellence" />
+                </div>
+                <div style={{marginTop: '24px'}}>
+                  <button type="submit" className="btn btn-primary" style={{width: '100%'}}>
+                    Créer et Continuer
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
