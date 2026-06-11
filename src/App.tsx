@@ -167,15 +167,15 @@ function App() {
 
   useEffect(() => {
     if (session && currentSchoolId) {
-      fetchStudents(currentSchoolId);
-      fetchClasses(currentSchoolId);
-      fetchTeachers(currentSchoolId);
-      fetchEmployees(currentSchoolId);
-      fetchInvoices(currentSchoolId);
-      fetchAbsences(currentSchoolId);
-      fetchSchedules(currentSchoolId);
-      fetchEvaluations(currentSchoolId);
-      fetchSettings(currentSchoolId);
+      fetchStudents();
+      fetchClasses();
+      fetchTeachers();
+      fetchEmployees();
+      fetchInvoices();
+      fetchAbsences();
+      fetchSchedules();
+      fetchEvaluations();
+      fetchSettings();
     }
   }, [session, currentSchoolId]);
 
@@ -185,44 +185,44 @@ function App() {
     }
   }, [activeModal, selectedStudent]);
 
-  const fetchStudents = async (schoolId: string) => {
-    const { data } = await supabase.from('students').select(`*, classes ( name )`).eq('school_id', schoolId);
+  const fetchStudents = async () => {
+    const { data } = await supabase.from('students').select(`*, classes ( name )`);
     if (data) setStudentsData(data);
   };
-  const fetchClasses = async (schoolId: string) => {
-    const { data } = await supabase.from('classes').select('*').eq('school_id', schoolId);
+  const fetchClasses = async () => {
+    const { data } = await supabase.from('classes').select('*');
     if (data) setClassesData(data);
   };
-  const fetchTeachers = async (schoolId: string) => {
-    const { data } = await supabase.from('teachers').select('*').eq('school_id', schoolId);
+  const fetchTeachers = async () => {
+    const { data } = await supabase.from('teachers').select('*');
     if (data) setTeachersData(data);
   };
-  const fetchEmployees = async (schoolId: string) => {
-    const { data } = await supabase.from('employees').select('*').eq('school_id', schoolId);
+  const fetchEmployees = async () => {
+    const { data } = await supabase.from('employees').select('*');
     if (data) setEmployeesData(data);
   };
-  const fetchInvoices = async (schoolId: string) => {
-    const { data } = await supabase.from('invoices').select(`*, students ( first_name, last_name, matricule )`).eq('school_id', schoolId);
+  const fetchInvoices = async () => {
+    const { data } = await supabase.from('invoices').select(`*, students ( first_name, last_name, matricule )`);
     if (data) setInvoicesData(data);
   };
-  const fetchAbsences = async (schoolId: string) => {
-    const { data } = await supabase.from('absences').select(`*, students ( first_name, last_name, classes(name) )`).eq('school_id', schoolId);
+  const fetchAbsences = async () => {
+    const { data } = await supabase.from('absences').select(`*, students ( first_name, last_name, classes(name) )`);
     if (data) setAbsencesData(data);
   };
-  const fetchSchedules = async (schoolId: string) => {
-    const { data } = await supabase.from('schedules').select(`*, classes(name), teachers(first_name, last_name)`).eq('school_id', schoolId);
+  const fetchSchedules = async () => {
+    const { data } = await supabase.from('schedules').select(`*, classes(name), teachers(first_name, last_name)`);
     if (data) setSchedulesData(data);
   };
   const fetchStudentDocuments = async (studentId: string) => {
     const { data } = await supabase.from('student_documents').select('*').eq('student_id', studentId);
     if (data) setStudentDocumentsData(data);
   };
-  const fetchEvaluations = async (schoolId: string) => {
-    const { data } = await supabase.from('evaluations').select(`*, classes(name)`).eq('school_id', schoolId);
+  const fetchEvaluations = async () => {
+    const { data } = await supabase.from('evaluations').select(`*, classes(name)`);
     if (data) setEvaluationsData(data);
   };
-  const fetchSettings = async (schoolId: string) => {
-    const { data } = await supabase.from('school_settings').select('*').eq('school_id', schoolId).single();
+  const fetchSettings = async () => {
+    const { data } = await supabase.from('school_settings').select('*').single();
     if (data) setSettingsData(data);
   };
 
@@ -231,7 +231,6 @@ function App() {
     if (!currentSchoolId) return;
     const formData = new FormData(e.target);
     const settingsObj = {
-      school_id: currentSchoolId,
       school_name: formData.get('school_name'),
       address: formData.get('address'),
       phone: formData.get('phone'),
@@ -239,10 +238,10 @@ function App() {
       director_name: formData.get('director_name'),
     };
     
-    const { data: existing } = await supabase.from('school_settings').select('id').eq('school_id', currentSchoolId).single();
+    const { data: existing } = await supabase.from('school_settings').select('id').single();
     let error;
     if (existing) {
-      const { error: err } = await supabase.from('school_settings').update(settingsObj).eq('school_id', currentSchoolId);
+      const { error: err } = await supabase.from('school_settings').update(settingsObj);
       error = err;
     } else {
       const { error: err } = await supabase.from('school_settings').insert([settingsObj]);
@@ -253,7 +252,7 @@ function App() {
       alert("Erreur de sauvegarde: " + error.message);
     } else {
       alert("Paramètres sauvegardés avec succès !");
-      fetchSettings(currentSchoolId);
+      fetchSettings();
     }
   };
 
@@ -272,8 +271,7 @@ function App() {
         
         const { error: adminError } = await supabase.from('school_admins').insert([{
           user_id: session?.user.id,
-          school_id: newSchool.id
-        }]);
+          }]);
         if (adminError) throw adminError;
         
         alert("Nouvel établissement créé avec succès !");
@@ -304,11 +302,10 @@ function App() {
         const { error } = await supabase.from('classes').insert([{ 
           name: className, 
           level: classLevel || 'Non défini',
-          school_id: currentSchoolId 
-        }]);
+          }]);
         if (error) throw error;
         alert("Classe créée avec succès !");
-        fetchClasses(currentSchoolId);
+        fetchClasses();
         closeModal();
         return;
       }
@@ -317,7 +314,6 @@ function App() {
         const matricule = 'ELV-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000);
         const password = formData.get('password') || 'passer123';
         const student = {
-          school_id: currentSchoolId,
           first_name: formData.get('first_name'),
           last_name: formData.get('last_name'),
           matricule: matricule,
@@ -333,7 +329,6 @@ function App() {
 
         if (formData.get('parent_first_name') && formData.get('parent_last_name')) {
           const parent = {
-            school_id: currentSchoolId,
             first_name: formData.get('parent_first_name'),
             last_name: formData.get('parent_last_name'),
             phone: formData.get('parent_phone'),
@@ -351,7 +346,6 @@ function App() {
 
         if (formData.get('reg_fee_amount')) {
           const invoice = {
-            school_id: currentSchoolId,
             student_id: newStudentId,
             amount: formData.get('reg_fee_amount'),
             motif: 'Frais d\'inscription et Scolarité',
@@ -363,14 +357,13 @@ function App() {
         }
 
         alert("Inscription réussie ! L'élève, ses parents et ses frais ont été enregistrés.");
-        fetchStudents(currentSchoolId);
+        fetchStudents();
       } 
       else if (activeModal === 'teacher') {
         const teacherMatricule = 'PRF-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000);
         const password = formData.get('password') || Math.random().toString(36).slice(-8);
 
         const teacher = {
-          school_id: currentSchoolId,
           first_name: formData.get('first_name'),
           last_name: formData.get('last_name'),
           subject: formData.get('subject'),
@@ -382,11 +375,10 @@ function App() {
         const { error } = await supabase.from('teachers').insert([teacher]);
         if (error) throw error;
         alert(`Le professeur a été créé.\n\nEmail : ${teacher.email}\nMot de passe : ${password}\n\nVeuillez transmettre ces informations au professeur.`);
-        fetchTeachers(currentSchoolId);
+        fetchTeachers();
       }
       else if (activeModal === 'employee') {
         const employee = {
-          school_id: currentSchoolId,
           first_name: formData.get('first_name'),
           last_name: formData.get('last_name'),
           role: formData.get('role'),
@@ -395,11 +387,10 @@ function App() {
         };
         const { error } = await supabase.from('employees').insert([employee]);
         if (error) throw error;
-        fetchEmployees(currentSchoolId);
+        fetchEmployees();
       }
       else if (activeModal === 'absence') {
         const absence = {
-          school_id: currentSchoolId,
           student_id: formData.get('student_id'),
           absence_date: formData.get('absence_date'),
           duration: formData.get('duration'),
@@ -408,11 +399,10 @@ function App() {
         };
         const { error } = await supabase.from('absences').insert([absence]);
         if (error) throw error;
-        fetchAbsences(currentSchoolId);
+        fetchAbsences();
       }
       else if (activeModal === 'payment') {
         const invoice = {
-          school_id: currentSchoolId,
           student_id: formData.get('student_id'),
           amount: formData.get('amount'),
           motif: formData.get('motif'),
@@ -422,11 +412,10 @@ function App() {
         };
         const { error } = await supabase.from('invoices').insert([invoice]);
         if (error) throw error;
-        fetchInvoices(currentSchoolId);
+        fetchInvoices();
       }
       else if (activeModal === 'schedule') {
         const schedule = {
-          school_id: currentSchoolId,
           class_id: formData.get('class_id'),
           subject: formData.get('subject'),
           teacher_id: formData.get('teacher_id') || null,
@@ -436,11 +425,10 @@ function App() {
         };
         const { error } = await supabase.from('schedules').insert([schedule]);
         if (error) throw error;
-        fetchSchedules(currentSchoolId);
+        fetchSchedules();
       }
       else if (activeModal === 'evaluation') {
         const evaluation = {
-          school_id: currentSchoolId,
           class_id: formData.get('class_id'),
           subject: formData.get('subject'),
           period: formData.get('period'),
@@ -451,7 +439,7 @@ function App() {
         };
         const { error } = await supabase.from('evaluations').insert([evaluation]);
         if (error) throw error;
-        fetchEvaluations(currentSchoolId);
+        fetchEvaluations();
       }
       else if (activeModal === 'bulletin') {
         alert("Génération terminée ! Le document va être téléchargé.");
@@ -514,7 +502,6 @@ function App() {
 
       // Save to database
       const { error: dbError } = await supabase.from('student_documents').insert([{
-        school_id: currentSchoolId,
         student_id: selectedStudent.id,
         document_type: documentType,
         document_name: documentName,
@@ -1844,7 +1831,7 @@ function App() {
       <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-logo">
           <div className="logo-icon">{adminSchools.find(s => s.id === currentSchoolId)?.name?.charAt(0) || 'S'}</div>
-          <span className="logo-text" style={{ fontSize: '1.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{adminSchools.find(s => s.id === currentSchoolId)?.name || 'SGES Pro'}</span>
+          <span className="logo-text" style={{ fontSize: '1.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{settingsData?.school_name || 'SGES Pro'}</span>
         </div>
         
         <ul className="nav-menu">

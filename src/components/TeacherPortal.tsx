@@ -22,27 +22,26 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [session]);
 
   async function fetchData() {
-    const schoolId = session.school_id;
     // Fetch all classes
-    const { data: classes } = await supabase.from('classes').select('*').eq('school_id', schoolId);
+    const { data: classes } = await supabase.from('classes').select('*');
     if (classes) setClassesData(classes);
 
     // Fetch evaluations for this teacher's subject
     const { data: evaluations } = await supabase.from('evaluations')
       .select('*, classes(name)')
-      .eq('school_id', schoolId)
+      
       .eq('subject', session.subject);
     if (evaluations) setEvaluationsData(evaluations);
 
     // Fetch students
-    const { data: students } = await supabase.from('students').select('*').eq('school_id', schoolId);
+    const { data: students } = await supabase.from('students').select('*');
     if (students) setStudentsData(students);
 
     // Fetch grades
-    const { data: grades } = await supabase.from('grades').select('*').eq('school_id', schoolId);
+    const { data: grades } = await supabase.from('grades').select('*');
     if (grades) setGradesData(grades);
   };
 
@@ -50,7 +49,6 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const newEval = {
-      school_id: session.school_id,
       name: formData.get('name'),
       subject: session.subject,
       class_id: formData.get('class_id'),
@@ -103,7 +101,6 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
       
       return {
         id: existing?.id, // Supabase upsert needs ID if it exists
-        school_id: session.school_id,
         student_id: student.id,
         evaluation_id: selectedEvaluation.id,
         score: input?.score ? parseFloat(input.score) : null,

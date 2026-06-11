@@ -10,7 +10,6 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [schoolName, setSchoolName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -21,7 +20,6 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
     setMessage(null);
     setEmail('');
     setPassword('');
-    setSchoolName('');
   };
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -62,29 +60,11 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
         }
       } else if (mode === 'register') {
         // 1. Sign up user
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        const { error: authError } = await supabase.auth.signUp({
           email,
           password,
         });
         if (authError) throw authError;
-
-        if (authData.user) {
-          // 2. Create school
-          const { data: schoolData, error: schoolError } = await supabase
-            .from('schools')
-            .insert([{ name: schoolName }])
-            .select()
-            .single();
-          
-          if (schoolError) throw schoolError;
-
-          // 3. Link user to school
-          const { error: linkError } = await supabase
-            .from('school_admins')
-            .insert([{ user_id: authData.user.id, school_id: schoolData.id }]);
-          
-          if (linkError) throw linkError;
-        }
 
         setMessage(t('auth.register_success', 'Inscription réussie ! Veuillez vérifier votre boîte mail pour confirmer votre compte.'));
       } else if (mode === 'login') {
@@ -222,19 +202,6 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
             </>
           ) : (
             <>
-              {mode === 'register' && (
-                <div className="auth-input-group">
-                  <label>{t('auth.school_name_label', "Nom de l'établissement")}</label>
-                  <input
-                    type="text"
-                    className="auth-input"
-                    value={schoolName}
-                    onChange={(e) => setSchoolName(e.target.value)}
-                    placeholder={t('auth.school_name_placeholder', "Ex: Lycée d'Excellence")}
-                    required
-                  />
-                </div>
-              )}
               <div className="auth-input-group">
                 <label>{t('auth.admin_email_label', 'Email Administrateur')}</label>
                 <input
