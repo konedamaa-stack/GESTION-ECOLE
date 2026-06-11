@@ -24,7 +24,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     fetchData();
   }, []);
 
-  const fetchData = async () => {
+  async function fetchData() {
     const schoolId = session.school_id;
     // Fetch all classes
     const { data: classes } = await supabase.from('classes').select('*').eq('school_id', schoolId);
