@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { useTranslation } from 'react-i18next';
+import { LandingPage } from './components/LandingPage';
 import Auth from './components/Auth';
 import StudentPortal from './components/StudentPortal';
 import TeacherPortal from './components/TeacherPortal';
@@ -40,6 +41,7 @@ const Icons = {
 };
 
 function App() {
+  const [currentView, setCurrentView] = useState<'landing' | 'app'>('landing');
   const { t, i18n } = useTranslation();
   const [session, setSession] = useState<Session | null>(null);
   const [studentSession, setStudentSession] = useState<any>(() => {
@@ -1841,8 +1843,12 @@ function App() {
     </div>
   );
 
+    if (currentView === 'landing' && !session && !studentSession && !teacherSession) {
+    return <LandingPage onLoginClick={() => setCurrentView('app')} />;
+  }
+
   if (!session && !studentSession && !teacherSession) {
-    return <Auth onStudentLogin={(s) => setStudentSession(s)} onTeacherLogin={(t) => setTeacherSession(t)} />;
+    return <Auth onStudentLogin={(s) => setStudentSession(s)} onTeacherLogin={(t) => setTeacherSession(t)} onBack={() => setCurrentView('landing')} />;
   }
 
   if (studentSession) {

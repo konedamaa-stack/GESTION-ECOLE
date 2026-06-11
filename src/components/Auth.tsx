@@ -5,7 +5,7 @@ import './Auth.css';
 
 type AuthMode = 'login' | 'register' | 'forgot_password' | 'student_login' | 'teacher_login';
 
-export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogin?: (student: any) => void, onTeacherLogin?: (teacher: any) => void }) {
+export default function Auth({ onStudentLogin, onTeacherLogin, onBack }: { onStudentLogin?: (student: any) => void, onTeacherLogin?: (teacher: any) => void, onBack?: () => void }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
@@ -130,6 +130,14 @@ export default function Auth({ onStudentLogin, onTeacherLogin }: { onStudentLogi
   return (
     <div className="auth-container">
       <div className="auth-card">
+        {onBack && (
+          <button 
+            onClick={onBack}
+            style={{background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.5rem', fontSize: '0.9rem', width: '100%', justifyContent: 'flex-start', padding: 0}}
+          >
+            ← Retour à l'accueil
+          </button>
+        )}
         <div className="auth-logo">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
