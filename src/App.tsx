@@ -2197,11 +2197,7 @@ function App() {
                       </select>
                     </div>
                   </div>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px'}}>
-                    <div className="form-group">
-                      <label>{t('admin.modals.email', 'Email de l\'Élève')}</label>
-                      <input type="email" name="email" className="form-input" required />
-                    </div>
+                  <div style={{marginTop: '16px'}}>
                     <div className="form-group">
                       <label>{t('admin.modals.password_default', 'Mot de passe (par défaut: passer123)')}</label>
                       <input type="text" name="password" className="form-input" placeholder="passer123" />
