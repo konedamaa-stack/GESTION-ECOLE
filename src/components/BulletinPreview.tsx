@@ -7,15 +7,23 @@ interface BulletinPreviewProps {
   grades: any[];
   period: string;
   schoolInfo: any;
+  classSubjects: any[];
 }
 
-export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, students, evaluations, grades, period, schoolInfo }) => {
+export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, students, evaluations, grades, period, schoolInfo, classSubjects }) => {
   // Filter evaluations for the current class and period
   const classEvals = evaluations.filter(e => e.class_id === classData?.id && e.period === period);
   const classEvalIds = classEvals.map(e => e.id);
   
   // Filter grades that belong to those evaluations
   const classGrades = grades.filter(g => classEvalIds.includes(g.evaluation_id));
+
+  // Helper to get coefficient for a subject
+  const getSubjectCoef = (subject: string) => {
+    if (!classSubjects) return 1;
+    const subj = classSubjects.find(cs => cs.class_id === classData?.id && cs.subject === subject);
+    return subj ? subj.coefficient : 1;
+  };
 
   // 1. Calculate subject averages for each student
   const studentStats: any = {};
@@ -24,8 +32,8 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
     studentStats[st.id] = {
       student: st,
       subjects: {},
-      totalScore: 0,
-      subjectCount: 0,
+      totalWeightedScore: 0,
+      totalSubjectCoefs: 0,
       generalAverage: 0,
       rank: 1
     };
@@ -37,11 +45,11 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
   subjects.forEach(subject => {
     const subjectEvals = classEvals.filter(e => e.subject === subject);
     const subjectEvalIds = subjectEvals.map(e => e.id);
+    const coef = getSubjectCoef(subject);
 
     students.forEach(st => {
       const studentSubjectGrades = classGrades.filter(g => g.student_id === st.id && subjectEvalIds.includes(g.evaluation_id) && g.score !== null);
       if (studentSubjectGrades.length > 0) {
-        // Average for this subject
         // Average for this subject
         // normalize to 20
         const sumNormalized = studentSubjectGrades.reduce((acc, curr) => {
@@ -53,8 +61,8 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
         const avg = sumNormalized / studentSubjectGrades.length;
         
         studentStats[st.id].subjects[subject] = avg;
-        studentStats[st.id].totalScore += avg;
-        studentStats[st.id].subjectCount += 1;
+        studentStats[st.id].totalWeightedScore += (avg * coef);
+        studentStats[st.id].totalSubjectCoefs += coef;
       }
     });
   });
@@ -64,8 +72,8 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
   
   students.forEach(st => {
     const stats = studentStats[st.id];
-    if (stats.subjectCount > 0) {
-      stats.generalAverage = stats.totalScore / stats.subjectCount;
+    if (stats.totalSubjectCoefs > 0) {
+      stats.generalAverage = stats.totalWeightedScore / stats.totalSubjectCoefs;
     }
     rankings.push({ id: st.id, avg: stats.generalAverage });
   });
@@ -126,22 +134,27 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
               <thead>
                 <tr>
                   <th>Matières</th>
+                  <th>Coef.</th>
                   <th>Moyenne / 20</th>
+                  <th>Moy. Pondérée</th>
                   <th>Appréciation</th>
                 </tr>
               </thead>
               <tbody>
                 {subjects.length === 0 && (
                   <tr>
-                    <td colSpan={3} style={{textAlign: 'center', padding: '20px'}}>Aucune note pour ce trimestre.</td>
+                    <td colSpan={5} style={{textAlign: 'center', padding: '20px'}}>Aucune note pour ce trimestre.</td>
                   </tr>
                 )}
                 {subjects.map(subject => {
                   const val = stats.subjects[subject];
+                  const coef = getSubjectCoef(subject);
                   return (
                     <tr key={subject}>
                       <td>{subject}</td>
+                      <td style={{textAlign: 'center'}}>{coef}</td>
                       <td style={{textAlign: 'center', fontWeight: 'bold'}}>{val !== undefined ? val.toFixed(2) : '-'}</td>
+                      <td style={{textAlign: 'center'}}>{val !== undefined ? (val * coef).toFixed(2) : '-'}</td>
                       <td>{val !== undefined ? getAppreciation(val) : '-'}</td>
                     </tr>
                   );
@@ -156,6 +169,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
                 <p>Moyenne la plus forte: <strong>{classMax.toFixed(2)}</strong></p>
               </div>
               <div className="summary-right">
+                <p>Total Coefficients: <strong>{stats.totalSubjectCoefs}</strong></p>
                 <p>Moyenne Générale: <span className="general-avg">{stats.generalAverage.toFixed(2)}</span> / 20</p>
                 <p>Rang: <strong>{stats.rank} {stats.rank === 1 ? 'er' : 'ème'}</strong></p>
                 <p>Appréciation Générale: <strong>{getAppreciation(stats.generalAverage)}</strong></p>
