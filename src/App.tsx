@@ -6,6 +6,7 @@ import { LandingPage } from './components/LandingPage';
 import Auth from './components/Auth';
 import StudentPortal from './components/StudentPortal';
 import TeacherPortal from './components/TeacherPortal';
+import { BulletinPreview } from './components/BulletinPreview';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import './App.css';
 
@@ -77,6 +78,26 @@ function App() {
   const [globalGradeClassId, setGlobalGradeClassId] = useState<string | null>(null);
   const [globalGradePeriod, setGlobalGradePeriod] = useState<string>('1er Trimestre');
   const [globalGrades, setGlobalGrades] = useState<{[key: string]: string}>({});
+  const [bulletinClassId, setBulletinClassId] = useState<string | null>(null);
+  const [bulletinPeriod, setBulletinPeriod] = useState<string>('1er Trimestre');
+
+  const [bulletinGrades, setBulletinGrades] = useState<any[]>([]);
+  
+  const loadBulletinData = async (classId: string, period: string) => {
+    setBulletinClassId(classId);
+    setBulletinPeriod(period);
+    setActiveModal('bulletin_preview');
+    const evals = evaluationsData.filter(e => e.class_id === classId && e.period === period);
+    const evalIds = evals.map(e => e.id);
+    if(evalIds.length > 0) {
+      const { data } = await supabase.from('grades').select('*').in('evaluation_id', evalIds);
+      if(data) setBulletinGrades(data);
+    } else {
+      setBulletinGrades([]);
+    }
+  };
+
+
   const [gradesInput, setGradesInput] = useState<Record<string, {score: string, comment: string}>>({});
 
   const [studentsData, setStudentsData] = useState<any[]>([]);
@@ -1177,7 +1198,7 @@ function App() {
                 <td style={{padding: '16px 0'}}><span className={`badge badge-warning`}>{t('admin.bulletins.status_pending', 'En attente')}</span></td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
                   <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setActiveModal('global_grades'); setGlobalGradeClassId(row.id); setGlobalGradePeriod('1er Trimestre'); loadGlobalGrades(row.id, '1er Trimestre'); }}><Icons.FileText /> {t('admin.bulletins.btn_global', 'Saisie Globale')}</button>
-                  <button className="btn btn-outline" style={{padding: '6px 12px'}} onClick={() => alert("Génération du PDF en cours...")}><Icons.Download /> {t('admin.bulletins.btn_export', 'Exporter')}</button>
+                  <button className="btn btn-outline" style={{padding: '6px 12px'}} onClick={() => loadBulletinData(row.id, '1er Trimestre')}><Icons.FileText /> {t('admin.bulletins.btn_export', 'Aperçu Bulletins')}</button>
                 </td>
               </tr>
             )) : (
@@ -2123,7 +2144,7 @@ function App() {
       {/* Dynamic Modal Renderer */}
       {activeModal && (
         <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" style={activeModal === 'global_grades' ? {maxWidth: '1600px', width: '98%'} : {}} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={['global_grades', 'bulletin_preview'].includes(activeModal) ? {maxWidth: '1600px', width: '98%'} : {}} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>
                 {activeModal === 'quickCreate' && t('admin.modals.quickCreate', "Menu de Création Rapide")}
@@ -2139,6 +2160,7 @@ function App() {
 
                 {activeModal === 'class' && t('admin.modals.class', "Créer une Classe")}
                 {activeModal === 'global_grades' && "Saisie Globale des Notes"}
+   {activeModal === 'bulletin_preview' && "Aperçu des Bulletins"}
               </h2>
               <button className="close-btn" onClick={closeModal}>
                 <Icons.X />
@@ -2470,6 +2492,41 @@ function App() {
 
               {/* Evaluation Form */}
               {/* Global Grades Form */}
+              
+              {/* Bulletin Preview Modal */}
+              {activeModal === 'bulletin_preview' && (
+                <div style={{width: '100%'}}>
+                  <div className="print-controls" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
+                    <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
+                      <div className="form-group" style={{marginBottom: 0}}>
+                        <label>Période</label>
+                        <select className="form-select" value={bulletinPeriod} onChange={(e) => loadBulletinData(bulletinClassId!, e.target.value)}>
+                          <option value="1er Trimestre">1er Trimestre</option>
+                          <option value="2ème Trimestre">2ème Trimestre</option>
+                          <option value="3ème Trimestre">3ème Trimestre</option>
+                          <option value="1er Semestre">1er Semestre</option>
+                          <option value="2ème Semestre">2ème Semestre</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <button className="btn btn-primary" onClick={() => window.print()}><Icons.Download /> Imprimer / PDF</button>
+                    </div>
+                  </div>
+                  
+                  <div style={{background: '#f1f5f9', padding: '20px', borderRadius: '8px', maxHeight: '70vh', overflowY: 'auto'}}>
+                    <BulletinPreview 
+                      classData={classesData.find(c => c.id === bulletinClassId)}
+                      students={studentsData.filter(s => s.class_id === bulletinClassId)}
+                      evaluations={evaluationsData}
+                      grades={bulletinGrades}
+                      period={bulletinPeriod}
+                      schoolInfo={adminSchools.find(s => s.id === currentSchoolId)}
+                    />
+                  </div>
+                </div>
+              )}
+
               {activeModal === 'global_grades' && (
                 <div style={{width: '100%'}}>
                   <div style={{marginBottom: '16px', display: 'flex', gap: '16px', alignItems: 'flex-end'}}>
