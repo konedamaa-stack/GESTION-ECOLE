@@ -163,7 +163,7 @@ function App() {
   const [editEntity, setEditEntity] = useState<any>(null);
   const [parentsData, setParentsData] = useState<any[]>([]);
   const fetchParents = async () => {
-    const { data } = await supabase.from('parents').select('*').eq('school_id', currentSchoolId || '');
+    const { data } = await supabase.from('parents').select('*, student_parents(students(first_name, last_name))').eq('school_id', currentSchoolId || '');
     if (data) setParentsData(data);
   };
 
@@ -1413,7 +1413,7 @@ function App() {
             {parentsData && parentsData.length > 0 ? parentsData.map((row, i) => (
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
                 <td style={{padding: '16px 0', fontWeight: 600}}>{row.first_name} {row.last_name}</td>
-                <td style={{padding: '16px 0'}}>-</td>
+                <td style={{padding: '16px 0'}}>{row.student_parents?.map((sp: any) => sp.students?.first_name + ' ' + sp.students?.last_name).filter(Boolean).join(', ') || '-'}</td>
                 <td style={{padding: '16px 0'}}>{row.phone || '-'}</td>
                 <td style={{padding: '16px 0'}}>{row.email ? 'Actif' : 'Non configuré'}</td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
