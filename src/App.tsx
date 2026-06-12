@@ -2348,7 +2348,22 @@ function App() {
                   {activeModal === 'teacher' && (
                     <div className="form-group">
                       <label>{t('admin.modals.taught_subject', 'Matière enseignée')}</label>
-                      <input type="text" name="subject" className="form-input" required defaultValue={editEntity?.subject || ""} />
+                      <select name="subject" className="form-input" required defaultValue={editEntity?.subject || ""}>
+                        <option value="">Sélectionnez une matière</option>
+                        <option value="Mathématiques">Mathématiques</option>
+                        <option value="Français">Français</option>
+                        <option value="Anglais">Anglais</option>
+                        <option value="Histoire-Géographie">Histoire-Géographie</option>
+                        <option value="Physique-Chimie">Physique-Chimie</option>
+                        <option value="SVT">SVT</option>
+                        <option value="EPS">EPS</option>
+                        <option value="Philosophie">Philosophie</option>
+                        <option value="Informatique">Informatique</option>
+                        <option value="Espagnol">Espagnol</option>
+                        <option value="Allemand">Allemand</option>
+                        <option value="Arts Plastiques">Arts Plastiques</option>
+                        <option value="Éducation Musicale">Éducation Musicale</option>
+                      </select>
                     </div>
                   )}
                   {activeModal === 'employee' && (
@@ -2388,7 +2403,22 @@ function App() {
                     </div>
                     <div className="form-group">
                       <label>{t('admin.modals.taught_subject', 'Matière')}</label>
-                      <input type="text" name="subject" className="form-input" required placeholder="Ex: Mathématiques" />
+                      <select name="subject" className="form-input" required defaultValue={editEntity?.subject || ""}>
+                        <option value="">Sélectionnez une matière</option>
+                        <option value="Mathématiques">Mathématiques</option>
+                        <option value="Français">Français</option>
+                        <option value="Anglais">Anglais</option>
+                        <option value="Histoire-Géographie">Histoire-Géographie</option>
+                        <option value="Physique-Chimie">Physique-Chimie</option>
+                        <option value="SVT">SVT</option>
+                        <option value="EPS">EPS</option>
+                        <option value="Philosophie">Philosophie</option>
+                        <option value="Informatique">Informatique</option>
+                        <option value="Espagnol">Espagnol</option>
+                        <option value="Allemand">Allemand</option>
+                        <option value="Arts Plastiques">Arts Plastiques</option>
+                        <option value="Éducation Musicale">Éducation Musicale</option>
+                      </select>
                     </div>
                   </div>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
@@ -2633,7 +2663,22 @@ function App() {
                   </div>
                   <div className="form-group">
                     <label>{t('admin.modals.taught_subject', 'Matière')}</label>
-                    <input type="text" name="subject" className="form-input" required placeholder="Ex: Mathématiques" />
+                    <select name="subject" className="form-input" required defaultValue={editEntity?.subject || ""}>
+                        <option value="">Sélectionnez une matière</option>
+                        <option value="Mathématiques">Mathématiques</option>
+                        <option value="Français">Français</option>
+                        <option value="Anglais">Anglais</option>
+                        <option value="Histoire-Géographie">Histoire-Géographie</option>
+                        <option value="Physique-Chimie">Physique-Chimie</option>
+                        <option value="SVT">SVT</option>
+                        <option value="EPS">EPS</option>
+                        <option value="Philosophie">Philosophie</option>
+                        <option value="Informatique">Informatique</option>
+                        <option value="Espagnol">Espagnol</option>
+                        <option value="Allemand">Allemand</option>
+                        <option value="Arts Plastiques">Arts Plastiques</option>
+                        <option value="Éducation Musicale">Éducation Musicale</option>
+                      </select>
                   </div>
                   <div className="form-group">
                     <label>Professeur (Optionnel)</label>
