@@ -87,7 +87,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     const evalGrades = gradesData.filter(g => g.evaluation_id === ev.id);
     const initialInputs: Record<string, {score: string, comment: string}> = {};
     evalGrades.forEach(g => {
-      initialInputs[g.student_id] = { score: g.score.toString(), comment: g.comments || '' };
+      initialInputs[g.student_id] = { score: g.score.toString(), comment: g.comment || '' };
     });
     setGradesInput(initialInputs);
   };
@@ -140,7 +140,8 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
         student_id: student.id,
         evaluation_id: selectedEvaluation.id,
         score: input?.score ? parseFloat(input.score) : null,
-        comments: input?.comment || null
+        comment: input?.comment || null,
+        school_id: session.school_id
       };
     }).filter(g => g.score !== null); // Only save where a score was entered
 
