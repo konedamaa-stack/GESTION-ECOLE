@@ -92,14 +92,37 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     setGradesInput(initialInputs);
   };
 
+  const getAutoAppreciation = (score: number) => {
+    if (score >= 18) return "Excellent travail";
+    if (score >= 16) return "Très bien";
+    if (score >= 14) return "Bien";
+    if (score >= 12) return "Assez bien";
+    if (score >= 10) return "Passable";
+    if (score >= 8) return "Insuffisant";
+    return "Peut mieux faire";
+  };
+
   const handleGradeChange = (studentId: string, field: 'score' | 'comment', value: string) => {
-    setGradesInput(prev => ({
-      ...prev,
-      [studentId]: {
-        ...prev[studentId] || { score: '', comment: '' },
-        [field]: value
+    setGradesInput(prev => {
+      const current = prev[studentId] || { score: '', comment: '' };
+      let newComment = current.comment;
+      
+      if (field === 'score' && value !== '') {
+        const numVal = parseFloat(value);
+        if (!isNaN(numVal)) {
+          newComment = getAutoAppreciation(numVal);
+        }
       }
-    }));
+
+      return {
+        ...prev,
+        [studentId]: {
+          ...current,
+          [field]: value,
+          comment: field === 'score' && value !== '' ? newComment : (field === 'comment' ? value : current.comment)
+        }
+      };
+    });
   };
 
   const handleSaveGrades = async () => {
