@@ -26,34 +26,36 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
 
   async function fetchData() {
     // Fetch all classes
-    const { data: classes } = await supabase.from('classes').select('*');
+    const { data: classes } = await supabase.from('classes').select('*').eq('school_id', session.school_id);
     if (classes) setClassesData(classes);
 
     // Fetch evaluations for this teacher's subject
     const { data: evaluations } = await supabase.from('evaluations')
       .select('*, classes(name)')
       
-      .eq('subject', session.subject);
+      .eq('subject', session.subject).eq('school_id', session.school_id);
     if (evaluations) setEvaluationsData(evaluations);
 
     // Fetch students
-    const { data: students } = await supabase.from('students').select('*');
+    const { data: students } = await supabase.from('students').select('*').eq('school_id', session.school_id);
     if (students) setStudentsData(students);
 
     // Fetch grades
-    const { data: grades } = await supabase.from('grades').select('*');
+    const { data: grades } = await supabase.from('grades').select('*').eq('school_id', session.school_id);
     if (grades) setGradesData(grades);
   };
 
   const handleCreateEvaluation = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const newEval = {
+        const newEval = {
       name: formData.get('name'),
       subject: session.subject,
       class_id: formData.get('class_id'),
       date: formData.get('date'),
       period: formData.get('period'),
+      type: formData.get('type'),
+      school_id: session.school_id,
     };
 
     const { error } = await supabase.from('evaluations').insert([newEval]);
@@ -179,6 +181,15 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                     <option value="1er Trimestre">{t('teacher.term_1', "1er Trimestre")}</option>
                     <option value="2ème Trimestre">{t('teacher.term_2', "2ème Trimestre")}</option>
                     <option value="3ème Trimestre">{t('teacher.term_3', "3ème Trimestre")}</option>
+                  </select>
+                </div>
+                                <div className="form-group">
+                  <label>{t('admin.modals.eval_type', "Type d'évaluation")}</label>
+                  <select name="type" className="input-field" required>
+                    <option value="Devoir de classe">Devoir de classe</option>
+                    <option value="Devoir à la maison">Devoir à la maison</option>
+                    <option value="Composition">Composition</option>
+                    <option value="Examen blanc">Examen blanc</option>
                   </select>
                 </div>
                 <div className="form-group">
