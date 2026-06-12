@@ -145,9 +145,7 @@ function App() {
   }, [session]);
 
   useEffect(() => {
-    if (session) {
-      setCurrentSchoolPlan('Premium');
-    }
+    // Plan is loaded dynamically from loadSchools now
   }, [session]);
 
     useEffect(() => {
@@ -163,6 +161,7 @@ function App() {
       const schools = adminLinks.map((link: any) => link.schools);
       setAdminSchools(schools);
       setCurrentSchoolId(schools[0].id);
+      setCurrentSchoolPlan(schools[0].subscription_plan || 'Standard');
     } else {
       setShowSchoolModal(true);
     }
@@ -1903,6 +1902,9 @@ function App() {
                     <button className="btn" disabled style={{width: '100%', background: 'var(--border-color)', color: 'var(--text-secondary)'}}>{t('admin.settings.sub_btn_active', 'Plan Actif')}</button>
                   ) : (
                     <button className="btn" style={{width: '100%', border: '1px solid var(--border-color)'}} onClick={async () => {
+                      if (currentSchoolId) {
+                        await supabase.from('schools').update({ subscription_plan: 'Standard' }).eq('id', currentSchoolId);
+                      }
                       setCurrentSchoolPlan('Standard');
                     }}>{t('admin.settings.sub_btn_downgrade', 'Rétrograder')}</button>
                   )}
@@ -1927,8 +1929,11 @@ function App() {
                     <button className="btn" disabled style={{width: '100%', background: 'var(--border-color)', color: 'var(--text-secondary)'}}>{t('admin.settings.sub_btn_active', 'Plan Actif')}</button>
                   ) : (
                     <button className="btn btn-primary" style={{width: '100%', background: 'var(--accent-color)', borderColor: 'var(--accent-color)'}} onClick={async () => {
+                      if (currentSchoolId) {
+                        await supabase.from('schools').update({ subscription_plan: 'Pro' }).eq('id', currentSchoolId);
+                      }
                       setCurrentSchoolPlan('Pro');
-                      alert('Félicitations ! Vous avez débloqué le plan Pro.');
+                      alert('Félicitations ! Vous avez débloqué le plan Pro. Vous avez désormais accès à la Comptabilité et aux Ressources Humaines.');
                     }}>{t('admin.settings.sub_btn_upgrade', 'Passer en Pro')}</button>
                   )}
                 </div>
