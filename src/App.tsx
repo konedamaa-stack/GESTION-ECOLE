@@ -2118,7 +2118,7 @@ function App() {
       {/* Dynamic Modal Renderer */}
       {activeModal && (
         <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={activeModal === 'global_grades' ? {maxWidth: '1600px', width: '98%'} : {}} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>
                 {activeModal === 'quickCreate' && t('admin.modals.quickCreate', "Menu de Création Rapide")}
@@ -2133,6 +2133,7 @@ function App() {
                 {activeModal === 'course' && t('admin.modals.course', "Planifier un cours")}
 
                 {activeModal === 'class' && t('admin.modals.class', "Créer une Classe")}
+                {activeModal === 'global_grades' && "Saisie Globale des Notes"}
               </h2>
               <button className="close-btn" onClick={closeModal}>
                 <Icons.X />
