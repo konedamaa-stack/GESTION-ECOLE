@@ -1413,7 +1413,14 @@ function App() {
             {parentsData && parentsData.length > 0 ? parentsData.map((row, i) => (
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
                 <td style={{padding: '16px 0', fontWeight: 600}}>{row.first_name} {row.last_name}</td>
-                <td style={{padding: '16px 0'}}>{row.student_parents?.map((sp: any) => sp.students?.first_name + ' ' + sp.students?.last_name).filter(Boolean).join(', ') || '-'}</td>
+                <td style={{padding: '16px 0'}}>
+                  {row.student_parents?.length > 0 ? (
+                    <div style={{display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap'}}>
+                      <span className="badge badge-primary">{row.student_parents.length} {row.student_parents.length > 1 ? 'élèves' : 'élève'}</span>
+                      <span>{row.student_parents.map((sp: any) => sp.students?.first_name + ' ' + sp.students?.last_name).filter(Boolean).join(', ')}</span>
+                    </div>
+                  ) : '-'}
+                </td>
                 <td style={{padding: '16px 0'}}>{row.phone || '-'}</td>
                 <td style={{padding: '16px 0'}}>{row.email ? 'Actif' : 'Non configuré'}</td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
