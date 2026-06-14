@@ -1192,10 +1192,18 @@ function App() {
 
   const saveGlobalGrades = async () => {
     try {
+      // Fetch existing evals from DB directly to avoid duplicates if local state is stale
+      const { data: existingDbEvals } = await supabase
+        .from('evaluations')
+        .select('id, subject')
+        .eq('class_id', globalGradeClassId)
+        .eq('period', globalGradePeriod)
+        .eq('type', 'Moyenne Globale')
+        .eq('school_id', currentSchoolId);
+
       const subjects = ["Mathématiques", "Français", "Anglais", "Histoire-Géographie", "Physique-Chimie", "SVT", "EPS", "Philosophie", "Informatique"];
       for(const subject of subjects) {
-        let ev = evaluationsData.find(e => e.class_id === globalGradeClassId && e.period === globalGradePeriod && e.type === "Moyenne Globale" && e.subject === subject);
-        let evId = ev?.id;
+        let evId = existingDbEvals?.find(e => e.subject === subject)?.id || evaluationsData.find(e => e.class_id === globalGradeClassId && e.period === globalGradePeriod && e.type === "Moyenne Globale" && e.subject === subject)?.id;
         
         // Find if any grades exist for this subject
         const hasGrades = Object.keys(globalGrades).some(k => k.endsWith(`_${subject}`) && globalGrades[k] !== "");
