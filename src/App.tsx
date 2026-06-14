@@ -2290,13 +2290,13 @@ function App() {
             <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(true)}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
-            <div className="header-search">
+            <div className="header-search hide-on-mobile">
               <Icons.Search />
               <input type="text" placeholder={t('admin.header.search', 'Rechercher...')} />
             </div>
             {adminSchools && adminSchools.length > 0 && (
               <select 
-                className="form-select" 
+                className="form-select hide-on-mobile" 
                 style={{marginLeft: 16, maxWidth: 200, padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: '6px', background: 'var(--surface-color)', color: 'var(--text-color)'}}
                 value={currentSchoolId || ''}
                 onChange={(e) => setCurrentSchoolId(e.target.value)}
@@ -2306,7 +2306,7 @@ function App() {
                 ))}
               </select>
             )}
-            <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.9rem', marginLeft: '8px'}} onClick={() => setShowSchoolModal(true)}>
+            <button className="btn btn-outline hide-on-mobile" style={{padding: '6px 12px', fontSize: '0.9rem', marginLeft: '8px'}} onClick={() => setShowSchoolModal(true)}>
               + Établissement
             </button>
           </div>
@@ -2355,7 +2355,7 @@ function App() {
                     fontWeight: 500,
                   }} onMouseOver={(e) => e.currentTarget.style.background = 'var(--surface-color-hover)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
                     <Icons.LogOut />
-                    <span>{t('admin.header.logout', 'Déconnexion')}</span>
+                    <span>{t('admin.header.logout', 'Se déconnecter')}</span>
                   </div>
                 </div>
               )}

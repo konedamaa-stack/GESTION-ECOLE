@@ -606,9 +606,14 @@
     display: block !important;
   }
 
+  .hide-on-mobile {
+    display: none !important;
+  }
+
   .top-header {
-    padding: 0 16px;
-    height: 60px;
+    padding: 12px 16px;
+    height: auto;
+    flex-wrap: wrap;
     gap: 12px;
   }
 
@@ -617,7 +622,7 @@
     padding: 6px 12px;
   }
 
-  .user-name, .user-role {
+  .user-role {
     display: none;
   }
 
