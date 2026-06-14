@@ -195,7 +195,9 @@ function App() {
 
   const formatNum = (num: number | string | undefined) => {
     if (num === undefined || num === null) return '';
-    return new Intl.NumberFormat(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR', { useGrouping: false }).format(Number(num));
+    const parsed = Number(num);
+    if (isNaN(parsed)) return String(num);
+    return new Intl.NumberFormat(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR', { useGrouping: false }).format(parsed);
   };
 
   useEffect(() => {
@@ -972,13 +974,20 @@ function App() {
           <tbody>
             {filteredStudents.length > 0 ? filteredStudents.map((row, i) => (
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
-                <td style={{padding: '16px 0', fontFamily: 'monospace', color: 'var(--primary-color)'}}>{formatNum(row.matricule)}</td>
+                <td style={{padding: '16px 0', fontFamily: 'monospace', color: 'var(--primary-color)'}}>{row.matricule}</td>
                 <td style={{padding: '16px 0', fontWeight: 600}}>{row.first_name} {row.last_name}</td>
                 <td style={{padding: '16px 0'}}>{row.classes?.name || t('admin.students.unassigned', 'Non assigné')}</td>
                 <td style={{padding: '16px 0'}}><span className={`badge ${row.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`}>{row.status}</span></td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
-                  <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('student'); }}>✏️</button>
-                  <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('student'); }}>✏️</button>
+                  <button className="btn btn-outline" title="Modifier" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('student'); }}>✏️</button>
+                  <button className="btn btn-outline" title="Emploi du temps" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { 
+                    if(row.class_id) {
+                      setSelectedClassForSchedule(row.class_id);
+                      setActiveTab('schedules');
+                    } else {
+                      alert(t('admin.students.msg_no_class', "Cet élève n'est assigné à aucune classe."));
+                    }
+                  }}><Icons.Calendar /> Voir l'emploi du temps</button>
                   <button className="btn btn-outline" style={{padding: '6px 12px'}} onClick={() => { setSelectedStudent(row); setActiveModal('studentDossier'); }}>{t('admin.students.btn_dossier', 'Dossier')}</button>
                 </td>
               </tr>
@@ -1376,7 +1385,7 @@ function App() {
                   {row.first_name} {row.last_name}
                 </td>
                 <td style={{padding: '16px 0'}}><span className="badge badge-primary" style={{background: 'transparent', border: '1px solid var(--border-color)'}}>{row.subject}</span></td>
-                <td style={{padding: '16px 0', fontWeight: '500'}}>{formatNum(row.matricule) || '-'}</td>
+                <td style={{padding: '16px 0', fontWeight: '500'}}>{row.matricule || '-'}</td>
                 <td style={{padding: '16px 0'}}>{row.password ? '••••••••' : '-'}</td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
                   <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('teacher'); }}>✏️</button>
@@ -1510,7 +1519,7 @@ function App() {
               <tbody>
                 {['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map(hour => (
                   <tr key={hour}>
-                    <td style={{padding: '12px', border: '1px solid var(--border-color)', textAlign: 'center', fontWeight: 500, color: 'var(--text-secondary)'}}>{formatNum(hour)}</td>
+                    <td style={{padding: '12px', border: '1px solid var(--border-color)', textAlign: 'center', fontWeight: 500, color: 'var(--text-secondary)'}}>{hour}</td>
                     {days.map((day) => {
                       const courses = currentSchedules.filter(s => s.day_of_week === day && s.start_time.startsWith(hour));
                       return (
@@ -1518,7 +1527,7 @@ function App() {
                           {courses.map((course, i) => (
                             <div key={i} style={{background: 'rgba(59, 130, 246, 0.1)', borderLeft: '3px solid var(--primary-color)', padding: '6px', borderRadius: '4px', marginBottom: '4px', fontSize: '0.85rem'}}>
                               <div style={{fontWeight: 600, color: 'var(--primary-color)'}}>{course.subject}</div>
-                              <div style={{color: 'var(--text-secondary)', fontSize: '0.75rem'}}>{formatNum(course.start_time.substring(0,5))} - {formatNum(course.end_time.substring(0,5))}</div>
+                              <div style={{color: 'var(--text-secondary)', fontSize: '0.75rem'}}>{course?.start_time?.substring(0,5)} - {course?.end_time?.substring(0,5)}</div>
                               <div style={{color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '2px'}}>{course.teachers?.first_name} {course.teachers?.last_name}</div>
                             </div>
                           ))}
@@ -1608,10 +1617,10 @@ function App() {
           <tbody>
             {invoicesData.length > 0 ? invoicesData.map((row, i) => (
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
-                <td style={{padding: '16px 0', fontFamily: 'monospace', fontWeight: 500, color: 'var(--primary-color)'}}>{formatNum(row.invoice_number)}</td>
+                <td style={{padding: '16px 0', fontFamily: 'monospace', fontWeight: 500, color: 'var(--primary-color)'}}>{row.invoice_number}</td>
                 <td style={{padding: '16px 0'}}>
                   <div style={{fontWeight: 600}}>{row.students?.first_name} {row.students?.last_name}</div>
-                  <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>{formatNum(row.students?.matricule)}</div>
+                  <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>{row.students?.matricule}</div>
                 </td>
                 <td style={{padding: '16px 0'}}>{row.motif}</td>
                 <td style={{padding: '16px 0', fontWeight: 'bold'}}>{formatNum(row.amount)} FCFA</td>
@@ -1766,7 +1775,7 @@ function App() {
                     {studentsData.filter(s => s.class_id === activeEvaluation.class_id).map((student) => (
                       <tr key={student.id} style={{borderBottom: '1px solid #eee', background: '#fff', color: '#333'}}>
                         <td style={{padding: '8px 4px', borderRight: '1px solid #eee', textAlign: 'center'}}><input type="checkbox" /></td>
-                        <td style={{padding: '8px', borderRight: '1px solid #eee', fontWeight: 'bold'}}>{formatNum(student.matricule) || `MAT-${formatNum(student.id.substring(0,4))}`}</td>
+                        <td style={{padding: '8px', borderRight: '1px solid #eee', fontWeight: 'bold'}}>{student.matricule || `MAT-${student.id.substring(0,4)}`}</td>
                         <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{student.last_name.toUpperCase()}</td>
                         <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{student.first_name}</td>
                         <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{activeEvaluation.classes?.name}</td>
@@ -2878,7 +2887,7 @@ function App() {
                         {schedulesData.filter(s => s.class_id === selectedStudent.class_id).length > 0 ? (
                           <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px'}}>
                             {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'].map(day => {
-                              const dayCourses = schedulesData.filter(s => s.class_id === selectedStudent.class_id && s.day_of_week === day).sort((a,b) => a.start_time.localeCompare(b.start_time));
+                              const dayCourses = schedulesData.filter(s => s.class_id === selectedStudent.class_id && s.day_of_week === day).sort((a,b) => (a.start_time || '').localeCompare(b.start_time || ''));
                               if (dayCourses.length === 0) return null;
                               return (
                                 <div key={day} style={{border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px'}}>
@@ -2886,7 +2895,7 @@ function App() {
                                   {dayCourses.map((course, idx) => (
                                     <div key={idx} style={{background: 'var(--surface-color-hover)', padding: '6px', borderRadius: '4px', marginBottom: '4px', fontSize: '0.8rem'}}>
                                       <div style={{fontWeight: 600, color: 'var(--primary-color)'}}>{course.subject}</div>
-                                      <div>{course.start_time.substring(0,5)} - {course.end_time.substring(0,5)}</div>
+                                      <div>{course?.start_time?.substring(0,5)} - {course?.end_time?.substring(0,5)}</div>
                                     </div>
                                   ))}
                                 </div>

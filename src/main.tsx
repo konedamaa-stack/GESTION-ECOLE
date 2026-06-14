@@ -13,3 +13,9 @@ createRoot(document.getElementById('root')!).render(
     <CustomAlert />
   </StrictMode>,
 )
+
+// Test de connexion au backend
+fetch('/api/health')
+  .then(res => res.json())
+  .then(data => console.log('Backend response:', data))
+  .catch(err => console.error('Backend error:', err));
