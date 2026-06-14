@@ -426,7 +426,7 @@
   background: var(--surface-color);
   border: 1px solid var(--border-color);
   border-radius: 20px;
-  width: 500px;
+  width: 700px;
   max-width: 90vw;
   max-height: 90vh;
   display: flex;
