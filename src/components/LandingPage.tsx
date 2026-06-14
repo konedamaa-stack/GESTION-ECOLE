@@ -3,9 +3,10 @@ import '../LandingPage.css';
 
 interface LandingPageProps {
   onLoginClick: () => void;
+  onSuperAdminClick: () => void;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSuperAdminClick }) => {
   useEffect(() => {
     // Scroll to top on load
     window.scrollTo(0, 0);
@@ -33,9 +34,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
             <a href="#programmes" className="lp-nav-link">Programmes</a>
             <a href="#contact" className="lp-nav-link">Contact</a>
           </nav>
-          <button onClick={onLoginClick} className="lp-btn lp-btn-primary" style={{ padding: '0.5rem 1rem' }}>
-            Espace Privé
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={(e) => { e.preventDefault(); onSuperAdminClick(); }} className="lp-btn lp-btn-secondary" style={{ padding: '0.5rem 1rem', background: '#8B5CF6', color: 'white', border: 'none' }}>
+              Super Admin
+            </button>
+            <button onClick={onLoginClick} className="lp-btn lp-btn-primary" style={{ padding: '0.5rem 1rem' }}>
+              Espace Privé
+            </button>
+          </div>
         </div>
       </header>
 
@@ -47,6 +53,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
           <div style={{ display: 'flex', gap: '1rem' }}>
             <a href="#contact" className="lp-btn lp-btn-primary">Inscription Ouverte</a>
             <a href="#presentation" className="lp-btn lp-btn-secondary">Découvrir l'École</a>
+          </div>
+          <div style={{ marginTop: '2rem' }}>
+            <button onClick={(e) => { e.preventDefault(); onSuperAdminClick(); }} className="lp-btn" style={{ background: '#8B5CF6', color: 'white', border: 'none', padding: '1rem 2rem', fontSize: '1.2rem', fontWeight: 'bold', width: '100%', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(139, 92, 246, 0.4)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
+              👑 ACCÉDER AU PORTAIL SAAS (Propriétaire)
+            </button>
           </div>
         </div>
         <div className="lp-hero-image">
@@ -213,6 +224,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
             <a href="#" className="lp-footer-link">Mentions légales</a>
             <a href="#" className="lp-footer-link">Politique de confidentialité</a>
             <a href="#" className="lp-footer-link">CGU</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); onSuperAdminClick(); }} className="lp-footer-link" style={{ color: '#8B5CF6', fontWeight: 600, marginTop: '8px', display: 'inline-block' }}>Portail SaaS (Admin)</a>
           </div>
         </div>
         <div className="lp-footer-bottom">

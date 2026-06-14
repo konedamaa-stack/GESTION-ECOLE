@@ -92,17 +92,18 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     setGradesInput(initialInputs);
   };
 
-  const getAutoAppreciation = (score: number) => {
-    if (score >= 18) return "Excellent travail";
-    if (score >= 16) return "Très bien";
-    if (score >= 14) return "Bien";
-    if (score >= 12) return "Assez bien";
-    if (score >= 10) return "Passable";
-    if (score >= 8) return "Insuffisant";
+  const getAutoAppreciation = (score: number, maxScore: number) => {
+    const ratio = score / maxScore;
+    if (ratio >= 0.9) return "Excellent travail";
+    if (ratio >= 0.8) return "Très bien";
+    if (ratio >= 0.7) return "Bien";
+    if (ratio >= 0.6) return "Assez bien";
+    if (ratio >= 0.5) return "Passable";
+    if (ratio >= 0.4) return "Insuffisant";
     return "Peut mieux faire";
   };
 
-  const handleGradeChange = (studentId: string, field: 'score' | 'comment', value: string) => {
+  const handleGradeChange = (studentId: string, field: 'score' | 'comment', value: string, maxScore: number) => {
     setGradesInput(prev => {
       const current = prev[studentId] || { score: '', comment: '' };
       let newComment = current.comment;
@@ -110,7 +111,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
       if (field === 'score' && value !== '') {
         const numVal = parseFloat(value);
         if (!isNaN(numVal)) {
-          newComment = getAutoAppreciation(numVal);
+          newComment = getAutoAppreciation(numVal, maxScore);
         }
       }
 
@@ -123,6 +124,18 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
         }
       };
     });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, currentIndex: number) => {
+    if (e.key === 'Enter' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const nextInput = document.getElementById(`grade-input-${currentIndex + 1}`);
+      if (nextInput) nextInput.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prevInput = document.getElementById(`grade-input-${currentIndex - 1}`);
+      if (prevInput) prevInput.focus();
+    }
   };
 
   const handleSaveGrades = async () => {
@@ -337,7 +350,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                       </tr>
                     </thead>
                     <tbody>
-                      {studentsData.filter(s => s.class_id === selectedClass).map((student) => (
+                      {studentsData.filter(s => s.class_id === selectedClass).map((student, index) => (
                         <tr key={student.id} style={{borderBottom: '1px solid #eee', background: '#fff', color: '#333'}}>
                           <td style={{padding: '8px 4px', borderRight: '1px solid #eee', textAlign: 'center'}}><input type="checkbox" /></td>
                           <td style={{padding: '8px', borderRight: '1px solid #eee', fontWeight: 'bold'}}>{student.matricule || `MAT-${student.id.substring(0,4)}`}</td>
@@ -346,20 +359,22 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                           <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{selectedEvaluation.classes?.name}</td>
                           <td style={{padding: '8px', borderRight: '1px solid #eee'}}>
                             <input 
+                              id={`grade-input-${index}`}
                               type="number" 
                               step="0.25" 
                               min="0" 
                               max="20"
                               style={{width: '100%', padding: '4px', fontSize: '13px', border: '1px solid #ccc', borderRadius: '3px', outline: 'none'}}
                               value={gradesInput[student.id]?.score || ''}
-                              onChange={(e) => handleGradeChange(student.id, 'score', e.target.value)}
+                              onChange={(e) => handleGradeChange(student.id, 'score', e.target.value, selectedEvaluation.max_score || 20)}
+                              onKeyDown={(e) => handleKeyDown(e, index)}
                             />
                           </td>
                           <td style={{padding: '8px'}}>
                             <select 
                               style={{width: '100%', padding: '4px', fontSize: '13px', border: '1px solid #ccc', borderRadius: '3px', outline: 'none', background: '#fff'}}
                               value={gradesInput[student.id]?.comment || ''}
-                              onChange={(e) => handleGradeChange(student.id, 'comment', e.target.value)}
+                              onChange={(e) => handleGradeChange(student.id, 'comment', e.target.value, selectedEvaluation.max_score || 20)}
                             >
                               <option value="">---------</option>
                               <option value="Excellent travail">{t('teacher.c_excellent', "Excellent travail")}</option>

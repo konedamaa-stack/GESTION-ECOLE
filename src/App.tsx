@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +7,7 @@ import Auth from './components/Auth';
 import StudentPortal from './components/StudentPortal';
 import TeacherPortal from './components/TeacherPortal';
 import { BulletinPreview } from './components/BulletinPreview';
+import { SuperAdminPortal } from './components/SuperAdminPortal';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import './App.css';
 
@@ -19,6 +20,7 @@ const Icons = {
   Calendar: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeLinecap="round" strokeLinejoin="round" /><line x1="16" y1="2" x2="16" y2="6" strokeLinecap="round" strokeLinejoin="round" /><line x1="8" y1="2" x2="8" y2="6" strokeLinecap="round" strokeLinejoin="round" /><line x1="3" y1="10" x2="21" y2="10" strokeLinecap="round" strokeLinejoin="round" /></svg>,
   MessageSquare: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>,
   Settings: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round"/><path strokeLinecap="round" strokeLinejoin="round" d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  ChevronDown: ({ style }: { style?: React.CSSProperties }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width: 20, height: 20, ...style}}><polyline points="6 9 12 15 18 9"></polyline></svg>,
   Search: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2"><circle cx="11" cy="11" r="8" strokeLinecap="round" strokeLinejoin="round"/><line x1="21" y1="21" x2="16.65" y2="16.65" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Bell: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path strokeLinecap="round" strokeLinejoin="round" d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
   Activity: () => <svg className="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" strokeLinecap="round" strokeLinejoin="round"/></svg>,
@@ -163,11 +165,27 @@ function App() {
   const [settingsData, setSettingsData] = useState<any | null>(null);
   const [editEntity, setEditEntity] = useState<any>(null);
   const [preselectedStudentId, setPreselectedStudentId] = useState<string | null>(null);
+  const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
   const [parentsData, setParentsData] = useState<any[]>([]);
+  const [showSuperAdmin, setShowSuperAdmin] = useState(false);
+  const [isSuperAdminFlow, setIsSuperAdminFlow] = useState(false);
   const fetchParents = async () => {
     const { data } = await supabase.from('parents').select('*, student_parents(student_id, parent_id, students(id, first_name, last_name))').eq('school_id', currentSchoolId || '');
     if (data) setParentsData(data);
   };
+
+  useEffect(() => {
+    if (session && isSuperAdminFlow) {
+      const SUPER_ADMIN_EMAILS = ['konedamaa@gmail.com'];
+      if (SUPER_ADMIN_EMAILS.includes(session.user?.email || '')) {
+        setShowSuperAdmin(true);
+      } else {
+        alert("Accès non autorisé : cet e-mail n'est pas un administrateur SaaS.");
+        supabase.auth.signOut();
+      }
+      setIsSuperAdminFlow(false);
+    }
+  }, [session, isSuperAdminFlow]);
 
   const handleRemoveChild = async (studentId: string, parentId: string) => {
     if (window.confirm("Voulez-vous vraiment retirer cet enfant de ce parent ?")) {
@@ -764,14 +782,50 @@ function App() {
     }
   };
 
-  const handleGradeChange = (studentId: string, field: 'score' | 'comment', value: string) => {
-    setGradesInput(prev => ({
-      ...prev,
-      [studentId]: {
-        ...prev[studentId],
-        [field]: value
+  const getAutoAppreciation = (score: number, maxScore: number) => {
+    const ratio = score / maxScore;
+    if (ratio >= 0.9) return "Excellent travail";
+    if (ratio >= 0.8) return "Très bien";
+    if (ratio >= 0.7) return "Bien";
+    if (ratio >= 0.6) return "Assez bien";
+    if (ratio >= 0.5) return "Passable";
+    if (ratio >= 0.4) return "Insuffisant";
+    return "Peut mieux faire";
+  };
+
+  const handleGradeChange = (studentId: string, field: 'score' | 'comment', value: string, maxScore: number = 20) => {
+    setGradesInput(prev => {
+      const current = prev[studentId] || { score: '', comment: '' };
+      let newComment = current.comment;
+      
+      if (field === 'score' && value !== '') {
+        const numVal = parseFloat(value);
+        if (!isNaN(numVal)) {
+          newComment = getAutoAppreciation(numVal, maxScore);
+        }
       }
-    }));
+
+      return {
+        ...prev,
+        [studentId]: {
+          ...current,
+          [field]: value,
+          comment: field === 'score' && value !== '' ? newComment : (field === 'comment' ? value : current.comment)
+        }
+      };
+    });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, currentIndex: number) => {
+    if (e.key === 'Enter' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const nextInput = document.getElementById(`grade-input-${currentIndex + 1}`);
+      if (nextInput) nextInput.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prevInput = document.getElementById(`grade-input-${currentIndex - 1}`);
+      if (prevInput) prevInput.focus();
+    }
   };
 
   const saveGrades = async () => {
@@ -1657,21 +1711,36 @@ function App() {
     }
 
     // Calcul des totaux par classe
-    const scolariteParClasse = classesData.map(cls => {
-      const classStudents = studentsData.filter(s => s.class_id === cls.id);
+    const scolariteParClasse = (classesData || []).map(cls => {
+      const classStudents = (studentsData || []).filter(s => s.class_id === cls.id);
       const classStudentsIds = classStudents.map(s => s.id);
-      const classInvoices = invoicesData.filter(inv => classStudentsIds.includes(inv.student_id));
+      const classInvoices = (invoicesData || []).filter(inv => classStudentsIds.includes(inv.student_id));
       
       const paye = classInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
       const total = classStudents.reduce((sum, s) => sum + (Number(s.tuition_fee) || Number(cls.tuition_fee) || 0), 0);
       const nonPaye = Math.max(0, total - paye);
       
       return {
+        id: cls.id,
         className: cls.name,
         paye,
         nonPaye,
         total,
-        tauxRecouvrement: total > 0 ? Math.round((paye / total) * 100) : 0
+        tauxRecouvrement: total > 0 ? Math.round((paye / total) * 100) : 0,
+        studentsDetails: classStudents.map(s => {
+          const sInvoices = classInvoices.filter(inv => inv.student_id === s.id && inv.status === 'Payée');
+          const sPaye = sInvoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+          const sTotal = Number(s.tuition_fee) || Number(cls.tuition_fee) || 0;
+          const sNonPaye = Math.max(0, sTotal - sPaye);
+          return {
+            id: s.id,
+            name: `${s.first_name} ${s.last_name}`,
+            paye: sPaye,
+            total: sTotal,
+            nonPaye: sNonPaye,
+            status: sNonPaye <= 0 ? 'Soldé' : 'Non soldé'
+          };
+        }).sort((a, b) => a.name.localeCompare(b.name))
       };
     }).sort((a, b) => b.total - a.total);
 
@@ -1681,7 +1750,7 @@ function App() {
     const tauxRecouvrementGlobal = totalAttenduGlobal > 0 ? Math.round((totalPayeGlobal / totalAttenduGlobal) * 100) : 0;
 
     // Calcul des factures filtrées pour la recherche
-    const filteredInvoices = invoicesData.filter(inv => {
+    const filteredInvoices = (invoicesData || []).filter(inv => {
       const q = invoiceSearchQuery.toLowerCase();
       if (!q) return true;
       return (inv.invoice_number?.toLowerCase().includes(q)) || 
@@ -1760,27 +1829,76 @@ function App() {
               <th style={{padding: '12px 0', fontWeight: 500, color: 'var(--success-color)'}}>Total Payé</th>
               <th style={{padding: '12px 0', fontWeight: 500, color: 'var(--danger-color)'}}>Reste à Payer</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>Taux de Recouvrement</th>
+              <th style={{padding: '12px 0', width: '40px'}}></th>
             </tr>
           </thead>
           <tbody>
-            {scolariteParClasse.map((row, i) => (
-              <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
-                <td style={{padding: '16px 0', fontWeight: 600}}>{row.className}</td>
-                <td style={{padding: '16px 0', fontWeight: 'bold'}}>{formatNum(row.total)} FCFA</td>
-                <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--success-color)'}}>{formatNum(row.paye)} FCFA</td>
-                <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--danger-color)'}}>{formatNum(row.nonPaye)} FCFA</td>
-                <td style={{padding: '16px 0'}}>
-                  <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                    <div style={{flex: 1, background: 'var(--surface-color-hover)', height: '8px', borderRadius: '4px', overflow: 'hidden'}}>
-                      <div style={{background: 'var(--success-color)', height: '100%', width: `${row.tauxRecouvrement}%`}}></div>
+            {(scolariteParClasse || []).map((row) => (
+              <React.Fragment key={row.id}>
+                <tr style={{borderBottom: '1px solid var(--border-color)', cursor: 'pointer', background: expandedClassId === row.id ? 'var(--surface-color-hover)' : 'transparent'}} onClick={() => setExpandedClassId(expandedClassId === row.id ? null : row.id)}>
+                  <td style={{padding: '16px 0', fontWeight: 600}}>{row.className}</td>
+                  <td style={{padding: '16px 0', fontWeight: 'bold'}}>{formatNum(row.total)} FCFA</td>
+                  <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--success-color)'}}>{formatNum(row.paye)} FCFA</td>
+                  <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--danger-color)'}}>{formatNum(row.nonPaye)} FCFA</td>
+                  <td style={{padding: '16px 0'}}>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                      <div style={{flex: 1, background: 'var(--surface-color-hover)', height: '8px', borderRadius: '4px', overflow: 'hidden'}}>
+                        <div style={{background: 'var(--success-color)', height: '100%', width: `${row.tauxRecouvrement}%`}}></div>
+                      </div>
+                      <span style={{fontSize: '0.85rem', fontWeight: 600}}>{row.tauxRecouvrement}%</span>
                     </div>
-                    <span style={{fontSize: '0.85rem', fontWeight: 600}}>{row.tauxRecouvrement}%</span>
-                  </div>
-                </td>
-              </tr>
+                  </td>
+                  <td style={{padding: '16px 0', textAlign: 'right'}}>
+                    <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}}>
+                      {expandedClassId === row.id ? 'Fermer' : 'Voir Détails'} <Icons.ChevronDown style={{transform: expandedClassId === row.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', marginLeft: '4px'}} />
+                    </button>
+                  </td>
+                </tr>
+                {expandedClassId === row.id && (
+                  <tr style={{background: '#f8fafc', borderBottom: '1px solid var(--border-color)'}}>
+                    <td colSpan={6} style={{padding: '16px'}}>
+                      <div style={{background: '#fff', borderRadius: '8px', border: '1px solid var(--border-color)', overflow: 'hidden'}}>
+                        <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem'}}>
+                          <thead>
+                             <tr style={{background: '#f1f5f9', borderBottom: '1px solid var(--border-color)'}}>
+                               <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Élève</th>
+                               <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Attendu</th>
+                               <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Payé</th>
+                               <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Reste</th>
+                               <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Statut</th>
+                               <th style={{padding: '10px 16px', textAlign: 'right', fontWeight: 500}}>Action</th>
+                             </tr>
+                          </thead>
+                          <tbody>
+                            {(row.studentsDetails || []).map(st => (
+                              <tr key={st.id} style={{borderBottom: '1px solid #f1f5f9'}}>
+                                <td style={{padding: '10px 16px', fontWeight: 500}}>{st.name}</td>
+                                <td style={{padding: '10px 16px'}}>{formatNum(st.total)}</td>
+                                <td style={{padding: '10px 16px', color: 'var(--success-color)', fontWeight: 600}}>{formatNum(st.paye)}</td>
+                                <td style={{padding: '10px 16px', color: 'var(--danger-color)', fontWeight: 600}}>{formatNum(st.nonPaye)}</td>
+                                <td style={{padding: '10px 16px'}}>
+                                  <span className={`badge ${st.status === 'Soldé' ? 'badge-success' : 'badge-warning'}`}>{st.status}</span>
+                                </td>
+                                <td style={{padding: '10px 16px', textAlign: 'right'}}>
+                                  {st.status !== 'Soldé' && (
+                                    <button className="btn btn-primary" style={{padding: '4px 12px', fontSize: '0.8rem', height: 'auto', minHeight: 'auto'}} onClick={(e) => { e.stopPropagation(); setPreselectedStudentId(st.id); setActiveModal('payment'); }}>Encaisser</button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                            {row.studentsDetails.length === 0 && (
+                              <tr><td colSpan={6} style={{padding: '16px', textAlign: 'center', color: 'var(--text-secondary)'}}>Aucun élève dans cette classe.</td></tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
             ))}
             {scolariteParClasse.length === 0 && (
-              <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucune donnée disponible.</td></tr>
+              <tr><td colSpan={6} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucune donnée disponible.</td></tr>
             )}
           </tbody>
         </table>
@@ -1976,7 +2094,7 @@ function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {studentsData.filter(s => s.class_id === activeEvaluation.class_id).map((student) => (
+                    {studentsData.filter(s => s.class_id === activeEvaluation.class_id).map((student, index) => (
                       <tr key={student.id} style={{borderBottom: '1px solid #eee', background: '#fff', color: '#333'}}>
                         <td style={{padding: '8px 4px', borderRight: '1px solid #eee', textAlign: 'center'}}><input type="checkbox" /></td>
                         <td style={{padding: '8px', borderRight: '1px solid #eee', fontWeight: 'bold'}}>{student.matricule || `MAT-${student.id.substring(0,4)}`}</td>
@@ -1985,20 +2103,22 @@ function App() {
                         <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{activeEvaluation.classes?.name}</td>
                         <td style={{padding: '8px', borderRight: '1px solid #eee'}}>
                           <input 
+                            id={`grade-input-${index}`}
                             type="number" 
                             step="0.25" 
                             min="0" 
                             max={activeEvaluation.max_score}
                             style={{width: '100%', padding: '4px', fontSize: '13px', border: '1px solid #ccc', borderRadius: '3px', outline: 'none'}}
                             value={gradesInput[student.id]?.score || ''}
-                            onChange={(e) => handleGradeChange(student.id, 'score', e.target.value)}
+                            onChange={(e) => handleGradeChange(student.id, 'score', e.target.value, activeEvaluation.max_score || 20)}
+                            onKeyDown={(e) => handleKeyDown(e, index)}
                           />
                         </td>
                         <td style={{padding: '8px'}}>
                           <select 
                             style={{width: '100%', padding: '4px', fontSize: '13px', border: '1px solid #ccc', borderRadius: '3px', outline: 'none', background: '#fff'}}
                             value={gradesInput[student.id]?.comment || ''}
-                            onChange={(e) => handleGradeChange(student.id, 'comment', e.target.value)}
+                            onChange={(e) => handleGradeChange(student.id, 'comment', e.target.value, activeEvaluation.max_score || 20)}
                           >
                             <option value="">---------</option>
                             <option value={t('admin.grades.appr_excellent', 'Excellent travail')}>{t('admin.grades.appr_excellent', 'Excellent travail')}</option>
@@ -2259,11 +2379,11 @@ function App() {
   );
 
     if (currentView === 'landing' && !session && !studentSession && !teacherSession) {
-    return <LandingPage onLoginClick={() => setCurrentView('app')} />;
+    return <LandingPage onLoginClick={() => setCurrentView('app')} onSuperAdminClick={() => { setIsSuperAdminFlow(true); setCurrentView('app'); }} />;
   }
 
   if (!session && !studentSession && !teacherSession) {
-    return <Auth onStudentLogin={(s) => setStudentSession(s)} onTeacherLogin={(t) => setTeacherSession(t)} onBack={() => setCurrentView('landing')} />;
+    return <Auth onStudentLogin={(s) => setStudentSession(s)} onTeacherLogin={(t) => setTeacherSession(t)} onBack={() => setCurrentView('landing')} isSuperAdminFlow={isSuperAdminFlow} onSuperAdminClick={() => setIsSuperAdminFlow(true)} />;
   }
 
   if (studentSession) {
@@ -2272,6 +2392,10 @@ function App() {
 
   if (teacherSession) {
     return <TeacherPortal session={teacherSession} onLogout={() => setTeacherSession(null)} />;
+  }
+
+  if (showSuperAdmin) {
+    return <SuperAdminPortal session={session} onExit={() => setShowSuperAdmin(false)} onSwitchToSchool={(id) => { setCurrentSchoolId(id); setShowSuperAdmin(false); }} />;
   }
 
   return (
@@ -2364,6 +2488,15 @@ function App() {
             <button className="btn btn-outline hide-on-mobile" style={{padding: '6px 12px', fontSize: '0.9rem', marginLeft: '8px'}} onClick={() => setShowSchoolModal(true)}>
               + Établissement
             </button>
+            {session?.user?.email === 'konedamaa@gmail.com' && (
+              <button 
+                className="btn" 
+                style={{padding: '6px 12px', fontSize: '0.9rem', marginLeft: '8px', background: '#8B5CF6', color: 'white', border: 'none', fontWeight: 'bold'}} 
+                onClick={() => setShowSuperAdmin(true)}
+              >
+                🚀 Portail SaaS
+              </button>
+            )}
           </div>
           
           
@@ -2399,6 +2532,20 @@ function App() {
                   boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
                   zIndex: 100
                 }}>
+                  <div className="dropdown-item" onClick={() => { setShowSuperAdmin(true); setIsProfileMenuOpen(false); }} style={{
+                    padding: '10px 16px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '12px', 
+                    cursor: 'pointer', 
+                    color: '#8B5CF6',
+                    borderRadius: '8px',
+                    fontWeight: 500,
+                    marginBottom: '4px'
+                  }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
+                    <Icons.Activity />
+                    <span>Mode Super Directeur</span>
+                  </div>
                   <div className="dropdown-item" onClick={() => supabase.auth.signOut()} style={{
                     padding: '10px 16px', 
                     display: 'flex', 

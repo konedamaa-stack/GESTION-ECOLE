@@ -5,7 +5,7 @@ import './Auth.css';
 
 type AuthMode = 'login' | 'register' | 'forgot_password' | 'student_login' | 'teacher_login';
 
-export default function Auth({ onStudentLogin, onTeacherLogin, onBack }: { onStudentLogin?: (student: any) => void, onTeacherLogin?: (teacher: any) => void, onBack?: () => void }) {
+export default function Auth({ onStudentLogin, onTeacherLogin, onBack, isSuperAdminFlow, onSuperAdminClick }: { onStudentLogin?: (student: any) => void, onTeacherLogin?: (teacher: any) => void, onBack?: () => void, isSuperAdminFlow?: boolean, onSuperAdminClick?: () => void }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
@@ -92,8 +92,8 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onBack }: { onStu
       case 'login':
         return (
           <>
-            <h1 className="auth-title">{t('auth.admin_title', 'Administration')}</h1>
-            <p className="auth-subtitle">{t('auth.admin_subtitle', "Connectez-vous pour gérer l'établissement")}</p>
+            <h1 className="auth-title">{isSuperAdminFlow ? 'Portail SaaS' : t('auth.admin_title', 'Administration')}</h1>
+            <p className="auth-subtitle">{isSuperAdminFlow ? 'Connectez-vous avec votre compte propriétaire' : t('auth.admin_subtitle', "Connectez-vous pour gérer l'établissement")}</p>
           </>
         );
       case 'teacher_login':
@@ -259,6 +259,18 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onBack }: { onStu
             </button>
           ) : null}
         </div>
+        
+        {(!isSuperAdminFlow && onSuperAdminClick) && (
+          <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+            <button 
+              className="auth-link" 
+              style={{ color: '#8B5CF6', fontWeight: 600, margin: '0 auto', display: 'block' }} 
+              onClick={(e) => { e.preventDefault(); onSuperAdminClick(); handleModeSwitch('login'); }}
+            >
+              🔐 Je suis le Propriétaire du SaaS
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
