@@ -1992,7 +1992,7 @@ function App() {
         <button className="btn btn-primary" onClick={() => (document.getElementById('settingsForm') as HTMLFormElement)?.requestSubmit()}>{t('admin.settings.btn_save', 'Sauvegarder')}</button>
       </div>
 
-      <div className="dashboard-grid" style={{gridTemplateColumns: '250px 1fr'}}>
+      <div className="dashboard-grid settings-grid">
         {/* Settings Navigation */}
         <div className="panel delay-100" style={{padding: '16px'}}>
           <ul className="nav-menu" style={{padding: 0}}>
@@ -2412,7 +2412,7 @@ function App() {
             <div className="modal-body">
               {/* Quick Create Menu */}
               {activeModal === 'quickCreate' && (
-                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                <div className="form-grid">
                   <div className="creation-card" onClick={() => { closeModal(); setActiveTab('students'); setActiveModal('student'); }}>
                     <div className="creation-icon"><Icons.UserPlus /></div>
                     <div><h4>{t('admin.modals.quick_student_title', 'Nouvel Élève')}</h4><p>{t('admin.modals.quick_student_desc', 'Inscrire un étudiant.')}</p></div>
@@ -2541,7 +2541,7 @@ function App() {
                       {studentsData.map(s => <option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>)}
                     </select>
                   </div>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                  <div className="form-grid">
                     <div className="form-group">
                       <label>{t('admin.modals.date', 'Date')}</label>
                       <input type="date" name="absence_date" className="form-input" required defaultValue={new Date().toISOString().split('T')[0]} />
@@ -2581,7 +2581,7 @@ function App() {
               {activeModal === 'student' && (
                 <form onSubmit={handleFormSubmit}>
                   <h3 style={{marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>{t('admin.modals.student_info', "1. Informations de l'Élève")}</h3>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                  <div className="form-grid">
                     <div className="form-group">
                       <label>{t('admin.modals.last_name', 'Nom')}</label>
                       <input type="text" name="last_name" className="form-input" required defaultValue={editEntity?.last_name || ""} />
@@ -2591,7 +2591,7 @@ function App() {
                       <input type="text" name="first_name" className="form-input" required defaultValue={editEntity?.first_name || ""} />
                     </div>
                   </div>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                  <div className="form-grid">
                     <div className="form-group">
                       <label>{t('admin.modals.birth_date', 'Date de Naissance')}</label>
                       <input type="date" name="birth_date" className="form-input" required defaultValue={editEntity?.birth_date || ""} />
@@ -2606,7 +2606,7 @@ function App() {
                       </select>
                     </div>
                   </div>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px'}}>
+                  <div className="form-grid" style={{marginTop: '16px'}}>
                     <div className="form-group">
                       <label>Scolarité personnalisée (Optionnel, FCFA)</label>
                       <input type="number" name="tuition_fee" className="form-input" placeholder="Laisser vide pour utiliser le tarif de la classe" defaultValue={editEntity?.tuition_fee || ""} />
@@ -2618,7 +2618,7 @@ function App() {
                   </div>
 
                   {!editEntity && (<><h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>{t('admin.modals.parent_info', '2. Informations du Parent / Tuteur')}</h3>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                  <div className="form-grid">
                     <div className="form-group">
                       <label>{t('admin.modals.parent_last_name', 'Nom du parent')}</label>
                       <input type="text" name="parent_last_name" className="form-input" />
@@ -2628,7 +2628,7 @@ function App() {
                       <input type="text" name="parent_first_name" className="form-input" />
                     </div>
                   </div>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                  <div className="form-grid">
                     <div className="form-group">
                       <label>{t('admin.modals.phone', 'Téléphone')}</label>
                       <input type="tel" name="parent_phone" className="form-input" />
@@ -2644,7 +2644,7 @@ function App() {
                     <label>{t('admin.modals.reg_fee_amount', "Montant des frais d'inscription (CFA)")}</label>
                     <input type="number" name="reg_fee_amount" className="form-input" placeholder="Ex: 50000" />
                   </div>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                  <div className="form-grid">
                     <div className="form-group">
                       <label>{t('admin.modals.payment_method', 'Mode de paiement')}</label>
                       <select name="reg_fee_method" className="form-select">
@@ -2674,7 +2674,7 @@ function App() {
               {/* General Form for Employees/Teachers/Parents */}
               {['employee', 'teacher', 'parent'].includes(activeModal) && (
                 <form onSubmit={handleFormSubmit}>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                  <div className="form-grid">
                     <div className="form-group">
                       <label>{t('admin.modals.last_name', 'Nom')}</label>
                       <input type="text" name="last_name" className="form-input" required defaultValue={editEntity?.last_name || ""} />
@@ -2688,7 +2688,7 @@ function App() {
                     <label>{t('admin.modals.phone', 'Numéro de Téléphone')}</label>
                     <input type="tel" name="phone" className="form-input" placeholder="+221 77 000 00 00" required defaultValue={editEntity?.phone || ""} />
                   </div>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                  <div className="form-grid">
                     <div className="form-group">
                       <label>{t('admin.modals.email', 'Email')}</label>
                       <input type="email" name="email" className="form-input" required={activeModal === 'teacher'} defaultValue={editEntity?.email || ""} />
@@ -2778,7 +2778,7 @@ function App() {
               {activeModal === 'coefficients' && (
                 <form onSubmit={handleSaveCoefficients}>
                   <p style={{marginBottom: '20px', color: 'var(--text-secondary)'}}>Définissez les coefficients pour chaque matière. Laissez à 1 si vous n'utilisez pas de coefficients.</p>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', maxHeight: '50vh', overflowY: 'auto', paddingRight: '10px'}}>
+                  <div className="form-grid" style={{maxHeight: '50vh', overflowY: 'auto', paddingRight: '10px'}}>
                     {["Mathématiques", "Français", "Anglais", "Histoire-Géographie", "Physique-Chimie", "SVT", "EPS", "Philosophie", "Informatique", "Espagnol", "Allemand", "Arts Plastiques", "Éducation Musicale"].map(subj => {
                       const existing = classSubjectsData.find(cs => cs.class_id === bulletinClassId && cs.subject === subj);
                       return (
@@ -2884,7 +2884,7 @@ function App() {
                     <label>{t('admin.modals.eval_name', "Nom de l'évaluation")}</label>
                     <input type="text" name="name" className="form-input" required placeholder="Ex: Devoir de Mathématiques N°1" />
                   </div>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                  <div className="form-grid">
                     <div className="form-group">
                       <label>{t('admin.modals.class_assign', 'Classe')}</label>
                       <select name="class_id" className="form-select" required>
@@ -2913,7 +2913,7 @@ function App() {
                       </select>
                     </div>
                   </div>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                  <div className="form-grid">
                     <div className="form-group">
                       <label>{t('admin.modals.term', 'Période')}</label>
                       <select name="period" className="form-select" required>
@@ -2934,7 +2934,7 @@ function App() {
                       </select>
                     </div>
                   </div>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                  <div className="form-grid">
                     <div className="form-group">
                       <label>{t('admin.modals.date', 'Date')}</label>
                       <input type="date" name="date" className="form-input" required defaultValue={new Date().toISOString().split('T')[0]} />
@@ -3037,7 +3037,7 @@ function App() {
                   {activeDossierTab === 'infos' && (
                     <div>
                       <h3 style={{marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', fontSize: '1.1rem'}}>{t('admin.modals.school_infos', 'Informations Scolaires')}</h3>
-                      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px'}}>
+                      <div className="form-grid" style={{marginBottom: '24px'}}>
                         <div>
                           <span style={{color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'block'}}>{t('admin.modals.current_class', 'Classe Actuelle')}</span>
                           <strong>{selectedStudent.classes?.name || t('admin.modals.unassigned', 'Non assigné')}</strong>
@@ -3084,7 +3084,7 @@ function App() {
                       <div style={{background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px', marginBottom: '24px'}}>
                         <h4 style={{marginTop: 0, marginBottom: '16px'}}>{t('admin.modals.add_doc', 'Ajouter un document')}</h4>
                         <form onSubmit={handleDocumentUpload} style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
-                          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
+                          <div className="form-grid" style={{gap: '12px'}}>
                             <div className="form-group">
                               <label>{t('admin.modals.doc_type', 'Type de document')}</label>
                               <select name="document_type" className="form-select" required>
@@ -3150,12 +3150,12 @@ function App() {
 
                     return (
                     <div>
-                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>
+                      <div style={{display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>
                         <h3 style={{fontSize: '1.1rem', margin: 0}}>Historique des Paiements</h3>
                         <button className="btn btn-primary" onClick={() => { setPreselectedStudentId(selectedStudent.id); setActiveModal('payment'); }}>+ Enregistrer un paiement</button>
                       </div>
                       <div style={{marginBottom: '24px'}}>
-                        <div style={{display: 'flex', gap: '24px', marginBottom: '16px', background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px'}}>
+                        <div style={{display: 'flex', gap: '24px', flexWrap: 'wrap', marginBottom: '16px', background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px'}}>
                           <div>
                             <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Scolarité Totale</span>
                             <strong style={{fontSize: '1.2rem'}}>{formatNum(studentTotal)} FCFA</strong>
@@ -3266,7 +3266,7 @@ function App() {
                       <option value="Samedi">Samedi</option>
                     </select>
                   </div>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                  <div className="form-grid">
                     <div className="form-group">
                       <label>{t('admin.modals.start_time', 'Heure de début')}</label>
                       <input type="time" name="start_time" className="form-input" required defaultValue="08:00" />
