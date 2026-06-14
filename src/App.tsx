@@ -3202,7 +3202,7 @@ function App() {
                         )}
                       </div>
                     </div>
-                  )})}
+                  ) })() }
 
                   <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     {activeDossierTab === 'finances' && (
