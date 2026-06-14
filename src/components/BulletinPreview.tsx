@@ -184,7 +184,11 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
             {/* 2. School Info */}
             <div className="bulletin-classic-school">
               <div className="school-logo">
-                <div style={{width: '60px', height: '60px', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#94a3b8', fontSize: '0.8rem'}}>LOGO</div>
+                {schoolInfo?.logo_url ? (
+                  <img src={schoolInfo.logo_url} alt="Logo" style={{width: '60px', height: '60px', borderRadius: '50%', objectFit: 'contain'}} />
+                ) : (
+                  <div style={{width: '60px', height: '60px', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#94a3b8', fontSize: '0.8rem'}}>LOGO</div>
+                )}
               </div>
               <div className="school-details">
                 <p>Etablissement: <strong>{schoolInfo?.name?.toUpperCase() || "ÉTABLISSEMENT"}</strong></p>

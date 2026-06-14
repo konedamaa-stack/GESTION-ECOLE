@@ -320,6 +320,40 @@ function App() {
       else alert("Erreur lors de la suppression.");
     }
   };
+
+  const handleDeleteStudent = async (id: string) => {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer cet élève ? (Cette action supprimera également ses factures, absences, notes, etc.)")) {
+      try {
+        // Delete related records to bypass foreign key constraints
+        await supabase.from('student_parents').delete().eq('student_id', id);
+        await supabase.from('invoices').delete().eq('student_id', id);
+        await supabase.from('absences').delete().eq('student_id', id);
+        await supabase.from('grades').delete().eq('student_id', id);
+        await supabase.from('student_documents').delete().eq('student_id', id);
+        
+        const { error } = await supabase.from('students').delete().eq('id', id);
+        if (error) throw error;
+        
+        fetchStudents();
+      } catch (error: any) {
+        alert("Erreur lors de la suppression : " + error.message);
+      }
+    }
+  };
+
+  const handleDeleteParent = async (id: string) => {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer ce parent ?")) {
+      try {
+        await supabase.from('student_parents').delete().eq('parent_id', id);
+        const { error } = await supabase.from('parents').delete().eq('id', id);
+        if (error) throw error;
+        
+        fetchParents();
+      } catch (error: any) {
+        alert("Erreur lors de la suppression : " + error.message);
+      }
+    }
+  };
   const fetchStudentDocuments = async (studentId: string) => {
     const { data } = await supabase.from('student_documents').select('*').eq('student_id', studentId);
     if (data) setStudentDocumentsData(data);
@@ -381,7 +415,7 @@ function App() {
     }
   };
 
-  const closeModal = () => { setActiveModal(null); setPreselectedStudentId(null); };
+  const closeModal = () => { setActiveModal(null); setPreselectedStudentId(null); setEditEntity(null); };
 
   const handleCreateSchool = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -447,7 +481,7 @@ function App() {
           closeModal();
           return;
         }
-        const matricule = 'ELV-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000);
+        const matricule = 'ELV' + new Date().getFullYear() + Math.floor(Math.random() * 10000);
         const password = formData.get('password') || 'passer123';
         const student = {
           first_name: formData.get('first_name'),
@@ -513,7 +547,7 @@ function App() {
           closeModal();
           return;
         }
-        const teacherMatricule = 'PRF-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000);
+        const teacherMatricule = 'PRF' + new Date().getFullYear() + Math.floor(Math.random() * 10000);
         const password = formData.get('password') || Math.random().toString(36).slice(-8);
 
         const teacher = {
@@ -1032,6 +1066,7 @@ function App() {
                 <td style={{padding: '16px 0'}}><span className={`badge ${row.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`}>{row.status}</span></td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
                   <button className="btn btn-outline" title="Modifier" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('student'); }}>✏️</button>
+                  <button className="btn btn-outline" title="Supprimer" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--error-color)', borderColor: 'var(--error-color)'}} onClick={() => handleDeleteStudent(row.id)}>🗑️</button>
                   <button className="btn btn-outline" title="Emploi du temps" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { 
                     if(row.class_id) {
                       setSelectedClassForSchedule(row.class_id);
@@ -1513,6 +1548,7 @@ function App() {
                 <td style={{padding: '16px 0'}}>{row.email ? 'Actif' : 'Non configuré'}</td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
                   <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('parent'); }}>✏️ Modifier</button>
+                  <button className="btn btn-outline" title="Supprimer" style={{padding: '6px 12px', color: 'var(--error-color)', borderColor: 'var(--error-color)'}} onClick={() => handleDeleteParent(row.id)}>🗑️ Supprimer</button>
                 </td>
               </tr>
             )) : (
