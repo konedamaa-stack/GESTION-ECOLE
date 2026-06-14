@@ -621,7 +621,29 @@ function App() {
         alert("Le message a été envoyé avec succès !");
       }
       else if (activeModal === 'parent') {
-        alert("Le parent a été ajouté avec succès !");
+        if (editEntity) {
+          const parentUpdate = {
+            first_name: formData.get('first_name'),
+            last_name: formData.get('last_name'),
+            phone: formData.get('phone'),
+            email: formData.get('email')
+          };
+          const { error } = await supabase.from('parents').update(parentUpdate).eq('id', editEntity.id);
+          if (error) throw error;
+          alert("Parent mis à jour avec succès !");
+        } else {
+          const parent = {
+            first_name: formData.get('first_name'),
+            last_name: formData.get('last_name'),
+            phone: formData.get('phone'),
+            email: formData.get('email'),
+            school_id: currentSchoolId
+          };
+          const { error } = await supabase.from('parents').insert([parent]);
+          if (error) throw error;
+          alert("Le parent a été ajouté avec succès !");
+        }
+        fetchParents();
       }
       
       closeModal();
@@ -2566,11 +2588,11 @@ function App() {
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                     <div className="form-group">
                       <label>{t('admin.modals.last_name', 'Nom')}</label>
-                      <input type="text" name="last_name" className="form-input" required />
+                      <input type="text" name="last_name" className="form-input" required defaultValue={editEntity?.last_name || ""} />
                     </div>
                     <div className="form-group">
                       <label>{t('admin.modals.first_name', 'Prénom(s)')}</label>
-                      <input type="text" name="first_name" className="form-input" required />
+                      <input type="text" name="first_name" className="form-input" required defaultValue={editEntity?.first_name || ""} />
                     </div>
                   </div>
                   <div className="form-group">
