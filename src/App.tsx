@@ -1674,42 +1674,54 @@ function App() {
               <input type="text" placeholder={t('admin.grades.filter_subject', 'Filtrer par matière...')} className="form-input search-input" value={selectedSubjectForGrades} onChange={e => setSelectedSubjectForGrades(e.target.value)} />
             </div>
 
-            <div className="panel delay-200">
-              <h3 className="panel-title">{t('admin.grades.panel_title', 'Évaluations existantes')}</h3>
-              <div className="table-responsive">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>{t('admin.grades.col_date', 'Date')}</th>
-                      <th>{t('admin.grades.col_class', 'Classe')}</th>
-                      <th>{t('admin.grades.col_subject', 'Matière')}</th>
-                      <th>{t('admin.grades.col_name', "Nom de l'évaluation")}</th>
-                      <th>{t('admin.grades.col_type', 'Type')}</th>
-                      <th>{t('admin.grades.col_max', 'Notes sur')}</th>
-                      <th>{t('admin.grades.col_action', 'Action')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredEvaluations.map(evalu => (
-                      <tr key={evalu.id}>
-                        <td>{new Date(evalu.date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</td>
-                        <td>{evalu.classes?.name}</td>
-                        <td style={{fontWeight: 600}}>{evalu.subject}</td>
-                        <td>{evalu.name}</td>
-                        <td><span className="badge" style={{background: 'var(--surface-color-hover)'}}>{evalu.type}</span></td>
-                        <td>{formatNum(evalu.max_score)}</td>
-                        <td>
-                          <button className="btn btn-primary" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => startGrading(evalu)}>{t('admin.grades.btn_grade', 'Saisir les notes')}</button>
-                        </td>
+            {selectedClassForGrades ? (
+              <div className="panel delay-200">
+                <h3 className="panel-title">{t('admin.grades.panel_title', 'Évaluations existantes')}</h3>
+                <div className="table-responsive">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>{t('admin.grades.col_date', 'Date')}</th>
+                        <th>{t('admin.grades.col_class', 'Classe')}</th>
+                        <th>{t('admin.grades.col_subject', 'Matière')}</th>
+                        <th>{t('admin.grades.col_name', "Nom de l'évaluation")}</th>
+                        <th>{t('admin.grades.col_type', 'Type')}</th>
+                        <th>{t('admin.grades.col_max', 'Notes sur')}</th>
+                        <th>{t('admin.grades.col_action', 'Action')}</th>
                       </tr>
-                    ))}
-                    {filteredEvaluations.length === 0 && (
-                      <tr><td colSpan={7} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.grades.empty_state', 'Aucune évaluation trouvée pour ces filtres.')}</td></tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {filteredEvaluations.map(evalu => (
+                        <tr key={evalu.id}>
+                          <td>{new Date(evalu.date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</td>
+                          <td>{evalu.classes?.name}</td>
+                          <td style={{fontWeight: 600}}>{evalu.subject}</td>
+                          <td>{evalu.name}</td>
+                          <td><span className="badge" style={{background: 'var(--surface-color-hover)'}}>{evalu.type}</span></td>
+                          <td>{formatNum(evalu.max_score)}</td>
+                          <td>
+                            <button className="btn btn-primary" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => startGrading(evalu)}>{t('admin.grades.btn_grade', 'Saisir les notes')}</button>
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredEvaluations.length === 0 && (
+                        <tr><td colSpan={7} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.grades.empty_state', 'Aucune évaluation trouvée pour ces filtres.')}</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="panel delay-200" style={{textAlign: 'center', padding: '64px 20px'}}>
+                <div style={{opacity: 0.3, marginBottom: '16px'}}>
+                  <Icons.FileText />
+                </div>
+                <h3 style={{fontSize: '1.2rem', marginBottom: '8px', color: 'var(--text-color)'}}>{t('admin.grades.select_class_title', 'Sélectionnez une classe')}</h3>
+                <p style={{color: 'var(--text-secondary)', maxWidth: '400px', margin: '0 auto'}}>
+                  {t('admin.grades.select_class_desc', "Pour afficher la liste des évaluations et saisir les notes, veuillez d'abord choisir une classe dans le menu ci-dessus.")}
+                </p>
+              </div>
+            )}
           </>
         ) : (
           <div className="panel delay-100">
@@ -2109,7 +2121,7 @@ function App() {
             <Icons.Calendar /> {t('admin.sidebar.schedules', 'Emplois du Temps')}
           </li>
           <li className={`nav-item ${activeTab === 'grades' ? 'active' : ''}`} onClick={() => { setActiveTab('grades'); setIsMobileMenuOpen(false); }}>
-            <Icons.FileText /> {t('admin.sidebar.grades', 'Notes & Bulletins')}
+            <Icons.FileText /> {t('admin.sidebar.grades', 'Évaluations & Notes')}
           </li>
           <li className={`nav-item ${activeTab === 'bulletins' ? 'active' : ''}`} onClick={() => { setActiveTab('bulletins'); setIsMobileMenuOpen(false); }}>
             <Icons.FileText /> {t('admin.sidebar.bulletins', 'Bulletins')}
