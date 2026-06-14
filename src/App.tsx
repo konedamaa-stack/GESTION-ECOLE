@@ -310,6 +310,14 @@ function App() {
     const { data } = await supabase.from('schedules').select(`*, classes(name), teachers(first_name, last_name)`);
     if (data) setSchedulesData(data);
   };
+
+  const handleDeleteSchedule = async (id: string) => {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer ce cours ?")) {
+      const { error } = await supabase.from('schedules').delete().eq('id', id);
+      if (!error) fetchSchedules();
+      else alert("Erreur lors de la suppression.");
+    }
+  };
   const fetchStudentDocuments = async (studentId: string) => {
     const { data } = await supabase.from('student_documents').select('*').eq('student_id', studentId);
     if (data) setStudentDocumentsData(data);
@@ -562,6 +570,20 @@ function App() {
           start_time: formData.get('start_time'),
           end_time: formData.get('end_time'),
         };
+
+        // Check for overlapping schedule (same class, day, and time)
+        const { data: overlaps } = await supabase.from('schedules')
+          .select('id')
+          .eq('class_id', schedule.class_id)
+          .eq('day_of_week', schedule.day_of_week)
+          .eq('start_time', schedule.start_time)
+          .eq('school_id', currentSchoolId);
+          
+        if (overlaps && overlaps.length > 0) {
+          alert("Erreur : Un cours existe déjà à cette heure précise pour cette classe le " + schedule.day_of_week + " !");
+          return;
+        }
+
         const { error } = await supabase.from('schedules').insert([{...schedule, school_id: currentSchoolId}]);
         if (error) throw error;
         fetchSchedules();
@@ -1533,8 +1555,15 @@ function App() {
                       return (
                         <td key={day} style={{padding: '8px', border: '1px solid var(--border-color)', verticalAlign: 'top', height: '80px'}}>
                           {courses.map((course, i) => (
-                            <div key={i} style={{background: 'rgba(59, 130, 246, 0.1)', borderLeft: '3px solid var(--primary-color)', padding: '6px', borderRadius: '4px', marginBottom: '4px', fontSize: '0.85rem'}}>
-                              <div style={{fontWeight: 600, color: 'var(--primary-color)'}}>{course.subject}</div>
+                            <div key={i} style={{position: 'relative', background: 'rgba(59, 130, 246, 0.1)', borderLeft: '3px solid var(--primary-color)', padding: '6px', borderRadius: '4px', marginBottom: '4px', fontSize: '0.85rem'}}>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleDeleteSchedule(course.id); }}
+                                style={{position: 'absolute', top: '2px', right: '4px', background: 'transparent', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', fontSize: '1rem', padding: '0 4px', fontWeight: 'bold'}}
+                                title="Supprimer ce cours"
+                              >
+                                &times;
+                              </button>
+                              <div style={{fontWeight: 600, color: 'var(--primary-color)', paddingRight: '16px'}}>{course.subject}</div>
                               <div style={{color: 'var(--text-secondary)', fontSize: '0.75rem'}}>{course?.start_time?.substring(0,5)} - {course?.end_time?.substring(0,5)}</div>
                               <div style={{color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '2px'}}>{course.teachers?.first_name} {course.teachers?.last_name}</div>
                             </div>
