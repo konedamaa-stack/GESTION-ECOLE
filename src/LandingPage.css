@@ -334,10 +334,16 @@ body {
   to { opacity: 1; }
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .lp-header {
-    padding: 0 20px;
+    padding: 0 10px;
+  }
+  .lp-logo {
+    font-size: 0.9rem;
+  }
+  .lp-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
   }
   .lp-nav {
     display: none; /* simple mobile menu fallback */

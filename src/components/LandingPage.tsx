@@ -23,7 +23,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
       <header className="lp-header">
         <a href="#" className="lp-logo">
           <span style={{background: 'var(--lp-primary)', color: 'white', padding: '4px 12px', borderRadius: '8px'}}>S</span>
-          SGES
+          GESTION ETABLISSEMENT SCOLAIRE
         </a>
         <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
           <nav className="lp-nav">
@@ -196,7 +196,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
           <div>
             <div className="lp-logo" style={{ color: 'white', marginBottom: '1rem' }}>
               <span style={{background: 'var(--lp-primary)', color: 'white', padding: '4px 12px', borderRadius: '8px'}}>S</span>
-              SGES
+              GESTION ETABLISSEMENT SCOLAIRE
             </div>
             <p style={{ color: '#94a3b8' }}>Système de gestion scolaire innovant pour faciliter le quotidien de l'administration, des enseignants et des parents.</p>
           </div>
@@ -215,7 +215,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
           </div>
         </div>
         <div className="lp-footer-bottom">
-          <p>© {new Date().getFullYear()} SGES - Tous droits réservés.</p>
+          <p>© {new Date().getFullYear()} GESTION ETABLISSEMENT SCOLAIRE - Tous droits réservés.</p>
         </div>
       </footer>
     </div>
