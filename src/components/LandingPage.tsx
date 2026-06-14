@@ -23,7 +23,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
       <header className="lp-header">
         <a href="#" className="lp-logo">
           <span style={{background: 'var(--lp-primary)', color: 'white', padding: '4px 12px', borderRadius: '8px'}}>S</span>
-          GESTION ETABLISSEMENT SCOLAIRE
+          <span className="hide-on-mobile">GESTION ETABLISSEMENT SCOLAIRE</span>
+          <span className="show-on-mobile">SGES</span>
         </a>
         <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
           <nav className="lp-nav">

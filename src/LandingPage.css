@@ -329,12 +329,22 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+.show-on-mobile {
+  display: none;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
 @media (max-width: 768px) {
+  .hide-on-mobile {
+    display: none !important;
+  }
+  .show-on-mobile {
+    display: inline-block !important;
+  }
   .lp-header {
     padding: 0 10px;
   }
