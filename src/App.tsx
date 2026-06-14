@@ -64,9 +64,10 @@ function App() {
   const [currentSchoolPlan, setCurrentSchoolPlan] = useState<string>('Standard');
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [invoiceSearchQuery, setInvoiceSearchQuery] = useState('');
   const [selectedClassForSchedule, setSelectedClassForSchedule] = useState<string>('');
   
-  const [activeDossierTab, setActiveDossierTab] = useState<'infos' | 'documents'>('infos');
+  const [activeDossierTab, setActiveDossierTab] = useState<'infos' | 'documents' | 'finances'>('infos');
   const [studentDocumentsData, setStudentDocumentsData] = useState<any[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   
@@ -1630,6 +1631,16 @@ function App() {
       };
     }).sort((a, b) => b.total - a.total);
 
+    // Calcul des factures filtrées pour la recherche
+    const filteredInvoices = invoicesData.filter(inv => {
+      const q = invoiceSearchQuery.toLowerCase();
+      if (!q) return true;
+      return (inv.invoice_number?.toLowerCase().includes(q)) || 
+             (inv.students?.first_name?.toLowerCase().includes(q)) ||
+             (inv.students?.last_name?.toLowerCase().includes(q)) ||
+             (inv.motif?.toLowerCase().includes(q));
+    });
+
     return (
     <div className="animate-fade-in">
       <div className="page-header">
@@ -1720,7 +1731,7 @@ function App() {
           <h3 className="panel-title">{t('admin.finance.panel_title', 'Dernières Transactions')}</h3>
           <div className="header-search" style={{width: 300}}>
             <Icons.Search />
-            <input type="text" placeholder={t('admin.finance.search_ph', 'Rechercher un reçu, un élève...')} />
+            <input type="text" placeholder={t('admin.finance.search_ph', 'Rechercher un reçu, un élève...')} value={invoiceSearchQuery} onChange={e => setInvoiceSearchQuery(e.target.value)} />
           </div>
         </div>
         <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
@@ -1735,7 +1746,7 @@ function App() {
             </tr>
           </thead>
           <tbody>
-            {invoicesData.length > 0 ? invoicesData.map((row, i) => (
+            {filteredInvoices.length > 0 ? filteredInvoices.map((row, i) => (
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
                 <td style={{padding: '16px 0', fontFamily: 'monospace', fontWeight: 500, color: 'var(--primary-color)'}}>{row.invoice_number}</td>
                 <td style={{padding: '16px 0'}}>
@@ -2998,6 +3009,13 @@ function App() {
                     >
                       {t('admin.modals.dossier_title_docs', 'Documents & Annexes')}
                     </button>
+                    <button 
+                      className={`btn ${activeDossierTab === 'finances' ? '' : 'btn-outline'}`}
+                      style={{borderBottom: activeDossierTab === 'finances' ? '2px solid var(--primary-color)' : 'none', borderRadius: '4px 4px 0 0', border: 'none', background: activeDossierTab === 'finances' ? 'rgba(59, 130, 246, 0.1)' : 'transparent', color: activeDossierTab === 'finances' ? 'var(--primary-color)' : 'var(--text-secondary)'}}
+                      onClick={() => setActiveDossierTab('finances')}
+                    >
+                      Finances & Paiements
+                    </button>
                   </div>
 
                   {activeDossierTab === 'infos' && (
@@ -3105,6 +3123,60 @@ function App() {
                           {t('admin.modals.no_doc', "Aucun document n'a été ajouté pour cet élève.")}
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {activeDossierTab === 'finances' && (
+                    <div>
+                      <h3 style={{marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', fontSize: '1.1rem'}}>Historique des Paiements</h3>
+                      <div style={{marginBottom: '24px'}}>
+                        {invoicesData.filter(inv => inv.student_id === selectedStudent.id).length > 0 ? (
+                          <div>
+                            <div style={{display: 'flex', gap: '24px', marginBottom: '16px', background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px'}}>
+                              <div>
+                                <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Total Payé (FCFA)</span>
+                                <strong style={{fontSize: '1.2rem', color: 'var(--success-color)'}}>
+                                  {formatNum(invoicesData.filter(inv => inv.student_id === selectedStudent.id && inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0))}
+                                </strong>
+                              </div>
+                              <div>
+                                <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Impayés (FCFA)</span>
+                                <strong style={{fontSize: '1.2rem', color: 'var(--danger-color)'}}>
+                                  {formatNum(invoicesData.filter(inv => inv.student_id === selectedStudent.id && inv.status !== 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0))}
+                                </strong>
+                              </div>
+                            </div>
+                            <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem'}}>
+                              <thead>
+                                <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
+                                  <th style={{padding: '8px 0', fontWeight: 500}}>N° Reçu</th>
+                                  <th style={{padding: '8px 0', fontWeight: 500}}>Motif</th>
+                                  <th style={{padding: '8px 0', fontWeight: 500}}>Montant</th>
+                                  <th style={{padding: '8px 0', fontWeight: 500}}>Date</th>
+                                  <th style={{padding: '8px 0', fontWeight: 500}}>Statut</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {invoicesData.filter(inv => inv.student_id === selectedStudent.id).map((inv, idx) => (
+                                  <tr key={idx} style={{borderBottom: '1px solid var(--border-color)'}}>
+                                    <td style={{padding: '12px 0', fontFamily: 'monospace', fontWeight: 500, color: 'var(--primary-color)'}}>{inv.invoice_number}</td>
+                                    <td style={{padding: '12px 0'}}>{inv.motif}</td>
+                                    <td style={{padding: '12px 0', fontWeight: 'bold'}}>{formatNum(inv.amount)} FCFA</td>
+                                    <td style={{padding: '12px 0', color: 'var(--text-secondary)'}}>{new Date(inv.issue_date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</td>
+                                    <td style={{padding: '12px 0'}}>
+                                      <span className={`badge ${inv.status === 'Payée' ? 'badge-success' : 'badge-warning'}`}>{inv.status}</span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <div style={{padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', background: 'var(--surface-color-hover)', borderRadius: '8px'}}>
+                            Aucune transaction n'a été trouvée pour cet élève.
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
