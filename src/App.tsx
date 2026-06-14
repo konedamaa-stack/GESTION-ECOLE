@@ -2529,20 +2529,6 @@ function App() {
                   boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
                   zIndex: 100
                 }}>
-                  <div className="dropdown-item" onClick={() => { setShowSuperAdmin(true); setIsProfileMenuOpen(false); }} style={{
-                    padding: '10px 16px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '12px', 
-                    cursor: 'pointer', 
-                    color: '#8B5CF6',
-                    borderRadius: '8px',
-                    fontWeight: 500,
-                    marginBottom: '4px'
-                  }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
-                    <Icons.Activity />
-                    <span>Mode Super Directeur</span>
-                  </div>
                   <div className="dropdown-item" onClick={() => supabase.auth.signOut()} style={{
                     padding: '10px 16px', 
                     display: 'flex', 
