@@ -3202,7 +3202,12 @@ function App() {
                     </div>
                   )})}
 
-                  <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end'}}>
+                  <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
+                    {activeDossierTab === 'finances' && (
+                      <button type="button" className="btn btn-outline" style={{borderColor: 'var(--primary-color)', color: 'var(--primary-color)'}} onClick={() => { setPreselectedStudentId(selectedStudent.id); setActiveModal('payment'); }}>
+                        + Enregistrer un paiement
+                      </button>
+                    )}
                     <button type="button" className="btn btn-primary" onClick={closeModal}>{t('admin.modals.close_dossier', 'Fermer le dossier')}</button>
                   </div>
                 </div>
