@@ -1607,7 +1607,30 @@ function App() {
     </div>
   )};
 
-  const renderScolarite = () => currentSchoolPlan !== 'Pro' ? renderPremiumOverlay(t('admin.finance.premium_title', "Comptabilité & Scolarité"), t('admin.finance.premium_desc', "Gérez les factures, les paiements de scolarité et suivez votre trésorerie avec le plan Pro.")) : (
+  const renderScolarite = () => {
+    if (currentSchoolPlan !== 'Pro') {
+      return renderPremiumOverlay(t('admin.finance.premium_title', "Comptabilité & Scolarité"), t('admin.finance.premium_desc', "Gérez les factures, les paiements de scolarité et suivez votre trésorerie avec le plan Pro."));
+    }
+
+    // Calcul des totaux par classe
+    const scolariteParClasse = classesData.map(cls => {
+      const classStudentsIds = studentsData.filter(s => s.class_id === cls.id).map(s => s.id);
+      const classInvoices = invoicesData.filter(inv => classStudentsIds.includes(inv.student_id));
+      
+      const paye = classInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+      const nonPaye = classInvoices.filter(inv => inv.status !== 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+      const total = paye + nonPaye;
+      
+      return {
+        className: cls.name,
+        paye,
+        nonPaye,
+        total,
+        tauxRecouvrement: total > 0 ? Math.round((paye / total) * 100) : 0
+      };
+    }).sort((a, b) => b.total - a.total);
+
+    return (
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
@@ -1654,7 +1677,45 @@ function App() {
         </div>
       </div>
 
-      <div className="panel delay-300">
+      <div className="panel delay-200" style={{marginTop: '24px'}}>
+        <div className="panel-header">
+          <h3 className="panel-title">{t('admin.finance.panel_class_title', 'Récapitulatif par Classe')}</h3>
+        </div>
+        <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
+          <thead>
+            <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Classe</th>
+              <th style={{padding: '12px 0', fontWeight: 500, color: 'var(--success-color)'}}>Total Payé</th>
+              <th style={{padding: '12px 0', fontWeight: 500, color: 'var(--danger-color)'}}>Reste à Payer</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Total Attendu</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Taux de Recouvrement</th>
+            </tr>
+          </thead>
+          <tbody>
+            {scolariteParClasse.map((row, i) => (
+              <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
+                <td style={{padding: '16px 0', fontWeight: 600}}>{row.className}</td>
+                <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--success-color)'}}>{formatNum(row.paye)} FCFA</td>
+                <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--danger-color)'}}>{formatNum(row.nonPaye)} FCFA</td>
+                <td style={{padding: '16px 0', fontWeight: 'bold'}}>{formatNum(row.total)} FCFA</td>
+                <td style={{padding: '16px 0'}}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                    <div style={{flex: 1, background: 'var(--surface-color-hover)', height: '8px', borderRadius: '4px', overflow: 'hidden'}}>
+                      <div style={{background: 'var(--success-color)', height: '100%', width: `${row.tauxRecouvrement}%`}}></div>
+                    </div>
+                    <span style={{fontSize: '0.85rem', fontWeight: 600}}>{row.tauxRecouvrement}%</span>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {scolariteParClasse.length === 0 && (
+              <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucune donnée disponible.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="panel delay-300" style={{marginTop: '24px'}}>
         <div className="panel-header">
           <h3 className="panel-title">{t('admin.finance.panel_title', 'Dernières Transactions')}</h3>
           <div className="header-search" style={{width: 300}}>
