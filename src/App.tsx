@@ -2279,6 +2279,9 @@ function App() {
           <li className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}>
             <Icons.Settings /> {t('admin.sidebar.settings', 'Paramètres')}
           </li>
+          <li className="nav-item" onClick={() => supabase.auth.signOut()} style={{color: 'var(--danger-color, #ef4444)', marginTop: 'auto'}}>
+            <Icons.LogOut /> {t('admin.header.logout', 'Se déconnecter')}
+          </li>
         </ul>
       </aside>
 
