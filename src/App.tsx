@@ -1756,7 +1756,8 @@ function App() {
         </table>
       </div>
     </div>
-  };
+  );
+};
   const renderGrades = () => {
     // Determine which evaluations to show based on selected class
     const filteredEvaluations = evaluationsData.filter(e => 
