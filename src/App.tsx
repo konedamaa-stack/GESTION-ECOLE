@@ -4,6 +4,7 @@ import type { Session } from '@supabase/supabase-js';
 import { useTranslation } from 'react-i18next';
 import { LandingPage } from './components/LandingPage';
 import Auth from './components/Auth';
+import { SuperAdminAuth } from './components/SuperAdminAuth';
 import StudentPortal from './components/StudentPortal';
 import TeacherPortal from './components/TeacherPortal';
 import { BulletinPreview } from './components/BulletinPreview';
@@ -2383,7 +2384,10 @@ function App() {
   }
 
   if (!session && !studentSession && !teacherSession) {
-    return <Auth onStudentLogin={(s) => setStudentSession(s)} onTeacherLogin={(t) => setTeacherSession(t)} onBack={() => setCurrentView('landing')} isSuperAdminFlow={isSuperAdminFlow} onSuperAdminClick={() => setIsSuperAdminFlow(true)} />;
+    if (isSuperAdminFlow) {
+      return <SuperAdminAuth onBack={() => { setIsSuperAdminFlow(false); setCurrentView('landing'); }} />;
+    }
+    return <Auth onStudentLogin={(s) => setStudentSession(s)} onTeacherLogin={(t) => setTeacherSession(t)} onBack={() => setCurrentView('landing')} />;
   }
 
   if (studentSession) {
@@ -2473,7 +2477,7 @@ function App() {
               <Icons.Search />
               <input type="text" placeholder={t('admin.header.search', 'Rechercher...')} />
             </div>
-            {adminSchools && adminSchools.length > 0 && (
+            {adminSchools && adminSchools.length > 1 && (
               <select 
                 className="form-select hide-on-mobile" 
                 style={{marginLeft: 16, maxWidth: 200, padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: '6px', background: 'var(--surface-color)', color: 'var(--text-color)'}}
@@ -2485,16 +2489,9 @@ function App() {
                 ))}
               </select>
             )}
-            <button className="btn btn-outline hide-on-mobile" style={{padding: '6px 12px', fontSize: '0.9rem', marginLeft: '8px'}} onClick={() => setShowSchoolModal(true)}>
-              + Établissement
-            </button>
-            {session?.user?.email === 'konedamaa@gmail.com' && (
-              <button 
-                className="btn" 
-                style={{padding: '6px 12px', fontSize: '0.9rem', marginLeft: '8px', background: '#8B5CF6', color: 'white', border: 'none', fontWeight: 'bold'}} 
-                onClick={() => setShowSuperAdmin(true)}
-              >
-                🚀 Portail SaaS
+            {adminSchools && adminSchools.length < 1 && (
+              <button className="btn btn-outline hide-on-mobile" style={{padding: '6px 12px', fontSize: '0.9rem', marginLeft: '8px'}} onClick={() => setShowSchoolModal(true)}>
+                + Établissement
               </button>
             )}
           </div>
