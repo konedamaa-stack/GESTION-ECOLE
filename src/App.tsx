@@ -9,6 +9,7 @@ import StudentPortal from './components/StudentPortal';
 import TeacherPortal from './components/TeacherPortal';
 import { BulletinPreview } from './components/BulletinPreview';
 import { SuperAdminPortal } from './components/SuperAdminPortal';
+import { PasswordRecovery } from './components/PasswordRecovery';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import './App.css';
 
@@ -170,6 +171,7 @@ function App() {
   const [parentsData, setParentsData] = useState<any[]>([]);
   const [showSuperAdmin, setShowSuperAdmin] = useState(false);
   const [isSuperAdminFlow, setIsSuperAdminFlow] = useState(false);
+  const [recoveryMode, setRecoveryMode] = useState(false);
   const fetchParents = async () => {
     const { data } = await supabase.from('parents').select('*, student_parents(student_id, parent_id, students(id, first_name, last_name))').eq('school_id', currentSchoolId || '');
     if (data) setParentsData(data);
@@ -233,8 +235,11 @@ function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+      if (event === 'PASSWORD_RECOVERY') {
+        setRecoveryMode(true);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -2378,6 +2383,14 @@ function App() {
       </div>
     </div>
   );
+
+  if (recoveryMode) {
+    return <PasswordRecovery onComplete={() => {
+      setRecoveryMode(false);
+      setSession(null);
+      setCurrentView('landing');
+    }} />;
+  }
 
     if (currentView === 'landing' && !session && !studentSession && !teacherSession) {
     return <LandingPage onLoginClick={() => setCurrentView('app')} onSuperAdminClick={() => { setIsSuperAdminFlow(true); setCurrentView('app'); }} />;
