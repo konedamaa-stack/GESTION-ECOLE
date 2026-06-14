@@ -162,6 +162,7 @@ function App() {
   const [schedulesData, setSchedulesData] = useState<any[]>([]);
   const [settingsData, setSettingsData] = useState<any | null>(null);
   const [editEntity, setEditEntity] = useState<any>(null);
+  const [preselectedStudentId, setPreselectedStudentId] = useState<string | null>(null);
   const [parentsData, setParentsData] = useState<any[]>([]);
   const fetchParents = async () => {
     const { data } = await supabase.from('parents').select('*, student_parents(student_id, parent_id, students(id, first_name, last_name))').eq('school_id', currentSchoolId || '');
@@ -380,7 +381,7 @@ function App() {
     }
   };
 
-  const closeModal = () => setActiveModal(null);
+  const closeModal = () => { setActiveModal(null); setPreselectedStudentId(null); };
 
   const handleCreateSchool = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -2468,7 +2469,7 @@ function App() {
                 <form onSubmit={handleFormSubmit}>
                   <div className="form-group">
                     <label>{t('admin.modals.student_select', 'Élève')}</label>
-                    <select name="student_id" className="form-select" required>
+                    <select name="student_id" className="form-select" required defaultValue={preselectedStudentId || ""}>
                       <option value="">Sélectionner un élève...</option>
                       {studentsData.map(s => <option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>)}
                     </select>
@@ -2495,7 +2496,7 @@ function App() {
                     </select>
                   </div>
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
-                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
+                    <button type="button" className="btn btn-outline" onClick={() => { setPreselectedStudentId(null); closeModal(); }}>{t('admin.modals.cancel', 'Annuler')}</button>
                     <button type="submit" className="btn btn-primary">{t('admin.modals.submit', 'Valider le paiement')}</button>
                   </div>
                 </form>
@@ -3147,7 +3148,10 @@ function App() {
 
                     return (
                     <div>
-                      <h3 style={{marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', fontSize: '1.1rem'}}>Historique des Paiements</h3>
+                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>
+                        <h3 style={{fontSize: '1.1rem', margin: 0}}>Historique des Paiements</h3>
+                        <button className="btn btn-primary" onClick={() => { setPreselectedStudentId(selectedStudent.id); setActiveModal('payment'); }}>+ Enregistrer un paiement</button>
+                      </div>
                       <div style={{marginBottom: '24px'}}>
                         <div style={{display: 'flex', gap: '24px', marginBottom: '16px', background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px'}}>
                           <div>
