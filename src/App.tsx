@@ -565,7 +565,9 @@ function App() {
         };
         const { error } = await supabase.from('invoices').insert([{...invoice, school_id: currentSchoolId}]);
         if (error) throw error;
+        alert("Paiement enregistré avec succès !");
         fetchInvoices();
+        closeModal();
       }
       else if (activeModal === 'schedule') {
         const schedule = {
