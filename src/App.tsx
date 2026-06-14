@@ -954,7 +954,7 @@ function App() {
             <div className="stat-trend trend-down">{t('dashboard.monitor_closely', 'À surveiller de près')}</div>
           </div>
           
-          <div className="stat-card delay-300">
+          <div className="stat-card delay-300" onClick={() => setActiveTab('pedagogy')} style={{cursor: 'pointer'}}>
             <div className="stat-header">
               <span className="stat-label">{t('dashboard.active_classes', 'Classes Actives')}</span>
               <Icons.BookOpen />
