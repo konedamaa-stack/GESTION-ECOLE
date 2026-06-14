@@ -1675,6 +1675,11 @@ function App() {
       };
     }).sort((a, b) => b.total - a.total);
 
+    const totalAttenduGlobal = scolariteParClasse.reduce((sum, row) => sum + row.total, 0);
+    const totalPayeGlobal = scolariteParClasse.reduce((sum, row) => sum + row.paye, 0);
+    const totalResteGlobal = scolariteParClasse.reduce((sum, row) => sum + row.nonPaye, 0);
+    const tauxRecouvrementGlobal = totalAttenduGlobal > 0 ? Math.round((totalPayeGlobal / totalAttenduGlobal) * 100) : 0;
+
     // Calcul des factures filtrées pour la recherche
     const filteredInvoices = invoicesData.filter(inv => {
       const q = invoiceSearchQuery.toLowerCase();
@@ -1697,24 +1702,35 @@ function App() {
         </button>
       </div>
 
-      <div className="stats-grid">
+      <div className="stats-grid" style={{gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))'}}>
         <div className="stat-card delay-100">
           <div className="stat-header">
-            <span className="stat-label">{t('admin.finance.stat_rate', 'Taux de Recouvrement')}</span>
-            <Icons.TrendingUp />
+            <span className="stat-label">Total Attendu</span>
+            <Icons.Database />
           </div>
-          <div className="stat-value">{formatNum(0)}%</div>
+          <div className="stat-value">{formatNum(totalAttenduGlobal)}</div>
           <div className="stat-trend trend-up">
-            {t('admin.finance.stat_rate_desc', 'Ce mois-ci')}
+            FCFA
           </div>
         </div>
         
+        <div className="stat-card delay-150">
+          <div className="stat-header">
+            <span className="stat-label">Total Payé</span>
+            <Icons.CreditCard />
+          </div>
+          <div className="stat-value">{formatNum(totalPayeGlobal)}</div>
+          <div className="stat-trend trend-up">
+            FCFA
+          </div>
+        </div>
+
         <div className="stat-card delay-200">
           <div className="stat-header">
             <span className="stat-label">{t('admin.finance.stat_rem', 'Reste à Recouvrer')}</span>
             <Icons.Database />
           </div>
-          <div className="stat-value">{formatNum(0)}</div>
+          <div className="stat-value">{formatNum(totalResteGlobal)}</div>
           <div className="stat-trend trend-down">
             FCFA
           </div>
@@ -1722,12 +1738,12 @@ function App() {
 
         <div className="stat-card delay-300">
           <div className="stat-header">
-            <span className="stat-label">{t('admin.finance.stat_today', 'Paiements du Jour')}</span>
-            <Icons.CreditCard />
+            <span className="stat-label">{t('admin.finance.stat_rate', 'Taux de Recouvrement')}</span>
+            <Icons.TrendingUp />
           </div>
-          <div className="stat-value">{formatNum(0)}</div>
+          <div className="stat-value">{formatNum(tauxRecouvrementGlobal)}%</div>
           <div className="stat-trend trend-up">
-            FCFA {t('admin.finance.stat_today_desc', "aujourd'hui")}
+            Global
           </div>
         </div>
       </div>
@@ -1740,9 +1756,9 @@ function App() {
           <thead>
             <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
               <th style={{padding: '12px 0', fontWeight: 500}}>Classe</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Total Attendu</th>
               <th style={{padding: '12px 0', fontWeight: 500, color: 'var(--success-color)'}}>Total Payé</th>
               <th style={{padding: '12px 0', fontWeight: 500, color: 'var(--danger-color)'}}>Reste à Payer</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Total Attendu</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>Taux de Recouvrement</th>
             </tr>
           </thead>
@@ -1750,9 +1766,9 @@ function App() {
             {scolariteParClasse.map((row, i) => (
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
                 <td style={{padding: '16px 0', fontWeight: 600}}>{row.className}</td>
+                <td style={{padding: '16px 0', fontWeight: 'bold'}}>{formatNum(row.total)} FCFA</td>
                 <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--success-color)'}}>{formatNum(row.paye)} FCFA</td>
                 <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--danger-color)'}}>{formatNum(row.nonPaye)} FCFA</td>
-                <td style={{padding: '16px 0', fontWeight: 'bold'}}>{formatNum(row.total)} FCFA</td>
                 <td style={{padding: '16px 0'}}>
                   <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
                     <div style={{flex: 1, background: 'var(--surface-color-hover)', height: '8px', borderRadius: '4px', overflow: 'hidden'}}>
