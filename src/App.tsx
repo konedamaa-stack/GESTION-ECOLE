@@ -418,7 +418,9 @@ function App() {
         if (!className) return;
         const { error } = await supabase.from('classes').insert([{ 
           name: className, 
-          level: classLevel || 'Non défini', school_id: currentSchoolId,
+          level: classLevel || 'Non défini', 
+          school_id: currentSchoolId,
+          tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : 0
           }]);
         if (error) throw error;
         alert("Classe créée avec succès !");
@@ -433,7 +435,8 @@ function App() {
             first_name: formData.get('first_name'),
             last_name: formData.get('last_name'),
             class_id: formData.get('class_id'),
-            birth_date: formData.get('birth_date')
+            birth_date: formData.get('birth_date'),
+            tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : null
           };
           if (formData.get('password')) studentUpdate.password = formData.get('password');
           const { error } = await supabase.from('students').update(studentUpdate).eq('id', editEntity.id);
@@ -453,6 +456,7 @@ function App() {
           birth_date: formData.get('birth_date'),
           email: formData.get('email'),
           password: password,
+          tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : null
         };
         const { data: studentData, error: studentError } = await supabase.from('students').insert([{...student, school_id: currentSchoolId}]).select();
         if (studentError) throw studentError;
@@ -1615,12 +1619,13 @@ function App() {
 
     // Calcul des totaux par classe
     const scolariteParClasse = classesData.map(cls => {
-      const classStudentsIds = studentsData.filter(s => s.class_id === cls.id).map(s => s.id);
+      const classStudents = studentsData.filter(s => s.class_id === cls.id);
+      const classStudentsIds = classStudents.map(s => s.id);
       const classInvoices = invoicesData.filter(inv => classStudentsIds.includes(inv.student_id));
       
       const paye = classInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
-      const nonPaye = classInvoices.filter(inv => inv.status !== 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
-      const total = paye + nonPaye;
+      const total = classStudents.reduce((sum, s) => sum + (Number(s.tuition_fee) || Number(cls.tuition_fee) || 0), 0);
+      const nonPaye = Math.max(0, total - paye);
       
       return {
         className: cls.name,
@@ -2447,6 +2452,10 @@ function App() {
                       <option value="Autre">Autre</option>
                     </select>
                   </div>
+                  <div className="form-group">
+                    <label>Scolarité annuelle par défaut (FCFA)</label>
+                    <input type="number" name="tuition_fee" className="form-input" placeholder="Ex: 500000" />
+                  </div>
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
                     <button type="submit" className="btn btn-primary">{t('admin.modals.create', 'Créer la classe')}</button>
@@ -2594,7 +2603,11 @@ function App() {
                       </select>
                     </div>
                   </div>
-                  <div style={{marginTop: '16px'}}>
+                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px'}}>
+                    <div className="form-group">
+                      <label>Scolarité personnalisée (Optionnel, FCFA)</label>
+                      <input type="number" name="tuition_fee" className="form-input" placeholder="Laisser vide pour utiliser le tarif de la classe" defaultValue={editEntity?.tuition_fee || ""} />
+                    </div>
                     <div className="form-group">
                       <label>{t('admin.modals.password_default', 'Mot de passe (par défaut: passer123)')}</label>
                       <input type="text" name="password" className="form-input" placeholder={editEntity ? "Laisser vide pour ne pas changer" : "passer123"} />
@@ -3126,59 +3139,64 @@ function App() {
                     </div>
                   )}
 
-                  {activeDossierTab === 'finances' && (
+                  {activeDossierTab === 'finances' && (() => {
+                    const studentInvoices = invoicesData.filter(inv => inv.student_id === selectedStudent.id);
+                    const studentPaye = studentInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+                    const studentTotal = Number(selectedStudent.tuition_fee) || Number(selectedStudent.classes?.tuition_fee) || 0;
+                    const studentReste = Math.max(0, studentTotal - studentPaye);
+
+                    return (
                     <div>
                       <h3 style={{marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', fontSize: '1.1rem'}}>Historique des Paiements</h3>
                       <div style={{marginBottom: '24px'}}>
-                        {invoicesData.filter(inv => inv.student_id === selectedStudent.id).length > 0 ? (
+                        <div style={{display: 'flex', gap: '24px', marginBottom: '16px', background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px'}}>
                           <div>
-                            <div style={{display: 'flex', gap: '24px', marginBottom: '16px', background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px'}}>
-                              <div>
-                                <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Total Payé (FCFA)</span>
-                                <strong style={{fontSize: '1.2rem', color: 'var(--success-color)'}}>
-                                  {formatNum(invoicesData.filter(inv => inv.student_id === selectedStudent.id && inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0))}
-                                </strong>
-                              </div>
-                              <div>
-                                <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Impayés (FCFA)</span>
-                                <strong style={{fontSize: '1.2rem', color: 'var(--danger-color)'}}>
-                                  {formatNum(invoicesData.filter(inv => inv.student_id === selectedStudent.id && inv.status !== 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0))}
-                                </strong>
-                              </div>
-                            </div>
-                            <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem'}}>
-                              <thead>
-                                <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
-                                  <th style={{padding: '8px 0', fontWeight: 500}}>N° Reçu</th>
-                                  <th style={{padding: '8px 0', fontWeight: 500}}>Motif</th>
-                                  <th style={{padding: '8px 0', fontWeight: 500}}>Montant</th>
-                                  <th style={{padding: '8px 0', fontWeight: 500}}>Date</th>
-                                  <th style={{padding: '8px 0', fontWeight: 500}}>Statut</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {invoicesData.filter(inv => inv.student_id === selectedStudent.id).map((inv, idx) => (
-                                  <tr key={idx} style={{borderBottom: '1px solid var(--border-color)'}}>
-                                    <td style={{padding: '12px 0', fontFamily: 'monospace', fontWeight: 500, color: 'var(--primary-color)'}}>{inv.invoice_number}</td>
-                                    <td style={{padding: '12px 0'}}>{inv.motif}</td>
-                                    <td style={{padding: '12px 0', fontWeight: 'bold'}}>{formatNum(inv.amount)} FCFA</td>
-                                    <td style={{padding: '12px 0', color: 'var(--text-secondary)'}}>{new Date(inv.issue_date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</td>
-                                    <td style={{padding: '12px 0'}}>
-                                      <span className={`badge ${inv.status === 'Payée' ? 'badge-success' : 'badge-warning'}`}>{inv.status}</span>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                            <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Scolarité Totale</span>
+                            <strong style={{fontSize: '1.2rem'}}>{formatNum(studentTotal)} FCFA</strong>
                           </div>
+                          <div>
+                            <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Total Payé</span>
+                            <strong style={{fontSize: '1.2rem', color: 'var(--success-color)'}}>{formatNum(studentPaye)} FCFA</strong>
+                          </div>
+                          <div>
+                            <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Reste à Payer</span>
+                            <strong style={{fontSize: '1.2rem', color: 'var(--danger-color)'}}>{formatNum(studentReste)} FCFA</strong>
+                          </div>
+                        </div>
+
+                        {studentInvoices.length > 0 ? (
+                          <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem'}}>
+                            <thead>
+                              <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
+                                <th style={{padding: '8px 0', fontWeight: 500}}>N° Reçu</th>
+                                <th style={{padding: '8px 0', fontWeight: 500}}>Motif</th>
+                                <th style={{padding: '8px 0', fontWeight: 500}}>Montant</th>
+                                <th style={{padding: '8px 0', fontWeight: 500}}>Date</th>
+                                <th style={{padding: '8px 0', fontWeight: 500}}>Statut</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {studentInvoices.map((inv, idx) => (
+                                <tr key={idx} style={{borderBottom: '1px solid var(--border-color)'}}>
+                                  <td style={{padding: '12px 0', fontFamily: 'monospace', fontWeight: 500, color: 'var(--primary-color)'}}>{inv.invoice_number}</td>
+                                  <td style={{padding: '12px 0'}}>{inv.motif}</td>
+                                  <td style={{padding: '12px 0', fontWeight: 'bold'}}>{formatNum(inv.amount)} FCFA</td>
+                                  <td style={{padding: '12px 0', color: 'var(--text-secondary)'}}>{new Date(inv.issue_date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</td>
+                                  <td style={{padding: '12px 0'}}>
+                                    <span className={`badge ${inv.status === 'Payée' ? 'badge-success' : 'badge-warning'}`}>{inv.status}</span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         ) : (
-                          <div style={{padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', background: 'var(--surface-color-hover)', borderRadius: '8px'}}>
+                          <div style={{padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', background: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)'}}>
                             Aucune transaction n'a été trouvée pour cet élève.
                           </div>
                         )}
                       </div>
                     </div>
-                  )}
+                  )})}
 
                   <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end'}}>
                     <button type="button" className="btn btn-primary" onClick={closeModal}>{t('admin.modals.close_dossier', 'Fermer le dossier')}</button>
