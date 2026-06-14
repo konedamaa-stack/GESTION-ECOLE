@@ -25,15 +25,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
           <span style={{background: 'var(--lp-primary)', color: 'white', padding: '4px 12px', borderRadius: '8px'}}>S</span>
           SGES
         </a>
-        <nav className="lp-nav">
-          <a href="#accueil" className="lp-nav-link">Accueil</a>
-          <a href="#presentation" className="lp-nav-link">À propos</a>
-          <a href="#programmes" className="lp-nav-link">Programmes</a>
-          <a href="#contact" className="lp-nav-link">Contact</a>
+        <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+          <nav className="lp-nav">
+            <a href="#accueil" className="lp-nav-link">Accueil</a>
+            <a href="#presentation" className="lp-nav-link">À propos</a>
+            <a href="#programmes" className="lp-nav-link">Programmes</a>
+            <a href="#contact" className="lp-nav-link">Contact</a>
+          </nav>
           <button onClick={onLoginClick} className="lp-btn lp-btn-primary" style={{ padding: '0.5rem 1rem' }}>
             Espace Privé
           </button>
-        </nav>
+        </div>
       </header>
 
       {/* HERO SECTION */}
