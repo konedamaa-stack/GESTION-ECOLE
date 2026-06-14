@@ -54,11 +54,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSuperA
             <a href="#contact" className="lp-btn lp-btn-primary">Inscription Ouverte</a>
             <a href="#presentation" className="lp-btn lp-btn-secondary">Découvrir l'École</a>
           </div>
-          <div style={{ marginTop: '2rem' }}>
-            <button onClick={(e) => { e.preventDefault(); onSuperAdminClick(); }} className="lp-btn" style={{ background: '#8B5CF6', color: 'white', border: 'none', padding: '1rem 2rem', fontSize: '1.2rem', fontWeight: 'bold', width: '100%', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(139, 92, 246, 0.4)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
-              👑 ACCÉDER AU PORTAIL SAAS (Propriétaire)
-            </button>
-          </div>
+
         </div>
         <div className="lp-hero-image">
           {/* Using a high-quality placeholder image for education */}
