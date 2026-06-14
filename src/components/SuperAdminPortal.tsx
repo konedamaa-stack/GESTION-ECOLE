@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { SaaSDashboard } from './SaaSDashboard';
 import { AdminList } from './AdminList';
 
@@ -85,7 +85,7 @@ export function SuperAdminPortal({ session, onExit, onSwitchToSchool }: SuperAdm
         </header>
 
         <div className="content-scrollable" style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
-          {activeTab === 'dashboard' && <SaaSDashboard session={session} onSwitchToSchool={onSwitchToSchool} onClose={onExit} />}
+          {activeTab === 'dashboard' && <SaaSDashboard session={session} onSwitchToSchool={onSwitchToSchool} />}
           {activeTab === 'admins' && <AdminList />}
         </div>
       </main>

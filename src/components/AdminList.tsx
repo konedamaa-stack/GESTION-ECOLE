@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useTranslation } from 'react-i18next';
 
 export function AdminList() {
-  const { t } = useTranslation();
   const [admins, setAdmins] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorSQL, setErrorSQL] = useState(false);

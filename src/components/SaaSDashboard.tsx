@@ -1,15 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useTranslation } from 'react-i18next';
 
 interface SaaSDashboardProps {
   session: any;
   onSwitchToSchool: (schoolId: string) => void;
-  onClose: () => void;
 }
 
-export function SaaSDashboard({ session, onSwitchToSchool, onClose }: SaaSDashboardProps) {
-  const { t } = useTranslation();
+export function SaaSDashboard({ session, onSwitchToSchool }: SaaSDashboardProps) {
   const [schools, setSchools] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalStudents: 0,
