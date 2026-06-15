@@ -68,6 +68,7 @@ function App() {
   const [currentSchoolPlan, setCurrentSchoolPlan] = useState<string>('Standard');
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedClassFilter, setSelectedClassFilter] = useState('all');
   const [invoiceSearchQuery, setInvoiceSearchQuery] = useState('');
   const [selectedClassForSchedule, setSelectedClassForSchedule] = useState<string>('');
   
@@ -276,14 +277,28 @@ function App() {
 
   const loadSchools = async () => {
     if (!session) return;
-    const { data: adminLinks } = await supabase.from('school_admins').select('school_id, schools(*)').eq('user_id', session.user.id);
-    if (adminLinks && adminLinks.length > 0) {
-      const schools = adminLinks.map((link: any) => link.schools);
-      setAdminSchools(schools);
-      setCurrentSchoolId(schools[0].id);
-      setCurrentSchoolPlan(schools[0].subscription_plan || 'Standard');
+    
+    const SUPER_ADMIN_EMAILS = ['konedamaa@gmail.com'];
+    const isSuperAdmin = SUPER_ADMIN_EMAILS.includes(session.user?.email || '');
+
+    if (isSuperAdmin) {
+      const { data: allSchools } = await supabase.from('schools').select('*').order('created_at', { ascending: false });
+      if (allSchools && allSchools.length > 0) {
+        setAdminSchools(allSchools);
+        // Only set default if not already set, so switching from SuperAdminPortal works
+        setCurrentSchoolId(prev => prev || allSchools[0].id);
+        setCurrentSchoolPlan(allSchools.find(s => s.id === currentSchoolId)?.subscription_plan || allSchools[0].subscription_plan || 'Standard');
+      }
     } else {
-      setShowSchoolModal(true);
+      const { data: adminLinks } = await supabase.from('school_admins').select('school_id, schools(*)').eq('user_id', session.user.id);
+      if (adminLinks && adminLinks.length > 0) {
+        const schools = adminLinks.map((link: any) => link.schools);
+        setAdminSchools(schools);
+        setCurrentSchoolId(prev => prev || schools[0].id);
+        setCurrentSchoolPlan(schools.find((s: any) => s.id === currentSchoolId)?.subscription_plan || schools[0].subscription_plan || 'Standard');
+      } else {
+        setShowSchoolModal(true);
+      }
     }
   };
 
@@ -1053,9 +1068,11 @@ function App() {
   };
 
   const renderStudents = () => {
-    const filteredStudents = studentsData.filter(s => 
-      (s.first_name + ' ' + s.last_name + ' ' + s.matricule).toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredStudents = studentsData.filter(s => {
+      const matchQuery = (s.first_name + ' ' + s.last_name + ' ' + s.matricule).toLowerCase().includes(searchQuery.toLowerCase());
+      const matchClass = selectedClassFilter === 'all' || s.class_id === selectedClassFilter;
+      return matchQuery && matchClass;
+    });
 
     return (
     <div className="animate-fade-in">
@@ -1097,14 +1114,40 @@ function App() {
       <div className="panel delay-300">
         <div className="panel-header">
           <h3 className="panel-title">{t('admin.students.panel_title', 'Annuaire des Élèves')}</h3>
-          <div className="header-search" style={{width: 300}}>
-            <Icons.Search />
-            <input 
-              type="text" 
-              placeholder={t('admin.students.search_ph', 'Rechercher par nom, matricule...')} 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+            <button 
+              className="btn btn-outline" 
+              onClick={() => window.print()}
+              title="Imprimer la liste"
+              style={{padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px'}}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+              </svg>
+              Imprimer
+            </button>
+            <select 
+              className="form-select" 
+              value={selectedClassFilter} 
+              onChange={(e) => setSelectedClassFilter(e.target.value)}
+              style={{width: '200px', padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: '6px'}}
+            >
+              <option value="all">Toutes les classes</option>
+              {classesData.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <div className="header-search" style={{width: 250}}>
+              <Icons.Search />
+              <input 
+                type="text" 
+                placeholder={t('admin.students.search_ph', 'Rechercher par nom, matricule...')} 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
         </div>
         <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
