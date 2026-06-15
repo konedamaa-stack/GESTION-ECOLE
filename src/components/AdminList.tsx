@@ -55,6 +55,24 @@ $$;`;
     setIsLoading(false);
   };
 
+  const handleDeleteSchool = async (schoolId: string, schoolName: string) => {
+    if (window.confirm(`Êtes-vous sûr de vouloir supprimer DÉFINITIVEMENT l'établissement "${schoolName}" ? Cette action supprimera toutes les données associées (classes, élèves, notes, etc.).`)) {
+      try {
+        const { error } = await supabase.from('schools').delete().eq('id', schoolId);
+        if (error) {
+          console.error("Erreur lors de la suppression:", error);
+          alert("Erreur lors de la suppression de l'établissement. Il est possible que certaines données bloquent la suppression.");
+        } else {
+          alert("Établissement supprimé avec succès.");
+          fetchAdmins();
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Erreur inattendue.");
+      }
+    }
+  };
+
   const copyToClipboard = () => {
     navigator.clipboard.writeText(sqlScript);
     alert('Code SQL copié ! Collez-le dans le SQL Editor de Supabase et cliquez sur RUN.');
@@ -152,14 +170,24 @@ $$;`;
                     {new Date(admin.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </td>
                   <td style={{ padding: '16px', textAlign: 'right' }}>
-                    {admin.school_id && onSwitchToSchool && (
-                      <button 
-                        className="btn btn-primary btn-sm" 
-                        onClick={() => onSwitchToSchool(admin.school_id)}
-                        style={{ padding: '6px 12px', fontSize: '0.85rem' }}
-                      >
-                        Accéder
-                      </button>
+                    {admin.school_id && (
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        {onSwitchToSchool && (
+                          <button 
+                            className="btn btn-primary btn-sm" 
+                            onClick={() => onSwitchToSchool(admin.school_id)}
+                            style={{ padding: '6px 12px', fontSize: '0.85rem' }}
+                          >
+                            Accéder
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => handleDeleteSchool(admin.school_id, admin.school_name || 'Inconnu')}
+                          style={{ padding: '6px 12px', fontSize: '0.85rem', background: '#EF4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        >
+                          Supprimer
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
