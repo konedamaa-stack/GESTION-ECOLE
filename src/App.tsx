@@ -503,6 +503,33 @@ function App() {
         return;
       }
 
+      
+      if (activeModal === 'reinscription') {
+        const studentUpdate = {
+          class_id: formData.get('class_id'),
+          status: 'Inscrit'
+        };
+        const { error: updateError } = await supabase.from('students').update(studentUpdate).eq('id', editEntity.id);
+        if (updateError) throw updateError;
+
+        if (formData.get('reg_fee_amount')) {
+          const invoice = {
+            student_id: editEntity.id,
+            amount: formData.get('reg_fee_amount'),
+            motif: 'Frais de Réinscription',
+            payment_method: formData.get('reg_fee_method'),
+            status: formData.get('reg_fee_status'),
+            invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
+            school_id: currentSchoolId
+          };
+          await supabase.from('invoices').insert([invoice]);
+        }
+        alert("Réinscription effectuée avec succès !");
+        fetchStudents();
+        closeModal();
+        return;
+      }
+
       if (activeModal === 'student') {
         if (editEntity) {
           const studentUpdate: any = {
@@ -510,6 +537,7 @@ function App() {
             last_name: formData.get('last_name'),
             class_id: formData.get('class_id'),
             birth_date: formData.get('birth_date'),
+            status: formData.get('status') || 'Inscrit',
             tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : null
           };
           if (formData.get('password')) studentUpdate.password = formData.get('password');
@@ -2631,7 +2659,8 @@ function App() {
                 {activeModal === 'quickCreate' && t('admin.modals.quickCreate', "Menu de Création Rapide")}
                 {activeModal === 'payment' && t('admin.modals.payment', "Enregistrer un Paiement")}
                 {activeModal === 'absence' && t('admin.modals.absence', "Signaler une Absence")}
-                {activeModal === 'student' && t('admin.modals.student', "Nouvelle Inscription")}
+                {activeModal === 'student' && (editEntity ? "Modifier l'Élève" : t('admin.modals.student', "Nouvelle Inscription"))}
+                {activeModal === 'reinscription' && "Réinscription de l'élève"}
                 {activeModal === 'teacher' && t('admin.modals.teacher', "Ajouter un Enseignant")}
                 {activeModal === 'employee' && t('admin.modals.employee', "Ajouter un Employé")}
                 {activeModal === 'parent' && t('admin.modals.parent', "Ajouter un Parent")}
@@ -2678,6 +2707,57 @@ function App() {
               )}
 
               {/* New School Form */}
+
+              
+              {activeModal === 'reinscription' && editEntity && (
+                <form onSubmit={handleFormSubmit}>
+                  <div style={{background: 'rgba(59, 130, 246, 0.05)', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid rgba(59, 130, 246, 0.2)'}}>
+                    <h3 style={{margin: 0, color: 'var(--primary-color)'}}>{editEntity.first_name} {editEntity.last_name}</h3>
+                    <p style={{margin: '4px 0 0', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Matricule: {editEntity.matricule}</p>
+                  </div>
+
+                  <h3 style={{marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>1. Affectation</h3>
+                  <div className="form-group">
+                    <label>Nouvelle Classe</label>
+                    <select name="class_id" className="form-select" required defaultValue={editEntity.class_id}>
+                      <option value="">Choisir une classe...</option>
+                      {classesData.map(cls => (
+                        <option key={cls.id} value={cls.id}>{cls.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>2. Frais de Réinscription</h3>
+                  <div className="form-group">
+                    <label>Montant des frais de réinscription (CFA)</label>
+                    <input type="number" name="reg_fee_amount" className="form-input" placeholder="Ex: 25000" />
+                    <small style={{color: 'var(--text-secondary)'}}>Laissez vide si l'élève n'a pas de frais à payer.</small>
+                  </div>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label>Mode de paiement</label>
+                      <select name="reg_fee_method" className="form-select">
+                        <option value="Espèces">Espèces</option>
+                        <option value="Chèque">Chèque</option>
+                        <option value="Virement">Virement</option>
+                        <option value="Mobile Money">Mobile Money</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Statut du paiement</label>
+                      <select name="reg_fee_status" className="form-select">
+                        <option value="Payée">Payée (Immédiatement)</option>
+                        <option value="En attente">En attente (Paiement ultérieur)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
+                    <button type="submit" className="btn btn-primary">Valider la Réinscription</button>
+                  </div>
+                </form>
+              )}
 
               {/* Class Form */}
               {activeModal === 'class' && (
