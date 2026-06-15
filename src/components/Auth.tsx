@@ -133,7 +133,21 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onBack }: { onStu
         {onBack && (
           <button 
             onClick={onBack}
-            style={{background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.5rem', fontSize: '0.9rem', width: '100%', justifyContent: 'flex-start', padding: 0}}
+            style={{
+              background: 'var(--surface-color-hover)', 
+              border: '1px solid var(--border-color)', 
+              borderRadius: '8px',
+              color: 'var(--text-color)', 
+              cursor: 'pointer', 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              marginBottom: '1.5rem', 
+              fontSize: '0.9rem', 
+              padding: '8px 16px',
+              fontWeight: 500,
+              transition: 'all 0.2s'
+            }}
           >
             ← Retour à l'accueil
           </button>

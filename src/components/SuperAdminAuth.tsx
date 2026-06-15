@@ -72,16 +72,19 @@ export function SuperAdminAuth({ onBack }: { onBack: () => void }) {
         <button 
           onClick={onBack}
           style={{
-            background: 'none',
-            border: 'none',
-            color: '#94A3B8',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '8px',
+            color: '#F8FAFC',
             cursor: 'pointer',
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
             marginBottom: '32px',
             fontSize: '0.9rem',
-            padding: 0
+            padding: '8px 16px',
+            fontWeight: 500,
+            transition: 'all 0.2s'
           }}
         >
           ← Retour à l'accueil
