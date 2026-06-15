@@ -86,7 +86,7 @@ export function SuperAdminPortal({ session, onExit, onSwitchToSchool }: SuperAdm
 
         <div className="content-scrollable" style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
           {activeTab === 'dashboard' && <SaaSDashboard session={session} onSwitchToSchool={onSwitchToSchool} />}
-          {activeTab === 'admins' && <AdminList />}
+          {activeTab === 'admins' && <AdminList onSwitchToSchool={onSwitchToSchool} />}
         </div>
       </main>
     </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
-export function AdminList() {
+export function AdminList({ onSwitchToSchool }: { onSwitchToSchool?: (schoolId: string) => void }) {
   const [admins, setAdmins] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorSQL, setErrorSQL] = useState(false);
@@ -118,12 +118,13 @@ $$;`;
               <th style={{ padding: '16px', textAlign: 'left' }}>Établissement</th>
               <th style={{ padding: '16px', textAlign: 'left' }}>Plan Actuel</th>
               <th style={{ padding: '16px', textAlign: 'left' }}>Date d'inscription</th>
+              <th style={{ padding: '16px', textAlign: 'right' }}>Action</th>
             </tr>
           </thead>
           <tbody>
             {admins.length === 0 ? (
               <tr>
-                <td colSpan={4} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                <td colSpan={5} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
                   Aucun administrateur trouvé.
                 </td>
               </tr>
@@ -149,6 +150,17 @@ $$;`;
                   </td>
                   <td style={{ padding: '16px', color: 'var(--text-secondary)' }}>
                     {new Date(admin.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </td>
+                  <td style={{ padding: '16px', textAlign: 'right' }}>
+                    {admin.school_id && onSwitchToSchool && (
+                      <button 
+                        className="btn btn-primary btn-sm" 
+                        onClick={() => onSwitchToSchool(admin.school_id)}
+                        style={{ padding: '6px 12px', fontSize: '0.85rem' }}
+                      >
+                        Accéder
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))
