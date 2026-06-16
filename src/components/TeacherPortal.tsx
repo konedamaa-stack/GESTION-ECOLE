@@ -20,10 +20,12 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
   const [evaluationsData, setEvaluationsData] = useState<any[]>([]);
   const [studentsData, setStudentsData] = useState<any[]>([]);
   const [gradesData, setGradesData] = useState<any[]>([]);
+  const [teacherSchedules, setTeacherSchedules] = useState<any[]>([]);
   
   // Selection state
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedEvaluation, setSelectedEvaluation] = useState<any>(null);
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [gradesInput, setGradesInput] = useState<Record<string, {score: string, comment: string}>>({});
 
   const formatNum = (num: number | string | undefined) => {
@@ -54,6 +56,9 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     // Fetch grades
     const { data: grades } = await supabase.from('grades').select('*').eq('school_id', session.school_id);
     if (grades) setGradesData(grades);
+    // Fetch schedules for this teacher
+    const { data: schedules } = await supabase.from('schedules').select('*').eq('teacher_id', session.id);
+    if (schedules) setTeacherSchedules(schedules);
   };
 
   const handleCreateEvaluation = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -82,6 +87,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
   const handleSelectEvaluation = (ev: any) => {
     setSelectedEvaluation(ev);
     setSelectedClass(ev.class_id);
+    setSelectedStudents([]);
     
     // Load existing grades
     const evalGrades = gradesData.filter(g => g.evaluation_id === ev.id);
@@ -145,17 +151,16 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     
     const gradesToUpsert = classStudents.map(student => {
       const input = gradesInput[student.id];
-      // Try to find existing grade to get its ID for update
-      const existing = gradesData.find(g => g.evaluation_id === selectedEvaluation.id && g.student_id === student.id);
       
-      return {
-        id: existing?.id, // Supabase upsert needs ID if it exists
+      const record: any = {
         student_id: student.id,
         evaluation_id: selectedEvaluation.id,
         score: input?.score ? parseFloat(input.score) : null,
         comment: input?.comment || null,
         school_id: session.school_id
       };
+      
+      return record;
     }).filter(g => g.score !== null); // Only save where a score was entered
 
     if (gradesToUpsert.length === 0) {
@@ -163,7 +168,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
       return;
     }
 
-    const { error } = await supabase.from('grades').upsert(gradesToUpsert);
+    const { error } = await supabase.from('grades').upsert(gradesToUpsert, { onConflict: 'evaluation_id,student_id' });
     if (!error) {
       alert(t('teacher.grades_saved', "Notes enregistrées avec succès !"));
       fetchData();
@@ -174,27 +179,31 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
 
   return (
     <div className="student-portal">
-      <nav className="portal-nav">
-        <div className="portal-logo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width: 24, height: 24, color: 'var(--primary-color)'}}>
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-          </svg>
-          Établissement
+      <header style={{background: 'var(--surface-color)', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.05)'}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
+          <div style={{width: 40, height: 40, background: 'var(--primary-color)', borderRadius: '8px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1.2rem'}}>
+            👨‍🏫
+          </div>
+          <div>
+            <h1 style={{margin: 0, fontSize: '1.2rem'}}>{t('teacher.portal_title', 'Portail Enseignant')}</h1>
+            <p style={{margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem'}}>Établissement</p>
+          </div>
         </div>
-        <div className="portal-nav-links">
-          <button className={`portal-nav-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>{t('teacher.tab_dashboard', "Tableau de Bord")}</button>
-          <button className={`portal-nav-link ${activeTab === 'evaluations' ? 'active' : ''}`} onClick={() => setActiveTab('evaluations')}>{t('teacher.tab_evaluations', "Mes Évaluations")}</button>
-        </div>
-        <div style={{marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '16px'}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
           <div style={{textAlign: 'right'}}>
             <div style={{fontWeight: 600}}>{session.first_name} {session.last_name}</div>
-            <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>{t('teacher.teacher_of', "Professeur de")} {session.subject}</div>
+            <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>{t('teacher.teacher_of', "Professeur de")} {session.subject}</div>
           </div>
-          <button className="btn btn-outline" onClick={onLogout} style={{color: 'var(--danger-color)', borderColor: 'var(--danger-color)'}}><Icons.LogOut /> {t('app.logout', "Déconnexion")}</button>
+          <button className="btn btn-outline" onClick={onLogout} style={{color: 'var(--danger-color)', borderColor: 'var(--danger-color)'}}><Icons.LogOut /> {t('app.logout', 'Déconnexion')}</button>
         </div>
-      </nav>
+      </header>
 
-      <div className="portal-content">
+      <main style={{padding: '32px', maxWidth: '1200px', margin: '0 auto'}}>
+        <div style={{display: 'flex', gap: '16px', marginBottom: '32px', flexWrap: 'wrap'}}>
+          <button className={`btn ${activeTab === 'dashboard' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('dashboard')}>{t('teacher.tab_dashboard', "Tableau de Bord")}</button>
+          <button className={`btn ${activeTab === 'evaluations' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('evaluations')}>{t('teacher.tab_evaluations', "Mes Évaluations")}</button>
+          <button className={`btn ${activeTab === 'students' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('students')}>{t('teacher.tab_students', "Mes Élèves")}</button>
+        </div>
         {activeTab === 'dashboard' && (
           <div className="animate-fade-in">
             <div style={{marginBottom: '24px', background: 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))', color: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(99, 102, 241, 0.3)'}}>
@@ -340,7 +349,19 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                     </colgroup>
                     <thead>
                       <tr style={{background: '#f9f9f9', borderBottom: '1px solid #d4d4d4', textAlign: 'left', color: '#333'}}>
-                        <th style={{padding: '8px 4px', borderRight: '1px solid #d4d4d4', textAlign: 'center', fontWeight: 'bold'}}><input type="checkbox" /></th>
+                        <th style={{padding: '8px 4px', borderRight: '1px solid #d4d4d4', textAlign: 'center', fontWeight: 'bold'}}>
+                          <input 
+                            type="checkbox" 
+                            checked={studentsData.filter(s => s.class_id === selectedClass).length > 0 && selectedStudents.length === studentsData.filter(s => s.class_id === selectedClass).length}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedStudents(studentsData.filter(s => s.class_id === selectedClass).map(s => s.id));
+                              } else {
+                                setSelectedStudents([]);
+                              }
+                            }}
+                          />
+                        </th>
                         <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.matricule', "Matricule")}</th>
                         <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.last_name', "Nom")}</th>
                         <th style={{padding: '8px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.first_name', "Prénoms")}</th>
@@ -352,7 +373,19 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                     <tbody>
                       {studentsData.filter(s => s.class_id === selectedClass).map((student, index) => (
                         <tr key={student.id} style={{borderBottom: '1px solid #eee', background: '#fff', color: '#333'}}>
-                          <td style={{padding: '8px 4px', borderRight: '1px solid #eee', textAlign: 'center'}}><input type="checkbox" /></td>
+                          <td style={{padding: '8px 4px', borderRight: '1px solid #eee', textAlign: 'center'}}>
+                            <input 
+                              type="checkbox" 
+                              checked={selectedStudents.includes(student.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedStudents(prev => [...prev, student.id]);
+                                } else {
+                                  setSelectedStudents(prev => prev.filter(id => id !== student.id));
+                                }
+                              }}
+                            />
+                          </td>
                           <td style={{padding: '8px', borderRight: '1px solid #eee', fontWeight: 'bold'}}>{student.matricule || `MAT-${student.id.substring(0,4)}`}</td>
                           <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{student.last_name.toUpperCase()}</td>
                           <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{student.first_name}</td>
@@ -398,7 +431,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                 </div>
                 {/* Footer Toolbar */}
                 <div style={{padding: '6px 12px', background: '#f5f5f5', borderTop: '1px solid #d4d4d4', display: 'flex', alignItems: 'center'}}>
-                  <span style={{background: '#333', color: '#fff', padding: '4px 12px', borderRadius: '3px', fontSize: '12px', fontWeight: 'bold'}}>{t('teacher.selected_count', "0 sur {{count}} sélectionné", {count: studentsData.filter(s => s.class_id === selectedClass).length})}</span>
+                  <span style={{background: '#333', color: '#fff', padding: '4px 12px', borderRadius: '3px', fontSize: '12px', fontWeight: 'bold'}}>{t('teacher.selected_count', "{{selected}} sur {{count}} sélectionné(s)", {selected: selectedStudents.length, count: studentsData.filter(s => s.class_id === selectedClass).length})}</span>
                 </div>
               </div>
             ) : (
@@ -416,7 +449,75 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
             )}
           </div>
         )}
-      </div>
+        
+        {activeTab === 'students' && (
+          <div className="animate-fade-in">
+            <div className="panel" style={{marginBottom: '20px', display: 'flex', gap: '24px', alignItems: 'center', background: '#f8f9fa', border: '1px solid #e0e0e0'}}>
+              <div style={{flex: 1}}>
+                <label style={{display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px'}}>{t('teacher.select_class', "Sélectionner une classe :")}</label>
+                <select 
+                  className="form-input" 
+                  style={{width: '100%', maxWidth: '400px'}}
+                  value={selectedClass || ''}
+                  onChange={(e) => setSelectedClass(e.target.value)}
+                >
+                  <option value="" disabled>{t('teacher.choose_class', "-- Choisir une classe --")}</option>
+                  {classesData.filter(c => teacherSchedules.some(s => s.class_id === c.id) || evaluationsData.some(ev => ev.class_id === c.id)).map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {selectedClass ? (
+              <div style={{background: '#fff', border: '1px solid #d4d4d4', borderRadius: '4px', overflow: 'hidden', fontSize: '13px', fontFamily: 'Arial, sans-serif'}}>
+                <div style={{padding: '16px', borderBottom: '1px solid #eee', background: '#f8f9fa'}}>
+                  <h3 style={{margin: 0, fontSize: '1.1rem'}}>{t('teacher.students_list', "Liste des élèves")} - {classesData.find(c => c.id === selectedClass)?.name}</h3>
+                </div>
+                <div style={{overflowX: 'auto'}}>
+                  <table style={{width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed'}}>
+                    <colgroup>
+                      <col style={{width: '100px'}} />
+                      <col style={{width: '200px'}} />
+                      <col style={{width: '250px'}} />
+                      <col style={{width: '150px'}} />
+                    </colgroup>
+                    <thead>
+                      <tr style={{background: '#f9f9f9', borderBottom: '1px solid #d4d4d4', textAlign: 'left', color: '#333'}}>
+                        <th style={{padding: '12px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.matricule', "Matricule")}</th>
+                        <th style={{padding: '12px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.last_name', "Nom")}</th>
+                        <th style={{padding: '12px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.first_name', "Prénoms")}</th>
+                        <th style={{padding: '12px', fontWeight: 'bold'}}>{t('teacher.status', "Statut")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {studentsData.filter(s => s.class_id === selectedClass).map((student) => (
+                        <tr key={student.id} style={{borderBottom: '1px solid #eee', background: '#fff', color: '#333'}}>
+                          <td style={{padding: '12px', borderRight: '1px solid #eee', fontWeight: 'bold'}}>{student.matricule || `MAT-${student.id.substring(0,4)}`}</td>
+                          <td style={{padding: '12px', borderRight: '1px solid #eee'}}>{student.last_name.toUpperCase()}</td>
+                          <td style={{padding: '12px', borderRight: '1px solid #eee'}}>{student.first_name}</td>
+                          <td style={{padding: '12px'}}><span className={`badge ${student.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`}>{student.status || 'Inscrit'}</span></td>
+                        </tr>
+                      ))}
+                      {studentsData.filter(s => s.class_id === selectedClass).length === 0 && (
+                        <tr>
+                          <td colSpan={4} style={{textAlign: 'center', padding: '24px', color: '#777'}}>{t('teacher.no_student_found', "Aucun élève trouvé dans cette classe.")}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="panel" style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '64px'}}>
+                <Icons.Users />
+                <h3 style={{marginTop: '16px'}}>{t('teacher.no_class_selected', "Aucune classe sélectionnée")}</h3>
+                <p>{t('teacher.select_class_to_start', "Veuillez choisir une classe dans le menu déroulant ci-dessus pour voir la liste de vos élèves.")}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

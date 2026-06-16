@@ -30,6 +30,7 @@ const Icons = {
   CheckCircle: () => <svg className="stat-icon" style={{color: 'var(--warning-color)', background: 'rgba(245, 158, 11, 0.1)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Plus: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" strokeLinecap="round" strokeLinejoin="round"/><line x1="5" y1="12" x2="19" y2="12" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Send: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13" strokeLinecap="round" strokeLinejoin="round"/><polygon points="22 2 15 22 11 13 2 9 22 2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  RefreshCw: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>,
   FileText: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" strokeLinecap="round" strokeLinejoin="round" /><line x1="16" y1="13" x2="8" y2="13" strokeLinecap="round" strokeLinejoin="round" /><line x1="16" y1="17" x2="8" y2="17" strokeLinecap="round" strokeLinejoin="round" /><polyline points="10 9 9 9 8 9" strokeLinecap="round" strokeLinejoin="round" /></svg>,
   Briefcase: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2" ry="2" strokeLinecap="round" strokeLinejoin="round" /><path strokeLinecap="round" strokeLinejoin="round" d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>,
   Download: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" strokeLinecap="round" strokeLinejoin="round"/><polyline points="7 10 12 15 17 10" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="15" x2="12" y2="3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
@@ -69,6 +70,7 @@ function App() {
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClassFilter, setSelectedClassFilter] = useState('all');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState('Inscrit');
   const [invoiceSearchQuery, setInvoiceSearchQuery] = useState('');
   const [selectedClassForSchedule, setSelectedClassForSchedule] = useState<string>('');
   
@@ -221,7 +223,7 @@ function App() {
     if (num === undefined || num === null) return '';
     const parsed = Number(num);
     if (isNaN(parsed)) return String(num);
-    return new Intl.NumberFormat(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR', { useGrouping: false }).format(parsed);
+    return new Intl.NumberFormat(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR', { useGrouping: true }).format(parsed);
   };
 
   useEffect(() => {
@@ -324,7 +326,7 @@ function App() {
   }, [activeModal, selectedStudent]);
 
   const fetchStudents = async () => {
-    const { data } = await supabase.from('students').select(`*, classes ( name )`).eq('school_id', currentSchoolId);
+    const { data } = await supabase.from('students').select(`*, classes ( name ), student_parents(parents(first_name, last_name))`).eq('school_id', currentSchoolId);
     if (data) setStudentsData(data);
   };
   const fetchClasses = async () => {
@@ -428,20 +430,31 @@ function App() {
       }
     }
 
-    const settingsObj = {
+    const settingsObj: any = {
       school_name: formData.get('school_name'),
       address: formData.get('address'),
       phone: formData.get('phone'),
       email: formData.get('email'),
       director_name: formData.get('director_name'),
     };
+    if (currentSchoolId) settingsObj.school_id = currentSchoolId;
     
-    const { data: existing } = await supabase.from('school_settings').select('id').single();
+    let { data: existing } = await supabase.from('school_settings').select('id').eq('school_id', currentSchoolId as string).maybeSingle();
+    
+    if (!existing) {
+        const { data: orphaned } = await supabase.from('school_settings').select('id').is('school_id', null).maybeSingle();
+        if (orphaned) {
+            await supabase.from('school_settings').update({ school_id: currentSchoolId as string }).eq('id', orphaned.id);
+            existing = orphaned;
+        }
+    }
+
     let error;
     if (existing) {
-      const { error: err } = await supabase.from('school_settings').update(settingsObj);
+      const { error: err } = await supabase.from('school_settings').update(settingsObj).eq('id', existing.id);
       error = err;
     } else {
+      settingsObj.id = Math.floor(Math.random() * 1000000) + 1000;
       const { error: err } = await supabase.from('school_settings').insert([settingsObj]);
       error = err;
     }
@@ -478,11 +491,24 @@ function App() {
       alert("Établissement créé avec succès !");
     } catch (error: any) {
       alert("Erreur: " + error.message);
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+      }
     }
   };
 
   const handleFormSubmit = async (e: any) => {
     e.preventDefault();
+    const submitBtn = e.nativeEvent?.submitter;
+    let originalText = '';
+    if (submitBtn) {
+      if (submitBtn.disabled) return;
+      submitBtn.disabled = true;
+      originalText = submitBtn.innerHTML;
+      submitBtn.innerHTML = 'Patientez...';
+    }
     const formData = new FormData(e.target);
     
     try {
@@ -540,6 +566,7 @@ function App() {
             status: formData.get('status') || 'Inscrit',
             tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : null
           };
+          if (formData.get('matricule')) studentUpdate.matricule = formData.get('matricule');
           if (formData.get('password')) studentUpdate.password = formData.get('password');
           const { error } = await supabase.from('students').update(studentUpdate).eq('id', editEntity.id);
           if (error) throw error;
@@ -548,7 +575,7 @@ function App() {
           closeModal();
           return;
         }
-        const matricule = 'ELV' + new Date().getFullYear() + Math.floor(Math.random() * 10000);
+        const matricule = formData.get('matricule') || 'ELV' + new Date().getFullYear() + Math.floor(Math.random() * 10000);
         const password = formData.get('password') || 'passer123';
         const student = {
           first_name: formData.get('first_name'),
@@ -1099,7 +1126,8 @@ function App() {
     const filteredStudents = studentsData.filter(s => {
       const matchQuery = (s.first_name + ' ' + s.last_name + ' ' + s.matricule).toLowerCase().includes(searchQuery.toLowerCase());
       const matchClass = selectedClassFilter === 'all' || s.class_id === selectedClassFilter;
-      return matchQuery && matchClass;
+      const matchStatus = selectedStatusFilter === 'all' || (s.status || 'Inscrit') === selectedStatusFilter;
+      return matchQuery && matchClass && matchStatus;
     });
 
     return (
@@ -1158,6 +1186,18 @@ function App() {
             </button>
             <select 
               className="form-select" 
+              value={selectedStatusFilter} 
+              onChange={(e) => setSelectedStatusFilter(e.target.value)}
+              style={{width: '180px', padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: '6px'}}
+            >
+              <option value="Inscrit">Actifs (Inscrits)</option>
+              <option value="Ancien élève">Anciens élèves</option>
+              <option value="Inactif">Inactifs</option>
+              <option value="Renvoyé">Renvoyés</option>
+              <option value="all">Tous les statuts</option>
+            </select>
+            <select 
+              className="form-select" 
               value={selectedClassFilter} 
               onChange={(e) => setSelectedClassFilter(e.target.value)}
               style={{width: '200px', padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: '6px'}}
@@ -1196,6 +1236,7 @@ function App() {
                 <td style={{padding: '16px 0'}}>{row.classes?.name || t('admin.students.unassigned', 'Non assigné')}</td>
                 <td style={{padding: '16px 0'}}><span className={`badge ${row.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`}>{row.status}</span></td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
+                  <button className="btn btn-outline" title="Réinscrire" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--accent-color)', borderColor: 'var(--accent-color)'}} onClick={() => { setEditEntity(row); setActiveModal('reinscription'); }}><Icons.RefreshCw /></button>
                   <button className="btn btn-outline" title="Modifier" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('student'); }}>✏️</button>
                   <button className="btn btn-outline" title="Supprimer" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--error-color)', borderColor: 'var(--error-color)'}} onClick={() => handleDeleteStudent(row.id)}>🗑️</button>
                   <button className="btn btn-outline" title="Emploi du temps" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { 
@@ -1610,12 +1651,15 @@ function App() {
                   <div className="avatar" style={{width: 32, height: 32, fontSize: '0.9rem'}}>{row.first_name.charAt(0)}{row.last_name.charAt(0)}</div>
                   {row.first_name} {row.last_name}
                 </td>
-                <td style={{padding: '16px 0'}}><span className="badge badge-primary" style={{background: 'transparent', border: '1px solid var(--border-color)'}}>{row.subject}</span></td>
+                <td style={{padding: '16px 0'}}>
+                  <span className="badge badge-primary" style={{background: 'transparent', border: '1px solid var(--border-color)'}}>{row.subject}</span>
+                  <span className={`badge ${row.status === 'Suspendu' ? 'badge-warning' : 'badge-success'}`} style={{marginLeft: '8px'}}>{row.status || 'Présent'}</span>
+                </td>
                 <td style={{padding: '16px 0', fontWeight: '500'}}>{row.matricule || '-'}</td>
                 <td style={{padding: '16px 0'}}>{row.password ? '••••••••' : '-'}</td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
-                  <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('teacher'); }}>✏️</button>
-                  <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('teacher'); }}>✏️</button>
+                  <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} title="Modifier" onClick={() => { setEditEntity(row); setActiveModal('teacher'); }}>✏️</button>
+                  <button className="btn btn-outline" title={row.status === 'Suspendu' ? 'Activer' : 'Suspendre'} style={{padding: '6px 12px', marginRight: '8px', color: row.status === 'Suspendu' ? 'var(--success-color)' : 'var(--error-color)', borderColor: row.status === 'Suspendu' ? 'var(--success-color)' : 'var(--error-color)'}} onClick={() => handleToggleTeacherStatus(row.id, row.status || 'Présent')}>{row.status === 'Suspendu' ? '✅' : '🚫'}</button>
                   <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => alert(`Identifiants pour ${row.first_name} ${row.last_name}:\n\nMatricule: ${row.matricule}\nMot de passe: ${row.password}`)}>{t('admin.teachers.btn_view_ids', 'Voir les identifiants')}</button>
                 </td>
               </tr>
@@ -2001,7 +2045,12 @@ function App() {
             </tr>
           </thead>
           <tbody>
-            {filteredInvoices.length > 0 ? filteredInvoices.map((row, i) => (
+            {filteredInvoices.length > 0 ? filteredInvoices.map((row, i) => {
+                const studentInvs = invoicesData.filter(inv => inv.student_id === row.student_id);
+                let verse = 0;
+                studentInvs.forEach(inv => { if(inv.status === 'Payée') verse += Number(inv.amount); });
+                let reste = Math.max(0, (row.students?.tuition_fee || 0) - verse);
+                return (
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
                 <td style={{padding: '16px 0', fontFamily: 'monospace', fontWeight: 500, color: 'var(--primary-color)'}}>{row.invoice_number}</td>
                 <td style={{padding: '16px 0'}}>
@@ -2009,13 +2058,19 @@ function App() {
                   <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>{row.students?.matricule}</div>
                 </td>
                 <td style={{padding: '16px 0'}}>{row.motif}</td>
-                <td style={{padding: '16px 0', fontWeight: 'bold'}}>{formatNum(row.amount)} FCFA</td>
+                <td style={{padding: '16px 0'}}>
+                  <div style={{fontWeight: 'bold'}}>{formatNum(row.amount)} FCFA</div>
+                  <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px'}}>
+                    Total versé: {formatNum(verse)} <br/> Reste: <span style={{color: reste > 0 ? '#e74c3c' : '#2ecc71', fontWeight: 600}}>{formatNum(reste)}</span>
+                  </div>
+                </td>
                 <td style={{padding: '16px 0', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{new Date(row.issue_date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</td>
                 <td style={{padding: '16px 0'}}>
                   <span className={`badge ${row.status === 'Payée' ? 'badge-success' : 'badge-warning'}`}>{row.status}</span>
                 </td>
               </tr>
-            )) : (
+            );
+            }) : (
               <tr><td colSpan={6} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.finance.empty_state', 'Aucun paiement enregistré.')}</td></tr>
             )}
           </tbody>
@@ -2231,6 +2286,49 @@ function App() {
     );
   };
 
+  const handleYearTransition = async () => {
+    if (!window.confirm("ATTENTION IRRÉVERSIBLE !\n\nCette action va :\n1. Passer TOUS les élèves actuellement 'Inscrits' en statut 'Ancien élève'.\n2. Passer l'année académique à l'année suivante.\n\nVous devrez réinscrire les élèves manuellement.\nVoulez-vous vraiment clôturer l'année scolaire ?")) return;
+    
+    try {
+        const currentYear = settingsData?.academic_year || '2025-2026';
+        const parts = currentYear.split('-');
+        let nextYear = '2026-2027';
+        if (parts.length === 2 && !isNaN(parseInt(parts[0]))) {
+            nextYear = `${parseInt(parts[0])+1}-${parseInt(parts[1])+1}`;
+        }
+        
+        // Update all active students to Ancien eleve
+        const { error: stuErr } = await supabase.from('students').update({ status: 'Ancien élève' }).eq('status', 'Inscrit').eq('school_id', currentSchoolId as string);
+        if (stuErr) throw stuErr;
+        
+        // Update setting
+        let { data: existing } = await supabase.from('school_settings').select('id').eq('school_id', currentSchoolId as string).maybeSingle();
+        
+        if (!existing) {
+            const { data: orphaned } = await supabase.from('school_settings').select('id').is('school_id', null).maybeSingle();
+            if (orphaned) {
+                await supabase.from('school_settings').update({ school_id: currentSchoolId as string }).eq('id', orphaned.id);
+                existing = orphaned;
+            }
+        }
+
+        if (existing) {
+          const { error: setErr } = await supabase.from('school_settings').update({ academic_year: nextYear }).eq('id', existing.id);
+          if (setErr) throw setErr;
+        } else {
+          const randomId = Math.floor(Math.random() * 1000000) + 1000;
+          const { error: setErr } = await supabase.from('school_settings').insert([{ id: randomId, academic_year: nextYear, school_id: currentSchoolId as string }]);
+          if (setErr) throw setErr;
+        }
+        
+        alert("Année scolaire clôturée avec succès ! La nouvelle année est " + nextYear);
+        fetchSettings();
+        fetchStudents();
+    } catch (err: any) {
+        alert("Erreur: " + err.message);
+    }
+  };
+
   const renderSettings = () => (
     <div className="animate-fade-in">
       <div className="page-header">
@@ -2298,13 +2396,22 @@ function App() {
           {activeSettingsTab === 'academic' && (
             <div>
               <h3 className="panel-title" style={{marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>{t('admin.settings.acad_title', 'Paramètres Pédagogiques')}</h3>
+              
+              <div style={{background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '16px', borderRadius: '8px', marginBottom: '24px'}}>
+                <h4 style={{color: '#d97706', margin: '0 0 8px 0'}}>Clôture et Changement d'Année Scolaire</h4>
+                <p style={{fontSize: '0.9rem', color: 'var(--text-secondary)', margin: '0 0 12px 0'}}>
+                  Année en cours : <strong>{settingsData?.academic_year || '2025-2026'}</strong><br/>
+                  Utilisez ce bouton en fin d'année pour basculer tous les élèves "Inscrits" en "Ancien élève" et avancer l'année académique.
+                </p>
+                <button className="btn btn-primary" style={{background: '#d97706', borderColor: '#d97706'}} onClick={handleYearTransition}>
+                  Clôturer l'année {settingsData?.academic_year || '2025-2026'}
+                </button>
+              </div>
+
               <div style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{t('admin.settings.acad_year', 'Année Scolaire en cours')}</label>
-                  <select className="form-select">
-                    <option>{formatNum(2026)} - {formatNum(2027)}</option>
-                    <option>{formatNum(2025)} - {formatNum(2026)}</option>
-                  </select>
+                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{t('admin.settings.acad_year', 'Année Scolaire (Lecture Seule)')}</label>
+                  <input type="text" className="form-input" disabled value={settingsData?.academic_year || '2025-2026'} />
                 </div>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
                   <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{t('admin.settings.acad_sys', "Système d'évaluation")}</label>
@@ -2710,7 +2817,7 @@ function App() {
 
               
               {activeModal === 'reinscription' && editEntity && (
-                <form onSubmit={handleFormSubmit}>
+                <form key={editEntity.id} onSubmit={handleFormSubmit}>
                   <div style={{background: 'rgba(59, 130, 246, 0.05)', padding: '16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid rgba(59, 130, 246, 0.2)'}}>
                     <h3 style={{margin: 0, color: 'var(--primary-color)'}}>{editEntity.first_name} {editEntity.last_name}</h3>
                     <p style={{margin: '4px 0 0', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Matricule: {editEntity.matricule}</p>
@@ -2792,10 +2899,46 @@ function App() {
                 <form onSubmit={handleFormSubmit}>
                   <div className="form-group">
                     <label>{t('admin.modals.student_select', 'Élève')}</label>
-                    <select name="student_id" className="form-select" required defaultValue={preselectedStudentId || ""}>
-                      <option value="">Sélectionner un élève...</option>
-                      {studentsData.map(s => <option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>)}
-                    </select>
+                    <input 
+                      type="text" 
+                      list="payment-students" 
+                      className="form-input" 
+                      placeholder="Rechercher matricule, élève ou parent..." 
+                      required
+                      defaultValue={
+                        preselectedStudentId 
+                          ? (() => {
+                              const s = studentsData.find(st => st.id === preselectedStudentId);
+                              if (!s) return "";
+                              const parentStr = s.student_parents && s.student_parents.length > 0 && s.student_parents[0].parents ? ` - Parent: ${s.student_parents[0].parents.first_name} ${s.student_parents[0].parents.last_name}` : '';
+                              return `${s.first_name} ${s.last_name} (${s.matricule})${parentStr}`;
+                            })()
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const match = studentsData.find(s => {
+                          const parentStr = s.student_parents && s.student_parents.length > 0 && s.student_parents[0].parents ? ` - Parent: ${s.student_parents[0].parents.first_name} ${s.student_parents[0].parents.last_name}` : '';
+                          return `${s.first_name} ${s.last_name} (${s.matricule})${parentStr}` === val;
+                        });
+                        if (match) {
+                           e.target.setCustomValidity('');
+                           const hiddenInput = document.getElementById('hidden_student_id');
+                           if(hiddenInput) hiddenInput.value = match.id;
+                        } else {
+                           e.target.setCustomValidity('Veuillez sélectionner un élève dans la liste');
+                           const hiddenInput = document.getElementById('hidden_student_id');
+                           if(hiddenInput) hiddenInput.value = '';
+                        }
+                      }}
+                    />
+                    <datalist id="payment-students">
+                      {studentsData.map(s => {
+                        const parentStr = s.student_parents && s.student_parents.length > 0 && s.student_parents[0].parents ? ` - Parent: ${s.student_parents[0].parents.first_name} ${s.student_parents[0].parents.last_name}` : '';
+                        return <option key={s.id} value={`${s.first_name} ${s.last_name} (${s.matricule})${parentStr}`} />;
+                      })}
+                    </datalist>
+                    <input type="hidden" name="student_id" id="hidden_student_id" defaultValue={preselectedStudentId || ""} required />
                   </div>
                   <div className="form-group">
                     <label>{t('admin.modals.motif', 'Motif du paiement')}</label>
@@ -2913,6 +3056,10 @@ function App() {
                     </div>
                   </div>
                   <div className="form-grid">
+                    <div className="form-group">
+                      <label>Matricule (optionnel)</label>
+                      <input type="text" name="matricule" className="form-input" placeholder="Généré auto si vide" defaultValue={editEntity?.matricule || ""} />
+                    </div>
                     <div className="form-group">
                       <label>{t('admin.modals.birth_date', 'Date de Naissance')}</label>
                       <input type="date" name="birth_date" className="form-input" required defaultValue={editEntity?.birth_date || ""} />
@@ -3137,7 +3284,7 @@ function App() {
                     </div>
                   </div>
                   
-                  <div style={{background: '#f1f5f9', padding: '20px', borderRadius: '8px', maxHeight: '70vh', overflowY: 'auto'}}>
+                  <div className="bulletin-preview-container">
                     <BulletinPreview 
                       classData={classesData.find(c => c.id === bulletinClassId)}
                       students={studentsData.filter(s => s.class_id === bulletinClassId)}
