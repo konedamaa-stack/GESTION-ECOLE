@@ -362,6 +362,18 @@ function App() {
     }
   };
 
+  const handleToggleTeacherStatus = async (id: string, currentStatus: string) => {
+    try {
+      const newStatus = currentStatus === 'Suspendu' ? 'Présent' : 'Suspendu';
+      const { error } = await supabase.from('teachers').update({ status: newStatus }).eq('id', id);
+      if (error) throw error;
+      fetchTeachers();
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de la mise à jour du statut.");
+    }
+  };
+
   const handleDeleteStudent = async (id: string) => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer cet élève ? (Cette action supprimera également ses factures, absences, notes, etc.)")) {
       try {
@@ -491,22 +503,15 @@ function App() {
       alert("Établissement créé avec succès !");
     } catch (error: any) {
       alert("Erreur: " + error.message);
-    } finally {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
-      }
     }
   };
 
   const handleFormSubmit = async (e: any) => {
     e.preventDefault();
     const submitBtn = e.nativeEvent?.submitter;
-    let originalText = '';
     if (submitBtn) {
       if (submitBtn.disabled) return;
       submitBtn.disabled = true;
-      originalText = submitBtn.innerHTML;
       submitBtn.innerHTML = 'Patientez...';
     }
     const formData = new FormData(e.target);
@@ -2923,11 +2928,11 @@ function App() {
                         });
                         if (match) {
                            e.target.setCustomValidity('');
-                           const hiddenInput = document.getElementById('hidden_student_id');
+                           const hiddenInput = document.getElementById('hidden_student_id') as HTMLInputElement;
                            if(hiddenInput) hiddenInput.value = match.id;
                         } else {
                            e.target.setCustomValidity('Veuillez sélectionner un élève dans la liste');
-                           const hiddenInput = document.getElementById('hidden_student_id');
+                           const hiddenInput = document.getElementById('hidden_student_id') as HTMLInputElement;
                            if(hiddenInput) hiddenInput.value = '';
                         }
                       }}
