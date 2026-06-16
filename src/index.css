@@ -531,7 +531,7 @@ html {
   .sidebar, .top-header, .btn, .modal-close, .print-controls, .modal-header {
     display: none !important;
   }
-  .animate-fade-in, .delay-100, .delay-200, .delay-300 {
+  .animate-fade-in, .delay-100, .delay-200, .delay-250, .delay-300 {
     animation: none !important;
     opacity: 1 !important;
   }
@@ -616,5 +616,27 @@ html {
   .header-actions button {
     padding: 6px !important;
     font-size: 0.8rem !important;
+  }
+}
+
+@media print {
+  body.print-finance-list .page-header,
+  body.print-finance-list .stats-grid,
+  body.print-finance-list .panel:not(#finance-list-panel) {
+    display: none !important;
+  }
+  
+  body.print-finance-list #finance-list-panel {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+  }
+  
+  body.print-finance-list #finance-list-panel .panel-header {
+    border-bottom: 2px solid black !important;
+    margin-bottom: 20px !important;
   }
 }
