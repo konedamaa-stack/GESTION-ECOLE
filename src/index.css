@@ -531,7 +531,13 @@ html {
   .sidebar, .top-header, .btn, .modal-close, .print-controls, .modal-header {
     display: none !important;
   }
+  .animate-fade-in, .delay-100, .delay-200, .delay-300 {
+    animation: none !important;
+    opacity: 1 !important;
+  }
   html, body, #root, .app-container, .main-content, .dashboard-scroll {
+    display: block !important;
+    position: static !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
