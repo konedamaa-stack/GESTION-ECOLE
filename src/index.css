@@ -528,15 +528,16 @@ html {
     margin: 0 !important;
     padding: 0 !important;
   }
-  .sidebar, .top-nav, .btn, .modal-close, .print-controls, .modal-header {
+  .sidebar, .top-header, .btn, .modal-close, .print-controls, .modal-header {
     display: none !important;
   }
-  .main-content, .dashboard-scroll {
+  html, body, #root, .app-container, .main-content, .dashboard-scroll {
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
     height: auto !important;
     max-height: none !important;
+    width: auto !important;
   }
   .bulletins-container, .bulletin-classic-container, .bulletin-preview-container {
     background: transparent !important;
