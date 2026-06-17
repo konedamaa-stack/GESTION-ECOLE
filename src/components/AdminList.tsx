@@ -30,6 +30,20 @@ as $$
   from auth.users u
   left join public.school_admins sa on sa.user_id = u.id
   left join public.schools s on s.id = sa.school_id;
+$$;
+
+create or replace function public.delete_admin_account(target_user_id uuid)
+returns void
+security definer
+language plpgsql
+as $$
+begin
+  if exists (select 1 from public.school_admins where user_id = target_user_id) then
+    raise exception 'Cet utilisateur est lié à un établissement et ne peut pas être supprimé.';
+  end if;
+  
+  delete from auth.users where id = target_user_id;
+end;
 $$;`;
 
   useEffect(() => {
@@ -53,6 +67,24 @@ $$;`;
       setErrorSQL(true);
     }
     setIsLoading(false);
+  };
+
+  const handleDeleteAdmin = async (userId: string, email: string) => {
+    if (window.confirm(`Êtes-vous sûr de vouloir supprimer définitivement le compte sans établissement (${email}) ?`)) {
+      try {
+        const { error } = await supabase.rpc('delete_admin_account', { target_user_id: userId });
+        if (error) {
+          console.error("Erreur:", error);
+          setErrorSQL(true);
+        } else {
+          alert("Compte supprimé avec succès.");
+          fetchAdmins();
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Erreur inattendue.");
+      }
+    }
   };
 
   const handleDeleteSchool = async (schoolId: string, schoolName: string) => {
@@ -170,7 +202,7 @@ $$;`;
                     {new Date(admin.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </td>
                   <td style={{ padding: '16px', textAlign: 'right' }}>
-                    {admin.school_id && (
+                    {admin.school_id ? (
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                         {onSwitchToSchool && (
                           <button 
@@ -186,6 +218,15 @@ $$;`;
                           style={{ padding: '6px 12px', fontSize: '0.85rem', background: '#EF4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                         >
                           Supprimer
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <button 
+                          onClick={() => handleDeleteAdmin(admin.user_id, admin.email)}
+                          style={{ padding: '6px 12px', fontSize: '0.85rem', background: '#EF4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        >
+                          Supprimer le compte
                         </button>
                       </div>
                     )}
