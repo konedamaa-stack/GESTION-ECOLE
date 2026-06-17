@@ -642,6 +642,12 @@ html {
     justify-content: center !important;
   }
   
+  body.print-finance-list table td, body.print-finance-list table th,
+  body.print-student-list table td, body.print-student-list table th {
+    padding: 4px 0 !important;
+    font-size: 12px !important;
+  }
+
   body.print-finance-list .finance-print-title {
     text-align: center !important;
     width: 100% !important;

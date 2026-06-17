@@ -3734,11 +3734,11 @@ function App() {
                           <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem'}}>
                             <thead>
                               <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
-                                <th style={{padding: '8px 0', fontWeight: 500}}>N° Reçu</th>
-                                <th style={{padding: '8px 0', fontWeight: 500}}>Motif</th>
-                                <th style={{padding: '8px 0', fontWeight: 500}}>Montant</th>
-                                <th style={{padding: '8px 0', fontWeight: 500}}>Date</th>
-                                <th style={{padding: '8px 0', fontWeight: 500}}>Statut</th>
+                                <th style={{padding: '16px 0', fontWeight: 500}}>N° Reçu</th>
+                                <th style={{padding: '16px 0', fontWeight: 500}}>Motif</th>
+                                <th style={{padding: '16px 0', fontWeight: 500}}>Montant</th>
+                                <th style={{padding: '16px 0', fontWeight: 500}}>Date</th>
+                                <th style={{padding: '16px 0', fontWeight: 500}}>Statut</th>
                               </tr>
                             </thead>
                             <tbody>
