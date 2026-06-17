@@ -174,7 +174,7 @@ function App() {
   const [preselectedStudentId, setPreselectedStudentId] = useState<string | null>(null);
   const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
   const [parentsData, setParentsData] = useState<any[]>([]);
-  const [showSuperAdmin, setShowSuperAdmin] = useState(false);
+  const [showSuperAdmin, setShowSuperAdmin] = useState(() => localStorage.getItem('sges_super_admin_mode') === 'true');
   const [isSuperAdminFlow, setIsSuperAdminFlow] = useState(false);
   const [recoveryMode, setRecoveryMode] = useState(false);
   const fetchParents = async () => {
@@ -187,6 +187,7 @@ function App() {
       const SUPER_ADMIN_EMAILS = ['konedamaa@gmail.com'];
       if (SUPER_ADMIN_EMAILS.includes(session.user?.email || '')) {
         setShowSuperAdmin(true);
+        localStorage.setItem('sges_super_admin_mode', 'true');
       } else {
         alert("Accès non autorisé : cet e-mail n'est pas un administrateur SaaS.");
         supabase.auth.signOut();
@@ -2674,7 +2675,7 @@ function App() {
   }
 
   if (showSuperAdmin) {
-    return <SuperAdminPortal session={session} onExit={() => setShowSuperAdmin(false)} onSwitchToSchool={(id) => { setCurrentSchoolId(id); setShowSuperAdmin(false); }} />;
+    return <SuperAdminPortal session={session} onExit={() => { setShowSuperAdmin(false); localStorage.removeItem('sges_super_admin_mode'); }} onSwitchToSchool={(id) => { setCurrentSchoolId(id); setShowSuperAdmin(false); localStorage.removeItem('sges_super_admin_mode'); }} />;
   }
 
   return (

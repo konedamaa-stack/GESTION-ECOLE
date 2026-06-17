@@ -87,6 +87,23 @@ $$;`;
     }
   };
 
+  const handleUpgradePro = async (schoolId: string, currentPlan: string) => {
+    const newPlan = currentPlan === 'Pro' ? 'Standard' : 'Pro';
+    if (window.confirm(`Voulez-vous passer cet établissement en plan ${newPlan} ?`)) {
+      try {
+        const { error } = await supabase.from('schools').update({ subscription_plan: newPlan }).eq('id', schoolId);
+        if (error) {
+          console.error(error);
+          alert("Erreur lors du changement de plan.");
+        } else {
+          fetchAdmins();
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
   const handleDeleteSchool = async (schoolId: string, schoolName: string) => {
     if (window.confirm(`Êtes-vous sûr de vouloir supprimer DÉFINITIVEMENT l'établissement "${schoolName}" ? Cette action supprimera toutes les données associées (classes, élèves, notes, etc.).`)) {
       try {
@@ -213,6 +230,12 @@ $$;`;
                             Accéder
                           </button>
                         )}
+                        <button 
+                          onClick={() => handleUpgradePro(admin.school_id, admin.subscription_plan)}
+                          style={{ padding: '6px 12px', fontSize: '0.85rem', background: admin.subscription_plan === 'Pro' ? '#F59E0B' : '#10B981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        >
+                          {admin.subscription_plan === 'Pro' ? 'Rétrograder (Standard)' : 'Passer en Pro'}
+                        </button>
                         <button 
                           onClick={() => handleDeleteSchool(admin.school_id, admin.school_name || 'Inconnu')}
                           style={{ padding: '6px 12px', fontSize: '0.85rem', background: '#EF4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
