@@ -1145,7 +1145,7 @@ function App() {
           <h1 className="page-title">{t('admin.students.title', 'Gestion des Élèves')}</h1>
           <p className="page-subtitle">{t('admin.students.subtitle', 'Annuaire complet, dossiers scolaires et suivi des absences.')}</p>
         </div>
-        <div style={{display: 'flex', gap: '12px'}}>
+        <div className="finance-filters" style={{display: 'flex', gap: '12px'}}>
           <button className="btn btn-outline" onClick={() => setActiveModal('absence')} style={{color: 'var(--warning-color)', borderColor: 'var(--warning-color)'}}>
             <Icons.Activity /> {t('admin.students.btn_absence', 'Signaler Absence')}
           </button>
@@ -1177,8 +1177,8 @@ function App() {
 
       <div className="panel delay-300" id="student-list-panel">
         <div className="panel-header">
-          <h3 className="panel-title">{t('admin.students.panel_title', 'Annuaire des Élèves')}</h3>
-          <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+          <h3 className="panel-title student-print-title">{t('admin.students.panel_title', 'Annuaire des Élèves')}</h3>
+          <div className="student-filters" style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
             <button 
               className="btn btn-outline" 
               onClick={() => { document.body.classList.add('print-student-list'); window.print(); setTimeout(() => document.body.classList.remove('print-student-list'), 1000); }}
@@ -2037,7 +2037,7 @@ function App() {
       {/* NOUVEAU PANEL: Suivi des paiements par élève */}
       <div className="panel delay-250" id="finance-list-panel" style={{marginTop: '24px'}}>
         <div className="panel-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px'}}>
-          <h3 className="panel-title" style={{textTransform: 'uppercase'}}>
+          <h3 className="panel-title finance-print-title" style={{textTransform: 'uppercase'}}>
             {(() => {
               if (financeStatusFilter === 'all' && financeClassFilter === 'all') return 'SUIVI DES PAIEMENTS PAR ÉLÈVE';
               const statusPart = financeStatusFilter === 'all' ? '' : (financeStatusFilter === 'Soldé' ? 'SOLDE' : 'NON SOLDE');
