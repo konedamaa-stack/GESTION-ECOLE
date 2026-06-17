@@ -1145,7 +1145,7 @@ function App() {
           <h1 className="page-title">{t('admin.students.title', 'Gestion des Élèves')}</h1>
           <p className="page-subtitle">{t('admin.students.subtitle', 'Annuaire complet, dossiers scolaires et suivi des absences.')}</p>
         </div>
-        <div className="finance-filters" style={{display: 'flex', gap: '12px'}}>
+        <div className="header-actions" style={{display: 'flex', gap: '12px'}}>
           <button className="btn btn-outline" onClick={() => setActiveModal('absence')} style={{color: 'var(--warning-color)', borderColor: 'var(--warning-color)'}}>
             <Icons.Activity /> {t('admin.students.btn_absence', 'Signaler Absence')}
           </button>
@@ -2045,7 +2045,7 @@ function App() {
               return `LA LISTE DES ELEVES ${statusPart} ${classPart}`.replace(/\s+/g, ' ').trim();
             })()}
           </h3>
-          <div style={{display: 'flex', gap: '12px'}}>
+          <div className="finance-filters" style={{display: 'flex', gap: '12px'}}>
             <select 
               className="form-select" 
               value={financeStatusFilter} 
