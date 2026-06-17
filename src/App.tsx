@@ -2625,12 +2625,17 @@ function App() {
                     <button className="btn" disabled style={{width: '100%', background: 'var(--border-color)', color: 'var(--text-secondary)'}}>{t('admin.settings.sub_btn_active', 'Plan Actif')}</button>
                   ) : (
                     <button className="btn btn-primary" style={{width: '100%', background: 'var(--accent-color)', borderColor: 'var(--accent-color)'}} onClick={async () => {
+                      const isSuperAdmin = session?.user?.email === 'konedamaa@gmail.com';
+                      if (!isSuperAdmin) {
+                        alert("Votre demande a été enregistrée. Veuillez contacter l'administrateur pour activer la version Pro.");
+                        return;
+                      }
                       if (currentSchoolId) {
                         await supabase.from('schools').update({ subscription_plan: 'Pro' }).eq('id', currentSchoolId);
                       }
                       setCurrentSchoolPlan('Pro');
                       alert('Félicitations ! Vous avez débloqué le plan Pro. Vous avez désormais accès à la Comptabilité et aux Ressources Humaines.');
-                    }}>{t('admin.settings.sub_btn_upgrade', 'Passer en Pro')}</button>
+                    }}>{session?.user?.email === 'konedamaa@gmail.com' ? t('admin.settings.sub_btn_upgrade', 'Passer en Pro (Admin)') : 'Demander la version Pro'}</button>
                   )}
                 </div>
               </div>
