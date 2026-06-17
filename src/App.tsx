@@ -2037,7 +2037,14 @@ function App() {
       {/* NOUVEAU PANEL: Suivi des paiements par élève */}
       <div className="panel delay-250" id="finance-list-panel" style={{marginTop: '24px'}}>
         <div className="panel-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px'}}>
-          <h3 className="panel-title">Suivi des Paiements par Élève</h3>
+          <h3 className="panel-title" style={{textTransform: 'uppercase'}}>
+            {(() => {
+              if (financeStatusFilter === 'all' && financeClassFilter === 'all') return 'SUIVI DES PAIEMENTS PAR ÉLÈVE';
+              const statusPart = financeStatusFilter === 'all' ? '' : (financeStatusFilter === 'Soldé' ? 'SOLDE' : 'NON SOLDE');
+              const classPart = financeClassFilter === 'all' ? '' : 'DE CLASSE ' + (classesData.find(c => c.id === financeClassFilter)?.name || '').toUpperCase();
+              return `LA LISTE DES ELEVES ${statusPart} ${classPart}`.replace(/\s+/g, ' ').trim();
+            })()}
+          </h3>
           <div style={{display: 'flex', gap: '12px'}}>
             <select 
               className="form-select" 
