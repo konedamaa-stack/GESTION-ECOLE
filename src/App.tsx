@@ -1863,6 +1863,7 @@ function App() {
           const sNonPaye = Math.max(0, sTotal - sPaye);
           return {
             id: s.id,
+            matricule: s.matricule,
             name: `${s.first_name} ${s.last_name}`,
             paye: sPaye,
             total: sTotal,
@@ -2081,6 +2082,7 @@ function App() {
         <table style={{width: '100%', borderCollapse: 'collapse', marginTop: '16px'}}>
           <thead>
             <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Matricule</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>Élève</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>Classe</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>Attendu</th>
@@ -2107,6 +2109,7 @@ function App() {
                 <>
                   {filteredStudents.map((st, i) => (
                     <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
+                      <td style={{padding: '16px 0', fontFamily: 'monospace', color: 'var(--primary-color)'}}>{st.matricule}</td>
                       <td style={{padding: '16px 0', fontWeight: 600}}>{st.name}</td>
                       <td style={{padding: '16px 0'}}>{st.className}</td>
                       <td style={{padding: '16px 0'}}>{formatNum(st.total)} FCFA</td>
@@ -2119,7 +2122,7 @@ function App() {
                   ))}
                   {filteredStudents.length > 0 && (
                     <tr className="finance-totals-row" style={{fontWeight: 'bold', borderTop: '2px solid var(--border-color)'}}>
-                      <td colSpan={2} style={{padding: '16px 0', textAlign: 'right', paddingRight: '24px'}}>TOTAL :</td>
+                      <td colSpan={3} style={{padding: '16px 0', textAlign: 'right', paddingRight: '24px'}}>TOTAL :</td>
                       <td style={{padding: '16px 0'}}>{formatNum(totalAttendu)} FCFA</td>
                       <td style={{padding: '16px 0', color: 'var(--success-color)'}}>{formatNum(totalPaye)} FCFA</td>
                       <td style={{padding: '16px 0', color: 'var(--danger-color)'}}>{formatNum(totalReste)} FCFA</td>
