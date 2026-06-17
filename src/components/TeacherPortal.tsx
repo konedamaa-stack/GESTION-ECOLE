@@ -299,9 +299,31 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                   }}
                 >
                   <option value="" disabled>{t('teacher.choose_eval', "-- Choisir une évaluation --")}</option>
-                  {evaluationsData.map(ev => (
-                    <option key={ev.id} value={ev.id}>{ev.name} ({ev.classes?.name} - {new Date(ev.date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR')})</option>
-                  ))}
+                  {(() => {
+                    const pendingEvals = evaluationsData.filter(ev => {
+                      const classStudents = studentsData.filter(s => s.class_id === ev.class_id);
+                      const gradesForEv = gradesData.filter(g => g.evaluation_id === ev.id);
+                      return classStudents.length === 0 || gradesForEv.length < classStudents.length;
+                    });
+                    const completedEvals = evaluationsData.filter(ev => !pendingEvals.includes(ev));
+                    
+                    return (
+                      <>
+                        <optgroup label={t('teacher.pending_evals', "À noter")}>
+                          {pendingEvals.map(ev => (
+                            <option key={ev.id} value={ev.id}>{ev.name} ({ev.classes?.name} - {new Date(ev.date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR')})</option>
+                          ))}
+                        </optgroup>
+                        {completedEvals.length > 0 && (
+                          <optgroup label={t('teacher.completed_evals', "Déjà notés")}>
+                            {completedEvals.map(ev => (
+                              <option key={ev.id} value={ev.id}>{ev.name} ({ev.classes?.name} - {new Date(ev.date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR')})</option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </>
+                    );
+                  })()}
                 </select>
               </div>
               
