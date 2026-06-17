@@ -2635,7 +2635,7 @@ function App() {
                       }
                       setCurrentSchoolPlan('Pro');
                       alert('Félicitations ! Vous avez débloqué le plan Pro. Vous avez désormais accès à la Comptabilité et aux Ressources Humaines.');
-                    }}>{session?.user?.email === 'konedamaa@gmail.com' ? t('admin.settings.sub_btn_upgrade', 'Passer en Pro (Admin)') : 'Demander la version Pro'}</button>
+                    }}>{session?.user?.email === 'konedamaa@gmail.com' ? 'Passer en Pro (Admin)' : 'Demander la version Pro'}</button>
                   )}
                 </div>
               </div>
