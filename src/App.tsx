@@ -1175,13 +1175,13 @@ function App() {
         </div>
       </div>
 
-      <div className="panel delay-300">
+      <div className="panel delay-300" id="student-list-panel">
         <div className="panel-header">
           <h3 className="panel-title">{t('admin.students.panel_title', 'Annuaire des Élèves')}</h3>
           <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
             <button 
               className="btn btn-outline" 
-              onClick={() => window.print()}
+              onClick={() => { document.body.classList.add('print-student-list'); window.print(); setTimeout(() => document.body.classList.remove('print-student-list'), 1000); }}
               title="Imprimer la liste"
               style={{padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px'}}
             >
