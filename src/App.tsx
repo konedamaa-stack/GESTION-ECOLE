@@ -1386,7 +1386,7 @@ function App() {
             </tr>
           </thead>
           <tbody>
-            {classesData && classesData.length > 0 ? classesData.map((cls, i) => (
+            {classesData && classesData.length > 0 ? classesData.map((cls) => (
               <tr key={cls.id} style={{borderBottom: '1px solid var(--border-color)'}}>
                 <td style={{padding: '16px 0', fontWeight: 600}}>{cls.name}</td>
                 <td style={{padding: '16px 0'}}>{cls.level}</td>
@@ -1401,7 +1401,7 @@ function App() {
                       fetchClasses();
                     }
                   }}>
-                    <Icons.Trash />
+                    🗑️
                   </button>
                 </td>
               </tr>
