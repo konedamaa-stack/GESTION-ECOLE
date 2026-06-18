@@ -59,6 +59,27 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
     });
   });
 
+  const subjectRanks: Record<string, Record<string, number>> = {};
+  subjects.forEach(subject => {
+    subjectRanks[subject] = {};
+    const rankingsForSubj: { id: string, avg: number }[] = [];
+    students.forEach(st => {
+      const avg = studentStats[st.id].subjects[subject];
+      if (avg !== undefined) {
+        rankingsForSubj.push({ id: st.id, avg });
+      }
+    });
+    rankingsForSubj.sort((a, b) => b.avg - a.avg);
+    rankingsForSubj.forEach((r, index) => {
+      // Handle ties (same average = same rank)
+      if (index > 0 && r.avg === rankingsForSubj[index - 1].avg) {
+        subjectRanks[subject][r.id] = subjectRanks[subject][rankingsForSubj[index - 1].id];
+      } else {
+        subjectRanks[subject][r.id] = index + 1;
+      }
+    });
+  });
+
   const rankings: { id: string, avg: number }[] = [];
   
   students.forEach(st => {
@@ -129,15 +150,15 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
           const val = stats.subjects[s];
           const coef = getSubjectCoef(s);
           const total = val * coef;
-          // Sub-rank in class for this subject is hard to calculate efficiently here without pre-calculating, 
-          // let's just use general rank for now or leave it blank.
+          const sRank = subjectRanks[s]?.[st.id];
+          
           return (
             <tr key={s}>
               <td style={{textAlign: 'left', paddingLeft: '8px', fontWeight: 'bold'}}>{s.toUpperCase()}</td>
               <td>{val.toFixed(2)}</td>
               <td>{coef}</td>
               <td>{total.toFixed(2)}</td>
-              <td>-</td>
+              <td>{sRank ? getRankStr(sRank) : '-'}</td>
               <td>{getAppreciation(val)}</td>
               <td></td>
               <td></td>
