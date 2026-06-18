@@ -3385,23 +3385,16 @@ function App() {
                   </div>
                   {activeModal === 'teacher' && (
                     <div className="form-group">
-                      <label>{t('admin.modals.taught_subject', 'Matière enseignée')}</label>
-                      <select name="subject" className="form-input" required defaultValue={editEntity?.subject || ""}>
-                        <option value="">Sélectionnez une matière</option>
-                        <option value="Mathématiques">Mathématiques</option>
-                        <option value="Français">Français</option>
-                        <option value="Anglais">Anglais</option>
-                        <option value="Histoire-Géographie">Histoire-Géographie</option>
-                        <option value="Physique-Chimie">Physique-Chimie</option>
-                        <option value="SVT">SVT</option>
-                        <option value="EPS">EPS</option>
-                        <option value="Philosophie">Philosophie</option>
-                        <option value="Informatique">Informatique</option>
-                        <option value="Espagnol">Espagnol</option>
-                        <option value="Allemand">Allemand</option>
-                        <option value="Arts Plastiques">Arts Plastiques</option>
-                        <option value="Éducation Musicale">Éducation Musicale</option>
-                      </select>
+                      <label>{t('admin.modals.taught_subject', 'Matières enseignées')}</label>
+                      <input 
+                        type="text" 
+                        name="subject" 
+                        className="form-input" 
+                        placeholder="Ex: Mathématiques, Physique-Chimie..." 
+                        required 
+                        defaultValue={editEntity?.subject || ""} 
+                      />
+                      <small style={{color: '#64748b', fontSize: '0.8rem'}}>Vous pouvez écrire plusieurs matières séparées par des virgules.</small>
                     </div>
                   )}
                   {activeModal === 'employee' && (
