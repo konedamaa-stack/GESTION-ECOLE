@@ -7,6 +7,7 @@ import Auth from './components/Auth';
 import { SuperAdminAuth } from './components/SuperAdminAuth';
 import StudentPortal from './components/StudentPortal';
 import TeacherPortal from './components/TeacherPortal';
+import CommitteePortal from './components/CommitteePortal';
 import { BulletinPreview } from './components/BulletinPreview';
 import { SuperAdminPortal } from './components/SuperAdminPortal';
 import { PasswordRecovery } from './components/PasswordRecovery';
@@ -56,6 +57,11 @@ function App() {
   });
   const [teacherSession, setTeacherSession] = useState<any>(() => {
     const saved = localStorage.getItem('sges_teacher');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const [committeeSession, setCommitteeSession] = useState<any>(() => {
+    const saved = localStorage.getItem('sges_committee_session');
     return saved ? JSON.parse(saved) : null;
   });
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sges_tab') || 'dashboard');
@@ -254,12 +260,13 @@ function App() {
   useEffect(() => {
     if (studentSession) localStorage.setItem('sges_student', JSON.stringify(studentSession));
     else localStorage.removeItem('sges_student');
-  }, [studentSession]);
-
-  useEffect(() => {
+    
     if (teacherSession) localStorage.setItem('sges_teacher', JSON.stringify(teacherSession));
     else localStorage.removeItem('sges_teacher');
-  }, [teacherSession]);
+
+    if (committeeSession) localStorage.setItem('sges_committee_session', JSON.stringify(committeeSession));
+    else localStorage.removeItem('sges_committee_session');
+  }, [studentSession, teacherSession, committeeSession]);
 
   useEffect(() => {
     localStorage.setItem('sges_tab', activeTab);
@@ -2694,11 +2701,15 @@ function App() {
     if (isSuperAdminFlow) {
       return <SuperAdminAuth onBack={() => { setIsSuperAdminFlow(false); setCurrentView('landing'); }} />;
     }
-    return <Auth onStudentLogin={(s) => setStudentSession(s)} onTeacherLogin={(t) => setTeacherSession(t)} onBack={() => setCurrentView('landing')} />;
+    return <Auth onStudentLogin={(s) => setStudentSession(s)} onTeacherLogin={(t) => setTeacherSession(t)} onCommitteeLogin={(c) => setCommitteeSession(c)} onBack={() => setCurrentView('landing')} />;
   }
 
   if (studentSession) {
     return <StudentPortal student={studentSession} onLogout={() => setStudentSession(null)} />;
+  }
+
+  if (committeeSession) {
+    return <CommitteePortal session={committeeSession} onLogout={() => setCommitteeSession(null)} />;
   }
 
   if (teacherSession) {

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 
 const Icons = {
@@ -19,6 +21,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
   const [classesData, setClassesData] = useState<any[]>([]);
   const [evaluationsData, setEvaluationsData] = useState<any[]>([]);
   const [studentsData, setStudentsData] = useState<any[]>([]);
+  const [settings, setSettings] = useState<any>(null);
   const [gradesData, setGradesData] = useState<any[]>([]);
   const [teacherSchedules, setTeacherSchedules] = useState<any[]>([]);
   
@@ -53,6 +56,9 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     const { data: students } = await supabase.from('students').select('*').eq('school_id', session.school_id);
     if (students) setStudentsData(students);
 
+    // Fetch school settings
+    const { data: set } = await supabase.from('school_settings').select('*').limit(1).single();
+    if (set) setSettings(set);
     // Fetch grades
     const { data: grades } = await supabase.from('grades').select('*').eq('school_id', session.school_id);
     if (grades) setGradesData(grades);
@@ -176,7 +182,82 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
       alert(t('teacher.save_error', "Erreur lors de l'enregistrement : ") + error.message);
     }
   };
+  const generatePDF = (student: any, period: string) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    
+    // Header
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text(settings?.school_name || "Établissement", pageWidth / 2, 20, { align: "center" });
+    
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Bulletin de notes - ${period}`, pageWidth / 2, 28, { align: "center" });
+    doc.text(`Année Académique : ${settings?.academic_year || "2025-2026"}`, pageWidth / 2, 34, { align: "center" });
 
+    // Student Info
+    doc.setFontSize(11);
+    doc.text(`Élève : ${student.first_name} ${student.last_name}`, 14, 50);
+    doc.text(`Matricule : ${student.matricule}`, 14, 56);
+    const className = classesData.find(c => c.id === student.class_id)?.name || student.class_id;
+    doc.text(`Classe : ${className}`, 120, 50);
+
+    // Get evaluations for this period and this student's class
+    const periodEvals = evaluationsData.filter(e => e.period === period && e.class_id === student.class_id);
+    
+    // Aggregate by subject
+    const subjectGrades: Record<string, { total: number; count: number; maxTotal: number }> = {};
+    
+    periodEvals.forEach(ev => {
+      const g = gradesData.find(g => g.evaluation_id === ev.id && g.student_id === student.id);
+      if (g && g.score !== null) {
+        if (!subjectGrades[ev.subject]) {
+          subjectGrades[ev.subject] = { total: 0, count: 0, maxTotal: 0 };
+        }
+        subjectGrades[ev.subject].total += g.score;
+        subjectGrades[ev.subject].maxTotal += ev.max_score;
+        subjectGrades[ev.subject].count += 1;
+      }
+    });
+
+    const tableData: any[] = [];
+    let totalScore = 0;
+    let totalMax = 0;
+
+    Object.keys(subjectGrades).forEach(sub => {
+      const sg = subjectGrades[sub];
+      const avgSur20 = (sg.total / sg.maxTotal) * 20;
+      tableData.push([
+        sub,
+        `${sg.total.toFixed(2)} / ${sg.maxTotal}`,
+        avgSur20.toFixed(2),
+        "" // Appreciation
+      ]);
+      totalScore += avgSur20;
+      totalMax += 20;
+    });
+
+    const generalAvg = totalMax > 0 ? (totalScore / totalMax) * 20 : 0;
+
+    (doc as any).autoTable({
+      startY: 65,
+      head: [['Matière', 'Notes Obtenues', 'Moyenne (/20)', 'Appréciations']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [59, 130, 246] }
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY || 65;
+
+    doc.setFont("helvetica", "bold");
+    doc.text(`Moyenne Générale : ${generalAvg.toFixed(2)} / 20`, 14, finalY + 15);
+
+    doc.setFont("helvetica", "normal");
+    doc.text("Le Professeur principal", pageWidth - 50, finalY + 30);
+    
+    doc.save(`Bulletin_${student.matricule}_${period}.pdf`);
+  };
   return (
     <div className="student-portal">
       <header style={{background: 'var(--surface-color)', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.05)'}}>
@@ -501,7 +582,8 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                     <colgroup>
                       <col style={{width: '100px'}} />
                       <col style={{width: '200px'}} />
-                      <col style={{width: '250px'}} />
+                      <col style={{width: '200px'}} />
+                      <col style={{width: '100px'}} />
                       <col style={{width: '150px'}} />
                     </colgroup>
                     <thead>
@@ -509,7 +591,8 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                         <th style={{padding: '12px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.matricule', "Matricule")}</th>
                         <th style={{padding: '12px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.last_name', "Nom")}</th>
                         <th style={{padding: '12px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.first_name', "Prénoms")}</th>
-                        <th style={{padding: '12px', fontWeight: 'bold'}}>{t('teacher.status', "Statut")}</th>
+                        <th style={{padding: '12px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.status', "Statut")}</th>
+<th style={{padding: '12px', fontWeight: 'bold'}}>Bulletins</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -518,12 +601,19 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                           <td style={{padding: '12px', borderRight: '1px solid #eee', fontWeight: 'bold'}}>{student.matricule || `MAT-${student.id.substring(0,4)}`}</td>
                           <td style={{padding: '12px', borderRight: '1px solid #eee'}}>{student.last_name.toUpperCase()}</td>
                           <td style={{padding: '12px', borderRight: '1px solid #eee'}}>{student.first_name}</td>
-                          <td style={{padding: '12px'}}><span className={`badge ${student.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`}>{student.status || 'Inscrit'}</span></td>
+                          <td style={{padding: '12px', borderRight: '1px solid #eee'}}><span className={`badge ${student.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`}>{student.status || 'Inscrit'}</span></td>
+<td style={{padding: '12px'}}>
+  <div style={{display: 'flex', gap: '4px'}}>
+    <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => generatePDF(student, 'Trimestre 1')}>T1</button>
+    <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => generatePDF(student, 'Trimestre 2')}>T2</button>
+    <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => generatePDF(student, 'Trimestre 3')}>T3</button>
+  </div>
+</td>
                         </tr>
                       ))}
                       {studentsData.filter(s => s.class_id === selectedClass).length === 0 && (
                         <tr>
-                          <td colSpan={4} style={{textAlign: 'center', padding: '24px', color: '#777'}}>{t('teacher.no_student_found', "Aucun élève trouvé dans cette classe.")}</td>
+                          <td colSpan={5} style={{textAlign: 'center', padding: '24px', color: '#777'}}>{t('teacher.no_student_found', "Aucun élève trouvé dans cette classe.")}</td>
                         </tr>
                       )}
                     </tbody>

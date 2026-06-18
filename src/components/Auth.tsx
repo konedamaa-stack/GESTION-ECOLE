@@ -5,7 +5,7 @@ import './Auth.css';
 
 type AuthMode = 'login' | 'register' | 'forgot_password' | 'student_login' | 'teacher_login' | 'committee_login';
 
-export default function Auth({ onStudentLogin, onTeacherLogin, onBack }: { onStudentLogin?: (student: any) => void, onTeacherLogin?: (teacher: any) => void, onBack?: () => void }) {
+export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin, onBack }: { onStudentLogin?: (student: any) => void, onTeacherLogin?: (teacher: any) => void, onCommitteeLogin?: (committee: any) => void, onBack?: () => void }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
@@ -67,7 +67,21 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onBack }: { onStu
         if (authError) throw authError;
 
         setMessage(t('auth.register_success', 'Inscription réussie ! Veuillez vérifier votre boîte mail pour confirmer votre compte.'));
-      } else if (mode === 'login' || mode === 'committee_login') {
+      } else if (mode === 'committee_login') {
+        const { data: committee, error } = await supabase
+          .from('committee_members')
+          .select('*')
+          .eq('email', email)
+          .eq('password', password);
+        
+        if (error) throw error;
+        if (!committee || committee.length === 0) {
+          throw new Error(t('auth.invalid_credentials', "Email ou mot de passe incorrect."));
+        }
+        if (onCommitteeLogin) {
+          onCommitteeLogin(committee[0]);
+        }
+      } else if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
