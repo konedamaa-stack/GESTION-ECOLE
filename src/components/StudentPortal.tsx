@@ -11,6 +11,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
   const [evaluations, setEvaluations] = useState<any[]>([]);
   const [grades, setGrades] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
 
   const formatNum = (num: number | string | undefined) => {
     if (num === undefined || num === null) return '';
@@ -118,7 +119,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
     doc.text(t('student.director', "Le Directeur"), pageWidth - 50, finalY + 30);
     doc.text(settings?.director_name || "", pageWidth - 50, finalY + 45);
 
-    window.open(doc.output('bloburl'), '_blank');
+    setPdfPreviewUrl(doc.output('bloburl').toString());
   };
 
   const days = [t('student.monday', 'Lundi'), t('student.tuesday', 'Mardi'), t('student.wednesday', 'Mercredi'), t('student.thursday', 'Jeudi'), t('student.friday', 'Vendredi'), t('student.saturday', 'Samedi')];
@@ -239,6 +240,19 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
           </div>
         )}
       </main>
+
+      {/* PDF Modal */}
+      {pdfPreviewUrl && (
+        <div className="modal-overlay" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999}}>
+          <div className="modal-content" style={{width: '90vw', height: '90vh', padding: '20px', background: 'white', display: 'flex', flexDirection: 'column'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '16px'}}>
+              <h3>Aperçu du Bulletin</h3>
+              <button className="btn btn-outline" onClick={() => setPdfPreviewUrl(null)}>Fermer</button>
+            </div>
+            <iframe src={pdfPreviewUrl} style={{flex: 1, border: 'none', width: '100%'}} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

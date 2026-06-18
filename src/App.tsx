@@ -1445,22 +1445,54 @@ function App() {
   );
 
   const loadGlobalGrades = async (classId: string, period: string) => {
-    const evals = evaluationsData.filter(e => e.class_id === classId && e.period === period && e.type === "Moyenne Globale");
-    const evalIds = evals.map(e => e.id);
+    // 1. Fetch all evaluations for this class and period
+    const allEvals = evaluationsData.filter(e => e.class_id === classId && e.period === period);
+    const evalIds = allEvals.map(e => e.id);
     
-    let relevantGrades: any[] = [];
+    let allGrades: any[] = [];
     if(evalIds.length > 0) {
       const { data } = await supabase.from('grades').select('*').in('evaluation_id', evalIds);
-      if(data) relevantGrades = data;
+      if(data) allGrades = data;
     }
     
     const initialGrades: any = {};
-    relevantGrades.forEach(g => {
-      const ev = evals.find(e => e.id === g.evaluation_id);
-      if(ev && g.score !== null) {
-        initialGrades[`${g.student_id}_${ev.subject}`] = g.score.toString();
-      }
+    const classStudents = studentsData.filter(s => s.class_id === classId);
+
+    // 2. Calculate automatic averages from standard evaluations
+    const standardEvals = allEvals.filter(e => e.type !== "Moyenne Globale");
+    const uniqueSubjects = Array.from(new Set(standardEvals.map(e => e.subject)));
+    
+    classStudents.forEach(student => {
+      uniqueSubjects.forEach(subject => {
+        const subjEvals = standardEvals.filter(e => e.subject === subject);
+        if (subjEvals.length > 0) {
+          let totalScore = 0;
+          let totalMax = 0;
+          subjEvals.forEach(ev => {
+            const g = allGrades.find(gr => gr.evaluation_id === ev.id && gr.student_id === student.id);
+            if (g && g.score !== null) {
+              totalScore += g.score;
+              totalMax += ev.max_score || 20;
+            }
+          });
+          if (totalMax > 0) {
+            const avgSur20 = (totalScore / totalMax) * 20;
+            initialGrades[`${student.id}_${subject}`] = avgSur20.toFixed(2);
+          }
+        }
+      });
     });
+
+    // 3. Override with any explicitly saved "Moyenne Globale"
+    const globalEvals = allEvals.filter(e => e.type === "Moyenne Globale");
+    globalEvals.forEach(ev => {
+      allGrades.forEach(g => {
+        if (g.evaluation_id === ev.id && g.score !== null) {
+          initialGrades[`${g.student_id}_${ev.subject}`] = g.score.toString();
+        }
+      });
+    });
+
     setGlobalGrades(initialGrades);
   };
 

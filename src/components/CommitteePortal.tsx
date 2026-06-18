@@ -18,6 +18,7 @@ export default function CommitteePortal({ session, onLogout }: { session: any; o
   const [savingGrades, setSavingGrades] = useState(false);
   const [editingGrades, setEditingGrades] = useState<Record<string, { score: number | '', comment: string }>>({});
   const [settings, setSettings] = useState<any>(null);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -202,7 +203,7 @@ export default function CommitteePortal({ session, onLogout }: { session: any; o
     doc.setFont("helvetica", "normal");
     doc.text("Le Comité d'examen", pageWidth - 50, finalY + 30);
     
-    window.open(doc.output('bloburl'), '_blank');
+    setPdfPreviewUrl(doc.output('bloburl').toString());
   };
 
   return (
@@ -460,6 +461,19 @@ export default function CommitteePortal({ session, onLogout }: { session: any; o
           </div>
         )}
       </main>
+
+      {/* PDF Modal */}
+      {pdfPreviewUrl && (
+        <div className="modal-overlay" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999}}>
+          <div className="modal-content" style={{width: '90vw', height: '90vh', padding: '20px', background: 'white', display: 'flex', flexDirection: 'column'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '16px'}}>
+              <h3>Aperçu du Bulletin</h3>
+              <button className="btn btn-outline" onClick={() => setPdfPreviewUrl(null)}>Fermer</button>
+            </div>
+            <iframe src={pdfPreviewUrl} style={{flex: 1, border: 'none', width: '100%'}} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

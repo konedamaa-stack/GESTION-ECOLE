@@ -22,7 +22,6 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
   const [evaluationsData, setEvaluationsData] = useState<any[]>([]);
   const [studentsData, setStudentsData] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
-  const [gradesData, setGradesData] = useState<any[]>([]);
   const [teacherSchedules, setTeacherSchedules] = useState<any[]>([]);
   
   // Selection state
@@ -30,6 +29,8 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
   const [selectedEvaluation, setSelectedEvaluation] = useState<any>(null);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [gradesInput, setGradesInput] = useState<Record<string, {score: string, comment: string}>>({});
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [gradesData, setGradesData] = useState<any[]>([]);
 
   const formatNum = (num: number | string | undefined) => {
     if (num === undefined || num === null) return '';
@@ -256,7 +257,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     doc.setFont("helvetica", "normal");
     doc.text("Le Professeur principal", pageWidth - 50, finalY + 30);
     
-    window.open(doc.output('bloburl'), '_blank');
+    setPdfPreviewUrl(doc.output('bloburl').toString());
   };
   return (
     <div className="student-portal">
@@ -630,6 +631,19 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
           </div>
         )}
       </main>
+
+      {/* PDF Modal */}
+      {pdfPreviewUrl && (
+        <div className="modal-overlay" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999}}>
+          <div className="modal-content" style={{width: '90vw', height: '90vh', padding: '20px', background: 'white', display: 'flex', flexDirection: 'column'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '16px'}}>
+              <h3>Aperçu du Bulletin</h3>
+              <button className="btn btn-outline" onClick={() => setPdfPreviewUrl(null)}>Fermer</button>
+            </div>
+            <iframe src={pdfPreviewUrl} style={{flex: 1, border: 'none', width: '100%'}} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
