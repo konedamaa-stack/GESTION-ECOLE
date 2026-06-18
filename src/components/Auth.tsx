@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import './Auth.css';
 
-type AuthMode = 'login' | 'register' | 'forgot_password' | 'student_login' | 'teacher_login';
+type AuthMode = 'login' | 'register' | 'forgot_password' | 'student_login' | 'teacher_login' | 'committee_login';
 
 export default function Auth({ onStudentLogin, onTeacherLogin, onBack }: { onStudentLogin?: (student: any) => void, onTeacherLogin?: (teacher: any) => void, onBack?: () => void }) {
   const { t } = useTranslation();
@@ -67,7 +67,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onBack }: { onStu
         if (authError) throw authError;
 
         setMessage(t('auth.register_success', 'Inscription réussie ! Veuillez vérifier votre boîte mail pour confirmer votre compte.'));
-      } else if (mode === 'login') {
+      } else if (mode === 'login' || mode === 'committee_login') {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -94,6 +94,13 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onBack }: { onStu
           <>
             <h1 className="auth-title">{t('auth.admin_title', 'Administration')}</h1>
             <p className="auth-subtitle">{t('auth.admin_subtitle', "Connectez-vous pour gérer l'établissement")}</p>
+          </>
+        );
+      case 'committee_login':
+        return (
+          <>
+            <h1 className="auth-title">Comité d'examen</h1>
+            <p className="auth-subtitle">Espace réservé au comité d'examen</p>
           </>
         );
       case 'teacher_login':
@@ -175,6 +182,11 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onBack }: { onStu
             style={{flex: 1, border: 'none', padding: '8px 4px', fontSize: '0.85rem', background: mode === 'student_login' ? 'var(--primary-color)' : 'transparent', color: mode === 'student_login' ? 'white' : 'var(--text-secondary)'}}
             onClick={() => handleModeSwitch('student_login')}
           >{t('auth.tab_student', 'Élève')}</button>
+          <button 
+            className={`btn ${mode === 'committee_login' ? 'btn-primary' : 'btn-outline'}`} 
+            style={{flex: 1, border: 'none', padding: '8px 4px', fontSize: '0.85rem', background: mode === 'committee_login' ? 'var(--primary-color)' : 'transparent', color: mode === 'committee_login' ? 'white' : 'var(--text-secondary)'}}
+            onClick={() => handleModeSwitch('committee_login')}
+          >Comité d'examen</button>
         </div>
 
         {renderContent()}
@@ -225,7 +237,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onBack }: { onStu
           ) : (
             <>
               <div className="auth-input-group">
-                <label>{t('auth.admin_email_label', 'Email Administrateur')}</label>
+                <label>{mode === 'committee_login' ? 'Email du Comité' : t('auth.admin_email_label', 'Email Administrateur')}</label>
                 <input
                   type="email"
                   className="auth-input"
@@ -253,7 +265,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onBack }: { onStu
           )}
 
           <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? t('auth.loading', 'Chargement...') : mode === 'login' || mode === 'student_login' || mode === 'teacher_login' ? t('auth.btn_login', 'Se connecter') : mode === 'register' ? t('auth.btn_register', "S'inscrire") : t('auth.btn_send_link', 'Envoyer le lien')}
+            {loading ? t('auth.loading', 'Chargement...') : mode === 'login' || mode === 'student_login' || mode === 'teacher_login' || mode === 'committee_login' ? t('auth.btn_login', 'Se connecter') : mode === 'register' ? t('auth.btn_register', "S'inscrire") : t('auth.btn_send_link', 'Envoyer le lien')}
           </button>
         </form>
 
@@ -267,7 +279,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onBack }: { onStu
                 {t('auth.register_link', "S'inscrire")}
               </button>
             </>
-          ) : mode !== 'student_login' && mode !== 'teacher_login' ? (
+          ) : mode !== 'student_login' && mode !== 'teacher_login' && mode !== 'committee_login' ? (
             <button className="auth-link" style={{ margin: '0 auto' }} onClick={() => handleModeSwitch('login')}>
               {t('auth.back_to_login', 'Retour à la connexion')}
             </button>
