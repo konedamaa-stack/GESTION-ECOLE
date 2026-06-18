@@ -531,14 +531,27 @@ function App() {
         const className = formData.get('name') as string;
         const classLevel = formData.get('level') as string;
         if (!className) return;
-        const { error } = await supabase.from('classes').insert([{ 
-          name: className, 
-          level: classLevel || 'Non défini', 
-          school_id: currentSchoolId,
-          tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : 0
+        
+        let error;
+        if (editEntity) {
+          const { error: updateError } = await supabase.from('classes').update({
+            name: className, 
+            level: classLevel || 'Non défini', 
+            tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : 0
+          }).eq('id', editEntity.id);
+          error = updateError;
+        } else {
+          const { error: insertError } = await supabase.from('classes').insert([{ 
+            name: className, 
+            level: classLevel || 'Non défini', 
+            school_id: currentSchoolId,
+            tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : 0
           }]);
+          error = insertError;
+        }
+        
         if (error) throw error;
-        alert("Classe créée avec succès !");
+        alert(editEntity ? "Classe modifiée avec succès !" : "Classe créée avec succès !");
         fetchClasses();
         closeModal();
         return;
@@ -1356,7 +1369,50 @@ function App() {
         </div>
       </div>
 
-      <div className="panel delay-300">
+      <div className="panel delay-300" style={{marginBottom: '24px'}}>
+        <div className="panel-header">
+          <h3 className="panel-title">Gestion des Classes</h3>
+          <button className="btn btn-primary" onClick={() => { setEditEntity(null); setActiveModal('class'); }}>
+            <Icons.Plus /> {t('admin.pedagogy.btn_new_class', 'Nouvelle Classe')}
+          </button>
+        </div>
+        <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
+          <thead>
+            <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Classe</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Niveau</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Scolarité (FCFA)</th>
+              <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {classesData && classesData.length > 0 ? classesData.map((cls, i) => (
+              <tr key={cls.id} style={{borderBottom: '1px solid var(--border-color)'}}>
+                <td style={{padding: '16px 0', fontWeight: 600}}>{cls.name}</td>
+                <td style={{padding: '16px 0'}}>{cls.level}</td>
+                <td style={{padding: '16px 0'}}>{formatNum(cls.tuition_fee || 0)}</td>
+                <td style={{padding: '16px 0', textAlign: 'right'}}>
+                  <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(cls); setActiveModal('class'); }}>
+                    <Icons.Settings /> {t('admin.pedagogy.btn_edit', 'Modifier')}
+                  </button>
+                  <button className="btn btn-outline" style={{padding: '6px 12px', color: 'var(--danger-color)', borderColor: 'var(--danger-color)'}} onClick={async () => {
+                    if (window.confirm("Voulez-vous vraiment supprimer cette classe ? Cette action est irréversible et supprimera tous les liens avec les élèves !")) {
+                      await supabase.from('classes').delete().eq('id', cls.id);
+                      fetchClasses();
+                    }
+                  }}>
+                    <Icons.Trash />
+                  </button>
+                </td>
+              </tr>
+            )) : (
+              <tr><td colSpan={4} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucune classe enregistrée.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="panel delay-400">
         <div className="panel-header">
           <h3 className="panel-title">{t('admin.pedagogy.panel_title', 'Prochaines Évaluations')}</h3>
         </div>
@@ -3030,11 +3086,11 @@ function App() {
                 <form onSubmit={handleFormSubmit}>
                   <div className="form-group">
                     <label>{t('admin.modals.class_name', 'Nom de la classe')}</label>
-                    <input type="text" name="name" className="form-input" placeholder="Ex: 6ème A, Terminale S1" required />
+                    <input type="text" name="name" className="form-input" placeholder="Ex: 6ème A, Terminale S1" required defaultValue={editEntity?.name || ''} />
                   </div>
                   <div className="form-group">
                     <label>{t('admin.modals.class_level', 'Niveau')}</label>
-                    <select name="level" className="form-select" required>
+                    <select name="level" className="form-select" required defaultValue={editEntity?.level || 'Collège'}>
                       <option value="Maternelle">Maternelle</option>
                       <option value="Primaire">Primaire</option>
                       <option value="Collège">Collège</option>
@@ -3044,11 +3100,11 @@ function App() {
                   </div>
                   <div className="form-group">
                     <label>Scolarité annuelle par défaut (FCFA)</label>
-                    <input type="number" name="tuition_fee" className="form-input" placeholder="Ex: 500000" />
+                    <input type="number" name="tuition_fee" className="form-input" placeholder="Ex: 500000" defaultValue={editEntity?.tuition_fee || ''} />
                   </div>
-                  <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
+                  <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
-                    <button type="submit" className="btn btn-primary">{t('admin.modals.create', 'Créer la classe')}</button>
+                    <button type="submit" className="btn btn-primary">{editEntity ? t('admin.modals.save', 'Sauvegarder') : t('admin.modals.create', 'Créer la classe')}</button>
                   </div>
                 </form>
               )}
