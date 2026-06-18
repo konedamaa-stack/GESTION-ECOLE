@@ -571,8 +571,13 @@ html {
   }
   .modal-overlay {
     background: white !important;
-    position: static !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
     padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    height: auto !important;
   }
   .modal-content {
     background: transparent !important;
@@ -580,6 +585,15 @@ html {
     padding: 0 !important;
     max-width: none !important;
     width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: block !important;
+    border: none !important;
+    transform: none !important;
+  }
+  .modal-body {
+    overflow: visible !important;
+    height: auto !important;
   }
 }
 
