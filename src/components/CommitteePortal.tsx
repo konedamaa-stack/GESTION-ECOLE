@@ -202,7 +202,7 @@ export default function CommitteePortal({ session, onLogout }: { session: any; o
     doc.setFont("helvetica", "normal");
     doc.text("Le Comité d'examen", pageWidth - 50, finalY + 30);
     
-    doc.save(`Bulletin_${student.matricule}_${period}.pdf`);
+    window.open(doc.output('bloburl'), '_blank');
   };
 
   return (

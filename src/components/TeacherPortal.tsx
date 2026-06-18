@@ -256,7 +256,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     doc.setFont("helvetica", "normal");
     doc.text("Le Professeur principal", pageWidth - 50, finalY + 30);
     
-    doc.save(`Bulletin_${student.matricule}_${period}.pdf`);
+    window.open(doc.output('bloburl'), '_blank');
   };
   return (
     <div className="student-portal">

@@ -118,7 +118,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
     doc.text(t('student.director', "Le Directeur"), pageWidth - 50, finalY + 30);
     doc.text(settings?.director_name || "", pageWidth - 50, finalY + 45);
 
-    doc.save(`Bulletin_${student.matricule}_${period}.pdf`);
+    window.open(doc.output('bloburl'), '_blank');
   };
 
   const days = [t('student.monday', 'Lundi'), t('student.tuesday', 'Mardi'), t('student.wednesday', 'Mercredi'), t('student.thursday', 'Jeudi'), t('student.friday', 'Vendredi'), t('student.saturday', 'Samedi')];
