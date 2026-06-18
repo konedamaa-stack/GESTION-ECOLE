@@ -10,6 +10,13 @@ export default function CommitteePortal({ session, onLogout }: { session: any; o
   const [evaluations, setEvaluations] = useState<any[]>([]);
   const [grades, setGrades] = useState<any[]>([]);
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [showEvalForm, setShowEvalForm] = useState(false);
+  const [newEval, setNewEval] = useState({ name: '', period: 'Trimestre 1', max_score: 20 });
+  const [selectedEval, setSelectedEval] = useState<string | null>(null);
+  const [savingGrades, setSavingGrades] = useState(false);
+  const [editingGrades, setEditingGrades] = useState<Record<string, { score: number | '', comment: string }>>({});
   const [settings, setSettings] = useState<any>(null);
 
   useEffect(() => {
@@ -31,6 +38,86 @@ export default function CommitteePortal({ session, onLogout }: { session: any; o
 
     const { data: set } = await supabase.from('school_settings').select('*').limit(1).single();
     if (set) setSettings(set);
+  };
+
+  
+  const subjects = [
+    'Mathématiques', 'Français', 'Histoire-Géographie', 
+    'Anglais', 'Physique-Chimie', 'SVT', 
+    'EPS', 'Philosophie', 'Espagnol', 'Allemand'
+  ];
+
+  const handleCreateEval = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedClass || !selectedSubject) return;
+    try {
+      const { data, error } = await supabase.from('evaluations').insert([{
+        ...newEval,
+        class_id: selectedClass,
+        subject: selectedSubject,
+        school_id: session.school_id
+      }]).select();
+      
+      if (error) throw error;
+      
+      if (data) {
+        setEvaluations([data[0], ...evaluations]);
+        setShowEvalForm(false);
+        setSelectedEval(data[0].id);
+        setNewEval({ name: '', period: 'Trimestre 1', max_score: 20 });
+      }
+    } catch (error: any) {
+      alert("Erreur lors de la création : " + error.message);
+    }
+  };
+
+  const loadGradesForEval = (evalId: string) => {
+    const currentGrades = grades.filter(g => g.evaluation_id === evalId);
+    const gradesMap: Record<string, { score: number | '', comment: string }> = {};
+    
+    currentGrades.forEach(g => {
+      gradesMap[g.student_id] = {
+        score: g.score,
+        comment: g.comment || ''
+      };
+    });
+    
+    setEditingGrades(gradesMap);
+    setSelectedEval(evalId);
+  };
+
+  const handleGradeChange = (studentId: string, field: 'score' | 'comment', value: any) => {
+    setEditingGrades(prev => ({
+      ...prev,
+      [studentId]: {
+        ...prev[studentId],
+        [field]: value
+      }
+    }));
+  };
+
+  const saveGrades = async () => {
+    if (!selectedEval) return;
+    setSavingGrades(true);
+    try {
+      const updates = Object.keys(editingGrades).map(studentId => ({
+        evaluation_id: selectedEval,
+        student_id: studentId,
+        score: editingGrades[studentId].score === '' ? null : Number(editingGrades[studentId].score),
+        comment: editingGrades[studentId].comment,
+        school_id: session.school_id
+      }));
+
+      const { error } = await supabase.from('grades').upsert(updates, { onConflict: 'evaluation_id,student_id' });
+      if (error) throw error;
+
+      alert("Notes enregistrées avec succès");
+      fetchData(); // reload
+    } catch (error: any) {
+      alert("Erreur lors de l'enregistrement : " + error.message);
+    } finally {
+      setSavingGrades(false);
+    }
   };
 
   const getFilteredStudents = () => {
@@ -138,7 +225,15 @@ export default function CommitteePortal({ session, onLogout }: { session: any; o
       </header>
 
       <main style={{padding: '32px', maxWidth: '1200px', margin: '0 auto'}}>
-        <div style={{background: 'var(--surface-color)', padding: '24px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: '24px'}}>
+
+        <div style={{display: 'flex', gap: '16px', marginBottom: '24px'}}>
+          <button className={`btn ${activeTab === 'dashboard' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('dashboard')}>Tableau de bord / Bulletins</button>
+          <button className={`btn ${activeTab === 'evaluations' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('evaluations')}>Saisie des Notes</button>
+        </div>
+
+        {activeTab === 'dashboard' && (
+          <div>
+          <div style={{background: 'var(--surface-color)', padding: '24px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: '24px'}}>
           <h2 style={{marginTop: 0, marginBottom: '20px'}}>Filtres</h2>
           <div style={{display: 'flex', gap: '16px'}}>
             <div style={{flex: 1}}>
@@ -196,6 +291,146 @@ export default function CommitteePortal({ session, onLogout }: { session: any; o
             </tbody>
           </table>
         </div>
+        </div>
+        )}
+
+        {/* EVALUATIONS TAB */}
+        {activeTab === 'evaluations' && (
+          <div>
+            <div style={{background: 'var(--surface-color)', padding: '24px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: '24px', display: 'flex', gap: '16px'}}>
+              <div style={{flex: 1}}>
+                <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Classe</label>
+                <select className="input-field" value={selectedClass || ''} onChange={(e) => setSelectedClass(e.target.value || null)} style={{width: '100%'}}>
+                  <option value="">-- Choisir une classe --</option>
+                  {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div style={{flex: 1}}>
+                <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Matière</label>
+                <select className="input-field" value={selectedSubject || ''} onChange={(e) => setSelectedSubject(e.target.value || null)} style={{width: '100%'}}>
+                  <option value="">-- Choisir une matière --</option>
+                  {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {selectedClass && selectedSubject ? (
+              <div style={{display: 'flex', gap: '24px'}}>
+                <div style={{width: '300px'}}>
+                  <div style={{background: 'var(--surface-color)', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)'}}>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
+                      <h3 style={{margin: 0}}>Évaluations</h3>
+                      <button className="btn btn-primary" style={{padding: '4px 8px', fontSize: '0.85rem'}} onClick={() => setShowEvalForm(!showEvalForm)}>
+                        {showEvalForm ? 'Fermer' : 'Nouvelle'}
+                      </button>
+                    </div>
+
+                    {showEvalForm && (
+                      <form onSubmit={handleCreateEval} style={{background: '#f8f9fa', padding: '16px', borderRadius: '8px', marginBottom: '16px'}}>
+                        <div style={{marginBottom: '12px'}}>
+                          <label style={{display: 'block', fontSize: '0.85rem', marginBottom: '4px'}}>Nom</label>
+                          <input type="text" className="input-field" required value={newEval.name} onChange={e => setNewEval({...newEval, name: e.target.value})} placeholder="Ex: Devoir 1" style={{width: '100%', padding: '6px'}} />
+                        </div>
+                        <div style={{marginBottom: '12px'}}>
+                          <label style={{display: 'block', fontSize: '0.85rem', marginBottom: '4px'}}>Période</label>
+                          <select className="input-field" value={newEval.period} onChange={e => setNewEval({...newEval, period: e.target.value})} style={{width: '100%', padding: '6px'}}>
+                            <option>Trimestre 1</option>
+                            <option>Trimestre 2</option>
+                            <option>Trimestre 3</option>
+                          </select>
+                        </div>
+                        <div style={{marginBottom: '16px'}}>
+                          <label style={{display: 'block', fontSize: '0.85rem', marginBottom: '4px'}}>Sur</label>
+                          <input type="number" className="input-field" required min="1" max="100" value={newEval.max_score} onChange={e => setNewEval({...newEval, max_score: parseInt(e.target.value)})} style={{width: '100%', padding: '6px'}} />
+                        </div>
+                        <button type="submit" className="btn btn-primary" style={{width: '100%'}}>Créer</button>
+                      </form>
+                    )}
+
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                      {evaluations.filter(e => e.class_id === selectedClass && e.subject === selectedSubject).map(ev => (
+                        <div 
+                          key={ev.id} 
+                          onClick={() => loadGradesForEval(ev.id)}
+                          style={{padding: '12px', borderRadius: '8px', border: selectedEval === ev.id ? '2px solid var(--primary-color)' : '1px solid var(--border-color)', background: selectedEval === ev.id ? '#eff6ff' : 'white', cursor: 'pointer'}}
+                        >
+                          <div style={{fontWeight: 600, fontSize: '0.95rem'}}>{ev.name}</div>
+                          <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>{ev.period} • Sur {ev.max_score}</div>
+                        </div>
+                      ))}
+                      {evaluations.filter(e => e.class_id === selectedClass && e.subject === selectedSubject).length === 0 && !showEvalForm && (
+                        <div style={{textAlign: 'center', padding: '24px', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>Aucune évaluation</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{flex: 1}}>
+                  {selectedEval ? (
+                    <div style={{background: 'var(--surface-color)', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', overflow: 'hidden'}}>
+                      <div style={{padding: '16px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8f9fa'}}>
+                        <h3 style={{margin: 0}}>Saisie des notes - {evaluations.find(e => e.id === selectedEval)?.name}</h3>
+                        <button className="btn btn-primary" onClick={saveGrades} disabled={savingGrades}>
+                          {savingGrades ? 'Enregistrement...' : 'Enregistrer les notes'}
+                        </button>
+                      </div>
+                      <div style={{padding: '0'}}>
+                        <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                          <thead>
+                            <tr style={{background: 'var(--background-color)'}}>
+                              <th style={{padding: '12px 24px', textAlign: 'left', borderBottom: '1px solid var(--border-color)'}}>Élève</th>
+                              <th style={{padding: '12px 24px', textAlign: 'left', borderBottom: '1px solid var(--border-color)', width: '150px'}}>Note (/{evaluations.find(e => e.id === selectedEval)?.max_score})</th>
+                              <th style={{padding: '12px 24px', textAlign: 'left', borderBottom: '1px solid var(--border-color)'}}>Appréciation</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {getFilteredStudents().map(student => (
+                              <tr key={student.id} style={{borderBottom: '1px solid var(--border-color)'}}>
+                                <td style={{padding: '12px 24px'}}>{student.last_name.toUpperCase()} {student.first_name}</td>
+                                <td style={{padding: '12px 24px'}}>
+                                  <input 
+                                    type="number" 
+                                    className="input-field"
+                                    style={{width: '100px'}}
+                                    min="0" 
+                                    max={evaluations.find(e => e.id === selectedEval)?.max_score || 20}
+                                    step="0.25"
+                                    value={editingGrades[student.id]?.score !== undefined ? editingGrades[student.id].score : ''}
+                                    onChange={(e) => handleGradeChange(student.id, 'score', e.target.value)}
+                                  />
+                                </td>
+                                <td style={{padding: '12px 24px'}}>
+                                  <input 
+                                    type="text" 
+                                    className="input-field"
+                                    style={{width: '100%'}}
+                                    placeholder="Ex: Bon travail"
+                                    value={editingGrades[student.id]?.comment || ''}
+                                    onChange={(e) => handleGradeChange(student.id, 'comment', e.target.value)}
+                                  />
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{background: 'var(--surface-color)', padding: '64px', borderRadius: '12px', textAlign: 'center', color: 'var(--text-secondary)'}}>
+                      <h3>Sélectionnez une évaluation</h3>
+                      <p>Choisissez une évaluation dans la liste à gauche pour commencer la saisie.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div style={{background: 'var(--surface-color)', padding: '64px', borderRadius: '12px', textAlign: 'center', color: 'var(--text-secondary)'}}>
+                <h3>Aucune sélection</h3>
+                <p>Veuillez choisir une classe et une matière pour gérer les évaluations.</p>
+              </div>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
