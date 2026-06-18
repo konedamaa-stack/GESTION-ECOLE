@@ -2693,11 +2693,11 @@ function App() {
     }} />;
   }
 
-    if (currentView === 'landing' && !session && !studentSession && !teacherSession) {
+    if (currentView === 'landing' && !session && !studentSession && !teacherSession && !committeeSession) {
     return <LandingPage onLoginClick={() => setCurrentView('app')} onSuperAdminClick={() => { setIsSuperAdminFlow(true); setCurrentView('app'); }} />;
   }
 
-  if (!session && !studentSession && !teacherSession) {
+  if (!session && !studentSession && !teacherSession && !committeeSession) {
     if (isSuperAdminFlow) {
       return <SuperAdminAuth onBack={() => { setIsSuperAdminFlow(false); setCurrentView('landing'); }} />;
     }
