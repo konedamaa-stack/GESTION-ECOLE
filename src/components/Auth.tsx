@@ -13,6 +13,8 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [pendingProfiles, setPendingProfiles] = useState<any[] | null>(null);
+  const [pendingMode, setPendingMode] = useState<AuthMode | null>(null);
 
   const handleModeSwitch = (newMode: AuthMode) => {
     setMode(newMode);
@@ -33,7 +35,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
         const identifier = email.trim();
         const { data: students, error } = await supabase
           .from('students')
-          .select('*')
+          .select('*, schools(name)')
           .eq('matricule', identifier.toUpperCase())
           .eq('password', password);
         
@@ -41,19 +43,31 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
         if (!students || students.length === 0) {
           throw new Error(t('auth.invalid_credentials', "Email ou mot de passe incorrect."));
         }
+        if (students.length > 1) {
+          setPendingProfiles(students);
+          setPendingMode(mode);
+          setLoading(false);
+          return;
+        }
         if (onStudentLogin) {
           onStudentLogin(students[0]);
         }
       } else if (mode === 'teacher_login') {
         const { data: teachers, error } = await supabase
           .from('teachers')
-          .select('*')
+          .select('*, schools(name)')
           .eq('email', email)
           .eq('password', password);
         
         if (error) throw error;
         if (!teachers || teachers.length === 0) {
           throw new Error(t('auth.invalid_credentials', "Email ou mot de passe incorrect."));
+        }
+        if (teachers.length > 1) {
+          setPendingProfiles(teachers);
+          setPendingMode(mode);
+          setLoading(false);
+          return;
         }
         if (onTeacherLogin) {
           onTeacherLogin(teachers[0]);
@@ -70,13 +84,19 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
       } else if (mode === 'committee_login') {
         const { data: committee, error } = await supabase
           .from('committee_members')
-          .select('*')
+          .select('*, schools(name)')
           .eq('email', email)
           .eq('password', password);
         
         if (error) throw error;
         if (!committee || committee.length === 0) {
           throw new Error(t('auth.invalid_credentials', "Email ou mot de passe incorrect."));
+        }
+        if (committee.length > 1) {
+          setPendingProfiles(committee);
+          setPendingMode(mode);
+          setLoading(false);
+          return;
         }
         if (onCommitteeLogin) {
           onCommitteeLogin(committee[0]);
@@ -147,6 +167,41 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
         );
     }
   };
+
+  if (pendingProfiles) {
+    return (
+      <div className="auth-container">
+        <div className="auth-card">
+          <h1 className="auth-title">Sélectionnez votre établissement</h1>
+          <p className="auth-subtitle">Votre compte est associé à plusieurs établissements. Veuillez choisir celui auquel vous souhaitez vous connecter.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '24px' }}>
+            {pendingProfiles.map(profile => (
+              <button 
+                key={profile.id} 
+                className="btn btn-outline" 
+                style={{ textAlign: 'left', padding: '16px', justifyContent: 'flex-start' }}
+                onClick={() => {
+                  if (pendingMode === 'teacher_login' && onTeacherLogin) onTeacherLogin(profile);
+                  if (pendingMode === 'committee_login' && onCommitteeLogin) onCommitteeLogin(profile);
+                  if (pendingMode === 'student_login' && onStudentLogin) onStudentLogin(profile);
+                  setPendingProfiles(null);
+                }}
+              >
+                <div style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '4px' }}>
+                  {profile.schools?.name || 'Établissement inconnu'}
+                </div>
+                {profile.role && <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Rôle : {profile.role}</div>}
+                {profile.subject && <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Matière : {profile.subject}</div>}
+              </button>
+            ))}
+          </div>
+          <button className="auth-link" style={{ margin: '24px auto 0', display: 'block' }} onClick={() => setPendingProfiles(null)}>
+            Annuler
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="auth-container">
