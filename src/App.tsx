@@ -100,6 +100,7 @@ function App() {
   const [bulletinGrades, setBulletinGrades] = useState<any[]>([]);
 
   const [classSubjectsData, setClassSubjectsData] = useState<any[]>([]);
+  const [customSubjects, setCustomSubjects] = useState<string[]>([]);
   const fetchClassSubjects = async () => {
     if (!currentSchoolId) return;
     const { data } = await supabase.from('class_subjects').select('*').eq('school_id', currentSchoolId);
@@ -116,7 +117,7 @@ function App() {
     const formData = new FormData(e.target);
     const class_id = bulletinClassId;
     
-    const standardSubjects = ["Mathématiques", "Français", "Anglais", "Histoire-Géographie", "Physique-Chimie", "SVT", "EPS", "Philosophie", "Informatique", "Espagnol", "Allemand", "Arts Plastiques", "Éducation Musicale"];
+    const standardSubjects = allSubjects;
     
     const upserts = [];
     for (const subj of standardSubjects) {
@@ -976,6 +977,15 @@ function App() {
     }
   };
 
+  
+  const defaultSubjects = ["Mathématiques", "Français", "Anglais", "Histoire-Géographie", "Physique-Chimie", "SVT", "EPS", "Philosophie", "Informatique", "Espagnol", "Allemand", "Arts Plastiques", "Éducation Musicale"];
+  const allSubjects = Array.from(new Set([
+    ...defaultSubjects,
+    ...customSubjects,
+    ...classSubjectsData.map(cs => cs.subject),
+    ...teachersData.flatMap(t => t.subject ? t.subject.split(',').map((s: string) => s.trim()) : [])
+  ])).filter(Boolean).sort();
+  
   const renderDashboard = () => {
     // Computing Dynamic Data
     const totalStudents = studentsData.length;
@@ -3387,7 +3397,7 @@ function App() {
                     <div className="form-group">
                       <label>{t('admin.modals.taught_subject', 'Matières enseignées')}</label>
                       <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', maxHeight: '150px', overflowY: 'auto', border: '1px solid var(--border-color)', padding: '10px', borderRadius: '8px'}}>
-                        {["Mathématiques", "Français", "Anglais", "Histoire-Géographie", "Physique-Chimie", "SVT", "EPS", "Philosophie", "Informatique", "Espagnol", "Allemand", "Arts Plastiques", "Éducation Musicale"].map(subj => (
+                        {allSubjects.map(subj => (
                           <label key={subj} style={{display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, fontWeight: 'normal'}}>
                             <input type="checkbox" name="subject" value={subj} defaultChecked={editEntity?.subject?.includes(subj)} />
                             {subj}
@@ -3395,6 +3405,27 @@ function App() {
                         ))}
                       </div>
                       <small style={{color: '#64748b', fontSize: '0.8rem'}}>Vous pouvez cocher plusieurs matières.</small>
+  <div style={{marginTop: '10px', display: 'flex', gap: '8px'}}>
+    <input type="text" className="form-input" placeholder="Ajouter une autre matière..." id="customSubjectInput" onKeyDown={(e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = e.currentTarget.value.trim();
+        if (val && !allSubjects.includes(val)) {
+          setCustomSubjects([...customSubjects, val]);
+        }
+        e.currentTarget.value = '';
+      }
+    }} />
+    <button type="button" className="btn btn-primary" onClick={() => {
+      const input = document.getElementById('customSubjectInput') as HTMLInputElement;
+      const val = input ? input.value.trim() : '';
+      if (val && !allSubjects.includes(val)) {
+        setCustomSubjects([...customSubjects, val]);
+      }
+      if(input) input.value = '';
+    }}>Ajouter</button>
+  </div>
+
                     </div>
                   )}
                   {activeModal === 'employee' && (
@@ -3455,7 +3486,7 @@ function App() {
                 <form onSubmit={handleSaveCoefficients}>
                   <p style={{marginBottom: '20px', color: 'var(--text-secondary)'}}>Définissez les coefficients pour chaque matière. Laissez à 1 si vous n'utilisez pas de coefficients.</p>
                   <div className="form-grid" style={{maxHeight: '50vh', overflowY: 'auto', paddingRight: '10px'}}>
-                    {["Mathématiques", "Français", "Anglais", "Histoire-Géographie", "Physique-Chimie", "SVT", "EPS", "Philosophie", "Informatique", "Espagnol", "Allemand", "Arts Plastiques", "Éducation Musicale"].map(subj => {
+                    {allSubjects.map(subj => {
                       const existing = classSubjectsData.find(cs => cs.class_id === bulletinClassId && cs.subject === subj);
                       return (
                         <div key={subj} className="form-group" style={{marginBottom: '10px'}}>
