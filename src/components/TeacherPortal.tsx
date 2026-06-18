@@ -58,7 +58,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     if (students) setStudentsData(students);
 
     // Fetch school settings
-    const { data: set } = await supabase.from('school_settings').select('*').limit(1).single();
+    const { data: set } = await supabase.from('school_settings').select('*').eq('school_id', session.school_id).limit(1).single();
     if (set) setSettings(set);
     // Fetch grades
     const { data: grades } = await supabase.from('grades').select('*').eq('school_id', session.school_id);

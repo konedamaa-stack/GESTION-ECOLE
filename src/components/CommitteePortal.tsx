@@ -25,19 +25,19 @@ export default function CommitteePortal({ session, onLogout }: { session: any; o
   }, [session]);
 
   const fetchData = async () => {
-    const { data: cls } = await supabase.from('classes').select('*').order('name');
+    const { data: cls } = await supabase.from('classes').select('*').eq('school_id', session.school_id).order('name');
     if (cls) setClasses(cls);
 
-    const { data: st } = await supabase.from('students').select('*').order('last_name');
+    const { data: st } = await supabase.from('students').select('*').eq('school_id', session.school_id).order('last_name');
     if (st) setStudents(st);
 
-    const { data: evals } = await supabase.from('evaluations').select('*').order('date', { ascending: false });
+    const { data: evals } = await supabase.from('evaluations').select('*').eq('school_id', session.school_id).order('date', { ascending: false });
     if (evals) setEvaluations(evals);
 
-    const { data: grad } = await supabase.from('grades').select('*');
+    const { data: grad } = await supabase.from('grades').select('*').eq('school_id', session.school_id);
     if (grad) setGrades(grad);
 
-    const { data: set } = await supabase.from('school_settings').select('*').limit(1).single();
+    const { data: set } = await supabase.from('school_settings').select('*').eq('school_id', session.school_id).limit(1).single();
     if (set) setSettings(set);
   };
 

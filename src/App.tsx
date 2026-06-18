@@ -356,11 +356,11 @@ function App() {
     if (data) setInvoicesData(data);
   };
   const fetchAbsences = async () => {
-    const { data } = await supabase.from('absences').select(`*, students ( first_name, last_name, classes(name) )`);
+    const { data } = await supabase.from('absences').select(`*, students ( first_name, last_name, classes(name) )`).eq('school_id', currentSchoolId);
     if (data) setAbsencesData(data);
   };
   const fetchSchedules = async () => {
-    const { data } = await supabase.from('schedules').select(`*, classes(name), teachers(first_name, last_name)`);
+    const { data } = await supabase.from('schedules').select(`*, classes(name), teachers(first_name, last_name)`).eq('school_id', currentSchoolId);
     if (data) setSchedulesData(data);
   };
 
@@ -422,7 +422,7 @@ function App() {
     if (data) setStudentDocumentsData(data);
   };
   const fetchEvaluations = async () => {
-    const { data } = await supabase.from('evaluations').select(`*, classes(name)`);
+    const { data } = await supabase.from('evaluations').select(`*, classes(name)`).eq('school_id', currentSchoolId);
     if (data) setEvaluationsData(data);
   };
   const fetchSettings = async () => {
