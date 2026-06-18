@@ -2974,7 +2974,7 @@ function App() {
 
       {/* Dynamic Modal Renderer */}
       {activeModal && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay">
           <div className="modal-content" style={['global_grades', 'bulletin_preview'].includes(activeModal) ? {maxWidth: '1600px', width: '98%'} : {}} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>
