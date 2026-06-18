@@ -3386,15 +3386,15 @@ function App() {
                   {activeModal === 'teacher' && (
                     <div className="form-group">
                       <label>{t('admin.modals.taught_subject', 'Matières enseignées')}</label>
-                      <input 
-                        type="text" 
-                        name="subject" 
-                        className="form-input" 
-                        placeholder="Ex: Mathématiques, Physique-Chimie..." 
-                        required 
-                        defaultValue={editEntity?.subject || ""} 
-                      />
-                      <small style={{color: '#64748b', fontSize: '0.8rem'}}>Vous pouvez écrire plusieurs matières séparées par des virgules.</small>
+                      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', maxHeight: '150px', overflowY: 'auto', border: '1px solid var(--border-color)', padding: '10px', borderRadius: '8px'}}>
+                        {["Mathématiques", "Français", "Anglais", "Histoire-Géographie", "Physique-Chimie", "SVT", "EPS", "Philosophie", "Informatique", "Espagnol", "Allemand", "Arts Plastiques", "Éducation Musicale"].map(subj => (
+                          <label key={subj} style={{display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, fontWeight: 'normal'}}>
+                            <input type="checkbox" name="subject" value={subj} defaultChecked={editEntity?.subject?.includes(subj)} />
+                            {subj}
+                          </label>
+                        ))}
+                      </div>
+                      <small style={{color: '#64748b', fontSize: '0.8rem'}}>Vous pouvez cocher plusieurs matières.</small>
                     </div>
                   )}
                   {activeModal === 'employee' && (
