@@ -51,11 +51,12 @@ export default function CommitteePortal({ session, onLogout }: { session: any; o
     e.preventDefault();
     if (!selectedClass || !selectedSubject) return;
     try {
+      const validSchoolId = session.school_id && session.school_id.length === 36 ? session.school_id : null;
       const { data, error } = await supabase.from('evaluations').insert([{
         ...newEval,
         class_id: selectedClass,
         subject: selectedSubject,
-        school_id: session.school_id
+        school_id: validSchoolId
       }]).select();
       
       if (error) throw error;
@@ -100,12 +101,13 @@ export default function CommitteePortal({ session, onLogout }: { session: any; o
     if (!selectedEval) return;
     setSavingGrades(true);
     try {
+      const validSchoolId = session.school_id && session.school_id.length === 36 ? session.school_id : null;
       const updates = Object.keys(editingGrades).map(studentId => ({
         evaluation_id: selectedEval,
         student_id: studentId,
         score: editingGrades[studentId].score === '' ? null : Number(editingGrades[studentId].score),
         comment: editingGrades[studentId].comment,
-        school_id: session.school_id
+        school_id: validSchoolId
       }));
 
       const { error } = await supabase.from('grades').upsert(updates, { onConflict: 'evaluation_id,student_id' });
