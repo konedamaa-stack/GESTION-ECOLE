@@ -297,19 +297,45 @@ export default function CommitteePortal({ session, onLogout }: { session: any; o
         {/* EVALUATIONS TAB */}
         {activeTab === 'evaluations' && (
           <div>
-            <div style={{background: 'var(--surface-color)', padding: '24px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: '24px', display: 'flex', gap: '16px'}}>
-              <div style={{flex: 1}}>
-                <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Classe</label>
-                <select className="input-field" value={selectedClass || ''} onChange={(e) => setSelectedClass(e.target.value || null)} style={{width: '100%'}}>
-                  <option value="">-- Choisir une classe --</option>
-                  {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+            <div style={{background: 'var(--surface-color)', padding: '24px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: '24px'}}>
+              <div style={{display: 'flex', gap: '16px', marginBottom: '16px'}}>
+                <div style={{flex: 1}}>
+                  <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Classe (Filtre manuel)</label>
+                  <select className="input-field" value={selectedClass || ''} onChange={(e) => setSelectedClass(e.target.value || null)} style={{width: '100%'}}>
+                    <option value="">-- Choisir une classe --</option>
+                    {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div style={{flex: 1}}>
+                  <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Matière (Filtre manuel)</label>
+                  <select className="input-field" value={selectedSubject || ''} onChange={(e) => setSelectedSubject(e.target.value || null)} style={{width: '100%'}}>
+                    <option value="">-- Choisir une matière --</option>
+                    {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
               </div>
-              <div style={{flex: 1}}>
-                <label style={{display: 'block', marginBottom: '8px', fontWeight: 500}}>Matière</label>
-                <select className="input-field" value={selectedSubject || ''} onChange={(e) => setSelectedSubject(e.target.value || null)} style={{width: '100%'}}>
-                  <option value="">-- Choisir une matière --</option>
-                  {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+              <div style={{borderTop: '1px solid var(--border-color)', paddingTop: '16px'}}>
+                <label style={{display: 'block', marginBottom: '8px', fontWeight: 600}}>Ou accès rapide aux Évaluations existantes :</label>
+                <select className="input-field" value={selectedEval || ''} onChange={(e) => {
+                  const ev = evaluations.find(x => x.id === e.target.value);
+                  if (ev) {
+                    setSelectedClass(ev.class_id);
+                    setSelectedSubject(ev.subject);
+                    loadGradesForEval(ev.id);
+                  }
+                }} style={{width: '100%'}}>
+                  <option value="">-- Parcourir toutes les évaluations existantes --</option>
+                  {classes.map(c => {
+                    const classEvals = evaluations.filter(e => e.class_id === c.id);
+                    if (classEvals.length === 0) return null;
+                    return (
+                      <optgroup key={c.id} label={`Classe: ${c.name}`}>
+                        {classEvals.map(ev => (
+                          <option key={ev.id} value={ev.id}>{ev.subject} - {ev.name} ({ev.period})</option>
+                        ))}
+                      </optgroup>
+                    );
+                  })}
                 </select>
               </div>
             </div>
