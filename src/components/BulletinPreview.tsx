@@ -8,9 +8,10 @@ interface BulletinPreviewProps {
   period: string;
   schoolInfo: any;
   classSubjects: any[];
+  schedules?: any[];
 }
 
-export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, students, evaluations, grades, period, schoolInfo, classSubjects }) => {
+export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, students, evaluations, grades, period, schoolInfo, classSubjects, schedules }) => {
   const classEvals = evaluations.filter(e => e.class_id === classData?.id && e.period === period);
   const classEvalIds = classEvals.map(e => e.id);
   const classGrades = grades.filter(g => classEvalIds.includes(g.evaluation_id));
@@ -146,11 +147,21 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
           return { tMoy, tCoef };
         };
 
+        const getTeacherName = (subject: string) => {
+          if (!schedules || schedules.length === 0) return '';
+          const sched = schedules.find(s => s.class_id === classData?.id && s.subject === subject);
+          if (sched && sched.teachers) {
+            return `${sched.teachers.first_name} ${sched.teachers.last_name}`;
+          }
+          return '';
+        };
+
         const renderSubjectRow = (s: string) => {
           const val = stats.subjects[s];
           const coef = getSubjectCoef(s);
           const total = val * coef;
           const sRank = subjectRanks[s]?.[st.id];
+          const teacherName = getTeacherName(s);
           
           return (
             <tr key={s}>
@@ -160,7 +171,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
               <td>{total.toFixed(2)}</td>
               <td>{sRank ? getRankStr(sRank) : '-'}</td>
               <td>{getAppreciation(val)}</td>
-              <td></td>
+              <td style={{fontSize: '0.75rem', color: '#475569'}}>{teacherName}</td>
               <td></td>
             </tr>
           );

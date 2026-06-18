@@ -3508,6 +3508,7 @@ function App() {
                       period={bulletinPeriod}
                       schoolInfo={adminSchools.find(s => s.id === currentSchoolId)}
                       classSubjects={classSubjectsData}
+                      schedules={schedulesData}
                     />
                   </div>
                 </div>
