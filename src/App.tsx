@@ -2055,14 +2055,14 @@ function App() {
     const tauxRecouvrementGlobal = totalAttenduGlobal > 0 ? Math.round((totalPayeGlobal / totalAttenduGlobal) * 100) : 0;
 
     // Calcul des factures filtrées pour la recherche
-    const filteredInvoices = (invoicesData || []).filter(inv => {
-      const q = invoiceSearchQuery.toLowerCase();
-      if (!q) return true;
-      return (inv.invoice_number?.toLowerCase().includes(q)) || 
-             (inv.students?.first_name?.toLowerCase().includes(q)) ||
-             (inv.students?.last_name?.toLowerCase().includes(q)) ||
-             (inv.motif?.toLowerCase().includes(q));
-    });
+        const filteredInvoices = (invoicesData || []).filter(inv => {
+        const q = invoiceSearchQuery.toLowerCase();
+        if (!q) return true;
+        return (inv.invoice_number?.toLowerCase().includes(q)) || 
+               (inv.students?.first_name?.toLowerCase().includes(q)) ||
+               (inv.students?.last_name?.toLowerCase().includes(q)) ||
+               (inv.motif?.toLowerCase().includes(q));
+      }).sort((a: any, b: any) => new Date(b.issue_date || 0).getTime() - new Date(a.issue_date || 0).getTime());
 
     return (
     <div className="animate-fade-in">
