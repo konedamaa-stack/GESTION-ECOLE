@@ -340,7 +340,7 @@ function App() {
   }, [activeModal, selectedStudent]);
 
   const fetchStudents = async () => {
-    const { data } = await supabase.from('students').select(`*, classes ( name ), student_parents(parents(first_name, last_name))`).eq('school_id', currentSchoolId);
+    const { data } = await supabase.from('students').select(`*, classes ( name, tuition_fee ), student_parents(parents(first_name, last_name))`).eq('school_id', currentSchoolId);
     if (data) setStudentsData(data);
   };
   const fetchClasses = async () => {
@@ -3664,10 +3664,16 @@ function App() {
                             invoice={selectedInvoice}
                             student={selectedStudent}
                             schoolInfo={{ ...settingsData, ...adminSchools.find(s => s.id === currentSchoolId) }}
-                            studentReste={
-                              Math.max(0, (Number(selectedStudent.tuition_fee) || Number(selectedStudent.classes?.tuition_fee) || 0) - 
-                              invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0))
-                            }
+                                                          studentReste={
+                                (() => {
+                                  const total = Number(selectedStudent.tuition_fee) || Number(selectedStudent.classes?.tuition_fee) || 0;
+                                  let paye = invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
+                                  if (selectedInvoice && selectedInvoice.status === 'Payée' && !invoicesData.some((i: any) => i.id === selectedInvoice.id)) {
+                                    paye += Number(selectedInvoice.amount) || 0;
+                                  }
+                                  return Math.max(0, total - paye);
+                                })()
+                              }
                           />
                         </div>
                       </div>
