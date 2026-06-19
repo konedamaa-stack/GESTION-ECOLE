@@ -635,17 +635,24 @@ html {
 }
 
 @media print {
-  /* Isolate Finance List */
+  /* Isolate Finance List and Finance Class Summary */
   body.print-finance-list .page-header,
   body.print-finance-list .stats-grid,
   body.print-finance-list .sidebar,
   body.print-finance-list .top-header,
-  body.print-finance-list .panel:not(#finance-list-panel) {
+  body.print-finance-list .panel:not(#finance-list-panel),
+  body.print-finance-class-summary .page-header,
+  body.print-finance-class-summary .stats-grid,
+  body.print-finance-class-summary .sidebar,
+  body.print-finance-class-summary .top-header,
+  body.print-finance-class-summary .panel:not(#finance-class-summary-panel) {
     display: none !important;
   }
   
   body.print-finance-list #finance-list-panel,
-  body.print-finance-list #finance-list-panel * {
+  body.print-finance-list #finance-list-panel *,
+  body.print-finance-class-summary #finance-class-summary-panel,
+  body.print-finance-class-summary #finance-class-summary-panel * {
     visibility: visible !important;
   }
   
@@ -653,17 +660,20 @@ html {
     display: none !important;
   }
   
-  body.print-finance-list #finance-list-panel .panel-header {
+  body.print-finance-list #finance-list-panel .panel-header,
+  body.print-finance-class-summary #finance-class-summary-panel .panel-header {
     justify-content: center !important;
   }
   
   body.print-finance-list table td, body.print-finance-list table th,
+  body.print-finance-class-summary table td, body.print-finance-class-summary table th,
   body.print-student-list table td, body.print-student-list table th {
     padding: 4px 0 !important;
     font-size: 12px !important;
   }
 
-  body.print-finance-list .finance-print-title {
+  body.print-finance-list .finance-print-title,
+  body.print-finance-class-summary .finance-class-print-title {
     text-align: center !important;
     width: 100% !important;
     margin-bottom: 0 !important;
@@ -683,7 +693,8 @@ html {
     margin-bottom: 0 !important;
   }
 
-  body.print-finance-list #finance-list-panel {
+  body.print-finance-list #finance-list-panel,
+  body.print-finance-class-summary #finance-class-summary-panel {
     display: block !important;
     position: absolute !important;
     left: 0 !important;

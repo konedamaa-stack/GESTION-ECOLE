@@ -573,21 +573,33 @@ function App() {
         const { error: updateError } = await supabase.from('students').update(studentUpdate).eq('id', editEntity.id);
         if (updateError) throw updateError;
 
+        let createdInvoice = null;
+        const invoicePayload = {
+          student_id: editEntity.id,
+          amount: formData.get('reg_fee_amount'),
+          motif: 'Frais de Réinscription',
+          payment_method: formData.get('reg_fee_method'),
+          status: formData.get('reg_fee_status'),
+          invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
+          school_id: currentSchoolId
+        };
+        
         if (formData.get('reg_fee_amount')) {
-          const invoice = {
-            student_id: editEntity.id,
-            amount: formData.get('reg_fee_amount'),
-            motif: 'Frais de Réinscription',
-            payment_method: formData.get('reg_fee_method'),
-            status: formData.get('reg_fee_status'),
-            invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
-            school_id: currentSchoolId
-          };
-          await supabase.from('invoices').insert([invoice]);
+          const { data: newInvoices } = await supabase.from('invoices').insert([invoicePayload]).select();
+          if (newInvoices && newInvoices.length > 0) createdInvoice = newInvoices[0];
         }
-        alert("Réinscription effectuée avec succès !");
+        
         fetchStudents();
-        closeModal();
+        if (formData.get('reg_fee_amount')) {
+          fetchInvoices();
+          const studentFull = studentsData.find(s => s.id === editEntity.id) || editEntity;
+          setSelectedStudent(studentFull);
+          setSelectedInvoice(createdInvoice || {...invoicePayload, id: 'temp-id', issue_date: new Date().toISOString()});
+          setActiveModal('receipt_preview');
+        } else {
+          alert("Réinscription effectuée avec succès !");
+          closeModal();
+        }
         return;
       }
 
@@ -627,6 +639,7 @@ function App() {
         
         const newStudentId = studentData[0].id;
 
+        let parentObj = null;
         if (formData.get('parent_first_name') && formData.get('parent_last_name')) {
           const parent = {
             first_name: formData.get('parent_first_name'),
@@ -634,6 +647,7 @@ function App() {
             phone: formData.get('parent_phone'),
             email: formData.get('parent_email'),
           };
+          parentObj = parent;
           const { data: parentData, error: parentError } = await supabase.from('parents').insert([{...parent, school_id: currentSchoolId}]).select();
           if (!parentError && parentData && parentData.length > 0) {
             await supabase.from('student_parents').insert([{
@@ -644,20 +658,32 @@ function App() {
           }
         }
 
+        let createdInvoice = null;
+        const invoicePayload = {
+          student_id: newStudentId,
+          amount: formData.get('reg_fee_amount'),
+          motif: 'Frais d\'inscription et Scolarité',
+          payment_method: formData.get('reg_fee_method'),
+          status: 'Payée',
+          invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
+          school_id: currentSchoolId
+        };
+
         if (formData.get('reg_fee_amount')) {
-          const invoice = {
-            student_id: newStudentId,
-            amount: formData.get('reg_fee_amount'),
-            motif: 'Frais d\'inscription et Scolarité',
-            payment_method: formData.get('reg_fee_method'),
-            status: 'Payée',
-            invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
-          };
-          await supabase.from('invoices').insert([{...invoice, school_id: currentSchoolId}]);
+          const { data: newInvoices } = await supabase.from('invoices').insert([invoicePayload]).select();
+          if (newInvoices && newInvoices.length > 0) createdInvoice = newInvoices[0];
         }
 
-        alert("Inscription réussie ! L'élève, ses parents et ses frais ont été enregistrés.");
         fetchStudents();
+        if (formData.get('reg_fee_amount')) {
+          fetchInvoices();
+          setSelectedStudent({ ...student, id: newStudentId, student_parents: parentObj ? [{ parents: parentObj }] : [] });
+          setSelectedInvoice(createdInvoice || {...invoicePayload, id: 'temp-id', issue_date: new Date().toISOString()});
+          setActiveModal('receipt_preview');
+        } else {
+          alert("Inscription réussie ! L'élève, ses parents et ses frais ont été enregistrés.");
+          closeModal();
+        }
       } 
       else if (activeModal === 'teacher') {
         if (editEntity) {
@@ -752,16 +778,22 @@ function App() {
         
         // Remove the alert so the receipt opens immediately and smoothly
         fetchInvoices();
-        if (newInvoice && newInvoice.length > 0) {
-          const studentForReceipt = studentsData.find((s: any) => s.id === studentId);
-          if (studentForReceipt) {
-            setSelectedStudent(studentForReceipt);
-          }
-          setSelectedInvoice(newInvoice[0]);
-          setActiveModal('receipt_preview');
-        } else {
-          closeModal();
+        
+        const studentForReceipt = studentsData.find((s: any) => s.id === studentId);
+        if (studentForReceipt) {
+          setSelectedStudent(studentForReceipt);
         }
+        
+        if (newInvoice && newInvoice.length > 0) {
+          setSelectedInvoice(newInvoice[0]);
+        } else {
+          // Fallback if .select() doesn't return the row due to some RLS quirk
+          setSelectedInvoice({...invoice, id: 'temp-id', issue_date: new Date().toISOString()});
+        }
+        
+        // DEBUG ALERT
+        alert("DEBUG: Le code atteint l'ouverture du reçu. Si vous voyez ce message, le reçu va s'ouvrir juste après !");
+        setActiveModal('receipt_preview');
       }
       else if (activeModal === 'schedule') {
         const schedule = {
@@ -2089,9 +2121,16 @@ function App() {
         </div>
       </div>
 
-      <div className="panel delay-200" style={{marginTop: '24px'}}>
-        <div className="panel-header">
-          <h3 className="panel-title">{t('admin.finance.panel_class_title', 'Récapitulatif par Classe')}</h3>
+      <div id="finance-class-summary-panel" className="panel delay-200" style={{marginTop: '24px'}}>
+        <div className="panel-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+          <h3 className="panel-title finance-class-print-title">{t('admin.finance.panel_class_title', 'Récapitulatif par Classe')}</h3>
+          <button className="btn btn-outline" onClick={() => {
+            document.body.classList.add('print-finance-class-summary');
+            window.print();
+            setTimeout(() => document.body.classList.remove('print-finance-class-summary'), 1000);
+          }}>
+            <Icons.Printer /> {t('admin.finance.print', 'Imprimer')}
+          </button>
         </div>
         <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
           <thead>
@@ -3147,7 +3186,7 @@ function App() {
 
                   <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
-                    <button type="submit" className="btn btn-primary">Valider la Réinscription</button>
+                    <button type="submit" className="btn btn-primary">Encaisser & Voir Reçu</button>
                   </div>
                 </form>
               )}
@@ -3249,7 +3288,7 @@ function App() {
                   </div>
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={() => { setPreselectedStudentId(null); closeModal(); }}>{t('admin.modals.cancel', 'Annuler')}</button>
-                    <button type="submit" className="btn btn-primary">{t('admin.modals.submit', 'Valider le paiement')}</button>
+                    <button type="submit" className="btn btn-primary">{t('admin.modals.submit_payment', 'Encaisser & Voir Reçu')}</button>
                   </div>
                 </form>
               )}
