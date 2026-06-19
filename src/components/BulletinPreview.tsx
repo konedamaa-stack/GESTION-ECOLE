@@ -363,10 +363,26 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
                     <p>Professeur principal</p>
                   </td>
                   <td style={{width: '33%', textAlign: 'center', verticalAlign: 'top', padding: '10px'}}>
-                    <p>Chef d'établissement</p>
-                    <p style={{marginTop: '10px'}}>Fait à {schoolInfo?.address || '..........'}, le :</p>
-                    <p style={{fontWeight: 'bold', marginTop: '5px'}}>{new Date().toLocaleDateString()}</p>
-                    <p style={{marginTop: '30px'}}>Le Directeur des Etudes</p>
+                    <div style={{display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between'}}>
+                      <div>
+                        <p style={{fontWeight: 'bold'}}>Le Chef d'établissement</p>
+                        {schoolInfo?.principal_name && (
+                          <p style={{fontSize: '0.9rem', fontStyle: 'italic', marginTop: '4px'}}>{schoolInfo.principal_name}</p>
+                        )}
+                      </div>
+                      
+                      <div style={{marginTop: '15px', marginBottom: '15px'}}>
+                        <p>Fait à {schoolInfo?.city || schoolInfo?.address || '..........'}, le :</p>
+                        <p style={{fontWeight: 'bold', marginTop: '5px'}}>{new Date().toLocaleDateString()}</p>
+                      </div>
+
+                      <div>
+                        <p style={{fontWeight: 'bold'}}>Le Directeur des Etudes</p>
+                        {schoolInfo?.studies_director_name && (
+                          <p style={{fontSize: '0.9rem', fontStyle: 'italic', marginTop: '4px'}}>{schoolInfo.studies_director_name}</p>
+                        )}
+                      </div>
+                    </div>
                   </td>
                 </tr>
               </tbody>

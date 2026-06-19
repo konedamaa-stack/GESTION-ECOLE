@@ -335,10 +335,11 @@ html {
     visibility: hidden;
   }
   .bulletins-container, .bulletins-container *,
-  .bulletin-classic-container, .bulletin-classic-container * {
+  .bulletin-classic-container, .bulletin-classic-container *,
+  .receipt-preview-container-wrapper, .receipt-preview-container-wrapper * {
     visibility: visible;
   }
-  .bulletins-container, .bulletin-classic-container {
+  .bulletins-container, .bulletin-classic-container, .receipt-preview-container-wrapper {
     position: absolute;
     left: 0;
     top: 0;

@@ -9,6 +9,7 @@ import StudentPortal from './components/StudentPortal';
 import TeacherPortal from './components/TeacherPortal';
 import CommitteePortal from './components/CommitteePortal';
 import { BulletinPreview } from './components/BulletinPreview';
+import { ReceiptPreview } from './components/ReceiptPreview';
 import { SuperAdminPortal } from './components/SuperAdminPortal';
 import { PasswordRecovery } from './components/PasswordRecovery';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -44,7 +45,8 @@ const Icons = {
   Heart: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
   CreditCard: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" strokeLinecap="round" strokeLinejoin="round" /><line x1="1" y1="10" x2="23" y2="10" strokeLinecap="round" strokeLinejoin="round" /></svg>,
   TrendingUp: () => <svg className="stat-icon" style={{color: 'var(--accent-color)', background: 'rgba(16, 185, 129, 0.1)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" strokeLinecap="round" strokeLinejoin="round"/><polyline points="17 6 23 6 23 12" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  Upload: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" strokeLinecap="round" strokeLinejoin="round"/><polyline points="17 8 12 3 7 8" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="3" x2="12" y2="15" strokeLinecap="round" strokeLinejoin="round"/></svg>
+  Upload: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" strokeLinecap="round" strokeLinejoin="round"/><polyline points="17 8 12 3 7 8" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="3" x2="12" y2="15" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  Printer: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
 };
 
 function App() {
@@ -178,6 +180,7 @@ function App() {
   const [schedulesData, setSchedulesData] = useState<any[]>([]);
   const [settingsData, setSettingsData] = useState<any | null>(null);
   const [editEntity, setEditEntity] = useState<any>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [preselectedStudentId, setPreselectedStudentId] = useState<string | null>(null);
   const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
   const [parentsData, setParentsData] = useState<any[]>([]);
@@ -353,7 +356,7 @@ function App() {
     if (data) setEmployeesData(data);
   };
   const fetchInvoices = async () => {
-    const { data } = await supabase.from('invoices').select(`*, students ( first_name, last_name, matricule )`).eq('school_id', currentSchoolId);
+    const { data } = await supabase.from('invoices').select(`*, students ( *, classes ( name ), student_parents ( parents ( first_name, last_name ) ) )`).eq('school_id', currentSchoolId);
     if (data) setInvoicesData(data);
   };
   const fetchAbsences = async () => {
@@ -459,6 +462,9 @@ function App() {
       phone: formData.get('phone'),
       email: formData.get('email'),
       director_name: formData.get('director_name'),
+      city: formData.get('city'),
+      principal_name: formData.get('principal_name'),
+      studies_director_name: formData.get('studies_director_name'),
     };
     if (currentSchoolId) settingsObj.school_id = currentSchoolId;
     
@@ -712,19 +718,50 @@ function App() {
         fetchAbsences();
       }
       else if (activeModal === 'payment') {
+        const studentId = formData.get('student_id') as string;
+        const amount = Number(formData.get('amount')) || 0;
+
+        if (amount <= 0) {
+          alert("Erreur: Le montant doit être supérieur à 0.");
+          return;
+        }
+
+        const student = studentsData.find((s: any) => s.id === studentId);
+        if (student) {
+            const studentInvoices = invoicesData.filter((inv: any) => inv.student_id === studentId);
+            const studentPaye = studentInvoices.filter((inv: any) => inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
+            const studentTotal = Number(student.tuition_fee) || Number(student.classes?.tuition_fee) || 0;
+            const studentReste = Math.max(0, studentTotal - studentPaye);
+
+            if (studentTotal > 0 && amount > studentReste) {
+                alert(`Erreur : Le montant de ce versement (${amount} FCFA) dépasse le Reste à solder de l'élève (${studentReste} FCFA). Veuillez vérifier la somme.`);
+                return;
+            }
+        }
+
         const invoice = {
-          student_id: formData.get('student_id'),
-          amount: formData.get('amount'),
+          student_id: studentId,
+          amount: amount,
           motif: formData.get('motif'),
           payment_method: formData.get('payment_method'),
           status: 'Payée',
           invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
         };
-        const { error } = await supabase.from('invoices').insert([{...invoice, school_id: currentSchoolId}]);
+        const { data: newInvoice, error } = await supabase.from('invoices').insert([{...invoice, school_id: currentSchoolId}]).select();
         if (error) throw error;
-        alert("Paiement enregistré avec succès !");
+        
+        // Remove the alert so the receipt opens immediately and smoothly
         fetchInvoices();
-        closeModal();
+        if (newInvoice && newInvoice.length > 0) {
+          const studentForReceipt = studentsData.find((s: any) => s.id === studentId);
+          if (studentForReceipt) {
+            setSelectedStudent(studentForReceipt);
+          }
+          setSelectedInvoice(newInvoice[0]);
+          setActiveModal('receipt_preview');
+        } else {
+          closeModal();
+        }
       }
       else if (activeModal === 'schedule') {
         const schedule = {
@@ -2258,6 +2295,7 @@ function App() {
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.finance.col_amount', 'Montant')}</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.finance.col_date', 'Date')}</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.finance.col_status', 'Statut')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -2283,6 +2321,16 @@ function App() {
                 <td style={{padding: '16px 0', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{new Date(row.issue_date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</td>
                 <td style={{padding: '16px 0'}}>
                   <span className={`badge ${row.status === 'Payée' ? 'badge-success' : 'badge-warning'}`}>{row.status}</span>
+                </td>
+                <td style={{padding: '16px 0', textAlign: 'right'}}>
+                  <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => {
+                    const studentFull = studentsData.find(s => s.id === row.student_id);
+                    setSelectedStudent(studentFull || row.students);
+                    setSelectedInvoice(row);
+                    setActiveModal('receipt_preview');
+                  }}>
+                    <Icons.Printer /> Imprimer
+                  </button>
                 </td>
               </tr>
             );
@@ -2604,6 +2652,18 @@ function App() {
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
                   <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{t('admin.settings.gen_address', 'Adresse')}</label>
                   <input type="text" name="address" defaultValue={settingsData?.address || ''} className="form-input" />
+                </div>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Ville de signature (ex: Abidjan)</label>
+                  <input type="text" name="city" defaultValue={settingsData?.city || ''} className="form-input" placeholder="Lieu sur le bulletin" />
+                </div>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Nom du Chef d'établissement</label>
+                  <input type="text" name="principal_name" defaultValue={settingsData?.principal_name || ''} className="form-input" placeholder="Signature gauche bulletin" />
+                </div>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Nom du Directeur des Etudes</label>
+                  <input type="text" name="studies_director_name" defaultValue={settingsData?.studies_director_name || ''} className="form-input" placeholder="Signature droite bulletin" />
                 </div>
               </div>
             </form>
@@ -2985,7 +3045,7 @@ function App() {
       {/* Dynamic Modal Renderer */}
       {activeModal && (
         <div className="modal-overlay">
-          <div className="modal-content" style={['global_grades', 'bulletin_preview'].includes(activeModal) ? {maxWidth: '1600px', width: '98%'} : {}} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={['global_grades', 'bulletin_preview', 'receipt_preview'].includes(activeModal) ? {maxWidth: '1600px', width: '98%'} : {}} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>
                 {activeModal === 'quickCreate' && t('admin.modals.quickCreate', "Menu de Création Rapide")}
@@ -3004,6 +3064,7 @@ function App() {
                 {activeModal === 'class' && t('admin.modals.class', "Créer une Classe")}
                 {activeModal === 'global_grades' && "Saisie Globale des Notes"}
    {activeModal === 'bulletin_preview' && "Aperçu des Bulletins"}
+   {activeModal === 'receipt_preview' && "Reçu de Paiement"}
    {activeModal === 'coefficients' && "Coefficients par Matière"}
               </h2>
               <button className="close-btn" onClick={closeModal}>
@@ -3530,11 +3591,48 @@ function App() {
                       evaluations={evaluationsData}
                       grades={bulletinGrades}
                       period={bulletinPeriod}
-                      schoolInfo={adminSchools.find(s => s.id === currentSchoolId)}
+                      schoolInfo={{ ...settingsData, ...adminSchools.find(s => s.id === currentSchoolId) }}
                       classSubjects={classSubjectsData}
                       schedules={schedulesData}
                     />
                   </div>
+                </div>
+              )}
+
+              {activeModal === 'receipt_preview' && (
+                <div style={{display: 'flex', flexDirection: 'column', height: '100%', gap: '20px', width: '100%'}}>
+                  {(!selectedInvoice || !selectedStudent) ? (
+                    <div style={{padding: '40px', textAlign: 'center', color: 'var(--danger-color)'}}>
+                      <h3>Impossible d'afficher le reçu</h3>
+                      <p>Les données de l'élève ou de la facture sont introuvables. Veuillez réessayer.</p>
+                      <button className="btn btn-outline" onClick={closeModal} style={{marginTop: '20px'}}>Fermer</button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="print-controls" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <div style={{color: 'var(--text-secondary)'}}>
+                          Veuillez vérifier les informations avant impression.
+                        </div>
+                        <div>
+                          <button className="btn btn-primary" onClick={() => window.print()}><Icons.Download /> Imprimer / PDF</button>
+                        </div>
+                      </div>
+                      
+                      <div className="receipt-preview-container-wrapper bulletin-preview-container" style={{ overflowY: 'auto', flex: 1, padding: '20px', background: 'var(--surface-color-hover)', borderRadius: '8px' }}>
+                        <div className="receipt-preview-printable">
+                          <ReceiptPreview 
+                            invoice={selectedInvoice}
+                            student={selectedStudent}
+                            schoolInfo={{ ...settingsData, ...adminSchools.find(s => s.id === currentSchoolId) }}
+                            studentReste={
+                              Math.max(0, (Number(selectedStudent.tuition_fee) || Number(selectedStudent.classes?.tuition_fee) || 0) - 
+                              invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0))
+                            }
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -3887,6 +3985,7 @@ function App() {
                                 <th style={{padding: '16px 0', fontWeight: 500}}>Montant</th>
                                 <th style={{padding: '16px 0', fontWeight: 500}}>Date</th>
                                 <th style={{padding: '16px 0', fontWeight: 500}}>Statut</th>
+                                <th style={{padding: '16px 0', fontWeight: 500, textAlign: 'right'}}>Action</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -3898,6 +3997,9 @@ function App() {
                                   <td style={{padding: '12px 0', color: 'var(--text-secondary)'}}>{new Date(inv.issue_date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</td>
                                   <td style={{padding: '12px 0'}}>
                                     <span className={`badge ${inv.status === 'Payée' ? 'badge-success' : 'badge-warning'}`}>{inv.status}</span>
+                                  </td>
+                                  <td style={{padding: '12px 0', textAlign: 'right'}}>
+                                    <button className="btn btn-outline" style={{padding: '4px 8px'}} onClick={() => { setSelectedInvoice(inv); setActiveModal('receipt_preview'); }}>🖨️ Imprimer</button>
                                   </td>
                                 </tr>
                               ))}
