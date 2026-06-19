@@ -596,6 +596,7 @@ function App() {
           setSelectedStudent(studentFull);
           setSelectedInvoice(createdInvoice || {...invoicePayload, id: 'temp-id', issue_date: new Date().toISOString()});
           setActiveModal('receipt_preview');
+          return;
         } else {
           alert("Réinscription effectuée avec succès !");
           closeModal();
@@ -680,6 +681,7 @@ function App() {
           setSelectedStudent({ ...student, id: newStudentId, student_parents: parentObj ? [{ parents: parentObj }] : [] });
           setSelectedInvoice(createdInvoice || {...invoicePayload, id: 'temp-id', issue_date: new Date().toISOString()});
           setActiveModal('receipt_preview');
+          return;
         } else {
           alert("Inscription réussie ! L'élève, ses parents et ses frais ont été enregistrés.");
           closeModal();
@@ -791,9 +793,8 @@ function App() {
           setSelectedInvoice({...invoice, id: 'temp-id', issue_date: new Date().toISOString()});
         }
         
-        // DEBUG ALERT
-        alert("DEBUG: Le code atteint l'ouverture du reçu. Si vous voyez ce message, le reçu va s'ouvrir juste après !");
         setActiveModal('receipt_preview');
+        return;
       }
       else if (activeModal === 'schedule') {
         const schedule = {
