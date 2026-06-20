@@ -10,6 +10,8 @@ import TeacherPortal from './components/TeacherPortal';
 import CommitteePortal from './components/CommitteePortal';
 import { BulletinPreview } from './components/BulletinPreview';
 import { ReceiptPreview } from './components/ReceiptPreview';
+import { TeacherReceiptPreview } from './components/TeacherReceiptPreview';
+import { ExpenseReceiptPreview } from './components/ExpenseReceiptPreview';
 import { SuperAdminPortal } from './components/SuperAdminPortal';
 import { PasswordRecovery } from './components/PasswordRecovery';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -175,6 +177,9 @@ function App() {
   const [classesData, setClassesData] = useState<any[]>([]);
   const [teachersData, setTeachersData] = useState<any[]>([]);
   const [employeesData, setEmployeesData] = useState<any[]>([]);
+  const [expensesData, setExpensesData] = useState<any[]>([]);
+  const [teacherPaymentsData, setTeacherPaymentsData] = useState<any[]>([]);
+  const [employeePaymentsData, setEmployeePaymentsData] = useState<any[]>([]);
   const [invoicesData, setInvoicesData] = useState<any[]>([]);
   const [absencesData, setAbsencesData] = useState<any[]>([]);
   const [schedulesData, setSchedulesData] = useState<any[]>([]);
@@ -330,6 +335,9 @@ function App() {
       fetchSchedules();
       fetchEvaluations();
       fetchSettings();
+    fetchExpenses();
+      fetchTeacherPayments();
+      fetchEmployeePayments();
     }
   }, [currentSchoolId]);
 
@@ -429,6 +437,38 @@ function App() {
     const { data } = await supabase.from('evaluations').select(`*, classes(name)`).eq('school_id', currentSchoolId);
     if (data) setEvaluationsData(data);
   };
+  const fetchTeacherPayments = async () => {
+    if (!currentSchoolId) return;
+    try {
+      const { data, error } = await supabase.from('teacher_payments').select('*').eq('school_id', currentSchoolId).order('payment_date', { ascending: false });
+      if (!error && data) setTeacherPaymentsData(data);
+    } catch (err) { console.error('Error fetching teacher payments:', err); }
+  };
+  
+  const fetchEmployeePayments = async () => {
+    if (!currentSchoolId) return;
+    try {
+      const { data, error } = await supabase.from('employee_payments').select('*').eq('school_id', currentSchoolId).order('payment_date', { ascending: false });
+      if (!error && data) setEmployeePaymentsData(data);
+    } catch (err) { console.error('Error fetching employee payments:', err); }
+  };
+
+  const fetchExpenses = async () => {
+    if (!currentSchoolId) return;
+    try {
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('*')
+        .eq('school_id', currentSchoolId)
+        .order('payment_date', { ascending: false });
+
+      if (error) throw error;
+      setExpensesData(data || []);
+    } catch (err: any) {
+      console.error('Error fetching expenses:', err);
+    }
+  };
+
   const fetchSettings = async () => {
     const { data } = await supabase.from('school_settings').select('*').eq('school_id', currentSchoolId).single();
     if (data) setSettingsData(data);
@@ -520,6 +560,75 @@ function App() {
       alert("Établissement créé avec succès !");
     } catch (error: any) {
       alert("Erreur: " + error.message);
+    }
+  };
+
+  const handleTeacherPaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentSchoolId || !editEntity) return;
+    const form = e.target as HTMLFormElement;
+    const amount = (form.elements.namedItem('amount') as HTMLInputElement).value;
+    const month = (form.elements.namedItem('month') as HTMLInputElement).value;
+    const payment_method = (form.elements.namedItem('payment_method') as HTMLSelectElement).value;
+    
+    try {
+      const { error } = await supabase.from('teacher_payments').insert([{
+        school_id: currentSchoolId,
+        teacher_id: editEntity.id,
+        amount: parseFloat(amount),
+        month,
+        payment_method,
+        payment_date: new Date().toISOString()
+      }]);
+      if (error) throw error;
+      await fetchTeacherPayments();
+      // Auto close and open receipt preview
+      setActiveModal('teacher_receipt_preview');
+    } catch(err: any) {
+      console.error('Error paying teacher:', err);
+      alert('Erreur: ' + err.message);
+    }
+  };
+
+  const handleAddExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentSchoolId) return;
+    const form = e.target as HTMLFormElement;
+    const category = (form.elements.namedItem('category') as HTMLSelectElement).value;
+    const amount = (form.elements.namedItem('amount') as HTMLInputElement).value;
+    const date = (form.elements.namedItem('date') as HTMLInputElement).value;
+    const description = (form.elements.namedItem('description') as HTMLTextAreaElement).value;
+
+    try {
+      if (editEntity) {
+        const { error } = await supabase
+          .from('expenses')
+          .update({ category, amount: parseFloat(amount), payment_date: date, description })
+          .eq('id', editEntity.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('expenses')
+          .insert([{ school_id: currentSchoolId, category, amount: parseFloat(amount), payment_date: date, description }]);
+        if (error) throw error;
+      }
+      await fetchExpenses();
+      closeModal();
+    } catch (err: any) {
+      console.error('Error saving expense:', err);
+      alert('Erreur: ' + err.message);
+    }
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette dépense ?')) return;
+    try {
+      const { error } = await supabase.from('expenses').delete().eq('id', id);
+      if (error) throw error;
+      await fetchExpenses();
+    } catch (err: any) {
+      console.error('Error deleting expense:', err);
+      alert('Erreur: ' + err.message);
     }
   };
 
@@ -1741,6 +1850,102 @@ function App() {
     </div>
   );
 
+  const renderDepenses = () => (
+    <div className="fade-in">
+      <div className="section-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
+        <div>
+          <h2 className="section-title">📉 {t('admin.expenses.title', 'Dépenses')}</h2>
+          <p className="section-subtitle">{t('admin.expenses.subtitle', 'Gérez les factures et sorties d\'argent de l\'établissement')}</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => { setEditEntity(null); setActiveModal('expense'); }}>
+          ➕ {t('admin.expenses.add', 'Nouvelle Dépense')}
+        </button>
+      </div>
+
+      
+      <div className="dashboard-grid" style={{marginBottom: '24px'}}>
+        <div className="stat-card delay-100">
+          <div className="stat-icon" style={{backgroundColor: '#fee2e2', color: '#ef4444'}}>💸</div>
+          <div className="stat-info">
+            <h3>{t('admin.expenses.total', 'Total Dépenses Courantes')}</h3>
+            <p className="stat-value">{formatNum(expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)} FCFA</p>
+          </div>
+        </div>
+        <div className="stat-card delay-100">
+          <div className="stat-icon" style={{backgroundColor: '#fef3c7', color: '#f59e0b'}}>🧑‍🏫</div>
+          <div className="stat-info">
+            <h3>Salaires Payés</h3>
+            <p className="stat-value">{formatNum(
+              (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) +
+              (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)
+            )} FCFA</p>
+          </div>
+        </div>
+        <div className="stat-card delay-200">
+          <div className="stat-icon" style={{backgroundColor: '#d1fae5', color: '#10b981'}}>💰</div>
+          <div className="stat-info">
+            <h3>Total Rentrées (Factures)</h3>
+            <p className="stat-value">{formatNum(invoicesData?.filter(i => i.status === 'Payé').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0)} FCFA</p>
+          </div>
+        </div>
+        <div className="stat-card delay-300">
+          <div className="stat-icon" style={{backgroundColor: '#e0e7ff', color: '#6366f1'}}>🏦</div>
+          <div className="stat-info">
+            <h3>Solde Caisse (Rentabilité)</h3>
+            <p className="stat-value" style={{color: (invoicesData?.filter(i => i.status === 'Payé').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) - (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) >= 0 ? '#10b981' : '#ef4444'}}>
+              {formatNum(
+                (invoicesData?.filter(i => i.status === 'Payé').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) -
+                (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
+                (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
+                (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)
+              )} FCFA
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="panel delay-200">
+        <h3 className="panel-title">{t('admin.expenses.list', 'Historique des Dépenses')}</h3>
+        <div className="table-responsive">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>{t('admin.expenses.date', 'Date')}</th>
+                <th>{t('admin.expenses.category', 'Catégorie')}</th>
+                <th>{t('admin.expenses.amount', 'Montant')}</th>
+                <th>{t('admin.expenses.description', 'Description')}</th>
+                <th style={{textAlign: 'right'}}>{t('common.actions', 'Actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {expensesData && expensesData.length > 0 ? expensesData.map((expense: any) => (
+                <tr key={expense.id}>
+                  <td>{new Date(expense.payment_date).toLocaleDateString('fr-FR')}</td>
+                  <td>
+                    <span className="badge badge-warning">{expense.category}</span>
+                  </td>
+                  <td style={{fontWeight: 'bold'}}>{formatNum(expense.amount)} FCFA</td>
+                  <td>{expense.description || '-'}</td>
+                  <td style={{textAlign: 'right'}}>
+                    <button className="btn btn-outline" style={{padding: '4px 8px', marginRight: '8px', fontSize: '0.8rem'}} title="Imprimer le reçu" onClick={() => { setEditEntity(expense); setActiveModal('expense_receipt_preview'); }}>🖨️</button>
+                    <button className="btn btn-outline" style={{padding: '4px 8px', marginRight: '8px', fontSize: '0.8rem'}} onClick={() => { setEditEntity(expense); setActiveModal('expense'); }}>✏️</button>
+                    <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem', color: '#ef4444', borderColor: '#ef4444'}} onClick={() => handleDeleteExpense(expense.id)}>🗑️</button>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={5} style={{textAlign: 'center', padding: '24px', color: 'var(--text-secondary)'}}>
+                    {t('admin.expenses.empty', 'Aucune dépense enregistrée')}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderRH = () => currentSchoolPlan !== 'Pro' ? renderPremiumOverlay(t('admin.rh.premium_title', "Ressources Humaines"), t('admin.rh.premium_desc', "Gérez les contrats, salaires et plannings de vos employés avec le plan Pro.")) : (
     <div className="animate-fade-in">
       <div className="page-header">
@@ -1844,6 +2049,7 @@ function App() {
                   <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} title="Modifier" onClick={() => { setEditEntity(row); setActiveModal('teacher'); }}>✏️</button>
                   <button className="btn btn-outline" title={row.status === 'Suspendu' ? 'Activer' : 'Suspendre'} style={{padding: '6px 12px', marginRight: '8px', color: row.status === 'Suspendu' ? 'var(--success-color)' : 'var(--error-color)', borderColor: row.status === 'Suspendu' ? 'var(--success-color)' : 'var(--error-color)'}} onClick={() => handleToggleTeacherStatus(row.id, row.status || 'Présent')}>{row.status === 'Suspendu' ? '✅' : '🚫'}</button>
                   <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => alert(`Identifiants pour ${row.first_name} ${row.last_name}:\n\nMatricule: ${row.matricule}\nMot de passe: ${row.password}`)}>{t('admin.teachers.btn_view_ids', 'Voir les identifiants')}</button>
+                  <button className="btn btn-primary" style={{padding: '6px 12px', fontSize: '0.8rem', marginLeft: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('teacher_payment'); }}>💵 Payer</button>
                 </td>
               </tr>
             )) : (
@@ -2971,6 +3177,9 @@ function App() {
           <li className={`nav-item ${activeTab === 'communication' ? 'active' : ''}`} onClick={() => { setActiveTab('communication'); setIsMobileMenuOpen(false); }}>
             <Icons.MessageSquare /> {t('admin.sidebar.communication', 'Communication')}
           </li>
+          <li className={`nav-item ${activeTab === 'depenses' ? 'active' : ''}`} onClick={() => { setActiveTab('depenses'); setIsMobileMenuOpen(false); }}>
+            <Icons.CreditCard /> {t('admin.sidebar.expenses', 'Dépenses')}
+          </li>
           <li style={{flex: 1}}></li>
           <li className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}>
             <Icons.Settings /> {t('admin.sidebar.settings', 'Paramètres')}
@@ -3074,6 +3283,7 @@ function App() {
           {activeTab === 'communication' && renderCommunication()}
           {activeTab === 'bulletins' && renderBulletins()}
           {activeTab === 'rh' && renderRH()}
+          {activeTab === 'depenses' && renderDepenses()}
           {activeTab === 'teachers' && renderTeachers()}
           {activeTab === 'parents' && renderParents()}
           {activeTab === 'scolarite' && renderScolarite()}
@@ -3639,7 +3849,50 @@ function App() {
                 </div>
               )}
 
-              {activeModal === 'receipt_preview' && (
+              {activeModal === 'expense_receipt_preview' && editEntity && (
+          <div className="modal-content fade-in" style={{maxWidth: '1600px', width: '98%'}} onClick={e => e.stopPropagation()}>
+            <div className="modal-header hide-print">
+              <h3>Aperçu du Reçu (Dépense)</h3>
+              <div style={{display: 'flex', gap: '12px'}}>
+                <button className="btn btn-primary" onClick={() => window.print()}>
+                  <Icons.Printer /> Imprimer le reçu
+                </button>
+                <button className="close-btn" onClick={closeModal}>×</button>
+              </div>
+            </div>
+            <div className="modal-body print-area">
+              <ExpenseReceiptPreview 
+                expense={editEntity} 
+                schoolInfo={settingsData} 
+              />
+            </div>
+          </div>
+        )}
+
+        {activeModal === 'teacher_receipt_preview' && editEntity && (
+          <div className="modal-content fade-in" style={{maxWidth: '1600px', width: '98%'}} onClick={e => e.stopPropagation()}>
+            <div className="modal-header hide-print">
+              <h3>Aperçu du Reçu (Professeur)</h3>
+              <div style={{display: 'flex', gap: '12px'}}>
+                <button className="btn btn-primary" onClick={() => window.print()}>
+                  <Icons.Printer /> Imprimer le reçu
+                </button>
+                <button className="close-btn" onClick={closeModal}>×</button>
+              </div>
+            </div>
+            <div className="modal-body print-area">
+              {teacherPaymentsData.filter(p => p.teacher_id === editEntity.id).length > 0 && (
+                <TeacherReceiptPreview 
+                  payment={teacherPaymentsData.filter(p => p.teacher_id === editEntity.id)[0]} 
+                  teacher={editEntity} 
+                  schoolInfo={settingsData} 
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeModal === 'receipt_preview' && (
                 <div style={{display: 'flex', flexDirection: 'column', height: '100%', gap: '20px', width: '100%'}}>
                   {(!selectedInvoice || !selectedStudent) ? (
                     <div style={{padding: '40px', textAlign: 'center', color: 'var(--danger-color)'}}>
@@ -4072,7 +4325,79 @@ function App() {
               )}
 
               {/* Schedule Form */}
-              {activeModal === 'schedule' && (
+              {activeModal === 'teacher_payment' && editEntity && (
+          <div className="modal-content fade-in" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Payer {editEntity.first_name} {editEntity.last_name}</h3>
+              <button className="close-btn" onClick={closeModal}>×</button>
+            </div>
+            <form onSubmit={handleTeacherPaymentSubmit} className="modal-body">
+              <div className="form-group">
+                <label>Montant (FCFA)</label>
+                <input type="number" name="amount" className="form-control" required defaultValue={editEntity.salary || 0} />
+              </div>
+              <div className="form-group">
+                <label>Mois (ex: Septembre 2026)</label>
+                <input type="text" name="month" className="form-control" required placeholder="Septembre 2026" />
+              </div>
+              <div className="form-group">
+                <label>Méthode de paiement</label>
+                <select name="payment_method" className="form-select">
+                  <option value="Espèces">Espèces</option>
+                  <option value="Virement">Virement</option>
+                  <option value="Mobile Money">Mobile Money</option>
+                </select>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
+                <button type="submit" className="btn btn-primary">Enregistrer le paiement</button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {activeModal === 'expense' && (
+          <div className="modal-content fade-in" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>{editEntity ? t('admin.expenses.edit_expense', 'Modifier la Dépense') : t('admin.expenses.add_expense', 'Nouvelle Dépense')}</h3>
+              <button className="close-btn" onClick={closeModal}>×</button>
+            </div>
+            <form onSubmit={handleAddExpense} className="modal-body">
+              <div className="form-group">
+                <label>{t('admin.expenses.category', 'Catégorie')}</label>
+                <select name="category" className="form-control" required defaultValue={editEntity?.category || 'Électricité'}>
+                  <option value="Électricité">Électricité</option>
+                  <option value="Eau">Eau</option>
+                  <option value="Loyer">Loyer</option>
+                  <option value="Fournitures">Fournitures</option>
+                  <option value="Entretien">Entretien</option>
+                  <option value="Salaire">Salaire (Autre)</option>
+                  <option value="Autre">Autre</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>{t('admin.expenses.amount', 'Montant (FCFA)')}</label>
+                <input type="number" name="amount" className="form-control" required min="0" step="1" defaultValue={editEntity?.amount || ''} />
+              </div>
+              <div className="form-group">
+                <label>{t('admin.expenses.date', 'Date')}</label>
+                <input type="date" name="date" className="form-control" required defaultValue={editEntity?.payment_date || new Date().toISOString().split('T')[0]} />
+              </div>
+              <div className="form-group">
+                <label>{t('admin.expenses.description', 'Description')}</label>
+                <textarea name="description" className="form-control" rows={3} defaultValue={editEntity?.description || ''} placeholder="Détails de la dépense..."></textarea>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={closeModal}>{t('common.cancel', 'Annuler')}</button>
+                <button type="submit" className="btn btn-primary">
+                  {t('common.save', 'Enregistrer')}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {activeModal === 'schedule' && (
                 <form onSubmit={handleFormSubmit}>
                   <div className="form-group">
                     <label>{t('admin.modals.class_assign', 'Classe')}</label>

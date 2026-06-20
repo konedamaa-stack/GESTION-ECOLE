@@ -1,13 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
-interface ReceiptPreviewProps {
-  invoice: any;
-  student: any;
+interface TeacherReceiptPreviewProps {
+  payment: any;
+  teacher: any;
   schoolInfo: any;
-  studentReste: number;
 }
 
-export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ invoice, student, schoolInfo, studentReste }) => {
+export const TeacherReceiptPreview: React.FC<TeacherReceiptPreviewProps> = ({ payment, teacher, schoolInfo }) => {
+  useEffect(() => {
+    // Déclenche l'impression automatiquement après un court délai pour laisser le CSS se charger
+    const timer = setTimeout(() => {
+      window.print();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const formatNum = (num: number | string) => {
     return Number(num).toLocaleString('fr-FR');
@@ -33,10 +39,10 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ invoice, student
     return convert(num).trim();
   };
 
-  const invoiceDate = new Date(invoice.issue_date);
-  const formattedDate = invoiceDate.toLocaleDateString('fr-FR');
-  const formattedTime = invoiceDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  const paymentMethod = (invoice.payment_method || '').toLowerCase();
+  const paymentDate = new Date(payment.payment_date || new Date());
+  const formattedDate = paymentDate.toLocaleDateString('fr-FR');
+  const formattedTime = paymentDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const paymentMethod = (payment.payment_method || '').toLowerCase();
 
   return (
     <div className="receipt-preview-container" style={{
@@ -70,7 +76,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ invoice, student
             <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
             <path d="M12 17V7" />
           </svg>
-          REÇU DE PAIEMENT
+          REÇU DE SALAIRE
         </h1>
         <div style={{ fontWeight: 'bold', fontSize: '11px', letterSpacing: '0.5px' }}>{schoolInfo?.name?.toUpperCase() || 'INSTITUTION ACADÉMIQUE'}</div>
         <div style={{ fontSize: '10px', marginTop: '4px' }}>{schoolInfo?.address || 'Adresse de l\'école'}</div>
@@ -80,24 +86,21 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ invoice, student
 
       {/* METADATA */}
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
-        <div style={{ color: '#000' }}>N° REÇU</div>
         <div style={{ color: '#000' }}>DATE</div>
+        <div style={{ color: '#000' }}>HEURE</div>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold' }}>
-        <div>#{invoice.invoice_number || '0000'}</div>
-        <div>{formattedDate} - {formattedTime}</div>
+        <div>{formattedDate}</div>
+        <div>{formattedTime}</div>
       </div>
 
       <hr style={{ borderTop: '2px solid black', margin: '12px 0' }} />
 
       {/* RECIPIENT */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', marginBottom: '15px' }}>
-        <span>Reçu de :</span>
-        <span style={{ fontWeight: 'bold', fontSize: '13px' }}>{(student.first_name + ' ' + student.last_name).toUpperCase()}</span>
-        <span style={{ fontSize: '11px' }}>Matricule : {student.matricule || 'N/A'}</span>
-        {student?.student_parents?.[0]?.parents && (
-          <span style={{ fontSize: '11px' }}>Parent : {(student.student_parents[0].parents.first_name + ' ' + student.student_parents[0].parents.last_name).toUpperCase()}</span>
-        )}
+        <span>Versé à :</span>
+        <span style={{ fontWeight: 'bold', fontSize: '13px' }}>{(teacher.first_name + ' ' + teacher.last_name).toUpperCase()}</span>
+        <span style={{ fontSize: '11px' }}>Mati\u00E8re : {teacher.subject || 'N/A'}</span>
       </div>
 
       {/* AMOUNT BOX */}
@@ -111,41 +114,24 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ invoice, student
         marginBottom: '15px'
       }}>
         <div style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px', letterSpacing: '1px' }}>MONTANT</div>
-        <div style={{ fontFamily: 'Arial, sans-serif', fontSize: '20px', fontWeight: 'bold' }}>{formatNum(invoice.amount)} FCFA</div>
+        <div style={{ fontFamily: 'Arial, sans-serif', fontSize: '20px', fontWeight: 'bold' }}>{formatNum(payment.amount)} FCFA</div>
       </div>
 
       {/* AMOUNT IN WORDS */}
       <div style={{ fontSize: '11px', marginBottom: '15px' }}>
         <div style={{ fontStyle: 'italic', color: '#000', marginBottom: '4px' }}>SOIT LA SOMME DE :</div>
         <div style={{ fontWeight: 'bold', letterSpacing: '0.5px', lineHeight: '1.4' }}>
-          {numberToWordsFr(Number(invoice.amount))} FRANCS CFA
+          {numberToWordsFr(Number(payment.amount))} FRANCS CFA
         </div>
       </div>
 
       <hr style={{ borderTop: '1px solid black', margin: '12px 0' }} />
 
-      {/* MOTIF */}
+      {/* MOTIF & MONTH */}
       <div style={{ fontSize: '11px', marginBottom: '15px' }}>
-        <div style={{ marginBottom: '6px' }}>Pour :</div>
-        <div style={{ fontWeight: 'bold', fontSize: '12px' }}>{invoice.motif}</div>
-      </div>
-
-      <hr style={{ borderTop: '1px solid black', margin: '12px 0' }} />
-
-      {/* SUMMARY (RESTE A PAYER) */}
-      <div style={{ fontSize: '11px', marginBottom: '15px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-          <span>Total Scolarité :</span>
-          <strong>{formatNum(Number(student.tuition_fee) || Number(student.classes?.tuition_fee) || 0)} FCFA</strong>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-          <span>Total Payé à ce jour :</span>
-          <strong>{formatNum((Number(student.tuition_fee) || Number(student.classes?.tuition_fee) || 0) - studentReste)} FCFA</strong>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed black', fontWeight: 'bold' }}>
-          <span>Reste à Payer :</span>
-          <span>{formatNum(studentReste)} FCFA</span>
-        </div>
+        <div style={{ marginBottom: '6px' }}>Mois Payé : <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{payment.month}</span></div>
+        <div style={{ marginBottom: '6px' }}>Motif :</div>
+        <div style={{ fontWeight: 'bold', fontSize: '12px' }}>{payment.motif || `Salaire ${payment.month}`}</div>
       </div>
 
       <hr style={{ borderTop: '1px solid black', margin: '12px 0' }} />
@@ -164,9 +150,12 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ invoice, student
       </div>
 
       {/* SIGNATURE SPACE */}
-      <div style={{ marginTop: '35px', display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{ marginTop: '35px', display: 'flex', justifyContent: 'space-between' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontStyle: 'italic', color: '#000', fontSize: '11px' }}>Signature / Cachet</div>
+          <div style={{ fontStyle: 'italic', color: '#000', fontSize: '11px' }}>Signature Enseignanté</div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontStyle: 'italic', color: '#000', fontSize: '11px' }}>Cachet / Dir.</div>
         </div>
       </div>
     </div>
