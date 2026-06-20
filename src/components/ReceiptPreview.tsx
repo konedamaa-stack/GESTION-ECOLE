@@ -19,7 +19,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ invoice, student
   }, []);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+    return new Intl.NumberFormat('fr-FR').format(amount) + ' F';
   };
 
   const formatDate = (dateString: string) => {

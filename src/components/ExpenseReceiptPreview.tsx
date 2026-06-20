@@ -14,7 +14,7 @@ export const ExpenseReceiptPreview: React.FC<ExpenseReceiptPreviewProps> = ({ ex
   }, []);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+    return new Intl.NumberFormat('fr-FR').format(amount) + ' F';
   };
 
   const formatDate = (dateString: string) => {

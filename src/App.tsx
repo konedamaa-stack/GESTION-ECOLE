@@ -899,7 +899,7 @@ function App() {
             const studentReste = Math.max(0, studentTotal - studentPaye);
 
             if (studentTotal > 0 && amount > studentReste) {
-                alert(`Erreur : Le montant de ce versement (${amount} FCFA) dépasse le Reste à solder de l'élève (${studentReste} FCFA). Veuillez vérifier la somme.`);
+                alert(`Erreur : Le montant de ce versement (${amount} F) dépasse le Reste à solder de l'élève (${studentReste} F). Veuillez vérifier la somme.`);
                 return;
             }
         }
@@ -1224,7 +1224,7 @@ function App() {
           <div className="stat-icon" style={{backgroundColor: '#fee2e2', color: '#ef4444'}}>💸</div>
           <div className="stat-info">
             <h3>Total Dépenses Courantes</h3>
-            <p className="stat-value">{formatNum(expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)} FCFA</p>
+            <p className="stat-value">{formatNum(expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)} F</p>
           </div>
         </div>
         <div className="stat-card delay-100">
@@ -1234,14 +1234,14 @@ function App() {
             <p className="stat-value">{formatNum(
               (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) +
               (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)
-            )} FCFA</p>
+            )} F</p>
           </div>
         </div>
         <div className="stat-card delay-200">
           <div className="stat-icon" style={{backgroundColor: '#d1fae5', color: '#10b981'}}>💰</div>
           <div className="stat-info">
             <h3>Total Rentrées (Factures)</h3>
-            <p className="stat-value">{formatNum(invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0)} FCFA</p>
+            <p className="stat-value">{formatNum(invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0)} F</p>
           </div>
         </div>
         <div className="stat-card delay-300">
@@ -1254,7 +1254,7 @@ function App() {
                 (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                 (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                 (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)
-              )} FCFA
+              )} F
             </p>
           </div>
         </div>
@@ -1641,7 +1641,7 @@ function App() {
             <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
               <th style={{padding: '12px 0', fontWeight: 500}}>Classe</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>Niveau</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Scolarité (FCFA)</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Scolarité (F)</th>
               <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>Actions</th>
             </tr>
           </thead>
@@ -1939,7 +1939,7 @@ function App() {
           <div className="stat-icon" style={{backgroundColor: '#fee2e2', color: '#ef4444'}}>💸</div>
           <div className="stat-info">
             <h3>{t('admin.expenses.total', 'Total Dépenses Courantes')}</h3>
-            <p className="stat-value">{formatNum(expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)} FCFA</p>
+            <p className="stat-value">{formatNum(expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)} F</p>
           </div>
         </div>
         <div className="stat-card delay-100">
@@ -1949,14 +1949,14 @@ function App() {
             <p className="stat-value">{formatNum(
               (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) +
               (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)
-            )} FCFA</p>
+            )} F</p>
           </div>
         </div>
         <div className="stat-card delay-200">
           <div className="stat-icon" style={{backgroundColor: '#d1fae5', color: '#10b981'}}>💰</div>
           <div className="stat-info">
             <h3>Total Rentrées (Factures)</h3>
-            <p className="stat-value">{formatNum(invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0)} FCFA</p>
+            <p className="stat-value">{formatNum(invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0)} F</p>
           </div>
         </div>
         <div className="stat-card delay-300">
@@ -1969,7 +1969,7 @@ function App() {
                 (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                 (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                 (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)
-              )} FCFA
+              )} F
             </p>
           </div>
         </div>
@@ -1995,7 +1995,7 @@ function App() {
                   <td>
                     <span className="badge badge-warning">{expense.category}</span>
                   </td>
-                  <td style={{fontWeight: 'bold'}}>{formatNum(expense.amount)} FCFA</td>
+                  <td style={{fontWeight: 'bold'}}>{formatNum(expense.amount)} F</td>
                   <td>{expense.description || '-'}</td>
                   <td style={{textAlign: 'right'}}>
                     <button className="btn btn-outline" style={{padding: '4px 8px', marginRight: '8px', fontSize: '0.8rem'}} title="Imprimer le reçu" onClick={() => { setEditEntity(expense); setActiveModal('expense_receipt_preview'); }}>🖨️</button>
@@ -2365,7 +2365,7 @@ function App() {
           </div>
           <div className="stat-value">{formatNum(totalAttenduGlobal)}</div>
           <div className="stat-trend trend-up">
-            FCFA
+            F
           </div>
         </div>
         
@@ -2376,7 +2376,7 @@ function App() {
           </div>
           <div className="stat-value">{formatNum(totalPayeGlobal)}</div>
           <div className="stat-trend trend-up">
-            FCFA
+            F
           </div>
         </div>
 
@@ -2387,7 +2387,7 @@ function App() {
           </div>
           <div className="stat-value">{formatNum(totalResteGlobal)}</div>
           <div className="stat-trend trend-down">
-            FCFA
+            F
           </div>
         </div>
 
@@ -2430,9 +2430,9 @@ function App() {
               <React.Fragment key={row.id}>
                 <tr style={{borderBottom: '1px solid var(--border-color)', cursor: 'pointer', background: expandedClassId === row.id ? 'var(--surface-color-hover)' : 'transparent'}} onClick={() => setExpandedClassId(expandedClassId === row.id ? null : row.id)}>
                   <td style={{padding: '16px 0', fontWeight: 600}}>{row.className}</td>
-                  <td style={{padding: '16px 0', fontWeight: 'bold'}}>{formatNum(row.total)} FCFA</td>
-                  <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--success-color)'}}>{formatNum(row.paye)} FCFA</td>
-                  <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--danger-color)'}}>{formatNum(row.nonPaye)} FCFA</td>
+                  <td style={{padding: '16px 0', fontWeight: 'bold'}}>{formatNum(row.total)} F</td>
+                  <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--success-color)'}}>{formatNum(row.paye)} F</td>
+                  <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--danger-color)'}}>{formatNum(row.nonPaye)} F</td>
                   <td style={{padding: '16px 0'}}>
                     <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
                       <div style={{flex: 1, background: 'var(--surface-color-hover)', height: '8px', borderRadius: '4px', overflow: 'hidden'}}>
@@ -2575,9 +2575,9 @@ function App() {
                       <td style={{padding: '16px 0', fontFamily: 'monospace', color: 'var(--primary-color)'}}>{st.matricule}</td>
                       <td style={{padding: '16px 0', fontWeight: 600}}>{st.name}</td>
                       <td style={{padding: '16px 0'}}>{st.className}</td>
-                      <td style={{padding: '16px 0'}}>{formatNum(st.total)} FCFA</td>
-                      <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--success-color)'}}>{formatNum(st.paye)} FCFA</td>
-                      <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--danger-color)'}}>{formatNum(st.nonPaye)} FCFA</td>
+                      <td style={{padding: '16px 0'}}>{formatNum(st.total)} F</td>
+                      <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--success-color)'}}>{formatNum(st.paye)} F</td>
+                      <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--danger-color)'}}>{formatNum(st.nonPaye)} F</td>
                       <td style={{padding: '16px 0'}}>
                         <span className={`badge ${st.status === 'Soldé' ? 'badge-success' : 'badge-warning'}`}>{st.status}</span>
                       </td>
@@ -2586,9 +2586,9 @@ function App() {
                   {filteredStudents.length > 0 && (
                     <tr className="finance-totals-row" style={{fontWeight: 'bold', borderTop: '2px solid var(--border-color)'}}>
                       <td colSpan={3} style={{padding: '16px 0', textAlign: 'right', paddingRight: '24px'}}>TOTAL :</td>
-                      <td style={{padding: '16px 0'}}>{formatNum(totalAttendu)} FCFA</td>
-                      <td style={{padding: '16px 0', color: 'var(--success-color)'}}>{formatNum(totalPaye)} FCFA</td>
-                      <td style={{padding: '16px 0', color: 'var(--danger-color)'}}>{formatNum(totalReste)} FCFA</td>
+                      <td style={{padding: '16px 0'}}>{formatNum(totalAttendu)} F</td>
+                      <td style={{padding: '16px 0', color: 'var(--success-color)'}}>{formatNum(totalPaye)} F</td>
+                      <td style={{padding: '16px 0', color: 'var(--danger-color)'}}>{formatNum(totalReste)} F</td>
                       <td></td>
                     </tr>
                   )}
@@ -2634,7 +2634,7 @@ function App() {
                 </td>
                 <td style={{padding: '16px 0'}}>{row.motif}</td>
                 <td style={{padding: '16px 0'}}>
-                  <div style={{fontWeight: 'bold'}}>{formatNum(row.amount)} FCFA</div>
+                  <div style={{fontWeight: 'bold'}}>{formatNum(row.amount)} F</div>
                   <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px'}}>
                     Total versé: {formatNum(verse)} <br/> Reste: <span style={{color: reste > 0 ? '#e74c3c' : '#2ecc71', fontWeight: 600}}>{formatNum(reste)}</span>
                   </div>
@@ -3106,7 +3106,7 @@ function App() {
                 }}>
                   {currentSchoolPlan === 'Standard' && <div style={{position: 'absolute', top: '-12px', right: '24px', background: 'var(--primary-color)', color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold'}}>{t('admin.settings.sub_current', 'Plan Actuel')}</div>}
                   <h4 style={{fontSize: '1.2rem', marginBottom: '8px'}}>Standard</h4>
-                  <p style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '16px'}}>{formatNum(0)} FCFA <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 'normal'}}>{t('admin.settings.sub_month', '/mois')}</span></p>
+                  <p style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '16px'}}>{formatNum(0)} F <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 'normal'}}>{t('admin.settings.sub_month', '/mois')}</span></p>
                   <ul style={{listStyle: 'none', padding: 0, margin: '0 0 24px 0', display: 'flex', flexDirection: 'column', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
                     <li>✓ {t('admin.settings.sub_std_f1', 'Gestion des élèves et absences')}</li>
                     <li>✓ {t('admin.settings.sub_std_f2', 'Gestion des professeurs')}</li>
@@ -3132,7 +3132,7 @@ function App() {
                 }}>
                   {currentSchoolPlan === 'Pro' && <div style={{position: 'absolute', top: '-12px', right: '24px', background: 'var(--accent-color)', color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold'}}>{t('admin.settings.sub_current', 'Plan Actuel')}</div>}
                   <h4 style={{fontSize: '1.2rem', marginBottom: '8px'}}>Pro</h4>
-                  <p style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '16px'}}>{formatNum(25000)} FCFA <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 'normal'}}>{t('admin.settings.sub_month', '/mois')}</span></p>
+                  <p style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '16px'}}>{formatNum(25000)} F <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 'normal'}}>{t('admin.settings.sub_month', '/mois')}</span></p>
                   <ul style={{listStyle: 'none', padding: 0, margin: '0 0 24px 0', display: 'flex', flexDirection: 'column', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
                     <li>✓ {t('admin.settings.sub_pro_f1', 'Toutes les fonctions Standard')}</li>
                     <li>✓ {t('admin.settings.sub_pro_f2', 'Comptabilité & Facturation')}</li>
@@ -3495,7 +3495,7 @@ function App() {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>Scolarité annuelle par défaut (FCFA)</label>
+                    <label>Scolarité annuelle par défaut (F)</label>
                     <input type="number" name="tuition_fee" className="form-input" placeholder="Ex: 500000" defaultValue={editEntity?.tuition_fee || ''} />
                   </div>
                   <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
@@ -3561,7 +3561,7 @@ function App() {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>{t('admin.modals.amount', 'Montant (FCFA)')}</label>
+                    <label>{t('admin.modals.amount', 'Montant (F)')}</label>
                     <input type="number" name="amount" className="form-input" placeholder="Ex: 25000" required />
                   </div>
                   <div className="form-group">
@@ -3687,7 +3687,7 @@ function App() {
                   </div>
                   <div className="form-grid" style={{marginTop: '16px'}}>
                     <div className="form-group">
-                      <label>Scolarité personnalisée (Optionnel, FCFA)</label>
+                      <label>Scolarité personnalisée (Optionnel, F)</label>
                       <input type="number" name="tuition_fee" className="form-input" placeholder="Laisser vide pour utiliser le tarif de la classe" defaultValue={editEntity?.tuition_fee || ""} />
                     </div>
                     <div className="form-group">
@@ -4361,15 +4361,15 @@ function App() {
                         <div style={{display: 'flex', gap: '24px', flexWrap: 'wrap', marginBottom: '16px', background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px'}}>
                           <div>
                             <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Scolarité Totale</span>
-                            <strong style={{fontSize: '1.2rem'}}>{formatNum(studentTotal)} FCFA</strong>
+                            <strong style={{fontSize: '1.2rem'}}>{formatNum(studentTotal)} F</strong>
                           </div>
                           <div>
                             <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Total Payé</span>
-                            <strong style={{fontSize: '1.2rem', color: 'var(--success-color)'}}>{formatNum(studentPaye)} FCFA</strong>
+                            <strong style={{fontSize: '1.2rem', color: 'var(--success-color)'}}>{formatNum(studentPaye)} F</strong>
                           </div>
                           <div>
                             <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Reste à Payer</span>
-                            <strong style={{fontSize: '1.2rem', color: 'var(--danger-color)'}}>{formatNum(studentReste)} FCFA</strong>
+                            <strong style={{fontSize: '1.2rem', color: 'var(--danger-color)'}}>{formatNum(studentReste)} F</strong>
                           </div>
                         </div>
 
@@ -4390,7 +4390,7 @@ function App() {
                                 <tr key={idx} style={{borderBottom: '1px solid var(--border-color)'}}>
                                   <td style={{padding: '12px 0', fontFamily: 'monospace', fontWeight: 500, color: 'var(--primary-color)'}}>{inv.invoice_number}</td>
                                   <td style={{padding: '12px 0'}}>{inv.motif}</td>
-                                  <td style={{padding: '12px 0', fontWeight: 'bold'}}>{formatNum(inv.amount)} FCFA</td>
+                                  <td style={{padding: '12px 0', fontWeight: 'bold'}}>{formatNum(inv.amount)} F</td>
                                   <td style={{padding: '12px 0', color: 'var(--text-secondary)'}}>{new Date(inv.issue_date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</td>
                                   <td style={{padding: '12px 0'}}>
                                     <span className={`badge ${inv.status === 'Payée' ? 'badge-success' : 'badge-warning'}`}>{inv.status}</span>
@@ -4431,7 +4431,7 @@ function App() {
             </div>
             <form onSubmit={handleEmployeePaymentSubmit} className="modal-body">
               <div className="form-group">
-                <label>Montant (FCFA)</label>
+                <label>Montant (F)</label>
                 <input type="number" name="amount" className="form-control" required defaultValue={editEntity.salary || 0} />
               </div>
               <div className="form-group">
@@ -4462,7 +4462,7 @@ function App() {
             </div>
             <form onSubmit={handleTeacherPaymentSubmit} className="modal-body">
               <div className="form-group">
-                <label>Montant (FCFA)</label>
+                <label>Montant (F)</label>
                 <input type="number" name="amount" className="form-control" required defaultValue={editEntity.salary || 0} />
               </div>
               <div className="form-group">
@@ -4505,7 +4505,7 @@ function App() {
                 </select>
               </div>
               <div className="form-group">
-                <label>{t('admin.expenses.amount', 'Montant (FCFA)')}</label>
+                <label>{t('admin.expenses.amount', 'Montant (F)')}</label>
                 <input type="number" name="amount" className="form-control" required min="0" step="1" defaultValue={editEntity?.amount || ''} />
               </div>
               <div className="form-group">
