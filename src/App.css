@@ -12,7 +12,7 @@
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  padding: 24px 0;
+  padding: 20px 0;
   z-index: 10;
 }
 
@@ -215,7 +215,7 @@
 }
 
 .page-title {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   margin-bottom: 8px;
 }
 
@@ -233,7 +233,7 @@
 }
 
 .stat-card {
-  padding: 20px;
+  padding: 16px;
   border-radius: 16px;
   background: var(--surface-color);
   border: 1px solid var(--border-color);
@@ -286,7 +286,7 @@
 }
 
 .stat-value {
-  font-size: 1.75rem;
+  font-size: 1.4rem;
   font-weight: 700;
   margin-bottom: 4px;
 }

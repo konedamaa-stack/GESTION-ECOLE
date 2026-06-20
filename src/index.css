@@ -113,7 +113,7 @@ a:hover {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 8px 16px;
   border-radius: 8px;
   font-weight: 500;
   font-size: 0.9rem;
@@ -175,7 +175,7 @@ a:hover {
 
 /* Dynamic Responsive Typography */
 html {
-  font-size: clamp(12px, 1vw + 6px, 14px);
+  font-size: 13px;
 }
 
 /* RTL Support */
