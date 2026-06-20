@@ -883,3 +883,5 @@ html {
     grid-template-columns: 1fr !important;
   }
 }
+
+.stat-card { justify-content: space-between; }

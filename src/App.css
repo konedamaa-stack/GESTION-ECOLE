@@ -269,8 +269,9 @@
 .stat-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 16px;
+  min-height: 48px;
 }
 
 .stat-icon {
