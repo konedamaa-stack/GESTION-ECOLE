@@ -869,3 +869,17 @@ html {
     width: 100% !important;
   }
 }
+
+
+/* Finance Stats Grid (5 items) */
+.finance-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .finance-stats {
+    grid-template-columns: 1fr !important;
+  }
+}

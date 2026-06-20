@@ -2357,7 +2357,7 @@ function App() {
         </button>
       </div>
 
-      <div className="stats-grid" style={{gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))'}}>
+      <div className="stats-grid finance-stats">
         <div className="stat-card delay-100">
           <div className="stat-header">
             <span className="stat-label">Total Attendu</span>
