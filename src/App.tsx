@@ -1241,16 +1241,16 @@ function App() {
           <div className="stat-icon" style={{backgroundColor: '#d1fae5', color: '#10b981'}}>💰</div>
           <div className="stat-info">
             <h3>Total Rentrées (Factures)</h3>
-            <p className="stat-value">{formatNum(invoicesData?.filter(i => i.status === 'Payé').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0)} FCFA</p>
+            <p className="stat-value">{formatNum(invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0)} FCFA</p>
           </div>
         </div>
         <div className="stat-card delay-300">
           <div className="stat-icon" style={{backgroundColor: '#e0e7ff', color: '#6366f1'}}>🏦</div>
           <div className="stat-info">
             <h3>Solde Caisse (Rentabilité)</h3>
-            <p className="stat-value" style={{color: (invoicesData?.filter(i => i.status === 'Payé').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) - (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) >= 0 ? '#10b981' : '#ef4444'}}>
+            <p className="stat-value" style={{color: (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) - (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) >= 0 ? '#10b981' : '#ef4444'}}>
               {formatNum(
-                (invoicesData?.filter(i => i.status === 'Payé').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) -
+                (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) -
                 (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                 (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                 (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)
@@ -1956,16 +1956,16 @@ function App() {
           <div className="stat-icon" style={{backgroundColor: '#d1fae5', color: '#10b981'}}>💰</div>
           <div className="stat-info">
             <h3>Total Rentrées (Factures)</h3>
-            <p className="stat-value">{formatNum(invoicesData?.filter(i => i.status === 'Payé').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0)} FCFA</p>
+            <p className="stat-value">{formatNum(invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0)} FCFA</p>
           </div>
         </div>
         <div className="stat-card delay-300">
           <div className="stat-icon" style={{backgroundColor: '#e0e7ff', color: '#6366f1'}}>🏦</div>
           <div className="stat-info">
             <h3>Solde Caisse (Rentabilité)</h3>
-            <p className="stat-value" style={{color: (invoicesData?.filter(i => i.status === 'Payé').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) - (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) >= 0 ? '#10b981' : '#ef4444'}}>
+            <p className="stat-value" style={{color: (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) - (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) >= 0 ? '#10b981' : '#ef4444'}}>
               {formatNum(
-                (invoicesData?.filter(i => i.status === 'Payé').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) -
+                (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) -
                 (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                 (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                 (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)
