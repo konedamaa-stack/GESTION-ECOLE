@@ -2401,6 +2401,24 @@ function App() {
             Global
           </div>
         </div>
+
+        <div className="stat-card delay-400">
+          <div className="stat-header">
+            <span className="stat-label">Solde Caisse</span>
+            <Icons.Database />
+          </div>
+          <div className="stat-value" style={{color: (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) - (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) >= 0 ? '#10b981' : '#ef4444'}}>
+            {formatNum(
+                (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) -
+                (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
+                (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
+                (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)
+              )}
+          </div>
+          <div className="stat-trend trend-up">
+            F
+          </div>
+        </div>
       </div>
 
       <div id="finance-class-summary-panel" className="panel delay-200" style={{marginTop: '24px'}}>
