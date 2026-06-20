@@ -12,6 +12,7 @@ import { BulletinPreview } from './components/BulletinPreview';
 import { ReceiptPreview } from './components/ReceiptPreview';
 import { TeacherReceiptPreview } from './components/TeacherReceiptPreview';
 import { ExpenseReceiptPreview } from './components/ExpenseReceiptPreview';
+import { SalaryReceiptPreview } from './components/SalaryReceiptPreview';
 import { SuperAdminPortal } from './components/SuperAdminPortal';
 import { PasswordRecovery } from './components/PasswordRecovery';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -20,6 +21,7 @@ import './App.css';
 // Custom SVG Icons
 // ...
 const Icons = {
+  Menu: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>,
   Home: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline strokeLinecap="round" strokeLinejoin="round" d="M9 22V12h6v10" /></svg>,
   Users: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path strokeLinecap="round" strokeLinejoin="round" d="M23 21v-2a4 4 0 0 0-3-3.87" /><path strokeLinecap="round" strokeLinejoin="round" d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>,
   BookOpen: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path strokeLinecap="round" strokeLinejoin="round" d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>,
@@ -560,6 +562,32 @@ function App() {
       alert("Établissement créé avec succès !");
     } catch (error: any) {
       alert("Erreur: " + error.message);
+    }
+  };
+
+  const handleEmployeePaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentSchoolId || !editEntity) return;
+    const form = e.target as HTMLFormElement;
+    const amount = (form.elements.namedItem('amount') as HTMLInputElement).value;
+    const month = (form.elements.namedItem('month') as HTMLInputElement).value;
+    const payment_method = (form.elements.namedItem('payment_method') as HTMLSelectElement).value;
+    
+    try {
+      const { error } = await supabase.from('employee_payments').insert([{
+        school_id: currentSchoolId,
+        employee_id: editEntity.id,
+        amount: parseFloat(amount),
+        month,
+        payment_method,
+        payment_date: new Date().toISOString()
+      }]);
+      if (error) throw error;
+      await fetchEmployeePayments();
+      setActiveModal('employee_receipt_preview');
+    } catch(err: any) {
+      console.error('Error paying employee:', err);
+      alert('Erreur: ' + err.message);
     }
   };
 
@@ -1190,6 +1218,49 @@ function App() {
 
     return (
       <div className="animate-fade-in">
+      {currentSchoolPlan === 'Pro' && (
+      <div className="dashboard-grid" style={{marginBottom: '24px'}}>
+        <div className="stat-card delay-100">
+          <div className="stat-icon" style={{backgroundColor: '#fee2e2', color: '#ef4444'}}>💸</div>
+          <div className="stat-info">
+            <h3>Total Dépenses Courantes</h3>
+            <p className="stat-value">{formatNum(expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)} FCFA</p>
+          </div>
+        </div>
+        <div className="stat-card delay-100">
+          <div className="stat-icon" style={{backgroundColor: '#fef3c7', color: '#f59e0b'}}>🧑‍🏫</div>
+          <div className="stat-info">
+            <h3>Salaires Payés</h3>
+            <p className="stat-value">{formatNum(
+              (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) +
+              (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)
+            )} FCFA</p>
+          </div>
+        </div>
+        <div className="stat-card delay-200">
+          <div className="stat-icon" style={{backgroundColor: '#d1fae5', color: '#10b981'}}>💰</div>
+          <div className="stat-info">
+            <h3>Total Rentrées (Factures)</h3>
+            <p className="stat-value">{formatNum(invoicesData?.filter(i => i.status === 'Payé').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0)} FCFA</p>
+          </div>
+        </div>
+        <div className="stat-card delay-300">
+          <div className="stat-icon" style={{backgroundColor: '#e0e7ff', color: '#6366f1'}}>🏦</div>
+          <div className="stat-info">
+            <h3>Solde Caisse (Rentabilité)</h3>
+            <p className="stat-value" style={{color: (invoicesData?.filter(i => i.status === 'Payé').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) - (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) >= 0 ? '#10b981' : '#ef4444'}}>
+              {formatNum(
+                (invoicesData?.filter(i => i.status === 'Payé').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) -
+                (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
+                (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
+                (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)
+              )} FCFA
+            </p>
+          </div>
+        </div>
+      </div>
+      )}
+
         <div className="page-header">
           <div>
             <h1 className="page-title">{t('dashboard.welcome', 'Bienvenue, {{name}} 👋', {name: session?.user?.email?.split('@')[0] || 'Adama'})}</h1>
@@ -1992,7 +2063,11 @@ function App() {
               <div className="avatar" style={{width: 64, height: 64, fontSize: '1.5rem', marginBottom: 12}}>{staff.first_name.charAt(0)}{staff.last_name.charAt(0)}</div>
               <h4 style={{marginBottom: 4}}>{staff.first_name} {staff.last_name}</h4>
               <span style={{fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 12}}>{staff.role}</span>
-              <span className={`badge ${staff.status === 'Actif' ? 'badge-success' : 'badge-warning'}`}>{staff.status}</span>
+              <span className={`badge ${staff.status === 'Actif' ? 'badge-success' : 'badge-warning'}`} style={{marginBottom: 12}}>{staff.status}</span>
+              <div style={{display: 'flex', gap: '8px'}}>
+                <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => { setEditEntity(staff); setActiveModal('employee'); }}>✏️</button>
+                <button className="btn btn-primary" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => { setEditEntity(staff); setActiveModal('employee_payment'); }}>💵 Payer</button>
+              </div>
             </div>
           )) : (
             <div style={{gridColumn: '1 / -1', textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.rh.empty_state', 'Aucun employé trouvé. Cliquez sur Ajouter.')}</div>
@@ -3869,6 +3944,29 @@ function App() {
           </div>
         )}
 
+        {activeModal === 'employee_receipt_preview' && editEntity && (
+          <div className="modal-content fade-in" style={{maxWidth: '1600px', width: '98%'}} onClick={e => e.stopPropagation()}>
+            <div className="modal-header hide-print">
+              <h3>Aperçu du Reçu de Salaire (Employé)</h3>
+              <div style={{display: 'flex', gap: '12px'}}>
+                <button className="btn btn-primary" onClick={() => window.print()}>
+                  <Icons.Printer /> Imprimer le reçu
+                </button>
+                <button className="close-btn" onClick={closeModal}>×</button>
+              </div>
+            </div>
+            <div className="modal-body print-area">
+              {employeePaymentsData.filter(p => p.employee_id === editEntity.id).length > 0 && (
+                <SalaryReceiptPreview 
+                  payment={employeePaymentsData.filter(p => p.employee_id === editEntity.id)[0]} 
+                  employee={editEntity} 
+                  schoolInfo={settingsData} 
+                />
+              )}
+            </div>
+          </div>
+        )}
+
         {activeModal === 'teacher_receipt_preview' && editEntity && (
           <div className="modal-content fade-in" style={{maxWidth: '1600px', width: '98%'}} onClick={e => e.stopPropagation()}>
             <div className="modal-header hide-print">
@@ -4325,7 +4423,38 @@ function App() {
               )}
 
               {/* Schedule Form */}
-              {activeModal === 'teacher_payment' && editEntity && (
+              {activeModal === 'employee_payment' && editEntity && (
+          <div className="modal-content fade-in" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Payer {editEntity.first_name} {editEntity.last_name} ({editEntity.role})</h3>
+              <button className="close-btn" onClick={closeModal}>×</button>
+            </div>
+            <form onSubmit={handleEmployeePaymentSubmit} className="modal-body">
+              <div className="form-group">
+                <label>Montant (FCFA)</label>
+                <input type="number" name="amount" className="form-control" required defaultValue={editEntity.salary || 0} />
+              </div>
+              <div className="form-group">
+                <label>Mois (ex: Septembre 2026)</label>
+                <input type="text" name="month" className="form-control" required placeholder="Septembre 2026" />
+              </div>
+              <div className="form-group">
+                <label>Méthode de paiement</label>
+                <select name="payment_method" className="form-select">
+                  <option value="Espèces">Espèces</option>
+                  <option value="Virement">Virement</option>
+                  <option value="Mobile Money">Mobile Money</option>
+                </select>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
+                <button type="submit" className="btn btn-primary">Enregistrer le paiement</button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {activeModal === 'teacher_payment' && editEntity && (
           <div className="modal-content fade-in" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Payer {editEntity.first_name} {editEntity.last_name}</h3>

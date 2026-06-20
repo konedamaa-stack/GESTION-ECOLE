@@ -1,174 +1,149 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ReceiptPreviewProps {
   invoice: any;
   student: any;
   schoolInfo: any;
-  studentReste: number;
+  studentReste?: number;
 }
 
 export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ invoice, student, schoolInfo, studentReste }) => {
+  const { t } = useTranslation();
 
-  const formatNum = (num: number | string) => {
-    return Number(num).toLocaleString('fr-FR');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.print();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
   };
 
-  const numberToWordsFr = (num: number): string => {
-    if (num === 0) return 'ZÉRO';
-    const units = ['', 'UN', 'DEUX', 'TROIS', 'QUATRE', 'CINQ', 'SIX', 'SEPT', 'HUIT', 'NEUF', 'DIX', 'ONZE', 'DOUZE', 'TREIZE', 'QUATORZE', 'QUINZE', 'SEIZE', 'DIX-SEPT', 'DIX-HUIT', 'DIX-NEUF'];
-    const tens = ['', '', 'VINGT', 'TRENTE', 'QUARANTE', 'CINQUANTE', 'SOIXANTE', 'SOIXANTE-DIX', 'QUATRE-VINGT', 'QUATRE-VINGT-DIX'];
-
-    function convert(n: number): string {
-      if (n < 20) return units[n];
-      if (n < 70) return tens[Math.floor(n / 10)] + (n % 10 === 1 ? ' ET UN' : (n % 10 !== 0 ? '-' + units[n % 10] : ''));
-      if (n < 80) return tens[6] + '-' + (n % 10 === 1 ? 'ET-ONZE' : convert(10 + n % 10));
-      if (n < 90) return 'QUATRE-VINGT' + (n % 10 !== 0 ? '-' + units[n % 10] : 'S');
-      if (n < 100) return 'QUATRE-VINGT-' + convert(10 + n % 10);
-      if (n < 1000) return (n >= 200 ? units[Math.floor(n / 100)] + ' ' : '') + 'CENT' + (n % 100 !== 0 ? ' ' + convert(n % 100) : (n >= 200 ? 'S' : ''));
-      if (n < 1000000) return (n >= 2000 ? convert(Math.floor(n / 1000)) + ' ' : (n >= 1000 ? '' : '')) + 'MILLE' + (n % 1000 !== 0 ? ' ' + convert(n % 1000) : '');
-      if (n < 1000000000) return convert(Math.floor(n / 1000000)) + ' MILLION' + (Math.floor(n / 1000000) > 1 ? 'S' : '') + (n % 1000000 !== 0 ? ' ' + convert(n % 1000000) : '');
-      return n.toString();
-    }
-    
-    return convert(num).trim();
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   };
-
-  const invoiceDate = new Date(invoice.issue_date);
-  const formattedDate = invoiceDate.toLocaleDateString('fr-FR');
-  const formattedTime = invoiceDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  const paymentMethod = (invoice.payment_method || '').toLowerCase();
 
   return (
-    <div className="receipt-preview-container" style={{
-      width: '100%',
-      maxWidth: '320px',
+    <div className="receipt-container" style={{
+      maxWidth: '800px',
       margin: '0 auto',
-      background: 'white',
-      color: '#000',
-      padding: '20px',
-      boxSizing: 'border-box',
-      fontFamily: '"Courier New", Courier, monospace',
-      fontWeight: 'bold',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-      WebkitPrintColorAdjust: 'exact',
-      printColorAdjust: 'exact'
+      padding: '40px',
+      backgroundColor: 'white',
+      color: 'black',
+      fontFamily: '"Inter", sans-serif',
+      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
     }}>
-      {/* HEADER */}
-      <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-        <h1 style={{ 
-          margin: '0 0 10px 0', 
-          fontSize: '18px', 
-          fontWeight: '900', 
-          fontFamily: 'Arial, sans-serif',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px'
-        }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z" />
-            <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
-            <path d="M12 17V7" />
-          </svg>
-          REÇU DE PAIEMENT
-        </h1>
-        <div style={{ fontWeight: 'bold', fontSize: '11px', letterSpacing: '0.5px' }}>{schoolInfo?.name?.toUpperCase() || 'INSTITUTION ACADÉMIQUE'}</div>
-        <div style={{ fontSize: '10px', marginTop: '4px' }}>{schoolInfo?.address || 'Adresse de l\'école'}</div>
-      </div>
-
-      <hr style={{ borderTop: '2px solid black', margin: '12px 0' }} />
-
-      {/* METADATA */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
-        <div style={{ color: '#000' }}>N° REÇU</div>
-        <div style={{ color: '#000' }}>DATE</div>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold' }}>
-        <div>#{invoice.invoice_number || '0000'}</div>
-        <div>{formattedDate} - {formattedTime}</div>
-      </div>
-
-      <hr style={{ borderTop: '2px solid black', margin: '12px 0' }} />
-
-      {/* RECIPIENT */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', marginBottom: '15px' }}>
-        <span>Reçu de :</span>
-        <span style={{ fontWeight: 'bold', fontSize: '13px' }}>{(student.first_name + ' ' + student.last_name).toUpperCase()}</span>
-        <span style={{ fontSize: '11px' }}>Matricule : {student.matricule || 'N/A'}</span>
-        {student?.student_parents?.[0]?.parents && (
-          <span style={{ fontSize: '11px' }}>Parent : {(student.student_parents[0].parents.first_name + ' ' + student.student_parents[0].parents.last_name).toUpperCase()}</span>
-        )}
-      </div>
-
-      {/* AMOUNT BOX */}
-      <div style={{ 
-        background: 'var(--accent-color)', 
-        color: 'white', 
-        padding: '12px 15px', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: '15px'
-      }}>
-        <div style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px', letterSpacing: '1px' }}>MONTANT</div>
-        <div style={{ fontFamily: 'Arial, sans-serif', fontSize: '20px', fontWeight: 'bold' }}>{formatNum(invoice.amount)} FCFA</div>
-      </div>
-
-      {/* AMOUNT IN WORDS */}
-      <div style={{ fontSize: '11px', marginBottom: '15px' }}>
-        <div style={{ fontStyle: 'italic', color: '#000', marginBottom: '4px' }}>SOIT LA SOMME DE :</div>
-        <div style={{ fontWeight: 'bold', letterSpacing: '0.5px', lineHeight: '1.4' }}>
-          {numberToWordsFr(Number(invoice.amount))} FRANCS CFA
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #e5e7eb', paddingBottom: '20px', marginBottom: '30px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {schoolInfo?.logo_url ? (
+            <img src={schoolInfo.logo_url} alt="Logo" style={{ width: '80px', height: '80px', objectFit: 'contain' }} />
+          ) : (
+            <div style={{ width: '80px', height: '80px', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', fontSize: '24px', fontWeight: 'bold', color: '#9ca3af' }}>
+              LOGO
+            </div>
+          )}
+          <div>
+            <h1 style={{ margin: '0 0 8px 0', fontSize: '24px', color: '#111827' }}>{schoolInfo?.name || "Nom de l'établissement"}</h1>
+            <p style={{ margin: '0 0 4px 0', color: '#4b5563', fontSize: '14px' }}>{schoolInfo?.address || 'Adresse'}</p>
+            <p style={{ margin: '0', color: '#4b5563', fontSize: '14px' }}>
+              Tél: {schoolInfo?.phone || 'Téléphone'} | Email: {schoolInfo?.email || 'Email'}
+            </p>
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <h2 style={{ margin: '0 0 8px 0', fontSize: '28px', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('receipt.title', 'REÇU')}</h2>
+          <p style={{ margin: '0 0 4px 0', fontWeight: 'bold', fontSize: '16px' }}>N° {invoice?.id ? invoice.id.split('-')[0].toUpperCase() : '...'}</p>
+          <p style={{ margin: '0', color: '#4b5563' }}>Date: {formatDate(invoice?.paid_at || new Date().toISOString())}</p>
         </div>
       </div>
 
-      <hr style={{ borderTop: '1px solid black', margin: '12px 0' }} />
+      {/* Body */}
+      <div style={{ marginBottom: '40px' }}>
+        <div style={{ backgroundColor: '#f8fafc', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '30px' }}>
+          <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#64748b', textTransform: 'uppercase' }}>Détails de l'Élève</h3>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div>
+              <p style={{ margin: '0 0 8px 0', color: '#64748b', fontSize: '14px' }}>Nom et Prénom</p>
+              <p style={{ margin: '0', fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{student?.first_name} {student?.last_name}</p>
+            </div>
+            <div>
+              <p style={{ margin: '0 0 8px 0', color: '#64748b', fontSize: '14px' }}>Classe</p>
+              <p style={{ margin: '0', fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{student?.class?.name || '-'}</p>
+            </div>
+            <div>
+              <p style={{ margin: '0 0 8px 0', color: '#64748b', fontSize: '14px' }}>Matricule</p>
+              <p style={{ margin: '0', fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{student?.matricule || '-'}</p>
+            </div>
+          </div>
+        </div>
 
-      {/* MOTIF */}
-      <div style={{ fontSize: '11px', marginBottom: '15px' }}>
-        <div style={{ marginBottom: '6px' }}>Pour :</div>
-        <div style={{ fontWeight: 'bold', fontSize: '12px' }}>{invoice.motif}</div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#f1f5f9' }}>
+              <th style={{ padding: '12px 16px', textAlign: 'left', borderBottom: '2px solid #cbd5e1', color: '#475569' }}>Description</th>
+              <th style={{ padding: '12px 16px', textAlign: 'right', borderBottom: '2px solid #cbd5e1', color: '#475569' }}>Montant</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', color: '#334155' }}>
+                {invoice?.title || 'Frais de scolarité'}
+              </td>
+              <td style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', fontWeight: '500', color: '#0f172a' }}>
+                {formatCurrency(invoice?.amount || 0)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Totals */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ width: '300px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
+              {studentReste !== undefined && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderTop: '1px solid #e2e8f0' }}>
+                <span style={{ color: '#ef4444', fontSize: '14px' }}>Reste à Payer:</span>
+                <span style={{ fontWeight: '500', color: '#ef4444', fontSize: '14px' }}>{formatCurrency(studentReste)}</span>
+              </div>
+            )}
+            <span style={{ color: '#475569' }}>Montant Dû:</span>
+              <span style={{ fontWeight: '500' }}>{formatCurrency(invoice?.amount || 0)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderTop: '2px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', marginTop: '10px' }}>
+              <span style={{ fontWeight: 'bold', fontSize: '18px', color: '#0f172a' }}>TOTAL PAYÉ</span>
+              <span style={{ fontWeight: 'bold', fontSize: '18px', color: '#3b82f6' }}>{formatCurrency(invoice?.paid_amount || invoice?.amount || 0)}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <hr style={{ borderTop: '1px solid black', margin: '12px 0' }} />
-
-      {/* SUMMARY (RESTE A PAYER) */}
-      <div style={{ fontSize: '11px', marginBottom: '15px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-          <span>Total Scolarité :</span>
-          <strong>{formatNum(Number(student.tuition_fee) || Number(student.classes?.tuition_fee) || 0)} FCFA</strong>
+      {/* Footer */}
+      <div style={{ marginTop: '50px', display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: '14px' }}>
+        <div>
+          <p style={{ margin: '0 0 40px 0' }}>Signature Établissement</p>
+          <div style={{ borderBottom: '1px solid #cbd5e1', width: '200px' }}></div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-          <span>Total Payé à ce jour :</span>
-          <strong>{formatNum((Number(student.tuition_fee) || Number(student.classes?.tuition_fee) || 0) - studentReste)} FCFA</strong>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed black', fontWeight: 'bold' }}>
-          <span>Reste à Payer :</span>
-          <span>{formatNum(studentReste)} FCFA</span>
+        <div style={{ textAlign: 'right' }}>
+          <p style={{ margin: '0 0 40px 0' }}>Signature Parent / Élève</p>
+          <div style={{ borderBottom: '1px solid #cbd5e1', width: '200px', display: 'inline-block' }}></div>
         </div>
       </div>
 
-      <hr style={{ borderTop: '1px solid black', margin: '12px 0' }} />
-
-      {/* PAYMENT METHOD */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '15px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          {['virement', 'mobile'].some(v => paymentMethod.includes(v)) ? '☑' : '☐'} Virement
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          {['espèce', 'espece', 'cash'].some(v => paymentMethod.includes(v)) ? '☑' : '☐'} Espèces
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          {paymentMethod.includes('chèque') || paymentMethod.includes('cheque') ? '☑' : '☐'} Chèque
-        </div>
+      <div style={{ marginTop: '40px', textAlign: 'center', color: '#94a3b8', fontSize: '12px', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+        <p style={{ margin: '0' }}>Ce reçu certifie le paiement par le système de gestion {schoolInfo?.name || ''}.</p>
       </div>
 
-      {/* SIGNATURE SPACE */}
-      <div style={{ marginTop: '35px', display: 'flex', justifyContent: 'flex-end' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontStyle: 'italic', color: '#000', fontSize: '11px' }}>Signature / Cachet</div>
-        </div>
-      </div>
+      <style dangerouslySetInnerHTML={{__html: "@media print { body * { visibility: hidden; } .receipt-container, .receipt-container * { visibility: visible; } .receipt-container { position: absolute; left: 0; top: 0; width: 100%; padding: 20px !important; box-shadow: none !important; } .hide-print { display: none !important; } }"}} />
     </div>
   );
 };
