@@ -101,6 +101,7 @@ function App() {
   const [globalGradePeriod, setGlobalGradePeriod] = useState<string>('1er Trimestre');
   const [globalGrades, setGlobalGrades] = useState<{[key: string]: string}>({});
   const [bulletinClassId, setBulletinClassId] = useState<string | null>(null);
+  const [bulletinTargetStudentId, setBulletinTargetStudentId] = useState<string | null>(null);
   const [bulletinPeriod, setBulletinPeriod] = useState<string>('1er Trimestre');
 
   const [bulletinGrades, setBulletinGrades] = useState<any[]>([]);
@@ -158,9 +159,10 @@ function App() {
   };
 
   
-  const loadBulletinData = async (classId: string, period: string) => {
+  const loadBulletinData = async (classId: string, period: string, studentId: string | null = null) => {
     setBulletinClassId(classId);
     setBulletinPeriod(period);
+    setBulletinTargetStudentId(studentId);
     setActiveModal('bulletin_preview');
     const evals = evaluationsData.filter(e => e.class_id === classId && e.period === period);
     const evalIds = evals.map(e => e.id);
@@ -3206,11 +3208,11 @@ function App() {
   }
 
   if (committeeSession) {
-    return <CommitteePortal session={committeeSession} onLogout={() => setCommitteeSession(null)} />;
+    return <CommitteePortal session={committeeSession} onLogout={() => setCommitteeSession(null)} onOpenBulletin={(studentId, period, classId) => loadBulletinData(classId, period, studentId)} />;
   }
 
   if (teacherSession) {
-    return <TeacherPortal session={teacherSession} onLogout={() => setTeacherSession(null)} />;
+    return <TeacherPortal session={teacherSession} onLogout={() => setTeacherSession(null)} onOpenBulletin={(studentId, period, classId) => loadBulletinData(classId, period, studentId)} />;
   }
 
   if (showSuperAdmin) {
@@ -3936,6 +3938,7 @@ function App() {
                       period={bulletinPeriod}
                       schoolInfo={{ ...settingsData, ...adminSchools.find(s => s.id === currentSchoolId) }}
                       classSubjects={classSubjectsData}
+                      targetStudentId={bulletinTargetStudentId}
                       schedules={schedulesData}
                     />
                   </div>

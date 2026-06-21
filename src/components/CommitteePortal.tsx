@@ -4,7 +4,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 
-export default function CommitteePortal({ session, onLogout }: { session: any; onLogout: () => void }) {
+export default function CommitteePortal({ session, onLogout, onOpenBulletin }: { session: any; onLogout: () => void; onOpenBulletin?: (studentId: string, period: string, classId: string) => void }) {
   const [classes, setClasses] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [evaluations, setEvaluations] = useState<any[]>([]);
@@ -276,9 +276,9 @@ export default function CommitteePortal({ session, onLogout }: { session: any; o
                     <td style={{padding: '16px'}}>{className}</td>
                     <td style={{padding: '16px'}}>
                       <div style={{display: 'flex', gap: '8px'}}>
-                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => generatePDF(student, 'Trimestre 1')}>T1</button>
-                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => generatePDF(student, 'Trimestre 2')}>T2</button>
-                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => generatePDF(student, 'Trimestre 3')}>T3</button>
+                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '1er Trimestre', student.class_id) : generatePDF(student, 'Trimestre 1')}>T1</button>
+                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '2ème Trimestre', student.class_id) : generatePDF(student, 'Trimestre 2')}>T2</button>
+                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '3ème Trimestre', student.class_id) : generatePDF(student, 'Trimestre 3')}>T3</button>
                       </div>
                     </td>
                   </tr>

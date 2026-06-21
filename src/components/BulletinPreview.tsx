@@ -9,9 +9,10 @@ interface BulletinPreviewProps {
   schoolInfo: any;
   classSubjects: any[];
   schedules?: any[];
+  targetStudentId?: string | null;
 }
 
-export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, students, evaluations, grades, period, schoolInfo, classSubjects, schedules }) => {
+export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, students, evaluations, grades, period, schoolInfo, classSubjects, schedules, targetStudentId }) => {
   const classEvals = evaluations.filter(e => e.class_id === classData?.id && e.period === period);
   const classEvalIds = classEvals.map(e => e.id);
   const classGrades = grades.filter(g => classEvalIds.includes(g.evaluation_id));
@@ -127,7 +128,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
 
   return (
     <div className="bulletin-classic-container">
-      {students.map((st) => {
+      {students.filter(st => !targetStudentId || st.id === targetStudentId).map((st) => {
         const stats = studentStats[st.id];
         
         // Group subjects for this student

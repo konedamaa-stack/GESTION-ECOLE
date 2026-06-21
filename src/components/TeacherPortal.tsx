@@ -15,7 +15,7 @@ const Icons = {
   LogOut: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline strokeLinecap="round" strokeLinejoin="round" points="16 17 21 12 16 7"/><line strokeLinecap="round" strokeLinejoin="round" x1="21" y1="12" x2="9" y2="12"/></svg>,
 };
 
-export default function TeacherPortal({ session, onLogout }: { session: any, onLogout: () => void }) {
+export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { session: any, onLogout: () => void, onOpenBulletin?: (studentId: string, period: string, classId: string) => void }) {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [classesData, setClassesData] = useState<any[]>([]);
@@ -605,9 +605,9 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                           <td style={{padding: '12px', borderRight: '1px solid #eee'}}><span className={`badge ${student.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`}>{student.status || 'Inscrit'}</span></td>
 <td style={{padding: '12px'}}>
   <div style={{display: 'flex', gap: '4px'}}>
-    <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => generatePDF(student, 'Trimestre 1')}>T1</button>
-    <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => generatePDF(student, 'Trimestre 2')}>T2</button>
-    <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => generatePDF(student, 'Trimestre 3')}>T3</button>
+    <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '1er Trimestre', student.class_id) : generatePDF(student, 'Trimestre 1')}>T1</button>
+    <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '2ème Trimestre', student.class_id) : generatePDF(student, 'Trimestre 2')}>T2</button>
+    <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '3ème Trimestre', student.class_id) : generatePDF(student, 'Trimestre 3')}>T3</button>
   </div>
 </td>
                         </tr>
