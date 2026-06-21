@@ -629,17 +629,31 @@ function App() {
     const date = (form.elements.namedItem('date') as HTMLInputElement).value;
     const description = (form.elements.namedItem('description') as HTMLTextAreaElement).value;
 
+    const parsedAmount = parseFloat(amount);
+
+    // Calculate current available balance
+    const currentBalance = (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) -
+                           (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
+                           (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
+                           (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0);
+
+    const oldAmount = editEntity ? Number(editEntity.amount) : 0;
+    if (parsedAmount > currentBalance + oldAmount) {
+      alert(`Fonds insuffisants dans la caisse. Solde disponible : ${currentBalance + oldAmount} F.`);
+      return;
+    }
+
     try {
       if (editEntity) {
         const { error } = await supabase
           .from('expenses')
-          .update({ category, amount: parseFloat(amount), payment_date: date, description })
+          .update({ category, amount: parsedAmount, payment_date: date, description })
           .eq('id', editEntity.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('expenses')
-          .insert([{ school_id: currentSchoolId, category, amount: parseFloat(amount), payment_date: date, description }]);
+          .insert([{ school_id: currentSchoolId, category, amount: parsedAmount, payment_date: date, description }]);
         if (error) throw error;
       }
       await fetchExpenses();
