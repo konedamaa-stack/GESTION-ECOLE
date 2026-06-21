@@ -109,20 +109,24 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ invoice, student
         {/* Totals */}
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <div style={{ width: '300px' }}>
+            
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
-              {studentReste !== undefined && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderTop: '1px solid #e2e8f0' }}>
-                <span style={{ color: '#ef4444', fontSize: '14px' }}>Reste à Payer:</span>
-                <span style={{ fontWeight: '500', color: '#ef4444', fontSize: '14px' }}>{formatCurrency(studentReste)}</span>
-              </div>
-            )}
-            <span style={{ color: '#475569' }}>Montant Dû:</span>
+              <span style={{ color: '#475569' }}>Montant de la Facture:</span>
               <span style={{ fontWeight: '500' }}>{formatCurrency(invoice?.amount || 0)}</span>
             </div>
+
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderTop: '2px solid #cbd5e1', borderBottom: '2px solid #cbd5e1', marginTop: '10px' }}>
               <span style={{ fontWeight: 'bold', fontSize: '18px', color: '#0f172a' }}>TOTAL PAYÉ</span>
-              <span style={{ fontWeight: 'bold', fontSize: '18px', color: '#3b82f6' }}>{formatCurrency(invoice?.paid_amount || invoice?.amount || 0)}</span>
+              <span style={{ fontWeight: 'bold', fontSize: '18px', color: '#3b82f6' }}>{formatCurrency(invoice?.paid_amount !== undefined ? invoice.paid_amount : invoice?.amount || 0)}</span>
             </div>
+
+            {studentReste !== undefined && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', marginTop: '10px' }}>
+                <span style={{ fontWeight: 'bold', color: studentReste > 0 ? '#ef4444' : '#10b981', fontSize: '16px' }}>RESTE TOTAL:</span>
+                <span style={{ fontWeight: 'bold', color: studentReste > 0 ? '#ef4444' : '#10b981', fontSize: '16px' }}>{formatCurrency(studentReste)}</span>
+              </div>
+            )}
+            
           </div>
         </div>
       </div>
