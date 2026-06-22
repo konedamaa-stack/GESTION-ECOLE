@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import './Auth.css';
 
-type AuthMode = 'login' | 'register' | 'forgot_password' | 'student_login' | 'teacher_login' | 'committee_login';
+type AuthMode = 'login' | 'register' | 'forgot_password' | 'student_login' | 'teacher_login' | 'committee_login' | 'accept_invite';
 
 export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin, onBack }: { onStudentLogin?: (student: any) => void, onTeacherLogin?: (teacher: any) => void, onCommitteeLogin?: (committee: any) => void, onBack?: () => void }) {
   const { t } = useTranslation();
@@ -15,6 +15,27 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
   const [message, setMessage] = useState<string | null>(null);
   const [pendingProfiles, setPendingProfiles] = useState<any[] | null>(null);
   const [pendingMode, setPendingMode] = useState<AuthMode | null>(null);
+  const [inviteDetails, setInviteDetails] = useState<any>(null);
+
+  useEffect(() => {
+    const checkInvite = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const inviteId = urlParams.get('invite');
+      if (inviteId) {
+        setLoading(true);
+        const { data, error } = await supabase.from('admin_invitations').select('*, schools(name)').eq('id', inviteId).single();
+        if (data && !error) {
+          setInviteDetails(data);
+          setEmail(data.email);
+          setMode('accept_invite');
+        } else {
+          setError("Ce lien d'invitation est invalide ou expiré.");
+        }
+        setLoading(false);
+      }
+    };
+    checkInvite();
+  }, []);
 
   const handleModeSwitch = (newMode: AuthMode) => {
     setMode(newMode);
@@ -81,6 +102,55 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
         if (authError) throw authError;
 
         setMessage(t('auth.register_success', 'Inscription réussie ! Veuillez vérifier votre boîte mail pour confirmer votre compte.'));
+      } else if (mode === 'accept_invite') {
+        if (!inviteDetails) throw new Error("Détails de l'invitation introuvables.");
+        
+        // Register the user
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        
+        if (authError) {
+          // If user already exists, they might just need to sign in
+          if (authError.message.includes('User already registered') || authError.message.includes('already exists')) {
+            const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+            if (signInError) throw new Error("Ce compte existe déjà. Veuillez utiliser le bon mot de passe, ou réinitialisez-le d'abord.");
+            
+            // Re-fetch user to get their ID since signUp failed
+            const { data: userSession } = await supabase.auth.getSession();
+            if (userSession.session?.user.id) {
+              await supabase.from('school_admins').insert({
+                user_id: userSession.session.user.id,
+                school_id: inviteDetails.school_id,
+                role: inviteDetails.role
+              });
+              await supabase.from('admin_invitations').delete().eq('id', inviteDetails.id);
+              // Clean up URL
+              window.history.replaceState({}, document.title, window.location.pathname);
+              return; // Successfully linked existing account
+            }
+          } else {
+            throw authError;
+          }
+        }
+        
+        // If sign up succeeded and we have a user ID (even if email confirmation is required)
+        if (authData.user) {
+          await supabase.from('school_admins').insert({
+            user_id: authData.user.id,
+            school_id: inviteDetails.school_id,
+            role: inviteDetails.role
+          });
+          await supabase.from('admin_invitations').delete().eq('id', inviteDetails.id);
+          
+          if (authData.session) {
+            // Already logged in
+            window.history.replaceState({}, document.title, window.location.pathname);
+          } else {
+            setMessage(t('auth.register_success', 'Inscription réussie ! Veuillez vérifier votre boîte mail pour confirmer votre compte.'));
+          }
+        }
       } else if (mode === 'committee_login') {
         const { data: committee, error } = await supabase
           .from('committee_members')
@@ -156,6 +226,13 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
           <>
             <h1 className="auth-title">{t('auth.register_title', 'Créer un compte')}</h1>
             <p className="auth-subtitle">{t('auth.register_subtitle', "Rejoignez-nous dès aujourd'hui")}</p>
+          </>
+        );
+      case 'accept_invite':
+        return (
+          <>
+            <h1 className="auth-title">Invitation reçue !</h1>
+            <p className="auth-subtitle">Vous avez été invité(e) à rejoindre l'école <strong>{inviteDetails?.schools?.name}</strong>. Créez votre mot de passe pour accepter.</p>
           </>
         );
       case 'forgot_password':
@@ -235,28 +312,30 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
         </div>
         
         {/* Toggle Login Type */}
-        <div style={{display: 'flex', gap: '4px', marginBottom: '24px', padding: '4px', background: 'var(--surface-color-hover)', borderRadius: '8px'}}>
-          <button 
-            className={`btn ${mode === 'login' ? 'btn-primary' : 'btn-outline'}`} 
-            style={{flex: 1, border: 'none', padding: '8px 4px', fontSize: '0.85rem', background: mode === 'login' ? 'var(--primary-color)' : 'transparent', color: mode === 'login' ? 'white' : 'var(--text-secondary)'}}
-            onClick={() => handleModeSwitch('login')}
-          >{t('auth.tab_admin', 'Admin')}</button>
-          <button 
-            className={`btn ${mode === 'teacher_login' ? 'btn-primary' : 'btn-outline'}`} 
-            style={{flex: 1, border: 'none', padding: '8px 4px', fontSize: '0.85rem', background: mode === 'teacher_login' ? 'var(--primary-color)' : 'transparent', color: mode === 'teacher_login' ? 'white' : 'var(--text-secondary)'}}
-            onClick={() => handleModeSwitch('teacher_login')}
-          >{t('auth.tab_teacher', 'Professeur')}</button>
-          <button 
-            className={`btn ${mode === 'student_login' ? 'btn-primary' : 'btn-outline'}`} 
-            style={{flex: 1, border: 'none', padding: '8px 4px', fontSize: '0.85rem', background: mode === 'student_login' ? 'var(--primary-color)' : 'transparent', color: mode === 'student_login' ? 'white' : 'var(--text-secondary)'}}
-            onClick={() => handleModeSwitch('student_login')}
-          >{t('auth.tab_student', 'Élève')}</button>
-          <button 
-            className={`btn ${mode === 'committee_login' ? 'btn-primary' : 'btn-outline'}`} 
-            style={{flex: 1, border: 'none', padding: '8px 4px', fontSize: '0.85rem', background: mode === 'committee_login' ? 'var(--primary-color)' : 'transparent', color: mode === 'committee_login' ? 'white' : 'var(--text-secondary)'}}
-            onClick={() => handleModeSwitch('committee_login')}
-          >Comité d'examen</button>
-        </div>
+        {mode !== 'accept_invite' && (
+          <div style={{display: 'flex', gap: '4px', marginBottom: '24px', padding: '4px', background: 'var(--surface-color-hover)', borderRadius: '8px'}}>
+            <button 
+              className={`btn ${mode === 'login' ? 'btn-primary' : 'btn-outline'}`} 
+              style={{flex: 1, border: 'none', padding: '8px 4px', fontSize: '0.85rem', background: mode === 'login' ? 'var(--primary-color)' : 'transparent', color: mode === 'login' ? 'white' : 'var(--text-secondary)'}}
+              onClick={() => handleModeSwitch('login')}
+            >{t('auth.tab_admin', 'Admin')}</button>
+            <button 
+              className={`btn ${mode === 'teacher_login' ? 'btn-primary' : 'btn-outline'}`} 
+              style={{flex: 1, border: 'none', padding: '8px 4px', fontSize: '0.85rem', background: mode === 'teacher_login' ? 'var(--primary-color)' : 'transparent', color: mode === 'teacher_login' ? 'white' : 'var(--text-secondary)'}}
+              onClick={() => handleModeSwitch('teacher_login')}
+            >{t('auth.tab_teacher', 'Professeur')}</button>
+            <button 
+              className={`btn ${mode === 'student_login' ? 'btn-primary' : 'btn-outline'}`} 
+              style={{flex: 1, border: 'none', padding: '8px 4px', fontSize: '0.85rem', background: mode === 'student_login' ? 'var(--primary-color)' : 'transparent', color: mode === 'student_login' ? 'white' : 'var(--text-secondary)'}}
+              onClick={() => handleModeSwitch('student_login')}
+            >{t('auth.tab_student', 'Élève')}</button>
+            <button 
+              className={`btn ${mode === 'committee_login' ? 'btn-primary' : 'btn-outline'}`} 
+              style={{flex: 1, border: 'none', padding: '8px 4px', fontSize: '0.85rem', background: mode === 'committee_login' ? 'var(--primary-color)' : 'transparent', color: mode === 'committee_login' ? 'white' : 'var(--text-secondary)'}}
+              onClick={() => handleModeSwitch('committee_login')}
+            >Comité d'examen</button>
+          </div>
+        )}
 
         {renderContent()}
 
@@ -313,6 +392,8 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@ecole.com"
+                  disabled={mode === 'accept_invite'}
+                  style={mode === 'accept_invite' ? { background: 'var(--surface-color-hover)', cursor: 'not-allowed' } : {}}
                   required
                 />
               </div>
@@ -334,7 +415,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
           )}
 
           <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? t('auth.loading', 'Chargement...') : mode === 'login' || mode === 'student_login' || mode === 'teacher_login' || mode === 'committee_login' ? t('auth.btn_login', 'Se connecter') : mode === 'register' ? t('auth.btn_register', "S'inscrire") : t('auth.btn_send_link', 'Envoyer le lien')}
+            {loading ? t('auth.loading', 'Chargement...') : mode === 'login' || mode === 'student_login' || mode === 'teacher_login' || mode === 'committee_login' ? t('auth.btn_login', 'Se connecter') : mode === 'register' ? t('auth.btn_register', "S'inscrire") : mode === 'accept_invite' ? "Accepter l'invitation" : t('auth.btn_send_link', 'Envoyer le lien')}
           </button>
         </form>
 

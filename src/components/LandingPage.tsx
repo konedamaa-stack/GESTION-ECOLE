@@ -35,9 +35,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSuperA
             <a href="#contact" className="lp-nav-link">Contact</a>
           </nav>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={(e) => { e.preventDefault(); onSuperAdminClick(); }} className="lp-btn lp-btn-secondary" style={{ padding: '0.5rem 1rem', background: '#8B5CF6', color: 'white', border: 'none' }}>
-              Super Admin
-            </button>
             <button onClick={onLoginClick} className="lp-btn lp-btn-primary" style={{ padding: '0.5rem 1rem' }}>
               Espace Privé
             </button>
@@ -220,11 +217,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSuperA
             <a href="#" className="lp-footer-link">Mentions légales</a>
             <a href="#" className="lp-footer-link">Politique de confidentialité</a>
             <a href="#" className="lp-footer-link">CGU</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); onSuperAdminClick(); }} className="lp-footer-link" style={{ color: '#8B5CF6', fontWeight: 600, marginTop: '8px', display: 'inline-block' }}>Portail SaaS (Admin)</a>
           </div>
         </div>
         <div className="lp-footer-bottom">
-          <p>© {new Date().getFullYear()} GESTION ETABLISSEMENT SCOLAIRE - Tous droits réservés.</p>
+          <p onDoubleClick={() => onSuperAdminClick()} style={{ cursor: 'text', userSelect: 'none' }}>© {new Date().getFullYear()} GESTION ETABLISSEMENT SCOLAIRE - Tous droits réservés.</p>
         </div>
       </footer>
     </div>

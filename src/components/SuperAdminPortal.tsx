@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { SaaSDashboard } from './SaaSDashboard';
 import { AdminList } from './AdminList';
+import { SupportTicketsList } from './SupportTicketsList';
 
 const Icons = {
   Home: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline strokeLinecap="round" strokeLinejoin="round" d="M9 22V12h6v10" /></svg>,
   Users: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path strokeLinecap="round" strokeLinejoin="round" d="M23 21v-2a4 4 0 0 0-3-3.87" /><path strokeLinecap="round" strokeLinejoin="round" d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>,
   Activity: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  LogOut: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline strokeLinecap="round" strokeLinejoin="round" points="16 17 21 12 16 7"/><line strokeLinecap="round" strokeLinejoin="round" x1="21" y1="12" x2="9" y2="12"/></svg>
+  LogOut: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline strokeLinecap="round" strokeLinejoin="round" points="16 17 21 12 16 7"/><line strokeLinecap="round" strokeLinejoin="round" x1="21" y1="12" x2="9" y2="12"/></svg>,
+  Support: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"></line><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"></line><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"></line><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"></line></svg>
 };
 
 interface SuperAdminPortalProps {
@@ -47,6 +49,14 @@ export function SuperAdminPortal({ session, onExit, onSwitchToSchool }: SuperAdm
               <Icons.Users />
               <span>Directeurs & Écoles</span>
             </li>
+            <li 
+              className={`nav-item ${activeTab === 'support' ? 'active' : ''}`} 
+              onClick={() => { setActiveTab('support'); setIsMobileMenuOpen(false); }}
+              style={{ color: activeTab === 'support' ? 'white' : '#9CA3AF', background: activeTab === 'support' ? 'rgba(255,255,255,0.1)' : 'transparent', borderRadius: '8px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+            >
+              <Icons.Support />
+              <span>Support & Assistance</span>
+            </li>
             
             <div style={{ flex: 1 }}></div>
 
@@ -69,7 +79,7 @@ export function SuperAdminPortal({ session, onExit, onSwitchToSchool }: SuperAdm
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
             <h1 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 600, color: '#111827' }}>
-              {activeTab === 'dashboard' ? 'Tableau de bord Global' : 'Liste des Directeurs'}
+              {activeTab === 'dashboard' ? 'Tableau de bord Global' : activeTab === 'admins' ? 'Liste des Directeurs' : 'Support & Assistance'}
             </h1>
           </div>
           
@@ -87,6 +97,7 @@ export function SuperAdminPortal({ session, onExit, onSwitchToSchool }: SuperAdm
         <div className="content-scrollable" style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
           {activeTab === 'dashboard' && <SaaSDashboard session={session} onSwitchToSchool={onSwitchToSchool} />}
           {activeTab === 'admins' && <AdminList onSwitchToSchool={onSwitchToSchool} />}
+          {activeTab === 'support' && <SupportTicketsList />}
         </div>
       </main>
     </div>

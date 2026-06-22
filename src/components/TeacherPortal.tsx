@@ -152,7 +152,7 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
   };
 
   const handleSaveGrades = async () => {
-    if (!selectedEvaluation) return;
+    if (!selectedEvaluation || selectedEvaluation.locked) return;
 
     const classStudents = studentsData.filter(s => s.class_id === selectedEvaluation.class_id);
     
@@ -393,13 +393,17 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
                       <>
                         <optgroup label={t('teacher.pending_evals', "À noter")}>
                           {pendingEvals.map(ev => (
-                            <option key={ev.id} value={ev.id}>{ev.name} ({ev.classes?.name} - {new Date(ev.date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR')})</option>
+                            <option key={ev.id} value={ev.id}>
+                              {ev.name} ({ev.classes?.name}) - {ev.validation_status === 'pending' ? '⏳ En attente' : '✅'} {ev.locked ? '🔒' : ''}
+                            </option>
                           ))}
                         </optgroup>
                         {completedEvals.length > 0 && (
                           <optgroup label={t('teacher.completed_evals', "Déjà notés")}>
                             {completedEvals.map(ev => (
-                              <option key={ev.id} value={ev.id}>{ev.name} ({ev.classes?.name} - {new Date(ev.date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR')})</option>
+                              <option key={ev.id} value={ev.id}>
+                                {ev.name} ({ev.classes?.name}) - {ev.validation_status === 'pending' ? '⏳ En attente' : '✅'} {ev.locked ? '🔒' : ''}
+                              </option>
                             ))}
                           </optgroup>
                         )}
@@ -411,7 +415,9 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
               
               {selectedEvaluation && (
                 <div style={{display: 'flex', gap: '12px', alignItems: 'flex-end'}}>
-                  <button className="btn btn-primary" onClick={handleSaveGrades} style={{height: '42px'}}>{t('teacher.save_grades', "Enregistrer les notes")}</button>
+                  <button className="btn btn-primary" onClick={handleSaveGrades} style={{height: '42px'}} disabled={selectedEvaluation.locked}>
+                    {selectedEvaluation.locked ? '🔒 Évaluation Clôturée' : t('teacher.save_grades', "Enregistrer les notes")}
+                  </button>
                 </div>
               )}
             </div>
@@ -501,7 +507,8 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
                               step="0.25" 
                               min="0" 
                               max="20"
-                              style={{width: '100%', padding: '4px', fontSize: '13px', border: '1px solid #ccc', borderRadius: '3px', outline: 'none'}}
+                              disabled={selectedEvaluation.locked}
+                              style={{width: '100%', padding: '4px', fontSize: '13px', border: '1px solid #ccc', borderRadius: '3px', outline: 'none', background: selectedEvaluation.locked ? '#f5f5f5' : '#fff'}}
                               value={gradesInput[student.id]?.score || ''}
                               onChange={(e) => handleGradeChange(student.id, 'score', e.target.value, selectedEvaluation.max_score || 20)}
                               onKeyDown={(e) => handleKeyDown(e, index)}
@@ -509,7 +516,8 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
                           </td>
                           <td style={{padding: '8px'}}>
                             <select 
-                              style={{width: '100%', padding: '4px', fontSize: '13px', border: '1px solid #ccc', borderRadius: '3px', outline: 'none', background: '#fff'}}
+                              disabled={selectedEvaluation.locked}
+                              style={{width: '100%', padding: '4px', fontSize: '13px', border: '1px solid #ccc', borderRadius: '3px', outline: 'none', background: selectedEvaluation.locked ? '#f5f5f5' : '#fff'}}
                               value={gradesInput[student.id]?.comment || ''}
                               onChange={(e) => handleGradeChange(student.id, 'comment', e.target.value, selectedEvaluation.max_score || 20)}
                             >
@@ -604,11 +612,15 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
                           <td style={{padding: '12px', borderRight: '1px solid #eee'}}>{student.first_name}</td>
                           <td style={{padding: '12px', borderRight: '1px solid #eee'}}><span className={`badge ${student.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`}>{student.status || 'Inscrit'}</span></td>
 <td style={{padding: '12px'}}>
-  <div style={{display: 'flex', gap: '4px'}}>
-    <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '1er Trimestre', student.class_id) : generatePDF(student, 'Trimestre 1')}>T1</button>
-    <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '2ème Trimestre', student.class_id) : generatePDF(student, 'Trimestre 2')}>T2</button>
-    <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '3ème Trimestre', student.class_id) : generatePDF(student, 'Trimestre 3')}>T3</button>
-  </div>
+  {classesData.find(c => c.id === selectedClass)?.principal_teacher_id === session.id ? (
+    <div style={{display: 'flex', gap: '4px'}}>
+      <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '1er Trimestre', student.class_id) : generatePDF(student, '1er Trimestre')}>T1</button>
+      <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '2ème Trimestre', student.class_id) : generatePDF(student, '2ème Trimestre')}>T2</button>
+      <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '3ème Trimestre', student.class_id) : generatePDF(student, '3ème Trimestre')}>T3</button>
+    </div>
+  ) : (
+    <span style={{fontSize: '0.8rem', color: '#888'}}>Réservé au Professeur Principal</span>
+  )}
 </td>
                         </tr>
                       ))}

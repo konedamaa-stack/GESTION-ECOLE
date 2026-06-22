@@ -14,6 +14,9 @@ export function SaaSDashboard({ session, onSwitchToSchool }: SaaSDashboardProps)
     totalRevenue: 0
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [activeSubModal, setActiveSubModal] = useState<any>(null);
+  const [selectedPlan, setSelectedPlan] = useState('Pro');
+  const [selectedEndDate, setSelectedEndDate] = useState('');
 
   useEffect(() => {
     fetchSaaSData();
@@ -22,13 +25,20 @@ export function SaaSDashboard({ session, onSwitchToSchool }: SaaSDashboardProps)
   const fetchSaaSData = async () => {
     setIsLoading(true);
     try {
-      // Pour l'instant on récupère les écoles liées à l'admin
-      const { data: adminLinks } = await supabase
-        .from('school_admins')
-        .select('school_id, schools(*)')
-        .eq('user_id', session.user.id);
-        
-      const userSchools = adminLinks ? adminLinks.map((l: any) => l.schools) : [];
+      const isSuperAdmin = session.user.email === 'konedamaa@gmail.com';
+      let userSchools = [];
+
+      if (isSuperAdmin) {
+        const { data: allSchools } = await supabase.from('schools').select('*');
+        userSchools = allSchools || [];
+      } else {
+        const { data: adminLinks } = await supabase
+          .from('school_admins')
+          .select('school_id, schools(*)')
+          .eq('user_id', session.user.id);
+          
+        userSchools = adminLinks ? adminLinks.map((l: any) => l.schools) : [];
+      }
       
       let totalSt = 0;
       let totalTe = 0;
@@ -70,6 +80,25 @@ export function SaaSDashboard({ session, onSwitchToSchool }: SaaSDashboardProps)
   };
 
   const formatNum = (n: number) => new Intl.NumberFormat('fr-FR').format(n);
+
+  const handleUpdateSubscription = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeSubModal) return;
+    try {
+      const { error } = await supabase.from('schools').update({
+        subscription_plan: selectedPlan,
+        subscription_end_date: selectedEndDate ? new Date(selectedEndDate).toISOString() : null
+      }).eq('id', activeSubModal.id);
+      
+      if (error) throw error;
+      alert('Abonnement mis à jour avec succès !');
+      setActiveSubModal(null);
+      fetchSaaSData();
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors de la mise à jour.');
+    }
+  };
 
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'Inter, sans-serif' }}>
@@ -120,21 +149,71 @@ export function SaaSDashboard({ session, onSwitchToSchool }: SaaSDashboardProps)
                   <span style={{ color: '#6B7280' }}>Élèves inscrits :</span>
                   <span style={{ fontWeight: 600 }}>{formatNum(school.studentCount)}</span>
                 </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <span style={{ color: '#6B7280' }}>Expiration Pro :</span>
+                  <span style={{ fontWeight: 600, color: (school.subscription_plan === 'Pro' && school.subscription_end_date && new Date(school.subscription_end_date) < new Date()) ? 'red' : '#111827' }}>
+                    {school.subscription_end_date ? new Date(school.subscription_end_date).toLocaleDateString('fr-FR') : 'Illimité'}
+                  </span>
+                </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#6B7280' }}>Professeurs :</span>
                   <span style={{ fontWeight: 600 }}>{formatNum(school.teacherCount)}</span>
                 </div>
               </div>
-              <div style={{ padding: '16px 20px', background: '#F9FAFB', borderTop: '1px solid #E5E7EB', display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ padding: '16px 20px', background: '#F9FAFB', borderTop: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between' }}>
+                <button 
+                  onClick={() => {
+                    setActiveSubModal(school);
+                    setSelectedPlan(school.subscription_plan || 'Standard');
+                    setSelectedEndDate(school.subscription_end_date ? new Date(school.subscription_end_date).toISOString().split('T')[0] : '');
+                  }}
+                  style={{ padding: '8px 12px', background: '#10B981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}
+                >
+                  Gérer Abo.
+                </button>
                 <button 
                   onClick={() => onSwitchToSchool(school.id)}
-                  style={{ padding: '8px 16px', background: '#3B82F6', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}
+                  style={{ padding: '8px 12px', background: '#3B82F6', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}
                 >
-                  Gérer cet établissement
+                  Ouvrir
                 </button>
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {/* Sub Modal */}
+      {activeSubModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'white', padding: '24px', borderRadius: '12px', width: '400px', maxWidth: '90%' }}>
+            <h3 style={{ marginTop: 0 }}>Gérer l'Abonnement</h3>
+            <p style={{ color: '#6B7280', marginBottom: '20px' }}>École: <strong>{activeSubModal.name}</strong></p>
+            <form onSubmit={handleUpdateSubscription}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Plan</label>
+                <select value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB' }}>
+                  <option value="Standard">Standard (Limité à 20 élèves)</option>
+                  <option value="Pro">Pro (Illimité)</option>
+                </select>
+              </div>
+              {selectedPlan === 'Pro' && (
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Date d'expiration</label>
+                  <input type="date" value={selectedEndDate} onChange={(e) => setSelectedEndDate(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB' }} />
+                  <small style={{ color: '#6B7280', display: 'block', marginTop: '4px' }}>Laissez vide pour un accès à vie.</small>
+                  
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                    <button type="button" onClick={() => { const d = new Date(); d.setMonth(d.getMonth() + 1); setSelectedEndDate(d.toISOString().split('T')[0]); }} style={{ padding: '4px 8px', fontSize: '0.8rem', background: '#F3F4F6', border: '1px solid #D1D5DB', borderRadius: '4px', cursor: 'pointer' }}>+1 Mois</button>
+                    <button type="button" onClick={() => { const d = new Date(); d.setFullYear(d.getFullYear() + 1); setSelectedEndDate(d.toISOString().split('T')[0]); }} style={{ padding: '4px 8px', fontSize: '0.8rem', background: '#F3F4F6', border: '1px solid #D1D5DB', borderRadius: '4px', cursor: 'pointer' }}>+1 An</button>
+                  </div>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                <button type="button" onClick={() => setActiveSubModal(null)} style={{ padding: '10px 16px', background: 'transparent', border: '1px solid #D1D5DB', borderRadius: '6px', cursor: 'pointer' }}>Annuler</button>
+                <button type="submit" style={{ padding: '10px 16px', background: '#3B82F6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>Sauvegarder</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

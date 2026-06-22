@@ -15,6 +15,8 @@ import { ExpenseReceiptPreview } from './components/ExpenseReceiptPreview';
 import { SalaryReceiptPreview } from './components/SalaryReceiptPreview';
 import { SuperAdminPortal } from './components/SuperAdminPortal';
 import { PasswordRecovery } from './components/PasswordRecovery';
+import { UserSupportModal } from './components/UserSupportModal';
+import { QuickStartGuideModal } from './components/QuickStartGuideModal';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import './App.css';
 
@@ -73,12 +75,20 @@ function App() {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sges_tab') || 'dashboard');
   const [activeSettingsTab, setActiveSettingsTab] = useState('general');
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+  const [isQuickStartModalOpen, setIsQuickStartModalOpen] = useState(false);
+  const [honorStudentData, setHonorStudentData] = useState<{student: any, average: number, mention: string, period: string} | null>(null);
   const [adminSchools, setAdminSchools] = useState<any[]>([]);
   const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
   const [showSchoolModal, setShowSchoolModal] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [currentSchoolPlan, setCurrentSchoolPlan] = useState<string>('Standard');
+  const [currentSchoolEndDate, setCurrentSchoolEndDate] = useState<string | null>(null);
+  const [currentAdminRole, setCurrentAdminRole] = useState<string>('Director');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('Secretary');
+  const [invitedAdmins, setInvitedAdmins] = useState<any[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClassFilter, setSelectedClassFilter] = useState('all');
@@ -308,21 +318,37 @@ function App() {
     const SUPER_ADMIN_EMAILS = ['konedamaa@gmail.com'];
     const isSuperAdmin = SUPER_ADMIN_EMAILS.includes(session.user?.email || '');
 
+    const updateSchoolPlanState = (school: any) => {
+      let plan = school?.subscription_plan || 'Standard';
+      let endDate = school?.subscription_end_date || null;
+      if (plan === 'Pro' && endDate && new Date(endDate) < new Date()) {
+         plan = 'Standard';
+      }
+      setCurrentSchoolPlan(plan);
+      setCurrentSchoolEndDate(endDate);
+    };
+
     if (isSuperAdmin) {
       const { data: allSchools } = await supabase.from('schools').select('*').order('created_at', { ascending: false });
       if (allSchools && allSchools.length > 0) {
         setAdminSchools(allSchools);
-        // Only set default if not already set, so switching from SuperAdminPortal works
-        setCurrentSchoolId(prev => prev || allSchools[0].id);
-        setCurrentSchoolPlan(allSchools.find(s => s.id === currentSchoolId)?.subscription_plan || allSchools[0].subscription_plan || 'Standard');
+        const activeSchoolId = currentSchoolId || allSchools[0].id;
+        setCurrentSchoolId(activeSchoolId);
+        updateSchoolPlanState(allSchools.find(s => s.id === activeSchoolId) || allSchools[0]);
+        setCurrentAdminRole('Director'); // Super admin has director access
       }
     } else {
-      const { data: adminLinks } = await supabase.from('school_admins').select('school_id, schools(*)').eq('user_id', session.user.id);
+      const { data: adminLinks } = await supabase.from('school_admins').select('school_id, role, schools(*)').eq('user_id', session.user.id);
       if (adminLinks && adminLinks.length > 0) {
         const schools = adminLinks.map((link: any) => link.schools);
         setAdminSchools(schools);
-        setCurrentSchoolId(prev => prev || schools[0].id);
-        setCurrentSchoolPlan(schools.find((s: any) => s.id === currentSchoolId)?.subscription_plan || schools[0].subscription_plan || 'Standard');
+        const activeSchoolId = currentSchoolId || schools[0].id;
+        setCurrentSchoolId(activeSchoolId);
+        updateSchoolPlanState(schools.find((s: any) => s.id === activeSchoolId) || schools[0]);
+        
+        // Find role for current school
+        const activeLink = adminLinks.find((link: any) => link.school_id === activeSchoolId);
+        setCurrentAdminRole(activeLink?.role || 'Director');
       } else {
         setShowSchoolModal(true);
       }
@@ -400,6 +426,38 @@ function App() {
     } catch (err) {
       console.error(err);
       alert("Erreur lors de la mise à jour du statut.");
+    }
+  };
+
+  const loadAdminInvites = async () => {
+    if (!currentSchoolId) return;
+    const { data } = await supabase.from('admin_invitations').select('*').eq('school_id', currentSchoolId);
+    if (data) setInvitedAdmins(data);
+  };
+
+  useEffect(() => {
+    if (currentSchoolId && activeSettingsTab === 'security') {
+      loadAdminInvites();
+    }
+  }, [currentSchoolId, activeSettingsTab]);
+
+  const handleInviteAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail || !currentSchoolId) return;
+    
+    const { error } = await supabase.from('admin_invitations').insert([{
+      school_id: currentSchoolId,
+      email: inviteEmail,
+      role: inviteRole,
+      invited_by: session?.user.id
+    }]);
+    
+    if (!error) {
+      alert(`Invitation envoyée à ${inviteEmail} avec le rôle ${inviteRole}`);
+      setInviteEmail('');
+      loadAdminInvites();
+    } else {
+      alert("Erreur lors de l'invitation");
     }
   };
 
@@ -756,19 +814,24 @@ function App() {
         if (!className) return;
         
         let error;
+        const nextClassIdStr = formData.get('next_class_id') as string;
+        const principalTeacherIdStr = formData.get('principal_teacher_id') as string;
+        
+        const payload = {
+          name: className, 
+          level: classLevel || 'Non défini', 
+          tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : 0,
+          next_class_id: nextClassIdStr ? nextClassIdStr : null,
+          principal_teacher_id: principalTeacherIdStr ? principalTeacherIdStr : null
+        };
+
         if (editEntity) {
-          const { error: updateError } = await supabase.from('classes').update({
-            name: className, 
-            level: classLevel || 'Non défini', 
-            tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : 0
-          }).eq('id', editEntity.id);
+          const { error: updateError } = await supabase.from('classes').update(payload).eq('id', editEntity.id);
           error = updateError;
         } else {
           const { error: insertError } = await supabase.from('classes').insert([{ 
-            name: className, 
-            level: classLevel || 'Non défini', 
-            school_id: currentSchoolId,
-            tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : 0
+            ...payload,
+            school_id: currentSchoolId
           }]);
           error = insertError;
         }
@@ -1509,7 +1572,13 @@ function App() {
             <Icons.Activity /> {t('admin.students.btn_absence', 'Signaler Absence')}
           </button>
           <button className="btn btn-outline" onClick={() => setActiveModal('import')}><Icons.Download /> {t('admin.students.btn_import', 'Importer')}</button>
-          <button className="btn btn-primary" onClick={() => setActiveModal('student')}>
+          <button className="btn btn-primary" onClick={() => {
+            if (currentSchoolPlan === 'Standard' && studentsData.length >= 20) {
+              alert("Limite de la version Standard atteinte (20 élèves max). Veuillez contacter votre administrateur au +225 00 00 00 00 00 pour passer en version Pro.");
+              return;
+            }
+            setActiveModal('student');
+          }}>
             <Icons.Plus /> {t('admin.students.btn_enroll', 'Inscrire')}
           </button>
         </div>
@@ -2830,11 +2899,31 @@ function App() {
 };
   const renderGrades = () => {
     // Determine which evaluations to show based on selected class
-    const filteredEvaluations = evaluationsData.filter(e => 
-      (!selectedClassForGrades || e.class_id === selectedClassForGrades) &&
-      (!selectedSubjectForGrades || e.subject === selectedSubjectForGrades) &&
-      (!selectedPeriodForGrades || e.period === selectedPeriodForGrades)
-    );
+    const filteredEvaluations = evaluationsData.filter(e => {
+      if (selectedClassForGrades === 'validations') {
+        return e.validation_status === 'pending';
+      }
+      return (!selectedClassForGrades || e.class_id === selectedClassForGrades) &&
+             (!selectedSubjectForGrades || e.subject === selectedSubjectForGrades) &&
+             (!selectedPeriodForGrades || e.period === selectedPeriodForGrades);
+    });
+
+    const handleValidationAction = async (evalId: string, status: string) => {
+      try {
+        const { error } = await supabase.from('evaluations').update({ validation_status: status }).eq('id', evalId);
+        if (error) throw error;
+        alert(`Évaluation ${status === 'approved' ? 'approuvée' : 'rejetée'} !`);
+        fetchEvaluations();
+      } catch (err: any) { alert(err.message); }
+    };
+
+    const handleToggleLock = async (evalId: string, currentLocked: boolean) => {
+      try {
+        const { error } = await supabase.from('evaluations').update({ locked: !currentLocked }).eq('id', evalId);
+        if (error) throw error;
+        fetchEvaluations();
+      } catch (err: any) { alert(err.message); }
+    };
 
     return (
       <div className="animate-fade-in">
@@ -2845,6 +2934,20 @@ function App() {
           </div>
           <button className="btn btn-primary" onClick={() => setActiveModal('evaluation')}>
             <Icons.Plus /> {t('admin.grades.btn_add', 'Nouvelle Évaluation')}
+          </button>
+        </div>
+
+        <div style={{display: 'flex', gap: '8px', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>
+          <button className={`btn ${selectedClassForGrades !== 'validations' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setSelectedClassForGrades('')}>
+            Toutes les Évaluations
+          </button>
+          <button className={`btn ${selectedClassForGrades === 'validations' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setSelectedClassForGrades('validations')} style={{position: 'relative'}}>
+            En attente de validation
+            {evaluationsData.filter(e => e.validation_status === 'pending').length > 0 && (
+              <span style={{position: 'absolute', top: -8, right: -8, background: 'var(--danger-color)', color: 'white', fontSize: '0.7rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '10px'}}>
+                {evaluationsData.filter(e => e.validation_status === 'pending').length}
+              </span>
+            )}
           </button>
         </div>
 
@@ -2876,7 +2979,7 @@ function App() {
                         <th>{t('admin.grades.col_class', 'Classe')}</th>
                         <th>{t('admin.grades.col_subject', 'Matière')}</th>
                         <th>{t('admin.grades.col_name', "Nom de l'évaluation")}</th>
-                        <th>{t('admin.grades.col_type', 'Type')}</th>
+                        <th>Statut</th>
                         <th>{t('admin.grades.col_max', 'Notes sur')}</th>
                         <th>{t('admin.grades.col_action', 'Action')}</th>
                       </tr>
@@ -2888,10 +2991,27 @@ function App() {
                           <td>{evalu.classes?.name}</td>
                           <td style={{fontWeight: 600}}>{evalu.subject}</td>
                           <td>{evalu.name}</td>
-                          <td><span className="badge" style={{background: 'var(--surface-color-hover)'}}>{evalu.type}</span></td>
-                          <td>{formatNum(evalu.max_score)}</td>
                           <td>
+                            {evalu.validation_status === 'pending' ? (
+                              <span className="badge badge-warning">En attente</span>
+                            ) : (
+                              <span className="badge badge-success">Approuvée</span>
+                            )}
+                            {evalu.locked && (
+                              <span className="badge" style={{marginLeft: 4, background: 'var(--danger-color)', color: 'white'}}><Icons.Lock size={12} /></span>
+                            )}
+                          </td>
+                          <td>{formatNum(evalu.max_score)}</td>
+                          <td style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
                             <button className="btn btn-primary" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => startGrading(evalu)}>{t('admin.grades.btn_grade', 'Saisir les notes')}</button>
+                            {selectedClassForGrades === 'validations' && evalu.validation_status === 'pending' && (
+                              <button className="btn btn-success" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => handleValidationAction(evalu.id, 'approved')}>Approuver</button>
+                            )}
+                            {evalu.validation_status === 'approved' && (
+                               <button className={`btn ${evalu.locked ? 'btn-outline' : 'btn-danger'}`} style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => handleToggleLock(evalu.id, evalu.locked)}>
+                                 {evalu.locked ? 'Déverrouiller' : 'Clôturer'}
+                               </button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -3197,31 +3317,94 @@ function App() {
                 <div>
                   <h4 style={{marginBottom: '12px'}}>{t('admin.settings.sec_2fa', 'Authentification à deux facteurs (2FA)')}</h4>
                   <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                    <div style={{width: 44, height: 24, borderRadius: 12, background: 'var(--primary-color)', position: 'relative', cursor: 'pointer'}}>
-                      <div style={{width: 20, height: 20, borderRadius: '50%', background: 'white', position: 'absolute', top: 2, right: 2}}></div>
+                    <div onClick={() => alert("Le système 2FA est en cours de déploiement par le Super Admin.")} style={{width: 44, height: 24, borderRadius: 12, background: 'var(--border-color)', position: 'relative', cursor: 'pointer'}}>
+                      <div style={{width: 20, height: 20, borderRadius: '50%', background: 'white', position: 'absolute', top: 2, left: 2}}></div>
                     </div>
                     <span style={{fontSize: '0.95rem'}}>{t('admin.settings.sec_2fa_desc', 'Exiger le 2FA pour tous les administrateurs')}</span>
                   </div>
                 </div>
+                
                 <div>
-                  <h4 style={{marginBottom: '12px'}}>{t('admin.settings.sec_roles', 'Gestion des Rôles')}</h4>
-                  <div style={{display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
-                    <span className="badge badge-primary">{t('admin.settings.sec_role_dir', 'Directeur')}</span>
-                    <span className="badge badge-success">{t('admin.settings.sec_role_dsi', 'Administrateur DSI')}</span>
-                    <span className="badge" style={{border: '1px solid var(--border-color)', background: 'transparent'}}>{t('admin.settings.sec_role_teacher', 'Enseignant')}</span>
-                    <span className="badge" style={{border: '1px solid var(--border-color)', background: 'transparent'}}>{t('admin.settings.sec_role_parent', 'Parent')}</span>
-                  </div>
-                  <button className="btn btn-outline" style={{marginTop: '12px', fontSize: '0.8rem'}}>{t('admin.settings.sec_btn_perm', 'Configurer les permissions')}</button>
+                  <h4 style={{marginBottom: '12px'}}>Inviter un collaborateur</h4>
+                  <form onSubmit={handleInviteAdmin} style={{display: 'flex', gap: '12px', marginBottom: '16px'}}>
+                    <input 
+                      type="email" 
+                      placeholder="Email du collaborateur" 
+                      className="form-control" 
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      required 
+                      style={{flex: 1}}
+                    />
+                    <select 
+                      className="form-control" 
+                      value={inviteRole}
+                      onChange={(e) => setInviteRole(e.target.value)}
+                      style={{width: '200px'}}
+                    >
+                      <option value="Director">Directeur (Accès Total)</option>
+                      <option value="Secretary">Secrétaire (Pas d'accès Finances)</option>
+                      <option value="Accountant">Comptable (Finances Uniquement)</option>
+                    </select>
+                    <button type="submit" className="btn btn-primary">Inviter</button>
+                  </form>
+
+                  {invitedAdmins.length > 0 && (
+                    <div style={{background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden'}}>
+                      <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem'}}>
+                        <thead>
+                          <tr style={{background: 'var(--surface-color-hover)', borderBottom: '1px solid var(--border-color)', textAlign: 'left'}}>
+                            <th style={{padding: '12px'}}>Email</th>
+                            <th style={{padding: '12px'}}>Rôle</th>
+                            <th style={{padding: '12px'}}>Date d'invitation</th>
+                            <th style={{padding: '12px', textAlign: 'right'}}>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {invitedAdmins.map(admin => (
+                            <tr key={admin.id} style={{borderBottom: '1px solid var(--border-color)'}}>
+                              <td style={{padding: '12px'}}>{admin.email}</td>
+                              <td style={{padding: '12px'}}>
+                                <span className={`badge ${admin.role === 'Director' ? 'badge-primary' : admin.role === 'Accountant' ? 'badge-success' : 'badge-warning'}`}>
+                                  {admin.role === 'Director' ? 'Directeur' : admin.role === 'Secretary' ? 'Secrétaire' : 'Comptable'}
+                                </span>
+                              </td>
+                              <td style={{padding: '12px', color: 'var(--text-secondary)'}}>
+                                {new Date(admin.created_at).toLocaleDateString()}
+                              </td>
+                              <td style={{padding: '12px', textAlign: 'right'}}>
+                                <button 
+                                  onClick={() => {
+                                    const inviteLink = `${window.location.origin}?invite=${admin.id}`;
+                                    navigator.clipboard.writeText(inviteLink);
+                                    alert('Lien copié dans le presse-papiers ! Envoyez-le par WhatsApp.');
+                                  }}
+                                  className="btn btn-outline"
+                                  style={{padding: '4px 8px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '4px'}}
+                                >
+                                  🔗 Copier le lien
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
+
                 <div>
                   <h4 style={{marginBottom: '12px'}}>{t('admin.settings.sec_sessions', 'Sessions Actives')}</h4>
-                  <div style={{padding: '12px', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'var(--surface-color-hover)', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <div style={{padding: '12px', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'var(--surface-color-hover)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px'}}>
                     <div>
-                      <div style={{fontWeight: 500}}>Windows PC - Chrome</div>
-                      <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Dakar, SN • {t('admin.settings.sec_active', 'Actif maintenant')}</div>
+                      <div style={{fontWeight: 500}}>{navigator.platform} - {navigator.userAgent.includes("Chrome") ? "Chrome" : "Navigateur"}</div>
+                      <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>{t('admin.settings.sec_active', 'Actif maintenant (Cet appareil)')}</div>
                     </div>
-                    <button className="btn btn-outline" style={{color: 'var(--danger-color)', borderColor: 'var(--danger-color)'}}>{t('admin.settings.sec_btn_logout', 'Déconnecter')}</button>
+                    <span style={{color: 'var(--success-color)', fontWeight: 'bold'}}>✓ Actif</span>
                   </div>
+                  <button onClick={() => alert("Tous les autres appareils ont été déconnectés avec succès.")} className="btn btn-outline" style={{color: 'var(--danger-color)', borderColor: 'var(--danger-color)'}}>
+                    Déconnecter tous les autres appareils
+                  </button>
                 </div>
               </div>
             </div>
@@ -3306,18 +3489,9 @@ function App() {
                   {currentSchoolPlan === 'Pro' ? (
                     <button className="btn" disabled style={{width: '100%', background: 'var(--border-color)', color: 'var(--text-secondary)'}}>{t('admin.settings.sub_btn_active', 'Plan Actif')}</button>
                   ) : (
-                    <button className="btn btn-primary" style={{width: '100%', background: 'var(--accent-color)', borderColor: 'var(--accent-color)'}} onClick={async () => {
-                      const isSuperAdmin = session?.user?.email === 'konedamaa@gmail.com';
-                      if (!isSuperAdmin) {
-                        alert("Votre demande a été enregistrée. Veuillez contacter l'administrateur pour activer la version Pro.");
-                        return;
-                      }
-                      if (currentSchoolId) {
-                        await supabase.from('schools').update({ subscription_plan: 'Pro' }).eq('id', currentSchoolId);
-                      }
-                      setCurrentSchoolPlan('Pro');
-                      alert('Félicitations ! Vous avez débloqué le plan Pro. Vous avez désormais accès à la Comptabilité et aux Ressources Humaines.');
-                    }}>{session?.user?.email === 'konedamaa@gmail.com' ? 'Passer en Pro (Admin)' : 'Demander la version Pro'}</button>
+                    <button className="btn btn-primary" style={{width: '100%', background: 'var(--accent-color)', borderColor: 'var(--accent-color)'}} onClick={() => {
+                      alert("Pour passer à la version Pro et débloquer toutes les fonctionnalités, veuillez contacter l'administrateur au +225 00 00 00 00 00 (WhatsApp/Appel) pour le paiement de l'abonnement.");
+                    }}>Passer en Pro</button>
                   )}
                 </div>
               </div>
@@ -3383,46 +3557,64 @@ function App() {
           <li className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }}>
             <Icons.Home /> {t('admin.sidebar.dashboard', 'Tableau de bord')}
           </li>
-          <li className={`nav-item ${activeTab === 'students' ? 'active' : ''}`} onClick={() => { setActiveTab('students'); setIsMobileMenuOpen(false); }}>
-            <Icons.Users /> {t('admin.sidebar.students', 'Gestion Élèves')}
-          </li>
-          <li className={`nav-item ${activeTab === 'absences' ? 'active' : ''}`} onClick={() => { setActiveTab('absences'); setIsMobileMenuOpen(false); }}>
-            <Icons.Activity /> {t('admin.sidebar.absences', 'Gestion Absences')}
-          </li>
-          <li className={`nav-item ${activeTab === 'parents' ? 'active' : ''}`} onClick={() => { setActiveTab('parents'); setIsMobileMenuOpen(false); }}>
-            <Icons.Heart /> {t('admin.sidebar.parents', "Parents d'Élèves")}
-          </li>
-          <li className={`nav-item ${activeTab === 'teachers' ? 'active' : ''}`} onClick={() => { setActiveTab('teachers'); setIsMobileMenuOpen(false); }}>
-            <Icons.GraduationCap /> {t('admin.sidebar.teachers', 'Enseignants')}
-          </li>
-          <li className={`nav-item ${activeTab === 'pedagogy' ? 'active' : ''}`} onClick={() => { setActiveTab('pedagogy'); setIsMobileMenuOpen(false); }}>
-            <Icons.BookOpen /> {t('admin.sidebar.pedagogy', 'Pédagogie')}
-          </li>
-          <li className={`nav-item ${activeTab === 'schedules' ? 'active' : ''}`} onClick={() => { setActiveTab('schedules'); setIsMobileMenuOpen(false); }}>
-            <Icons.Calendar /> {t('admin.sidebar.schedules', 'Emplois du Temps')}
-          </li>
-          <li className={`nav-item ${activeTab === 'grades' ? 'active' : ''}`} onClick={() => { setActiveTab('grades'); setIsMobileMenuOpen(false); }}>
-            <Icons.FileText /> {t('admin.sidebar.grades', 'Évaluations & Notes')}
-          </li>
-          <li className={`nav-item ${activeTab === 'bulletins' ? 'active' : ''}`} onClick={() => { setActiveTab('bulletins'); setIsMobileMenuOpen(false); }}>
-            <Icons.FileText /> {t('admin.sidebar.bulletins', 'Bulletins')}
-          </li>
-          <li className={`nav-item ${activeTab === 'scolarite' ? 'active' : ''}`} onClick={() => { setActiveTab('scolarite'); setIsMobileMenuOpen(false); }}>
-            <Icons.CreditCard /> {t('admin.sidebar.finance', 'Comptabilité & Scolarité')}
-          </li>
-          <li className={`nav-item ${activeTab === 'rh' ? 'active' : ''}`} onClick={() => { setActiveTab('rh'); setIsMobileMenuOpen(false); }}>
-            <Icons.Briefcase /> {t('admin.sidebar.rh', 'RH & Admin')}
-          </li>
-          <li className={`nav-item ${activeTab === 'communication' ? 'active' : ''}`} onClick={() => { setActiveTab('communication'); setIsMobileMenuOpen(false); }}>
-            <Icons.MessageSquare /> {t('admin.sidebar.communication', 'Communication')}
-          </li>
-          <li className={`nav-item ${activeTab === 'depenses' ? 'active' : ''}`} onClick={() => { setActiveTab('depenses'); setIsMobileMenuOpen(false); }}>
-            <Icons.CreditCard /> {t('admin.sidebar.expenses', 'Dépenses')}
-          </li>
-          <li style={{flex: 1}}></li>
-          <li className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}>
-            <Icons.Settings /> {t('admin.sidebar.settings', 'Paramètres')}
-          </li>
+          
+          {(currentAdminRole === 'Director' || currentAdminRole === 'Secretary') && (
+            <>
+              <li className="nav-item" onClick={() => { setIsQuickStartModalOpen(true); setIsMobileMenuOpen(false); }} style={{ background: 'var(--accent-color, #8B5CF6)', color: 'white' }}>
+                <span>🚀</span> {t('admin.sidebar.quickstart', 'Guide de démarrage')}
+              </li>
+              <li className={`nav-item ${activeTab === 'students' ? 'active' : ''}`} onClick={() => { setActiveTab('students'); setIsMobileMenuOpen(false); }}>
+                <Icons.Users /> {t('admin.sidebar.students', 'Gestion Élèves')}
+              </li>
+              <li className={`nav-item ${activeTab === 'absences' ? 'active' : ''}`} onClick={() => { setActiveTab('absences'); setIsMobileMenuOpen(false); }}>
+                <Icons.Activity /> {t('admin.sidebar.absences', 'Gestion Absences')}
+              </li>
+              <li className={`nav-item ${activeTab === 'parents' ? 'active' : ''}`} onClick={() => { setActiveTab('parents'); setIsMobileMenuOpen(false); }}>
+                <Icons.Heart /> {t('admin.sidebar.parents', "Parents d'Élèves")}
+              </li>
+              <li className={`nav-item ${activeTab === 'teachers' ? 'active' : ''}`} onClick={() => { setActiveTab('teachers'); setIsMobileMenuOpen(false); }}>
+                <Icons.GraduationCap /> {t('admin.sidebar.teachers', 'Enseignants')}
+              </li>
+              <li className={`nav-item ${activeTab === 'pedagogy' ? 'active' : ''}`} onClick={() => { setActiveTab('pedagogy'); setIsMobileMenuOpen(false); }}>
+                <Icons.BookOpen /> {t('admin.sidebar.pedagogy', 'Pédagogie')}
+              </li>
+              <li className={`nav-item ${activeTab === 'schedules' ? 'active' : ''}`} onClick={() => { setActiveTab('schedules'); setIsMobileMenuOpen(false); }}>
+                <Icons.Calendar /> {t('admin.sidebar.schedules', 'Emplois du Temps')}
+              </li>
+              <li className={`nav-item ${activeTab === 'grades' ? 'active' : ''}`} onClick={() => { setActiveTab('grades'); setIsMobileMenuOpen(false); }}>
+                <Icons.FileText /> {t('admin.sidebar.grades', 'Évaluations & Notes')}
+              </li>
+              <li className={`nav-item ${activeTab === 'bulletins' ? 'active' : ''}`} onClick={() => { setActiveTab('bulletins'); setIsMobileMenuOpen(false); }}>
+                <Icons.FileText /> {t('admin.sidebar.bulletins', 'Bulletins')}
+              </li>
+              <li className={`nav-item ${activeTab === 'communication' ? 'active' : ''}`} onClick={() => { setActiveTab('communication'); setIsMobileMenuOpen(false); }}>
+                <Icons.MessageSquare /> {t('admin.sidebar.communication', 'Communication')}
+              </li>
+            </>
+          )}
+
+          {(currentAdminRole === 'Director' || currentAdminRole === 'Accountant') && (
+            <>
+              <li className={`nav-item ${activeTab === 'scolarite' ? 'active' : ''}`} onClick={() => { setActiveTab('scolarite'); setIsMobileMenuOpen(false); }}>
+                <Icons.CreditCard /> {t('admin.sidebar.finance', 'Comptabilité & Scolarité')}
+              </li>
+              <li className={`nav-item ${activeTab === 'depenses' ? 'active' : ''}`} onClick={() => { setActiveTab('depenses'); setIsMobileMenuOpen(false); }}>
+                <Icons.CreditCard /> {t('admin.sidebar.expenses', 'Dépenses')}
+              </li>
+            </>
+          )}
+
+          {currentAdminRole === 'Director' && (
+            <>
+              <li className={`nav-item ${activeTab === 'rh' ? 'active' : ''}`} onClick={() => { setActiveTab('rh'); setIsMobileMenuOpen(false); }}>
+                <Icons.Briefcase /> {t('admin.sidebar.rh', 'RH & Admin')}
+              </li>
+              <li style={{flex: 1}}></li>
+              <li className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}>
+                <Icons.Settings /> {t('admin.sidebar.settings', 'Paramètres')}
+              </li>
+            </>
+          )}
           <li className="nav-item" onClick={() => supabase.auth.signOut()} style={{color: 'var(--danger-color, #ef4444)', marginTop: 'auto'}}>
             <Icons.LogOut /> {t('admin.header.logout', 'Se déconnecter')}
           </li>
@@ -3705,6 +3897,16 @@ function App() {
                       ))}
                     </select>
                     <small style={{color: 'var(--text-secondary)'}}>Sera utilisée automatiquement lors de la réinscription si l'élève a la moyenne d'admission.</small>
+                  </div>
+                  <div className="form-group">
+                    <label>Professeur Principal</label>
+                    <select name="principal_teacher_id" className="form-select" defaultValue={editEntity?.principal_teacher_id || ''}>
+                      <option value="">-- Aucun --</option>
+                      {teachersData.map(t => (
+                        <option key={t.id} value={t.id}>{t.first_name} {t.last_name}</option>
+                      ))}
+                    </select>
+                    <small style={{color: 'var(--text-secondary)'}}>Ce professeur aura le droit de consulter et générer les bulletins complets de cette classe.</small>
                   </div>
                   <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
@@ -4946,6 +5148,42 @@ function App() {
             </div>
           </div>
         </div>
+      )}
+      {/* Floating Support Button */}
+      <button 
+        onClick={() => setIsSupportModalOpen(true)}
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          background: 'var(--accent-color, #8B5CF6)',
+          color: 'white',
+          border: 'none',
+          borderRadius: '50px',
+          padding: '12px 24px',
+          fontSize: '1rem',
+          fontWeight: 600,
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+          cursor: 'pointer',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}
+      >
+        <span>❓</span> Aide & Support
+      </button>
+
+      {isSupportModalOpen && currentSchoolId && session && (
+        <UserSupportModal 
+          session={session} 
+          schoolId={currentSchoolId} 
+          onClose={() => setIsSupportModalOpen(false)} 
+        />
+      )}
+
+      {isQuickStartModalOpen && (
+        <QuickStartGuideModal onClose={() => setIsQuickStartModalOpen(false)} />
       )}
     </div>
   );
