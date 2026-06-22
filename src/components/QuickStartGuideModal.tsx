@@ -1,4 +1,4 @@
-import React from 'react';
+// import removed
 
 interface QuickStartGuideModalProps {
   onClose: () => void;

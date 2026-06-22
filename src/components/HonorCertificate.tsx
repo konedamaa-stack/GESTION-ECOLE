@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { useTranslation } from 'react-i18next';
+// import removed
 
 interface HonorCertificateProps {
   student: any;
@@ -13,7 +13,7 @@ interface HonorCertificateProps {
 }
 
 export function HonorCertificate({ student, schoolInfo, period, average, mention, onClose }: HonorCertificateProps) {
-  const { t } = useTranslation();
+  // const { t } = useTranslation();
   const printRef = useRef<HTMLDivElement>(null);
   const isGenerating = React.useRef(false);
 

@@ -660,7 +660,7 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
                     window.open(currentPdfDoc.output('bloburl'), '_blank');
                   }
                 }}>
-                  <Icons.Download /> Imprimer
+                  📥 Imprimer
                 </button>
                 <button className="btn btn-outline" onClick={() => { setPdfPreviewUrl(null); setCurrentPdfDoc(null); }}>Fermer</button>
               </div>

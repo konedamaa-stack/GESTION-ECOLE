@@ -77,14 +77,14 @@ function App() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [isQuickStartModalOpen, setIsQuickStartModalOpen] = useState(false);
-  const [honorStudentData, setHonorStudentData] = useState<{student: any, average: number, mention: string, period: string} | null>(null);
+  // unused honorStudentData
   const [adminSchools, setAdminSchools] = useState<any[]>([]);
   const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
   const [showSchoolModal, setShowSchoolModal] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [currentSchoolPlan, setCurrentSchoolPlan] = useState<string>('Standard');
-  const [currentSchoolEndDate, setCurrentSchoolEndDate] = useState<string | null>(null);
+  // unused currentSchoolEndDate
   const [currentAdminRole, setCurrentAdminRole] = useState<string>('Director');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('Secretary');
@@ -109,7 +109,7 @@ function App() {
   const [activeEvaluation, setActiveEvaluation] = useState<any>(null);
   const [globalGradeClassId, setGlobalGradeClassId] = useState<string | null>(null);
   const [globalGradePeriod, setGlobalGradePeriod] = useState<string>('1er Trimestre');
-  const [reinscriptionAverage, setReinscriptionAverage] = useState<number | null>(null);
+  // unused reinscriptionAverage
   const [globalGrades, setGlobalGrades] = useState<{[key: string]: string}>({});
   const [bulletinClassId, setBulletinClassId] = useState<string | null>(null);
   const [bulletinTargetStudentId, setBulletinTargetStudentId] = useState<string | null>(null);
@@ -325,7 +325,6 @@ function App() {
          plan = 'Standard';
       }
       setCurrentSchoolPlan(plan);
-      setCurrentSchoolEndDate(endDate);
     };
 
     if (isSuperAdmin) {
@@ -2998,7 +2997,7 @@ function App() {
                               <span className="badge badge-success">Approuvée</span>
                             )}
                             {evalu.locked && (
-                              <span className="badge" style={{marginLeft: 4, background: 'var(--danger-color)', color: 'white'}}><Icons.Lock size={12} /></span>
+                              <span className="badge" style={{marginLeft: 4, background: 'var(--danger-color)', color: 'white'}}>🔒</span>
                             )}
                           </td>
                           <td>{formatNum(evalu.max_score)}</td>
@@ -3788,7 +3787,7 @@ function App() {
               {activeModal === 'reinscription' && editEntity && (() => {
                 let autoClassId = editEntity.class_id;
                 let message = "Calcul de la moyenne en cours...";
-                let studentMoyenne = reinscriptionAverage;
+                let studentMoyenne: any = null;
 
                 if (studentMoyenne !== null) {
                   if (studentMoyenne >= 10) {
@@ -4273,10 +4272,10 @@ function App() {
               )}
 
               {activeModal === 'parent_invoices' && editEntity && (() => {
-                const studentIds = editEntity.student_parents?.map((sp) => sp.student_id) || [];
+                const studentIds = editEntity.student_parents?.map((sp: any) => sp.student_id) || [];
                 const parentInvoices = invoicesData?.filter(inv => studentIds.includes(inv.student_id)) || [];
 
-                const realResteTotal = (editEntity.student_parents || []).reduce((sum, sp) => {
+                const realResteTotal = (editEntity.student_parents || []).reduce((sum: number, sp: any) => {
                   const student = studentsData?.find(s => s.id === sp.student_id);
                   if (!student) return sum;
                   const studentTotal = Number(student.tuition_fee) || Number(student.classes?.tuition_fee) || 0;

@@ -10,7 +10,7 @@ interface UserSupportModalProps {
 export function UserSupportModal({ session, schoolId, onClose }: UserSupportModalProps) {
   const [tickets, setTickets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
+  // const [isCreating, setIsCreating] = useState(false);
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
