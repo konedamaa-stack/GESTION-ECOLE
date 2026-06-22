@@ -1573,7 +1573,9 @@ function App() {
           <button className="btn btn-outline" onClick={() => setActiveModal('import')}><Icons.Download /> {t('admin.students.btn_import', 'Importer')}</button>
           <button className="btn btn-primary" onClick={() => {
             if (currentSchoolPlan === 'Standard' && studentsData.length >= 20) {
-              alert("Limite de la version Standard atteinte (20 élèves max). Veuillez contacter votre administrateur au +225 00 00 00 00 00 pour passer en version Pro.");
+              if (window.confirm("Limite de la version Standard atteinte (20 élèves max).\n\nVoulez-vous contacter l'administrateur sur WhatsApp pour passer en version Pro ?")) {
+                window.open("https://wa.me/2250505617743?text=" + encodeURIComponent("Bonjour, j'ai atteint la limite d'élèves sur mon établissement et je souhaite passer à la version Pro."), "_blank");
+              }
               return;
             }
             setActiveModal('student');
@@ -3488,9 +3490,12 @@ function App() {
                   {currentSchoolPlan === 'Pro' ? (
                     <button className="btn" disabled style={{width: '100%', background: 'var(--border-color)', color: 'var(--text-secondary)'}}>{t('admin.settings.sub_btn_active', 'Plan Actif')}</button>
                   ) : (
-                    <button className="btn btn-primary" style={{width: '100%', background: 'var(--accent-color)', borderColor: 'var(--accent-color)'}} onClick={() => {
-                      alert("Pour passer à la version Pro et débloquer toutes les fonctionnalités, veuillez contacter l'administrateur au +225 00 00 00 00 00 (WhatsApp/Appel) pour le paiement de l'abonnement.");
-                    }}>Passer en Pro</button>
+                    <button className="btn btn-primary" style={{width: '100%', background: 'var(--accent-color)', borderColor: 'var(--accent-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'}} onClick={() => {
+                      window.open("https://wa.me/2250505617743?text=" + encodeURIComponent("Bonjour, je souhaite souscrire à l'abonnement Pro pour mon établissement pour débloquer toutes les fonctionnalités."), "_blank");
+                    }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                      Passer en Pro (WhatsApp)
+                    </button>
                   )}
                 </div>
               </div>
