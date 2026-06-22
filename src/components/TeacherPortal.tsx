@@ -30,6 +30,7 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [gradesInput, setGradesInput] = useState<Record<string, {score: string, comment: string}>>({});
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [currentPdfDoc, setCurrentPdfDoc] = useState<any>(null);
   const [gradesData, setGradesData] = useState<any[]>([]);
 
   const formatNum = (num: number | string | undefined) => {
@@ -257,7 +258,9 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
     doc.setFont("helvetica", "normal");
     doc.text("Le Professeur principal", pageWidth - 50, finalY + 30);
     
-    setPdfPreviewUrl(doc.output('bloburl').toString());
+    const pdfBlobUrl = doc.output('bloburl');
+    setCurrentPdfDoc(doc);
+    setPdfPreviewUrl(pdfBlobUrl.toString());
   };
   return (
     <div className="student-portal">
@@ -650,7 +653,17 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
           <div className="modal-content" style={{width: '90vw', height: '90vh', padding: '20px', background: 'white', display: 'flex', flexDirection: 'column'}}>
             <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '16px'}}>
               <h3>Aperçu du Bulletin</h3>
-              <button className="btn btn-outline" onClick={() => setPdfPreviewUrl(null)}>Fermer</button>
+              <div style={{display: 'flex', gap: '10px'}}>
+                <button className="btn btn-primary" onClick={() => {
+                  if (currentPdfDoc) {
+                    currentPdfDoc.autoPrint();
+                    window.open(currentPdfDoc.output('bloburl'), '_blank');
+                  }
+                }}>
+                  <Icons.Download /> Imprimer
+                </button>
+                <button className="btn btn-outline" onClick={() => { setPdfPreviewUrl(null); setCurrentPdfDoc(null); }}>Fermer</button>
+              </div>
             </div>
             <iframe src={pdfPreviewUrl} style={{flex: 1, border: 'none', width: '100%'}} />
           </div>
