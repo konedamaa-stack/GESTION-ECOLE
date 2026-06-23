@@ -4185,7 +4185,7 @@ function App() {
                       if (!csvText) throw new Error("Fichier vide");
                       
                       const lines = csvText.split('\n');
-                      const headers = lines[0].toLowerCase().split(/,|;/).map(h => h.trim().replace(/"/g, ''));
+                      const headers = lines[0].toLowerCase().split(/,|;/).map(h => h.trim().replace(/["']/g, ''));
                       
                       // Attendu: Nom, Prénom
                       const requiredCols = ['nom', 'prénom'];
@@ -4207,7 +4207,7 @@ function App() {
                       const studentsToInsert = [];
                       for (let i = 1; i < lines.length; i++) {
                         if (!lines[i].trim()) continue;
-                        const cols = lines[i].split(/,|;/).map(c => c.trim().replace(/"/g, ''));
+                        const cols = lines[i].split(/,|;/).map(c => c.trim().replace(/["']/g, ''));
                         const nom = cols[idxNom];
                         const prenom = cols[idxPrenom];
                         if (!nom || !prenom) continue;
