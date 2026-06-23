@@ -863,7 +863,7 @@ function App() {
           school_id: currentSchoolId
         };
         
-        if (formData.get('reg_fee_amount')) {
+        if (formData.get('reg_fee_amount') !== null && formData.get('reg_fee_amount') !== '') {
           const { data: newInvoices } = await supabase.from('invoices').insert([invoicePayload]).select();
           if (newInvoices && newInvoices.length > 0) createdInvoice = newInvoices[0];
         }
@@ -949,13 +949,13 @@ function App() {
           school_id: currentSchoolId
         };
 
-        if (formData.get('reg_fee_amount')) {
+        if (formData.get('reg_fee_amount') !== null && formData.get('reg_fee_amount') !== '') {
           const { data: newInvoices } = await supabase.from('invoices').insert([invoicePayload]).select();
           if (newInvoices && newInvoices.length > 0) createdInvoice = newInvoices[0];
         }
 
         fetchStudents();
-        if (formData.get('reg_fee_amount')) {
+        if (formData.get('reg_fee_amount') !== null && formData.get('reg_fee_amount') !== '') {
           fetchInvoices();
           setSelectedStudent({ ...student, id: newStudentId, student_parents: parentObj ? [{ parents: parentObj }] : [] });
           setSelectedInvoice(createdInvoice || {...invoicePayload, id: 'temp-id', issue_date: new Date().toISOString()});
@@ -3850,8 +3850,8 @@ function App() {
                     <h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>2. Frais de Réinscription</h3>
                     <div className="form-group">
                       <label>Montant des frais de réinscription (CFA)</label>
-                      <input type="number" name="reg_fee_amount" className="form-input" placeholder="Ex: 25000" />
-                      <small style={{color: 'var(--text-secondary)'}}>Laissez vide si l'élève n'a pas de frais à payer.</small>
+                      <input type="number" name="reg_fee_amount" className="form-input" required placeholder="Ex: 25000" />
+                      <small style={{color: 'var(--text-secondary)'}}>Mettez 0 si l'élève n'a exceptionnellement pas de frais à payer.</small>
                     </div>
                     <div className="form-grid">
                       <div className="form-group">
@@ -4144,7 +4144,8 @@ function App() {
                   <h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>{t('admin.modals.fees_info', "3. Frais d'Inscription & Scolarité")}</h3>
                   <div className="form-group">
                     <label>{t('admin.modals.reg_fee_amount', "Montant des frais d'inscription (CFA)")}</label>
-                    <input type="number" name="reg_fee_amount" className="form-input" placeholder="Ex: 50000" />
+                    <input type="number" name="reg_fee_amount" className="form-input" required placeholder="Ex: 50000" />
+                    <small style={{color: 'var(--text-secondary)'}}>Saisissez obligatoirement un montant (mettez 0 si gratuité).</small>
                   </div>
                   <div className="form-grid">
                     <div className="form-group">
