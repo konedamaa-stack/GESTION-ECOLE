@@ -1128,9 +1128,6 @@ function App() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       }
-      else if (activeModal === 'course') {
-        alert("Le cours a été planifié avec succès !");
-      }
       else if (activeModal === 'message') {
         alert("Le message a été envoyé avec succès !");
       }
@@ -1761,7 +1758,7 @@ function App() {
           <h1 className="page-title">{t('admin.pedagogy.title', 'Classes & Pédagogie')}</h1>
           <p className="page-subtitle">{t('admin.pedagogy.subtitle', 'Suivi des cours, cahiers de textes et gestion des devoirs.')}</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setActiveModal('course')}>
+        <button className="btn btn-primary" onClick={() => { setActiveTab('schedules'); setActiveModal('schedule'); }}>
           <Icons.Plus /> {t('admin.pedagogy.btn_plan', 'Planifier un cours')}
         </button>
       </div>
@@ -3754,7 +3751,7 @@ function App() {
                 {activeModal === 'parent_children' && "Gestion des enfants"}
                 {activeModal === 'message' && t('admin.modals.message', "Nouveau Message")}
                 {activeModal === 'bulletin' && t('admin.modals.bulletin', "Générer Bulletins")}
-                {activeModal === 'course' && t('admin.modals.course', "Planifier un cours")}
+                {activeModal === 'schedule' && t('admin.modals.course', "Planifier un cours")}
 
                 {activeModal === 'class' && t('admin.modals.class', "Créer une Classe")}
                 {activeModal === 'global_grades' && "Saisie Globale des Notes"}
@@ -4793,7 +4790,7 @@ function App() {
               )}
 
               {/* Bulletin Form */}
-              {['bulletin', 'course'].includes(activeModal) && (
+              {activeModal === 'bulletin' && (
                 <form onSubmit={handleFormSubmit}>
                   <div className="form-group">
                     <label>{t('admin.modals.class_assign', 'Sélectionner la classe')}</label>
@@ -4813,22 +4810,11 @@ function App() {
                       </select>
                     </div>
                   )}
-                  {activeModal === 'course' && (
-                    <>
-                      <div className="form-group">
-                        <label>{t('admin.modals.taught_subject', 'Matière')}</label>
-                        <input type="text" className="form-input" required />
-                      </div>
-                      <div className="form-group">
-                        <label>{t('admin.modals.date_time', 'Date et Heure')}</label>
-                        <input type="datetime-local" className="form-input" required />
-                      </div>
-                    </>
-                  )}
+
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
                     <button type="submit" className="btn btn-primary">
-                      {activeModal === 'bulletin' ? t('admin.modals.generate', 'Lancer la génération') : t('admin.modals.plan', 'Planifier')}
+                      {t('admin.modals.generate', 'Lancer la génération')}
                     </button>
                   </div>
                 </form>
