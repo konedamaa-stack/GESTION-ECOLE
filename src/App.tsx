@@ -3753,6 +3753,7 @@ function App() {
    {activeModal === 'bulletin_preview' && "Aperçu des Bulletins"}
    {activeModal === 'receipt_preview' && "Reçu de Paiement"}
    {activeModal === 'coefficients' && "Coefficients par Matière"}
+   {activeModal === 'import' && "Importer des Élèves"}
               </h2>
               <button className="close-btn" onClick={closeModal}>
                 <Icons.X />
@@ -4160,6 +4161,126 @@ function App() {
                   <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
                     <button type="submit" className="btn btn-primary">{editEntity ? 'Mettre à jour' : t('admin.modals.complete_registration', "Valider l'inscription complète")}</button>
+                  </div>
+                </form>
+              )}
+
+              {activeModal === 'import' && (
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  const fileInput = document.getElementById('csv_upload') as HTMLInputElement;
+                  if (!fileInput.files || fileInput.files.length === 0) {
+                    alert("Veuillez sélectionner un fichier CSV");
+                    return;
+                  }
+                  
+                  const btn = e.nativeEvent.submitter as HTMLButtonElement;
+                  if (btn) { btn.disabled = true; btn.textContent = 'Importation...'; }
+                  
+                  const file = fileInput.files[0];
+                  const reader = new FileReader();
+                  reader.onload = async (event) => {
+                    try {
+                      const csvText = event.target?.result as string;
+                      if (!csvText) throw new Error("Fichier vide");
+                      
+                      const lines = csvText.split('\n');
+                      const headers = lines[0].toLowerCase().split(/,|;/).map(h => h.trim().replace(/"/g, ''));
+                      
+                      // Attendu: Nom, Prénom
+                      const requiredCols = ['nom', 'prénom'];
+                      const hasRequired = requiredCols.every(req => headers.some(h => h.includes(req) || h.includes('prenom')));
+                      if (!hasRequired) {
+                        alert("Format CSV invalide. Les colonnes 'Nom' et 'Prénom' sont obligatoires.");
+                        if(btn) { btn.disabled = false; btn.textContent = 'Lancer l\'importation'; }
+                        return;
+                      }
+
+                      const idxNom = headers.findIndex(h => h.includes('nom'));
+                      const idxPrenom = headers.findIndex(h => h.includes('prénom') || h.includes('prenom'));
+                      const idxDate = headers.findIndex(h => h.includes('date') || h.includes('naissance'));
+                      const idxMatricule = headers.findIndex(h => h.includes('matricule'));
+                      const idxSexe = headers.findIndex(h => h.includes('sexe') || h.includes('genre'));
+
+                      const classId = (document.getElementById('import_class_id') as HTMLSelectElement).value;
+
+                      const studentsToInsert = [];
+                      for (let i = 1; i < lines.length; i++) {
+                        if (!lines[i].trim()) continue;
+                        const cols = lines[i].split(/,|;/).map(c => c.trim().replace(/"/g, ''));
+                        const nom = cols[idxNom];
+                        const prenom = cols[idxPrenom];
+                        if (!nom || !prenom) continue;
+
+                        studentsToInsert.push({
+                          school_id: currentSchoolId,
+                          first_name: prenom,
+                          last_name: nom,
+                          birth_date: (idxDate !== -1 && cols[idxDate]) ? cols[idxDate] : '2000-01-01',
+                          matricule: (idxMatricule !== -1 && cols[idxMatricule]) ? cols[idxMatricule] : `STU-${Math.floor(Math.random()*100000)}`,
+                          gender: (idxSexe !== -1 && cols[idxSexe]) ? (cols[idxSexe].toLowerCase().startsWith('f') ? 'Féminin' : 'Masculin') : 'Masculin',
+                          class_id: classId || null
+                        });
+                      }
+
+                      if (studentsToInsert.length === 0) {
+                        alert("Aucune donnée valide trouvée.");
+                        if(btn) { btn.disabled = false; btn.textContent = 'Lancer l\'importation'; }
+                        return;
+                      }
+
+                      const { error } = await supabase.from('students').insert(studentsToInsert);
+                      if (error) throw error;
+
+                      alert(studentsToInsert.length + " élèves importés avec succès !");
+                      fetchStudents();
+                      closeModal();
+                    } catch (err: any) {
+                      alert("Erreur lors de l'importation: " + err.message);
+                      if(btn) { btn.disabled = false; btn.textContent = 'Lancer l\'importation'; }
+                    }
+                  };
+                  reader.readAsText(file);
+                }}>
+                  <div className="form-group" style={{marginBottom: '24px'}}>
+                    <div style={{background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px', marginBottom: '16px'}}>
+                      <h4 style={{marginBottom: '8px', fontWeight: 'bold'}}>Format attendu (Fichier CSV)</h4>
+                      <p style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Créez un fichier Excel (.csv) avec les colonnes suivantes (les noms doivent être sur la première ligne) :</p>
+                      <ul style={{fontSize: '0.9rem', marginTop: '8px', paddingLeft: '24px', color: 'var(--text-secondary)'}}>
+                        <li><strong>Nom</strong> (obligatoire)</li>
+                        <li><strong>Prénom</strong> (obligatoire)</li>
+                        <li><strong>Date de naissance</strong> (YYYY-MM-DD, optionnel)</li>
+                        <li><strong>Matricule</strong> (optionnel)</li>
+                        <li><strong>Sexe</strong> (M/F, optionnel)</li>
+                      </ul>
+                      <button type="button" className="btn btn-outline" style={{marginTop: '12px'}} onClick={() => {
+                        const csvContent = "data:text/csv;charset=utf-8,Nom,Prénom,Date de naissance,Matricule,Sexe\nDupont,Jean,2010-05-14,MAT-101,M\n";
+                        const encodedUri = encodeURI(csvContent);
+                        const link = document.createElement("a");
+                        link.setAttribute("href", encodedUri);
+                        link.setAttribute("download", "modele_import_eleves.csv");
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}><Icons.Download /> Télécharger un modèle CSV</button>
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>Affecter ces élèves à une classe (Optionnel)</label>
+                    <select id="import_class_id" className="form-select">
+                      <option value="">Aucune classe (Affectation plus tard)</option>
+                      {classesData.map(cls => (
+                        <option key={cls.id} value={cls.id}>{cls.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group" style={{marginTop: '16px'}}>
+                    <label>Fichier CSV</label>
+                    <input type="file" id="csv_upload" accept=".csv" className="form-input" style={{padding: '8px'}} />
+                  </div>
+                  <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
+                    <button type="submit" className="btn btn-primary">Lancer l'importation</button>
                   </div>
                 </form>
               )}
