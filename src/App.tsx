@@ -1676,7 +1676,17 @@ function App() {
                 <td style={{padding: '16px 0'}}>{row.classes?.name || t('admin.students.unassigned', 'Non assigné')}</td>
                 <td style={{padding: '16px 0'}}><span className={`badge ${row.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`}>{row.status}</span></td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
-                  <button className="btn btn-outline" title="Réinscrire" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--accent-color)', borderColor: 'var(--accent-color)'}} onClick={() => { setEditEntity(row); setActiveModal('reinscription'); }}><Icons.RefreshCw /></button>
+                  <button className="btn btn-outline" title="Réinscrire" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--accent-color)', borderColor: 'var(--accent-color)'}} onClick={() => { 
+                    const studentInvoices = invoicesData.filter(inv => inv.student_id === row.id);
+                    const studentPaye = studentInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+                    const studentTotal = Number(row.tuition_fee) || Number(row.classes?.tuition_fee) || 0;
+                    const studentReste = Math.max(0, studentTotal - studentPaye);
+                    if (studentReste > 0) {
+                      alert(`Impossible de réinscrire cet élève. Il a un reste de scolarité non payé de ${studentReste} CFA. Veuillez d'abord solder sa scolarité.`);
+                    } else {
+                      setEditEntity(row); setActiveModal('reinscription'); 
+                    }
+                  }}><Icons.RefreshCw /></button>
                   <button className="btn btn-outline" title="Modifier" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('student'); }}>✏️</button>
                   <button className="btn btn-outline" title="Supprimer" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--error-color)', borderColor: 'var(--error-color)'}} onClick={() => handleDeleteStudent(row.id)}>🗑️</button>
                   <button className="btn btn-outline" title="Emploi du temps" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { 
