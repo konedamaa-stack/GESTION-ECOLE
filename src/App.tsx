@@ -4218,7 +4218,6 @@ function App() {
                           last_name: nom,
                           birth_date: (idxDate !== -1 && cols[idxDate]) ? cols[idxDate] : '2000-01-01',
                           matricule: (idxMatricule !== -1 && cols[idxMatricule]) ? cols[idxMatricule] : `STU-${Math.floor(Math.random()*100000)}`,
-                          gender: (idxSexe !== -1 && cols[idxSexe]) ? (cols[idxSexe].toLowerCase().startsWith('f') ? 'Féminin' : 'Masculin') : 'Masculin',
                           class_id: classId || null
                         });
                       }
@@ -4251,10 +4250,9 @@ function App() {
                         <li><strong>Prénom</strong> (obligatoire)</li>
                         <li><strong>Date de naissance</strong> (YYYY-MM-DD, optionnel)</li>
                         <li><strong>Matricule</strong> (optionnel)</li>
-                        <li><strong>Sexe</strong> (M/F, optionnel)</li>
                       </ul>
                       <button type="button" className="btn btn-outline" style={{marginTop: '12px'}} onClick={() => {
-                        const csvContent = "data:text/csv;charset=utf-8,Nom,Prénom,Date de naissance,Matricule,Sexe\nDupont,Jean,2010-05-14,MAT-101,M\n";
+                        const csvContent = "data:text/csv;charset=utf-8,Nom,Prénom,Date de naissance,Matricule\nDupont,Jean,2010-05-14,MAT-101\n";
                         const encodedUri = encodeURI(csvContent);
                         const link = document.createElement("a");
                         link.setAttribute("href", encodedUri);
