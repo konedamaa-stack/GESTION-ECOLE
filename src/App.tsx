@@ -4212,11 +4212,33 @@ function App() {
                         const prenom = cols[idxPrenom];
                         if (!nom || !prenom) continue;
 
+                        let parsedDate = '2000-01-01';
+                        if (idxDate !== -1 && cols[idxDate]) {
+                          let rawDate = cols[idxDate].trim();
+                          if (rawDate.includes('/')) {
+                            const parts = rawDate.split('/');
+                            if (parts.length === 3) {
+                              let year = parts[2];
+                              if (year.length === 2) year = parseInt(year) > 50 ? `19${year}` : `20${year}`;
+                              parsedDate = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                            }
+                          } else if (rawDate.includes('-') && rawDate.split('-')[0].length <= 2) {
+                            const parts = rawDate.split('-');
+                            if (parts.length === 3) {
+                              let year = parts[2];
+                              if (year.length === 2) year = parseInt(year) > 50 ? `19${year}` : `20${year}`;
+                              parsedDate = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                            }
+                          } else {
+                            parsedDate = rawDate;
+                          }
+                        }
+
                         studentsToInsert.push({
                           school_id: currentSchoolId,
                           first_name: prenom,
                           last_name: nom,
-                          birth_date: (idxDate !== -1 && cols[idxDate]) ? cols[idxDate] : '2000-01-01',
+                          birth_date: parsedDate,
                           matricule: (idxMatricule !== -1 && cols[idxMatricule]) ? cols[idxMatricule] : `STU-${Math.floor(Math.random()*100000)}`,
                           class_id: classId || null
                         });
