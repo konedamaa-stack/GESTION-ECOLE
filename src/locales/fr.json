@@ -154,7 +154,7 @@
       "absences": "Gestion Absences",
       "parents": "Parents d'Élèves",
       "teachers": "Enseignants",
-      "pedagogy": "Pédagogie",
+      "pedagogy": "Classes & Pédagogie",
       "schedules": "Emplois du Temps",
       "grades": "Notes & Bulletins",
       "bulletins": "Bulletins",
@@ -207,8 +207,8 @@
       "empty_state": "Aucune absence enregistrée."
     },
     "pedagogy": {
-      "title": "Pédagogie & Évaluations",
-      "subtitle": "Suivi des cours, cahiers de textes et gestion des devoirs.",
+      "title": "Classes & Pédagogie",
+      "subtitle": "Gestion des classes, suivi des cours, et cahiers de textes.",
       "btn_plan": "Planifier un cours",
       "stat_active": "Classes Actives",
       "stat_active_desc": "Toutes les classes",

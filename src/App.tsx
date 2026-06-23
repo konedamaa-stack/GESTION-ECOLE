@@ -1757,7 +1757,7 @@ function App() {
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
-          <h1 className="page-title">{t('admin.pedagogy.title', 'Pédagogie & Évaluations')}</h1>
+          <h1 className="page-title">{t('admin.pedagogy.title', 'Classes & Pédagogie')}</h1>
           <p className="page-subtitle">{t('admin.pedagogy.subtitle', 'Suivi des cours, cahiers de textes et gestion des devoirs.')}</p>
         </div>
         <button className="btn btn-primary" onClick={() => setActiveModal('course')}>
@@ -3580,7 +3580,7 @@ function App() {
                 <Icons.GraduationCap /> {t('admin.sidebar.teachers', 'Enseignants')}
               </li>
               <li className={`nav-item ${activeTab === 'pedagogy' ? 'active' : ''}`} onClick={() => { setActiveTab('pedagogy'); setIsMobileMenuOpen(false); }}>
-                <Icons.BookOpen /> {t('admin.sidebar.pedagogy', 'Pédagogie')}
+                <Icons.BookOpen /> {t('admin.sidebar.pedagogy', 'Classes & Pédagogie')}
               </li>
               <li className={`nav-item ${activeTab === 'schedules' ? 'active' : ''}`} onClick={() => { setActiveTab('schedules'); setIsMobileMenuOpen(false); }}>
                 <Icons.Calendar /> {t('admin.sidebar.schedules', 'Emplois du Temps')}

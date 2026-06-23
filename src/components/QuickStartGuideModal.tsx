@@ -50,7 +50,7 @@ export function QuickStartGuideModal({ onClose }: QuickStartGuideModalProps) {
               icon="🏫" 
               title="Créer les Classes" 
               description="Créez tous les niveaux d'études (ex: CP1, 6ème A). C'est le cœur de l'école."
-              location="Menu > Classes & Niveaux"
+              location="Menu > Classes & Pédagogie"
               isHighlight
             />
 
