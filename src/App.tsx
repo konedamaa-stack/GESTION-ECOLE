@@ -114,6 +114,7 @@ function App() {
   const [bulletinClassId, setBulletinClassId] = useState<string | null>(null);
   const [bulletinTargetStudentId, setBulletinTargetStudentId] = useState<string | null>(null);
   const [bulletinPeriod, setBulletinPeriod] = useState<string>('1er Trimestre');
+  const [activeBulletinPeriod, setActiveBulletinPeriod] = useState<string>('1er Trimestre');
 
   const [bulletinGrades, setBulletinGrades] = useState<any[]>([]);
 
@@ -2051,7 +2052,14 @@ function App() {
 
       <div className="panel delay-100">
         <div className="panel-header">
-          <h3 className="panel-title">{t('admin.bulletins.panel_title', 'Trimestre en cours (T2)')}</h3>
+          <h3 className="panel-title">{t('admin.bulletins.panel_title', 'Trimestre en cours')}</h3>
+          <select className="form-select" style={{width: '200px', marginLeft: 'auto'}} value={activeBulletinPeriod} onChange={(e) => setActiveBulletinPeriod(e.target.value)}>
+            <option value="1er Trimestre">1er Trimestre (T1)</option>
+            <option value="2ème Trimestre">2ème Trimestre (T2)</option>
+            <option value="3ème Trimestre">3ème Trimestre (T3)</option>
+            <option value="1er Semestre">1er Semestre (S1)</option>
+            <option value="2ème Semestre">2ème Semestre (S2)</option>
+          </select>
         </div>
         <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
           <thead>
@@ -2071,9 +2079,9 @@ function App() {
                 <td style={{padding: '16px 0', fontWeight: 'bold'}}>-</td>
                 <td style={{padding: '16px 0'}}><span className={`badge badge-warning`}>{t('admin.bulletins.status_pending', 'En attente')}</span></td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
-                  <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setActiveModal('global_grades'); setGlobalGradeClassId(row.id); setGlobalGradePeriod('1er Trimestre'); loadGlobalGrades(row.id, '1er Trimestre'); }}><Icons.FileText /> {t('admin.bulletins.btn_global', 'Saisie Globale')}</button>
+                  <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setActiveModal('global_grades'); setGlobalGradeClassId(row.id); setGlobalGradePeriod(activeBulletinPeriod); loadGlobalGrades(row.id, activeBulletinPeriod); }}><Icons.FileText /> {t('admin.bulletins.btn_global', 'Saisie Globale')}</button>
                    <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setBulletinClassId(row.id); setActiveModal('coefficients'); }}><Icons.Settings /> Coefficients</button>
-                  <button className="btn btn-outline" style={{padding: '6px 12px'}} onClick={() => loadBulletinData(row.id, '1er Trimestre')}><Icons.FileText /> {t('admin.bulletins.btn_export', 'Aperçu Bulletins')}</button>
+                  <button className="btn btn-outline" style={{padding: '6px 12px'}} onClick={() => loadBulletinData(row.id, activeBulletinPeriod)}><Icons.FileText /> {t('admin.bulletins.btn_export', 'Aperçu Bulletins')}</button>
                 </td>
               </tr>
             )) : (
