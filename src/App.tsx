@@ -4206,7 +4206,6 @@ function App() {
                       const idxPrenom = headers.findIndex(h => h.includes('prénom') || h.includes('prenom'));
                       const idxDate = headers.findIndex(h => h.includes('date') || h.includes('naissance'));
                       const idxMatricule = headers.findIndex(h => h.includes('matricule'));
-                      const idxSexe = headers.findIndex(h => h.includes('sexe') || h.includes('genre'));
 
                       const classId = (document.getElementById('import_class_id') as HTMLSelectElement).value;
 
