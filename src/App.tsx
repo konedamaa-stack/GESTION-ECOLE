@@ -1552,7 +1552,11 @@ function App() {
   const renderStudents = () => {
     const filteredStudents = studentsData.filter(s => {
       const matchQuery = (s.first_name + ' ' + s.last_name + ' ' + s.matricule).toLowerCase().includes(searchQuery.toLowerCase());
-      const matchClass = selectedClassFilter === 'all' || s.class_id === selectedClassFilter;
+      let matchClass = false;
+      if (selectedClassFilter === 'all') matchClass = true;
+      else if (selectedClassFilter === 'unassigned') matchClass = !s.class_id;
+      else if (selectedClassFilter === 'assigned') matchClass = !!s.class_id;
+      else matchClass = s.class_id === selectedClassFilter;
       const matchStatus = selectedStatusFilter === 'all' || (s.status || 'Inscrit') === selectedStatusFilter;
       return matchQuery && matchClass && matchStatus;
     });
@@ -1638,6 +1642,8 @@ function App() {
               style={{width: '200px', padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: '6px'}}
             >
               <option value="all">Toutes les classes</option>
+              <option value="unassigned">Non Affectés (Sans classe)</option>
+              <option value="assigned">Affectés (Avec classe)</option>
               {classesData.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
