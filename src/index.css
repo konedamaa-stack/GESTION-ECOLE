@@ -329,11 +329,7 @@ html {
   color: #64748b;
 }
 
-/* Print Styles */
-@media print {
-  body * {
-    visibility: hidden;
-  }
+/* Print styles merged below */
   .bulletins-container, .bulletins-container *,
   .bulletin-classic-container, .bulletin-classic-container *,
   .receipt-preview-container-wrapper, .receipt-preview-container-wrapper * {
@@ -635,6 +631,31 @@ html {
 }
 
 @media print {
+  /* Isolate Bulletin */
+  body.print-bulletin .page-header,
+  body.print-bulletin .stats-grid,
+  body.print-bulletin .sidebar,
+  body.print-bulletin .top-header,
+  body.print-bulletin .panel:not(.bulletin-preview-container),
+  body.print-bulletin .print-controls {
+    display: none !important;
+  }
+  body.print-bulletin .bulletin-preview-container,
+  body.print-bulletin .bulletin-preview-container * {
+    visibility: visible !important;
+  }
+  body.print-bulletin .bulletin-preview-container {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+  }
+  
   /* Isolate Finance List and Finance Class Summary */
   body.print-finance-list .page-header,
   body.print-finance-list .stats-grid,

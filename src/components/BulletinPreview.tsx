@@ -231,7 +231,11 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
                 </div>
               </div>
               <div className="school-statut">
-                <div className="photo-placeholder">Photo</div>
+                {st.photo_url ? (
+                  <img src={st.photo_url} alt="Photo" style={{width: '50px', height: '60px', objectFit: 'cover', border: '1px solid #ccc'}} />
+                ) : (
+                  <div className="photo-placeholder">Photo</div>
+                )}
                 <div>
                   <p>Code: <strong>{schoolInfo?.id ? schoolInfo.id.substring(0, 6).toUpperCase() : '...'}</strong></p>
                   <p>Statut: <strong>Privé</strong></p>

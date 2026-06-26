@@ -4561,7 +4561,11 @@ function App() {
                       </div>
                     </div>
                     <div>
-                      <button className="btn btn-primary" onClick={() => window.print()}><Icons.Download /> Imprimer / PDF</button>
+                      <button className="btn btn-primary" onClick={() => {
+                        document.body.classList.add('print-bulletin');
+                        window.print();
+                        setTimeout(() => document.body.classList.remove('print-bulletin'), 500);
+                      }}><Icons.Download /> Imprimer / PDF</button>
                     </div>
                   </div>
                   

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function StudentPortal({ student, onLogout }: { student: any; onLogout: () => void }) {
   const { t, i18n } = useTranslation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'grades' | 'schedule'>('grades');
   const [schedules, setSchedules] = useState<any[]>([]);
   const [evaluations, setEvaluations] = useState<any[]>([]);
