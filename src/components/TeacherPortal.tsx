@@ -284,24 +284,26 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
       </header>
 
       <main style={{padding: '32px', maxWidth: '1200px', margin: '0 auto'}}>
+        <div className="animate-fade-in" style={{marginBottom: '24px', background: 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))', color: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(99, 102, 241, 0.3)'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '20px'}}>
+            <div style={{width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px'}}>
+              👨‍🏫
+            </div>
+            <div>
+              <h2 style={{color: 'white', margin: 0, fontSize: '1.8rem'}}>{t('teacher.welcome', "Bienvenue dans votre espace, {{name}}", {name: session.first_name})}</h2>
+              <p style={{margin: '8px 0 0 0', opacity: 0.9, fontSize: '1.05rem'}}>Gérez vos évaluations, saisissez les notes et suivez la progression de vos élèves en toute simplicité.</p>
+            </div>
+          </div>
+        </div>
+
         <div style={{display: 'flex', gap: '16px', marginBottom: '32px', flexWrap: 'wrap'}}>
           <button className={`btn ${activeTab === 'dashboard' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('dashboard')}>{t('teacher.tab_dashboard', "Tableau de Bord")}</button>
           <button className={`btn ${activeTab === 'evaluations' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('evaluations')}>{t('teacher.tab_evaluations', "Mes Évaluations")}</button>
           <button className={`btn ${activeTab === 'students' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('students')}>{t('teacher.tab_students', "Mes Élèves")}</button>
         </div>
+
         {activeTab === 'dashboard' && (
           <div className="animate-fade-in">
-            <div style={{marginBottom: '24px', background: 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))', color: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(99, 102, 241, 0.3)'}}>
-              <div style={{display: 'flex', alignItems: 'center', gap: '20px'}}>
-                <div style={{width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px'}}>
-                  👨‍🏫
-                </div>
-                <div>
-                  <h2 style={{color: 'white', margin: 0, fontSize: '1.8rem'}}>{t('teacher.welcome', "Bienvenue dans votre espace, {{name}}", {name: session.first_name})}</h2>
-                  <p style={{margin: '8px 0 0 0', opacity: 0.9, fontSize: '1.05rem'}}>Gérez vos évaluations, saisissez les notes et suivez la progression de vos élèves en toute simplicité.</p>
-                </div>
-              </div>
-            </div>
 
             <div className="stats-grid" style={{marginTop: '24px'}}>
               <div className="stat-card delay-100" style={{background: 'white', border: '1px solid var(--border-color)'}}>
@@ -336,7 +338,7 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
                     <label style={{fontWeight: 600, color: 'var(--text-secondary)'}}>{t('teacher.class', "Classe")}</label>
                     <select name="class_id" className="form-input" required style={{width: '100%'}}>
                       <option value="">{t('teacher.select_class', "Sélectionner une classe")}</option>
-                      {classesData.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      {classesData.filter(c => teacherSchedules.some(s => s.class_id === c.id) || c.principal_teacher_id === session.id || evaluationsData.some(ev => ev.class_id === c.id)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
                   <div className="form-group">
@@ -577,7 +579,7 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
                   onChange={(e) => setSelectedClass(e.target.value)}
                 >
                   <option value="" disabled>{t('teacher.choose_class', "-- Choisir une classe --")}</option>
-                  {classesData.filter(c => teacherSchedules.some(s => s.class_id === c.id) || evaluationsData.some(ev => ev.class_id === c.id)).map(c => (
+                  {classesData.filter(c => teacherSchedules.some(s => s.class_id === c.id) || c.principal_teacher_id === session.id || evaluationsData.some(ev => ev.class_id === c.id)).map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
