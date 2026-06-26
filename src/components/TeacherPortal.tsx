@@ -17,7 +17,6 @@ const Icons = {
 
 export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { session: any, onLogout: () => void, onOpenBulletin?: (studentId: string, period: string, classId: string) => void }) {
   const { t, i18n } = useTranslation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [classesData, setClassesData] = useState<any[]>([]);
   const [evaluationsData, setEvaluationsData] = useState<any[]>([]);

@@ -329,31 +329,6 @@ html {
   color: #64748b;
 }
 
-/* Print styles merged below */
-  .bulletins-container, .bulletins-container *,
-  .bulletin-classic-container, .bulletin-classic-container *,
-  .receipt-preview-container-wrapper, .receipt-preview-container-wrapper * {
-    visibility: visible;
-  }
-  .bulletins-container, .bulletin-classic-container, .receipt-preview-container-wrapper {
-    position: absolute;
-    left: 0;
-    top: 0;
-    padding: 0;
-    margin: 0;
-    background: white;
-  }
-  .bulletin-page {
-    box-shadow: none;
-    margin: 0;
-    padding: 15mm;
-    page-break-after: always;
-  }
-  /* Hide close button and print button during print */
-  .print-controls {
-    display: none !important;
-  }
-}
 
 
 .bulletin-preview-container {
