@@ -5297,6 +5297,7 @@ function App() {
       )}
       {/* Floating Support Button */}
       <button 
+        className="hide-print"
         onClick={() => setIsSupportModalOpen(true)}
         style={{
           position: 'fixed',

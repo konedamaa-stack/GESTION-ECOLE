@@ -560,7 +560,7 @@ html {
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
-    min-height: 297mm !important;
+    min-height: auto !important;
     margin: 0 !important;
     padding: 5mm !important; /* Reduce padding slightly for print to save space */
     page-break-after: always;
@@ -591,6 +591,9 @@ html {
   .modal-body {
     overflow: visible !important;
     height: auto !important;
+  }
+  .hide-print {
+    display: none !important;
   }
 }
 
