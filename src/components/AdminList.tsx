@@ -110,8 +110,10 @@ $$;`;
         // Delete related records manually to bypass foreign key constraint errors
         const tables = [
           'admin_invitations', 'school_admins', 'employee_payments', 'teacher_payments',
-          'loans', 'expenses', 'invoices', 'attendance', 'grades', 'teacher_subjects',
-          'teachers', 'subjects', 'classes', 'settings'
+          'loans', 'expenses', 'invoices', 'attendance', 'absences', 'grades', 'evaluations',
+          'teacher_subjects', 'schedules', 'class_subjects', 'teachers', 'employees',
+          'subjects', 'classes', 'settings', 'school_settings', 'sms_history', 'support_tickets',
+          'parents'
         ];
         
         // Handle student_parents specifically because it links to student_id
@@ -127,7 +129,12 @@ $$;`;
 
         // Delete all other related records
         for (const table of tables) {
-          await supabase.from(table).delete().eq('school_id', schoolId);
+          try {
+            const { error: tableError } = await supabase.from(table).delete().eq('school_id', schoolId);
+            if (tableError) console.warn(`Failed to delete from ${table}:`, tableError);
+          } catch (e) {
+            console.warn(`Error deleting from ${table}:`, e);
+          }
         }
 
         // Finally delete the school
