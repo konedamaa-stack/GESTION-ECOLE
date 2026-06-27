@@ -13,7 +13,7 @@ export default function CommitteePortal({ session, onLogout, onOpenBulletin }: {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [showEvalForm, setShowEvalForm] = useState(false);
-  const [newEval, setNewEval] = useState({ name: '', period: 'Trimestre 1', max_score: 20 });
+  const [newEval, setNewEval] = useState({ name: '', period: '1er Trimestre', max_score: 20 });
   const [selectedEval, setSelectedEval] = useState<string | null>(null);
   const [savingGrades, setSavingGrades] = useState(false);
   const [editingGrades, setEditingGrades] = useState<Record<string, { score: number | '', comment: string }>>({});
@@ -66,7 +66,7 @@ export default function CommitteePortal({ session, onLogout, onOpenBulletin }: {
         setEvaluations([data[0], ...evaluations]);
         setShowEvalForm(false);
         setSelectedEval(data[0].id);
-        setNewEval({ name: '', period: 'Trimestre 1', max_score: 20 });
+        setNewEval({ name: '', period: '1er Trimestre', max_score: 20 });
       }
     } catch (error: any) {
       alert("Erreur lors de la création : " + error.message);
@@ -276,9 +276,9 @@ export default function CommitteePortal({ session, onLogout, onOpenBulletin }: {
                     <td style={{padding: '16px'}}>{className}</td>
                     <td style={{padding: '16px'}}>
                       <div style={{display: 'flex', gap: '8px'}}>
-                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '1er Trimestre', student.class_id) : generatePDF(student, 'Trimestre 1')}>T1</button>
-                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '2ème Trimestre', student.class_id) : generatePDF(student, 'Trimestre 2')}>T2</button>
-                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '3ème Trimestre', student.class_id) : generatePDF(student, 'Trimestre 3')}>T3</button>
+                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '1er Trimestre', student.class_id) : generatePDF(student, '1er Trimestre')}>T1</button>
+                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '2ème Trimestre', student.class_id) : generatePDF(student, '2ème Trimestre')}>T2</button>
+                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '3ème Trimestre', student.class_id) : generatePDF(student, '3ème Trimestre')}>T3</button>
                       </div>
                     </td>
                   </tr>
@@ -363,9 +363,9 @@ export default function CommitteePortal({ session, onLogout, onOpenBulletin }: {
                         <div style={{marginBottom: '12px'}}>
                           <label style={{display: 'block', fontSize: '0.85rem', marginBottom: '4px'}}>Période</label>
                           <select className="input-field" value={newEval.period} onChange={e => setNewEval({...newEval, period: e.target.value})} style={{width: '100%', padding: '6px'}}>
-                            <option>Trimestre 1</option>
-                            <option>Trimestre 2</option>
-                            <option>Trimestre 3</option>
+                            <option value="1er Trimestre">1er Trimestre</option>
+                            <option value="2ème Trimestre">2ème Trimestre</option>
+                            <option value="3ème Trimestre">3ème Trimestre</option>
                           </select>
                         </div>
                         <div style={{marginBottom: '16px'}}>
