@@ -907,6 +907,25 @@ function App() {
       }
 
       if (activeModal === 'student') {
+        let photoUrl = editEntity?.photo_url || null;
+        const photoFile = formData.get('photo') as File;
+        if (photoFile && photoFile.size > 0) {
+          const fileExt = photoFile.name.split('.').pop();
+          const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const { error: uploadError } = await supabase.storage.from('photos_eleves').upload(fileName, photoFile);
+          if (uploadError) {
+            console.error("Erreur upload photo:", uploadError);
+            alert("Erreur lors de l'upload de la photo");
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = 'Enregistrer';
+            }
+            return;
+          }
+          const { data: { publicUrl } } = supabase.storage.from('photos_eleves').getPublicUrl(fileName);
+          photoUrl = publicUrl;
+        }
+
         if (editEntity) {
           const studentUpdate: any = {
             first_name: formData.get('first_name'),
@@ -914,7 +933,8 @@ function App() {
             class_id: formData.get('class_id'),
             birth_date: formData.get('birth_date'),
             status: formData.get('status') || 'Inscrit',
-            tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : null
+            tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : null,
+            photo_url: photoUrl
           };
           if (formData.get('matricule')) studentUpdate.matricule = formData.get('matricule');
           if (formData.get('password')) studentUpdate.password = formData.get('password');
@@ -935,7 +955,8 @@ function App() {
           birth_date: formData.get('birth_date'),
           email: formData.get('email'),
           password: password,
-          tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : null
+          tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : null,
+          photo_url: photoUrl
         };
         const { data: studentData, error: studentError } = await supabase.from('students').insert([{...student, school_id: currentSchoolId}]).select();
         if (studentError) throw studentError;
@@ -1727,8 +1748,17 @@ function App() {
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
                 <td style={{padding: '16px 0', fontFamily: 'monospace', color: 'var(--primary-color)'}}>{row.matricule}</td>
                 <td style={{padding: '16px 0', fontWeight: 600}}>
-                  <div style={{cursor: 'pointer', color: 'var(--primary-color)'}} onClick={() => { setSelectedStudent(row); setActiveModal('studentDossier'); }}>
-                    {row.first_name} {row.last_name}
+                  <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                    {row.photo_url ? (
+                      <img src={row.photo_url} alt="Photo" style={{width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover'}} />
+                    ) : (
+                      <div style={{width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)'}}>
+                        <Icons.User size={16} />
+                      </div>
+                    )}
+                    <div style={{cursor: 'pointer', color: 'var(--primary-color)'}} onClick={() => { setSelectedStudent(row); setActiveModal('studentDossier'); }}>
+                      {row.first_name} {row.last_name}
+                    </div>
                   </div>
                 </td>
                 <td style={{padding: '16px 0'}}>{row.classes?.name || t('admin.students.unassigned', 'Non assigné')}</td>
