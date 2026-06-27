@@ -39,6 +39,7 @@ language plpgsql
 as $$
 begin
   -- Nettoyage des références orphelines
+  delete from public.support_tickets where user_id = target_user_id;
   delete from public.school_admins where user_id = target_user_id;
   
   -- Suppression de l'utilisateur
