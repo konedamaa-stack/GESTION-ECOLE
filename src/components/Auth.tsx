@@ -154,7 +154,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
       } else if (mode === 'committee_login') {
         const { data: committee, error } = await supabase
           .from('committee_members')
-          .select('*, schools(name)')
+          .select('*')
           .eq('email', email)
           .eq('password', password);
         
