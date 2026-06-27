@@ -76,6 +76,7 @@ function App() {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sges_tab') || 'dashboard');
   const [activeSettingsTab, setActiveSettingsTab] = useState('general');
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [selectedTeacherPayment, setSelectedTeacherPayment] = useState<any>(null);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [isQuickStartModalOpen, setIsQuickStartModalOpen] = useState(false);
   // unused honorStudentData
@@ -2362,7 +2363,8 @@ function App() {
                   <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} title="Modifier" onClick={() => { setEditEntity(row); setActiveModal('teacher'); }}>✏️</button>
                   <button className="btn btn-outline" title={row.status === 'Suspendu' ? 'Activer' : 'Suspendre'} style={{padding: '6px 12px', marginRight: '8px', color: row.status === 'Suspendu' ? 'var(--success-color)' : 'var(--error-color)', borderColor: row.status === 'Suspendu' ? 'var(--success-color)' : 'var(--error-color)'}} onClick={() => handleToggleTeacherStatus(row.id, row.status || 'Présent')}>{row.status === 'Suspendu' ? '✅' : '🚫'}</button>
                   <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => alert(`Identifiants pour ${row.first_name} ${row.last_name}:\n\nMatricule: ${row.matricule}\nMot de passe: ${row.password}`)}>{t('admin.teachers.btn_view_ids', 'Voir les identifiants')}</button>
-                  <button className="btn btn-primary" style={{padding: '6px 12px', fontSize: '0.8rem', marginLeft: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('teacher_payment'); }}>💵 Payer</button>
+                  <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem', marginLeft: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('teacher_payment_history'); }}>📜 Historique</button>
+                  <button className="btn btn-primary" style={{padding: '6px 12px', fontSize: '0.8rem', marginLeft: '8px'}} onClick={() => { setEditEntity(row); setSelectedTeacherPayment(null); setActiveModal('teacher_payment'); }}>💵 Payer</button>
                 </td>
               </tr>
             )) : (
@@ -4642,7 +4644,7 @@ function App() {
             <div className="modal-body print-area">
               {teacherPaymentsData.filter(p => p.teacher_id === editEntity.id).length > 0 && (
                 <TeacherReceiptPreview 
-                  payment={teacherPaymentsData.filter(p => p.teacher_id === editEntity.id)[0]} 
+                  payment={selectedTeacherPayment || teacherPaymentsData.filter(p => p.teacher_id === editEntity.id)[0]} 
                   teacher={editEntity} 
                   schoolInfo={settingsData} 
                 />
@@ -5125,6 +5127,52 @@ function App() {
           </div>
         )}
 
+        {activeModal === 'teacher_payment_history' && editEntity && (
+          <div className="modal-content fade-in" style={{maxWidth: '800px'}} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Historique des paiements - {editEntity.first_name} {editEntity.last_name}</h3>
+              <button className="close-btn" onClick={closeModal}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="table-responsive">
+                <table className="table" style={{width: '100%'}}>
+                  <thead>
+                    <tr>
+                      <th style={{textAlign: 'left', padding: '12px'}}>Date</th>
+                      <th style={{textAlign: 'left', padding: '12px'}}>Mois concerné</th>
+                      <th style={{textAlign: 'left', padding: '12px'}}>Montant</th>
+                      <th style={{textAlign: 'left', padding: '12px'}}>Méthode</th>
+                      <th style={{textAlign: 'right', padding: '12px'}}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {teacherPaymentsData.filter(p => p.teacher_id === editEntity.id).length > 0 ? (
+                      teacherPaymentsData.filter(p => p.teacher_id === editEntity.id).map((payment, idx) => (
+                        <tr key={payment.id || idx} style={{borderBottom: '1px solid var(--border-color)'}}>
+                          <td style={{padding: '12px'}}>{new Date(payment.payment_date || payment.created_at).toLocaleDateString()}</td>
+                          <td style={{padding: '12px', fontWeight: '500'}}>{payment.month || '-'}</td>
+                          <td style={{padding: '12px'}}>{payment.amount} F</td>
+                          <td style={{padding: '12px'}}>{payment.payment_method || '-'}</td>
+                          <td style={{padding: '12px', textAlign: 'right'}}>
+                            <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => { setSelectedTeacherPayment(payment); setActiveModal('teacher_receipt_preview'); }}>
+                              ⎙ Reçu
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px'}}>Aucun paiement enregistré.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-outline" onClick={closeModal}>Fermer</button>
+              <button type="button" className="btn btn-primary" onClick={() => { setSelectedTeacherPayment(null); setActiveModal('teacher_payment'); }}>💵 Nouveau Paiement</button>
+            </div>
+          </div>
+        )}
 
         {activeModal === 'loan' && (
           <div className="modal-content fade-in" onClick={e => e.stopPropagation()}>

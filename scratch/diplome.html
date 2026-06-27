@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Impact&family=Times+New+Roman&display=swap');
+
+  @page { size: A4 landscape; margin: 0; }
+  body {
+    margin: 0; padding: 0; background: #525659;
+    font-family: 'Times New Roman', serif;
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh;
+  }
+  .certificate-container {
+    width: 297mm; height: 210mm; /* A4 Landscape */
+    box-sizing: border-box;
+    padding: 15mm;
+    background: white;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  }
+  .border {
+    border: 8px double #4a4a4a;
+    padding: 4px;
+    height: 100%; box-sizing: border-box;
+    border-radius: 4px;
+    outline: 2px solid #4a4a4a;
+    outline-offset: 4px;
+    position: relative;
+    padding: 10mm 15mm;
+  }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .header-left { width: 35%; font-size: 11px; text-align: center; font-weight: bold; }
+  .header-right { width: 35%; font-size: 14px; text-align: center; font-family: 'Amiri', serif; font-weight: bold; }
+  
+  .text-red { color: #d9381e; }
+  .text-green { color: #2e7d32; }
+  .text-black { color: #000; }
+  
+  .bismillah { text-align: center; font-family: 'Amiri', serif; font-size: 18px; margin-top: -15px; margin-bottom: 5px;}
+  
+  .title-container { display: flex; justify-content: center; align-items: center; gap: 60px; margin-bottom: 10px; margin-top: 20px; }
+  .title-fr { 
+    color: #3b5998; font-family: Impact, sans-serif; font-size: 22px; 
+    text-shadow: 1px 1px 0px #aaa; letter-spacing: 1px;
+  }
+  .title-ar { 
+    color: #d9381e; font-family: 'Amiri', serif; font-size: 36px; font-weight: bold;
+  }
+  .photo-box {
+    width: 25mm; height: 30mm; border: 1px solid #000; position: absolute; left: 135mm; top: 20mm;
+    display: flex; justify-content: center; align-items: center; font-size: 10px;
+  }
+  
+  .subtitle-ar { text-align: center; color: #d9381e; font-family: 'Amiri', serif; font-size: 16px; margin-bottom: 15px; font-weight: bold;}
+  
+  .content { display: flex; justify-content: space-between; gap: 20px; font-size: 13px; line-height: 1.8; }
+  .content-fr { width: 45%; }
+  .content-ar { width: 50%; text-align: right; font-family: 'Amiri', serif; font-size: 16px; direction: rtl; line-height: 1.8;}
+  
+  .dots { display: inline-block; border-bottom: 1px dotted #000; }
+  
+  .footer { display: flex; justify-content: space-between; margin-top: 30px; font-weight: bold; }
+  .footer-left { text-align: center; width: 30%; }
+  .footer-right { text-align: center; width: 30%; font-family: 'Amiri', serif; font-size: 18px; direction: rtl; }
+
+  /* Utilities */
+  .line-fr { margin-bottom: 5px; }
+  .line-ar { margin-bottom: 5px; }
+
+  @media print {
+    body { background: white; }
+    .certificate-container { box-shadow: none; padding: 10mm; }
+  }
+</style>
+</head>
+<body>
+<div class="certificate-container">
+  <div class="border">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <div class="text-black">REPUBLIQUE DE COTE D'IVOIRE</div>
+        <div class="text-black" style="font-size: 9px;">UNION-DISCIPLINE-TRAVAIL</div>
+        <div class="text-red" style="font-size: 12px; margin-top: 5px;">CENTRE D'ENSEIGNEMENT</div>
+        <div class="text-red" style="font-size: 12px;">CORANIQUE</div>
+        <div class="text-green" style="font-size: 12px;">FRANCO-ARABE</div>
+        <div class="text-green" style="font-size: 12px;">DIALOGUE-DIVO</div>
+      </div>
+      <div class="header-right">
+        <div class="text-black">جمهورية كوت ديفوار (ساحل العاج )</div>
+        <div class="text-black" style="font-size: 11px;">الاتحاد -- النظام -- العمل</div>
+        <div class="text-red" style="font-size: 16px; margin-top: 5px;">مركز تعليم القرآن</div>
+        <div class="text-green" style="font-size: 16px;">العربية - الفرنسية</div>
+        <div class="text-green" style="font-size: 16px;">د يالو ك - د يفو</div>
+        <div class="text-black" style="font-size: 12px; font-weight: normal; margin-top: 10px;">ص ب : ............................ د يفو</div>
+        <div class="text-black" style="font-size: 12px; font-weight: normal;">الرقم: .......................................</div>
+      </div>
+    </div>
+    
+    <div class="bismillah">بسم الله الرحمن الرحيم</div>
+    
+    <div class="photo-box">Photo</div>
+
+    <!-- Title -->
+    <div class="title-container">
+      <div class="title-fr">BREVET D'ETUDE SECONDAIRES 1<sup style="font-size: 12px;">er</sup> cycle</div>
+      <div class="title-ar">الشهادة الإعدادية</div>
+    </div>
+    <div class="subtitle-ar">الحمد لله وحده وصلى الله على من لا نبي بعده</div>
+    
+    <!-- Content -->
+    <div class="content">
+      <!-- French Column -->
+      <div class="content-fr">
+        <div class="line-fr">Vu le programme de l'enseignement secondaire Arabe.</div>
+        <div class="line-fr">Vu le procès verbal des épreuves subies par</div>
+        <div class="line-fr">L'élève : <span class="dots" style="width: 250px;"></span></div>
+        <div class="line-fr">Né le <span class="dots" style="width: 100px;"></span> à <span class="dots" style="width: 100px;"></span></div>
+        <div class="line-fr">A été jugé digne d'obtenir le secondaire Arabe avec</div>
+        <div class="line-fr">Mention <span class="dots" style="width: 250px;"></span></div>
+        <div class="line-fr">Il a été <span class="dots" style="width: 80px;"></span> Sur <span class="dots" style="width: 80px;"></span> Élèves</div>
+        <div class="line-fr">en foi de quoi ce présent certificat lui a été délivré pour ser-</div>
+        <div class="line-fr">vir et valoir ce que de droit.</div>
+        <br>
+        <div class="line-fr" style="text-align: center;">Fait à Divo, le ...../...../.........</div>
+      </div>
+      
+      <!-- Arabic Column -->
+      <div class="content-ar">
+        <div class="line-ar">بناء على الضوابط المتعلقة بمناهج الدراسة وبرامج التعليم العربي</div>
+        <div class="line-ar">و بناء على تقرير لجنة الامتحان الذي أداه التلميذ (ة) <span class="dots" style="width: 120px;"></span></div>
+        <div class="line-ar">المولود (ة) في : <span class="dots" style="width: 100px;"></span> بتاريخ <span class="dots" style="width: 100px;"></span></div>
+        <div class="line-ar">قد اجتاز بتقدير <span class="dots" style="width: 100px;"></span> اختبار الشهادة الإعدادية</div>
+        <div class="line-ar">للدراسات العربية و الفرنسية في مركز <span class="dots" style="width: 120px;"></span></div>
+        <div class="line-ar">بتاريخ ...../...../......... الموافق ...../...../.........</div>
+        <div class="line-ar">وكان ترتيبه (ها) التفوقي في هذا الامتحان <span class="dots" style="width: 40px;"></span> بين <span class="dots" style="width: 40px;"></span> تلميذا.</div>
+        <div class="line-ar">والإدارة تمنح المذكور الشهادة فإنها تتمنى له دوام النجاح والعمل بما علم . والله الموفق</div>
+        <br>
+        <div class="line-ar" style="text-align: center;">حرر بـ <span class="dots" style="width: 100px;"></span> بتاريخ ...../...../......... م</div>
+      </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-left">
+        <div>ختم المدرسة</div>
+        <br><br><br>
+        <div>مدير المدرسة</div>
+      </div>
+      <div class="footer-right">
+        <div>توقيع صاحب الشهادة</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
