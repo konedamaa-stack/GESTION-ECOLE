@@ -504,6 +504,20 @@ function App() {
     const { data } = await supabase.from('evaluations').select(`*, classes(name)`).eq('school_id', currentSchoolId);
     if (data) setEvaluationsData(data);
   };
+
+  const handleDeleteEvaluation = async (evaluationId: string) => {
+    if (window.confirm(t('admin.pedagogy.confirm_delete_eval', 'Êtes-vous sûr de vouloir supprimer cette évaluation ? Toutes les notes associées seront supprimées.'))) {
+      try {
+        const { error } = await supabase.from('evaluations').delete().eq('id', evaluationId);
+        if (error) throw error;
+        alert(t('admin.pedagogy.eval_deleted', 'Évaluation supprimée avec succès.'));
+        fetchEvaluations();
+      } catch (err: any) {
+        console.error(err);
+        alert("Erreur lors de la suppression : " + err.message);
+      }
+    }
+  };
   const fetchTeacherPayments = async () => {
     if (!currentSchoolId) return;
     try {
@@ -1855,6 +1869,7 @@ function App() {
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.pedagogy.col_class', 'Classe')}</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.pedagogy.col_teacher', 'Professeur')}</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.pedagogy.col_status', 'Statut')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>{t('admin.actions', 'Actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -1865,9 +1880,14 @@ function App() {
                 <td style={{padding: '16px 0', color: 'var(--text-secondary)'}}>{row.classes?.name || 'N/A'}</td>
                 <td style={{padding: '16px 0'}}>{row.teachers?.first_name} {row.teachers?.last_name}</td>
                 <td style={{padding: '16px 0'}}><span className={`badge badge-primary`}>{row.status || t('admin.pedagogy.planned', 'Planifié')}</span></td>
+                <td style={{padding: '16px 0', textAlign: 'right'}}>
+                  <button className="btn-icon" onClick={(e) => { e.stopPropagation(); handleDeleteEvaluation(row.id); }} style={{color: 'var(--danger-color)'}} title={t('admin.delete', 'Supprimer')}>
+                    <Trash2 size={18} />
+                  </button>
+                </td>
               </tr>
             )) : (
-              <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.pedagogy.empty_state', 'Aucune évaluation enregistrée.')}</td></tr>
+              <tr><td colSpan={6} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.pedagogy.empty_state', 'Aucune évaluation enregistrée.')}</td></tr>
             )}
           </tbody>
         </table>
@@ -3037,6 +3057,9 @@ function App() {
                                  {evalu.locked ? 'Déverrouiller' : 'Clôturer'}
                                </button>
                             )}
+                            <button className="btn-icon" onClick={(e) => { e.stopPropagation(); handleDeleteEvaluation(evalu.id); }} style={{color: 'var(--danger-color)', padding: 0}} title={t('admin.delete', 'Supprimer')}>
+                              <Trash2 size={16} />
+                            </button>
                           </td>
                         </tr>
                       ))}
