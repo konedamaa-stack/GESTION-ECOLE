@@ -231,11 +231,6 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
                 </div>
               </div>
               <div className="school-statut">
-                {st.photo_url ? (
-                  <img src={st.photo_url} alt="Photo" style={{width: '50px', height: '60px', objectFit: 'cover', border: '1px solid #ccc'}} />
-                ) : (
-                  <div className="photo-placeholder">Photo</div>
-                )}
                 <div>
                   <p>Code: <strong>{schoolInfo?.id ? schoolInfo.id.substring(0, 6).toUpperCase() : '...'}</strong></p>
                   <p>Statut: <strong>Privé</strong></p>
@@ -244,8 +239,15 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
             </div>
 
             {/* 3. Student Info */}
-            <div className="bulletin-classic-student">
-              <div className="col1">
+            <div className="bulletin-classic-student" style={{display: 'flex', border: '2px solid black', marginBottom: '5px'}}>
+              <div style={{padding: '5px', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '80px', backgroundColor: '#f9fafb'}}>
+                {st.photo_url ? (
+                  <img src={st.photo_url} alt="Photo" style={{width: '65px', height: '75px', objectFit: 'cover', border: '1px solid #ddd', borderRadius: '4px'}} />
+                ) : (
+                  <div style={{width: '65px', height: '75px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eee', color: '#999', fontSize: '12px', border: '1px solid #ddd', borderRadius: '4px'}}>Photo</div>
+                )}
+              </div>
+              <div className="col1" style={{flex: 1, padding: '5px', borderRight: '1px solid black'}}>
                 <p><strong>{st.first_name?.toUpperCase()} {st.last_name?.toUpperCase()}</strong></p>
                 <p>Matricule: <strong>{st.matricule || st.id.substring(0,8).toUpperCase()}</strong></p>
                 <p>Classe: <strong>{classData?.name}</strong></p>
