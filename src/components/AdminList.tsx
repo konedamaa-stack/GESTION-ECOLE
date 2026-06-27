@@ -107,17 +107,41 @@ $$;`;
   const handleDeleteSchool = async (schoolId: string, schoolName: string) => {
     if (window.confirm(`Êtes-vous sûr de vouloir supprimer DÉFINITIVEMENT l'établissement "${schoolName}" ? Cette action supprimera toutes les données associées (classes, élèves, notes, etc.).`)) {
       try {
+        // Delete related records manually to bypass foreign key constraint errors
+        const tables = [
+          'admin_invitations', 'school_admins', 'employee_payments', 'teacher_payments',
+          'loans', 'expenses', 'invoices', 'attendance', 'grades', 'teacher_subjects',
+          'teachers', 'subjects', 'classes', 'settings'
+        ];
+        
+        // Handle student_parents specifically because it links to student_id
+        const { data: students } = await supabase.from('students').select('id').eq('school_id', schoolId);
+        if (students && students.length > 0) {
+          const studentIds = students.map(s => s.id);
+          // Delete in chunks if there are too many (Supabase usually allows up to 1000 items in .in())
+          for (let i = 0; i < studentIds.length; i += 500) {
+            await supabase.from('student_parents').delete().in('student_id', studentIds.slice(i, i + 500));
+          }
+        }
+        await supabase.from('students').delete().eq('school_id', schoolId);
+
+        // Delete all other related records
+        for (const table of tables) {
+          await supabase.from(table).delete().eq('school_id', schoolId);
+        }
+
+        // Finally delete the school
         const { error } = await supabase.from('schools').delete().eq('id', schoolId);
         if (error) {
           console.error("Erreur lors de la suppression:", error);
-          alert("Erreur lors de la suppression de l'établissement. Il est possible que certaines données bloquent la suppression.");
+          alert("Erreur lors de la suppression de l'établissement: " + error.message);
         } else {
           alert("Établissement supprimé avec succès.");
           fetchAdmins();
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
-        alert("Erreur inattendue.");
+        alert("Erreur inattendue: " + (err.message || ""));
       }
     }
   };
