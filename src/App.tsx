@@ -53,7 +53,8 @@ const Icons = {
   TrendingUp: () => <svg className="stat-icon" style={{color: 'var(--accent-color)', background: 'rgba(16, 185, 129, 0.1)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" strokeLinecap="round" strokeLinejoin="round"/><polyline points="17 6 23 6 23 12" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   TrendingDown: () => <svg className="stat-icon" style={{color: 'var(--danger-color, #ef4444)', background: 'rgba(239, 68, 68, 0.1)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6" strokeLinecap="round" strokeLinejoin="round"/><polyline points="17 18 23 18 23 12" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Upload: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" strokeLinecap="round" strokeLinejoin="round"/><polyline points="17 8 12 3 7 8" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="3" x2="12" y2="15" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  Printer: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+  Printer: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>,
+  Trash2: ({ size = 20 }: { size?: number }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
 };
 
 function App() {
@@ -1882,7 +1883,7 @@ function App() {
                 <td style={{padding: '16px 0'}}><span className={`badge badge-primary`}>{row.status || t('admin.pedagogy.planned', 'Planifié')}</span></td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
                   <button className="btn-icon" onClick={(e) => { e.stopPropagation(); handleDeleteEvaluation(row.id); }} style={{color: 'var(--danger-color)'}} title={t('admin.delete', 'Supprimer')}>
-                    <Trash2 size={18} />
+                    <Icons.Trash2 size={18} />
                   </button>
                 </td>
               </tr>
@@ -3058,7 +3059,7 @@ function App() {
                                </button>
                             )}
                             <button className="btn-icon" onClick={(e) => { e.stopPropagation(); handleDeleteEvaluation(evalu.id); }} style={{color: 'var(--danger-color)', padding: 0}} title={t('admin.delete', 'Supprimer')}>
-                              <Trash2 size={16} />
+                              <Icons.Trash2 size={16} />
                             </button>
                           </td>
                         </tr>
