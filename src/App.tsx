@@ -195,6 +195,7 @@ function App() {
   const [studentsData, setStudentsData] = useState<any[]>([]);
   const [classesData, setClassesData] = useState<any[]>([]);
   const [teachersData, setTeachersData] = useState<any[]>([]);
+  const [committeeMembers, setCommitteeMembers] = useState<any[]>([]);
   const [employeesData, setEmployeesData] = useState<any[]>([]);
   const [expensesData, setExpensesData] = useState<any[]>([]);
   const [loansData, setLoansData] = useState<any[]>([]);
@@ -363,6 +364,7 @@ function App() {
       fetchStudents();
       fetchClasses();
       fetchTeachers();
+      fetchCommitteeMembers();
       fetchEmployees();
       fetchParents();
       fetchInvoices();
@@ -394,6 +396,10 @@ function App() {
   const fetchTeachers = async () => {
     const { data } = await supabase.from('teachers').select('*').eq('school_id', currentSchoolId);
     if (data) setTeachersData(data);
+  };
+  const fetchCommitteeMembers = async () => {
+    const { data } = await supabase.from('committee_members').select('*').eq('school_id', currentSchoolId);
+    if (data) setCommitteeMembers(data);
   };
   const fetchEmployees = async () => {
     const { data } = await supabase.from('employees').select('*').eq('school_id', currentSchoolId);
@@ -1016,6 +1022,35 @@ function App() {
         if (error) throw error;
         alert(`Le professeur a été créé.\n\nEmail : ${teacher.email}\nMot de passe : ${password}\n\nVeuillez transmettre ces informations au professeur.`);
         fetchTeachers();
+      }
+      else if (activeModal === 'committee_member') {
+        if (editEntity) {
+          const updateData: any = {
+            first_name: formData.get('first_name'),
+            last_name: formData.get('last_name'),
+            email: formData.get('email')
+          };
+          if (formData.get('password')) updateData.password = formData.get('password');
+          const { error } = await supabase.from('committee_members').update(updateData).eq('id', editEntity.id);
+          if (error) throw error;
+          alert("Membre mis à jour !");
+          fetchCommitteeMembers();
+          closeModal();
+          return;
+        }
+        
+        const password = formData.get('password') || Math.random().toString(36).slice(-8);
+        const member = {
+          first_name: formData.get('first_name'),
+          last_name: formData.get('last_name'),
+          email: formData.get('email'),
+          password: password,
+        };
+        const { error } = await supabase.from('committee_members').insert([{...member, school_id: currentSchoolId}]);
+        if (error) throw error;
+        alert(`Le membre du comité a été créé.\n\nEmail : ${member.email}\nMot de passe : ${password}\n\nVeuillez transmettre ces informations.`);
+        fetchCommitteeMembers();
+        closeModal();
       }
       else if (activeModal === 'employee') {
         const employee = {
@@ -2344,9 +2379,14 @@ function App() {
           <h1 className="page-title">{t('admin.teachers.title', 'Enseignants')}</h1>
           <p className="page-subtitle">{t('admin.teachers.subtitle', 'Gestion du corps professoral, emplois du temps et affectations.')}</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setActiveModal('teacher')}>
-          <Icons.Plus /> {t('admin.teachers.btn_add', 'Ajouter Enseignant')}
-        </button>
+        <div style={{display: 'flex', gap: '12px'}}>
+          <button className="btn btn-primary" onClick={() => setActiveModal('teacher')}>
+            <Icons.Plus /> {t('admin.teachers.btn_add', 'Ajouter Enseignant')}
+          </button>
+          <button className="btn btn-outline" onClick={() => { setEditEntity(null); setActiveModal('committee_member'); }}>
+            <Icons.Plus /> Ajouter Comité
+          </button>
+        </div>
       </div>
 
       <div className="panel delay-100">
@@ -2394,9 +2434,51 @@ function App() {
           </tbody>
         </table>
       </div>
+
+      <div className="panel delay-200" style={{marginTop: '24px'}}>
+        <div className="panel-header">
+          <h3 className="panel-title">Membres du Comité d'examen ({committeeMembers.length})</h3>
+        </div>
+        <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
+          <thead>
+            <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Nom & Prénom</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Email</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Mot de passe</th>
+              <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {committeeMembers.length > 0 ? committeeMembers.map((row, i) => (
+              <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
+                <td style={{padding: '16px 0', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '12px'}}>
+                  <div className="avatar" style={{width: 32, height: 32, fontSize: '0.9rem'}}>{row.first_name.charAt(0)}{row.last_name.charAt(0)}</div>
+                  {row.first_name} {row.last_name}
+                </td>
+                <td style={{padding: '16px 0'}}>{row.email}</td>
+                <td style={{padding: '16px 0'}}>{row.password ? '••••••••' : '-'}</td>
+                <td style={{padding: '16px 0', textAlign: 'right'}}>
+                  <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} title="Modifier" onClick={() => { setEditEntity(row); setActiveModal('committee_member'); }}>✏️</button>
+                  <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => alert(`Identifiants pour ${row.first_name} ${row.last_name}:\n\nEmail: ${row.email}\nMot de passe: ${row.password}`)}>Voir identifiants</button>
+                  <button className="btn-icon" onClick={async (e) => { 
+                    e.stopPropagation(); 
+                    if (window.confirm('Voulez-vous supprimer ce membre ?')) {
+                      await supabase.from('committee_members').delete().eq('id', row.id);
+                      fetchCommitteeMembers();
+                    }
+                  }} style={{color: 'var(--danger-color)', marginLeft: '8px'}} title="Supprimer">
+                    <Icons.Trash2 size={18} />
+                  </button>
+                </td>
+              </tr>
+            )) : (
+              <tr><td colSpan={4} style={{textAlign: 'center', padding: '24px 0'}}>Aucun membre du comité trouvé.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
-
   const renderParents = () => (
     <div className="animate-fade-in">
       <div className="page-header">
@@ -3787,6 +3869,7 @@ function App() {
                 {activeModal === 'student' && (editEntity ? "Modifier l'Élève" : t('admin.modals.student', "Nouvelle Inscription"))}
                 {activeModal === 'reinscription' && "Réinscription de l'élève"}
                 {activeModal === 'teacher' && t('admin.modals.teacher', "Ajouter un Enseignant")}
+                {activeModal === 'committee_member' && "Membre du Comité d'examen"}
                 {activeModal === 'employee' && t('admin.modals.employee', "Ajouter un Employé")}
                 {activeModal === 'parent' && t('admin.modals.parent', "Ajouter un Parent")}
                 {activeModal === 'parent_children' && "Gestion des enfants"}
@@ -4379,9 +4462,9 @@ function App() {
                   <div className="form-grid">
                     <div className="form-group">
                       <label>{t('admin.modals.email', 'Email')}</label>
-                      <input type="email" name="email" className="form-input" required={activeModal === 'teacher'} defaultValue={editEntity?.email || ""} />
+                      <input type="email" name="email" className="form-input" required={['teacher', 'committee_member'].includes(activeModal)} defaultValue={editEntity?.email || ""} />
                     </div>
-                    {['teacher', 'employee'].includes(activeModal) && (
+                    {['teacher', 'employee', 'committee_member'].includes(activeModal) && (
                       <div className="form-group">
                         <label>{t('admin.modals.password_optional', 'Mot de passe (facultatif)')}</label>
                         <input type="text" name="password" className="form-input" placeholder={editEntity ? "Laisser vide pour ne pas changer" : "Généré automatiquement"} />
