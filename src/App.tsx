@@ -4443,7 +4443,7 @@ function App() {
               )}
 
               {/* General Form for Employees/Teachers/Parents */}
-              {['employee', 'teacher', 'parent'].includes(activeModal) && (
+              {['employee', 'teacher', 'parent', 'committee_member'].includes(activeModal) && (
                 <form onSubmit={handleFormSubmit}>
                   <div className="form-grid">
                     <div className="form-group">
@@ -4455,10 +4455,12 @@ function App() {
                       <input type="text" name="first_name" className="form-input" required defaultValue={editEntity?.first_name || ""} />
                     </div>
                   </div>
-                  <div className="form-group">
-                    <label>{t('admin.modals.phone', 'Numéro de Téléphone')}</label>
-                    <input type="tel" name="phone" className="form-input" placeholder="+221 77 000 00 00" required defaultValue={editEntity?.phone || ""} />
-                  </div>
+                  {activeModal !== 'committee_member' && (
+                    <div className="form-group">
+                      <label>{t('admin.modals.phone', 'Numéro de Téléphone')}</label>
+                      <input type="tel" name="phone" className="form-input" placeholder="+221 77 000 00 00" required defaultValue={editEntity?.phone || ""} />
+                    </div>
+                  )}
                   <div className="form-grid">
                     <div className="form-group">
                       <label>{t('admin.modals.email', 'Email')}</label>
