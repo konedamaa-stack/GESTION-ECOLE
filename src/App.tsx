@@ -1753,7 +1753,7 @@ function App() {
                       <img src={row.photo_url} alt="Photo" style={{width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover'}} />
                     ) : (
                       <div style={{width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)'}}>
-                        <Icons.User size={16} />
+                        <Icons.Users size={16} />
                       </div>
                     )}
                     <div style={{cursor: 'pointer', color: 'var(--primary-color)'}} onClick={() => { setSelectedStudent(row); setActiveModal('studentDossier'); }}>
