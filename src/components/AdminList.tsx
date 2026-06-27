@@ -38,10 +38,10 @@ security definer
 language plpgsql
 as $$
 begin
-  if exists (select 1 from public.school_admins where user_id = target_user_id) then
-    raise exception 'Cet utilisateur est lié à un établissement et ne peut pas être supprimé.';
-  end if;
+  -- Nettoyage des références orphelines
+  delete from public.school_admins where user_id = target_user_id;
   
+  -- Suppression de l'utilisateur
   delete from auth.users where id = target_user_id;
 end;
 $$;`;
@@ -75,14 +75,20 @@ $$;`;
         const { error } = await supabase.rpc('delete_admin_account', { target_user_id: userId });
         if (error) {
           console.error("Erreur:", error);
-          setErrorSQL(true);
+          if (error.message.includes("could not find") || error.message.includes("function")) {
+            setErrorSQL(true);
+          } else {
+            alert("Erreur: " + error.message);
+            // Afficher quand même le SQL au cas où le script doit être mis à jour
+            setErrorSQL(true);
+          }
         } else {
           alert("Compte supprimé avec succès.");
           fetchAdmins();
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
-        alert("Erreur inattendue.");
+        alert("Erreur inattendue: " + (err.message || ""));
       }
     }
   };
