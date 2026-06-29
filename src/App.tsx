@@ -924,6 +924,7 @@ function App() {
           }
           const { data: { publicUrl } } = supabase.storage.from('photos_eleves').getPublicUrl(fileName);
           photoUrl = publicUrl;
+          alert("✅ La photo a été téléchargée avec succès sur le serveur !");
         }
 
         if (editEntity) {
