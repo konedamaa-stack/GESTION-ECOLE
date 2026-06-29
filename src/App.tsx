@@ -907,8 +907,10 @@ function App() {
       }
 
       if (activeModal === 'student') {
+        let successMsg = "L'élève a été traité avec succès !";
         let photoUrl = editEntity?.photo_url || null;
         const photoFile = formData.get('photo') as File;
+        
         if (photoFile && photoFile.size > 0) {
           const fileExt = photoFile.name.split('.').pop();
           const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -924,7 +926,7 @@ function App() {
           }
           const { data: { publicUrl } } = supabase.storage.from('photos_eleves').getPublicUrl(fileName);
           photoUrl = publicUrl;
-          alert("✅ La photo a été téléchargée avec succès sur le serveur !");
+          successMsg += "\n📸 La photo a été ajoutée.";
         }
 
         if (editEntity) {
@@ -941,7 +943,7 @@ function App() {
           if (formData.get('password')) studentUpdate.password = formData.get('password');
           const { error } = await supabase.from('students').update(studentUpdate).eq('id', editEntity.id);
           if (error) throw error;
-          alert("Élève mis à jour !");
+          alert("Mise à jour : " + successMsg);
           fetchStudents();
           closeModal();
           return;
