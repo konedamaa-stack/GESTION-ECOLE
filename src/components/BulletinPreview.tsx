@@ -14,7 +14,7 @@ interface BulletinPreviewProps {
 }
 
 export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, students, evaluations, grades, period, schoolInfo, classSubjects, schedules, targetStudentId }) => {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const formatNum = (num: number, decimals: number = 2) => {
     if (num === null || num === undefined) return "-";
     return new Intl.NumberFormat(i18n.language.startsWith("ar") ? "ar-EG" : "fr-FR", {
