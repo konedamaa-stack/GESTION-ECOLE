@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface BulletinPreviewProps {
   classData: any;
@@ -13,6 +14,15 @@ interface BulletinPreviewProps {
 }
 
 export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, students, evaluations, grades, period, schoolInfo, classSubjects, schedules, targetStudentId }) => {
+  const { t, i18n } = useTranslation();
+  const formatNum = (num: number, decimals: number = 2) => {
+    if (num === null || num === undefined) return "-";
+    return new Intl.NumberFormat(i18n.language.startsWith("ar") ? "ar-EG" : "fr-FR", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    }).format(num);
+  };
+
   const classEvals = evaluations.filter(e => e.class_id === classData?.id && e.period === period);
   const classEvalIds = classEvals.map(e => e.id);
   const classGrades = grades.filter(g => classEvalIds.includes(g.evaluation_id));
@@ -114,7 +124,10 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
   };
 
   const getRankStr = (rank: number) => {
-    return rank === 1 ? '1er' : rank + 'e';
+    if (i18n.language.startsWith("ar")) {
+      return formatNum(rank, 0); // Display numeral
+    }
+    return rank === 1 ? "1er" : rank + "e";
   };
 
   const lettresSubjects = ["Français", "Anglais", "Philosophie", "Histoire-Géographie", "Espagnol", "Allemand"];
@@ -167,9 +180,9 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
           return (
             <tr key={s}>
               <td style={{textAlign: 'left', paddingLeft: '8px', fontWeight: 'bold'}}>{s.toUpperCase()}</td>
-              <td>{val.toFixed(2)}</td>
-              <td>{coef}</td>
-              <td>{total.toFixed(2)}</td>
+              <td>{formatNum(val, 2)}</td>
+              <td>{formatNum(coef, 0)}</td>
+              <td>{formatNum(total, 2)}</td>
               <td>{sRank ? getRankStr(sRank) : '-'}</td>
               <td>{getAppreciation(val)}</td>
               <td style={{fontSize: '0.75rem', color: '#475569'}}>{teacherName}</td>
@@ -186,8 +199,8 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
               {group.map(renderSubjectRow)}
               <tr className="bulletin-group-header">
                 <td colSpan={2}>BILANS {title}</td>
-                <td>{tCoef}</td>
-                <td>{tMoy.toFixed(2)}</td>
+                <td>{formatNum(tCoef, 0)}</td>
+                <td>{formatNum(tMoy, 2)}</td>
                 <td colSpan={4}></td>
               </tr>
             </React.Fragment>
@@ -210,7 +223,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
               </div>
               <div className="header-right">
                 Année Scolaire<br/>
-                <strong>{new Date().getFullYear() - 1} - {new Date().getFullYear()}</strong>
+                <strong>{formatNum(new Date().getFullYear() - 1, 0)} - {formatNum(new Date().getFullYear(), 0)}</strong>
               </div>
             </div>
 
@@ -251,11 +264,11 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
                 <p><strong>{st.first_name?.toUpperCase()} {st.last_name?.toUpperCase()}</strong></p>
                 <p>Matricule: <strong>{st.matricule || st.id.substring(0,8).toUpperCase()}</strong></p>
                 <p>Classe: <strong>{classData?.name}</strong></p>
-                <p>Effectif: <strong>{students.length}</strong></p>
+                <p>Effectif: <strong>{formatNum(students.length, 0)}</strong></p>
               </div>
               <div className="col2">
                 <p>Sexe: <strong>{st.gender || '-'}</strong></p>
-                <p>Né(e) le: <strong>{st.birth_date ? new Date(st.birth_date).toLocaleDateString() : '-'}</strong></p>
+                <p>Né(e) le: <strong>{st.birth_date ? new Date(st.birth_date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR') : '-'}</strong></p>
                 <p>Lieu: <strong>-</strong></p>
                 <p>Nationalité: <strong>-</strong></p>
               </div>
@@ -288,8 +301,8 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
                 <tr className="bulletin-classic-totaux">
                   <td>TOTAUX</td>
                   <td></td>
-                  <td>{stats.totalSubjectCoefs}</td>
-                  <td>{stats.totalWeightedScore.toFixed(2)}</td>
+                  <td>{formatNum(stats.totalSubjectCoefs, 0)}</td>
+                  <td>{formatNum(stats.totalWeightedScore, 2)}</td>
                   <td colSpan={4}></td>
                 </tr>
               </tbody>
@@ -310,9 +323,9 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
                       </thead>
                       <tbody>
                         <tr>
-                          <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black'}}>Moy: {period === '1er Trimestre' ? stats.generalAverage.toFixed(2) : '-'}</td>
-                          <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black'}}>Moy: {period === '2ème Trimestre' ? stats.generalAverage.toFixed(2) : '-'}</td>
-                          <td style={{border: 'none', borderBottom: '1px solid black'}}>Moy: {period === '3ème Trimestre' ? stats.generalAverage.toFixed(2) : '-'}</td>
+                          <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black'}}>Moy: {period === '1er Trimestre' ? formatNum(stats.generalAverage, 2) : '-'}</td>
+                          <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black'}}>Moy: {period === '2ème Trimestre' ? formatNum(stats.generalAverage, 2) : '-'}</td>
+                          <td style={{border: 'none', borderBottom: '1px solid black'}}>Moy: {period === '3ème Trimestre' ? formatNum(stats.generalAverage, 2) : '-'}</td>
                         </tr>
                         <tr>
                           <td style={{border: 'none', borderRight: '1px solid black'}}>Rang: {period === '1er Trimestre' ? getRankStr(stats.rank) : '-'}</td>
@@ -324,7 +337,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
                   </td>
                   <td style={{width: '33%', textAlign: 'center', verticalAlign: 'middle', borderLeft: '2px solid black', borderRight: '2px solid black'}}>
                     <p style={{fontWeight: 'bold', marginBottom: '8px'}}>Moyenne {period.includes('Trimestre') ? 'trimestrielle' : 'semestrielle'}</p>
-                    <p style={{fontSize: '1.4rem', fontWeight: 'bold', marginBottom: '8px'}}>{stats.generalAverage.toFixed(2)} /20</p>
+                    <p style={{fontSize: '1.4rem', fontWeight: 'bold', marginBottom: '8px'}}>{formatNum(stats.generalAverage, 2)} /20</p>
                     <p>Rang: <strong style={{fontSize: '1.2rem'}}>{getRankStr(stats.rank)}</strong></p>
                   </td>
                   <td style={{width: '33%', verticalAlign: 'top', padding: 0}}>
@@ -333,9 +346,9 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
                         <tr><th colSpan={2} style={{border: 'none', borderBottom: '1px solid black'}}>Resultat de la Classe</th></tr>
                       </thead>
                       <tbody>
-                        <tr><td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black'}}>Moyenne</td><td style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center'}}>{classAvg.toFixed(2)}</td></tr>
-                        <tr><td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black'}}>Min</td><td style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center'}}>{classMin.toFixed(2)}</td></tr>
-                        <tr><td style={{border: 'none', borderRight: '1px solid black'}}>Max</td><td style={{border: 'none', textAlign: 'center'}}>{classMax.toFixed(2)}</td></tr>
+                        <tr><td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black'}}>Moyenne</td><td style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center'}}>{formatNum(classAvg, 2)}</td></tr>
+                        <tr><td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black'}}>Min</td><td style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center'}}>{formatNum(classMin, 2)}</td></tr>
+                        <tr><td style={{border: 'none', borderRight: '1px solid black'}}>Max</td><td style={{border: 'none', textAlign: 'center'}}>{formatNum(classMax, 2)}</td></tr>
                       </tbody>
                     </table>
                   </td>
@@ -380,7 +393,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
                       
                       <div style={{marginTop: '15px', marginBottom: '15px'}}>
                         <p>Fait à {schoolInfo?.city || schoolInfo?.address || '..........'}, le :</p>
-                        <p style={{fontWeight: 'bold', marginTop: '5px'}}>{new Date().toLocaleDateString()}</p>
+                        <p style={{fontWeight: 'bold', marginTop: '5px'}}>{new Date().toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</p>
                       </div>
 
                       <div>
