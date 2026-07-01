@@ -1043,7 +1043,7 @@ function App() {
           const teacherUpdate: any = {
             first_name: formData.get('first_name'),
             last_name: formData.get('last_name'),
-            subject: formData.get('subject'),
+            subject: formData.getAll('subject').join(', '),
             phone: formData.get('phone'),
             email: formData.get('email')
           };
@@ -1061,7 +1061,7 @@ function App() {
         const teacher = {
           first_name: formData.get('first_name'),
           last_name: formData.get('last_name'),
-          subject: formData.get('subject'),
+          subject: formData.getAll('subject').join(', '),
           phone: formData.get('phone'),
           email: formData.get('email'),
           matricule: teacherMatricule,
