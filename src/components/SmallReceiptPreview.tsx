@@ -32,7 +32,7 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
   };
 
   // Extracting data or falling back to mock data similar to the image
-  const schoolName = schoolInfo?.name || "GROUPE SCOLAIRE RAYATIL ISLAM";
+  const schoolName = (schoolInfo?.school_name || schoolInfo?.name) || "GROUPE SCOLAIRE RAYATIL ISLAM";
   const schoolPhone = schoolInfo?.phone || "07 07 42 64 82 / 05 05 91 82 29";
   const academicYear = "2025 / 2026"; // Or from context
   const classNameAr = "روضة الأطفال"; 

@@ -57,7 +57,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
   const versementLabel = `${versementText}:`;
 
   // Extracting data or falling back to mock data similar to the image
-  const schoolName = schoolInfo?.name || "ÉTABLISSEMENT SCOLAIRE";
+  const schoolName = schoolInfo?.school_name || schoolInfo?.name || "ÉTABLISSEMENT SCOLAIRE";
   const schoolPhone = schoolInfo?.phone || "00 00 00 00 00";
   const academicYear = schoolInfo?.academic_year || new Date().getFullYear() + " / " + (new Date().getFullYear() + 1);
   const classNameFr = student?.class?.name || student?.classes?.name || "-";

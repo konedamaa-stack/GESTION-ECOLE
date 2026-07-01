@@ -47,7 +47,7 @@ export const SalaryReceiptPreview: React.FC<SalaryReceiptPreviewProps> = ({ paym
             </div>
           )}
           <div>
-            <h1 style={{ margin: '0 0 8px 0', fontSize: '24px', color: '#111827' }}>{schoolInfo?.name || "Nom de l'établissement"}</h1>
+            <h1 style={{ margin: '0 0 8px 0', fontSize: '24px', color: '#111827' }}>{(schoolInfo?.school_name || schoolInfo?.name) || "Nom de l'établissement"}</h1>
             <p style={{ margin: '0 0 4px 0', color: '#4b5563', fontSize: '14px' }}>{schoolInfo?.address || 'Adresse'}</p>
             <p style={{ margin: '0', color: '#4b5563', fontSize: '14px' }}>
               Tél: {schoolInfo?.phone || 'Téléphone'} | Email: {schoolInfo?.email || 'Email'}
@@ -129,7 +129,7 @@ export const SalaryReceiptPreview: React.FC<SalaryReceiptPreviewProps> = ({ paym
       </div>
 
       <div style={{ marginTop: '40px', textAlign: 'center', color: '#94a3b8', fontSize: '12px', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
-        <p style={{ margin: '0' }}>Ce reçu certifie le paiement de salaire par le système de gestion {schoolInfo?.name || ''}.</p>
+        <p style={{ margin: '0' }}>Ce reçu certifie le paiement de salaire par le système de gestion {(schoolInfo?.school_name || schoolInfo?.name) || ''}.</p>
       </div>
 
       <style dangerouslySetInnerHTML={{__html: "@media print { body * { visibility: hidden; } .receipt-container, .receipt-container * { visibility: visible; } .receipt-container { position: absolute; left: 0; top: 0; width: 100%; padding: 20px !important; box-shadow: none !important; } .hide-print { display: none !important; } }"}} />

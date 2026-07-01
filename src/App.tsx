@@ -3788,9 +3788,9 @@ function App() {
           {(adminSchools?.find((s: any) => s.id === currentSchoolId) as any)?.logo_url ? (
             <img src={(adminSchools?.find((s: any) => s.id === currentSchoolId) as any).logo_url} alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '8px', objectFit: 'cover' }} />
           ) : (
-            <div className="logo-icon">{(adminSchools?.find((s: any) => s.id === currentSchoolId)?.name || settingsData?.school_name || 'É').charAt(0).toUpperCase()}</div>
+            <div className="logo-icon">{(settingsData?.school_name || adminSchools?.find((s: any) => s.id === currentSchoolId)?.name || 'É').charAt(0).toUpperCase()}</div>
           )}
-          <span className="logo-text" style={{ fontSize: '1.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{adminSchools?.find((s: any) => s.id === currentSchoolId)?.name || settingsData?.school_name || 'Établissement'}</span>
+          <span className="logo-text" style={{ fontSize: '1.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{settingsData?.school_name || adminSchools?.find((s: any) => s.id === currentSchoolId)?.name || 'Établissement'}</span>
         </div>
         
         <ul className="nav-menu">
