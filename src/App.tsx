@@ -4442,10 +4442,12 @@ function App() {
                         return;
                       }
 
-                      const idxNom = headers.findIndex(h => h.includes('nom'));
-                      const idxPrenom = headers.findIndex(h => h.includes('prénom') || h.includes('prenom'));
+                      const idxNom = headers.findIndex(h => h === 'nom' || (h.includes('nom') && !h.includes('arabe')));
+                      const idxPrenom = headers.findIndex(h => h === 'prénom' || h === 'prenom' || ((h.includes('prénom') || h.includes('prenom')) && !h.includes('arabe')));
                       const idxDate = headers.findIndex(h => h.includes('date') || h.includes('naissance'));
                       const idxMatricule = headers.findIndex(h => h.includes('matricule'));
+                      const idxNomAr = headers.findIndex(h => h.includes('nom arabe'));
+                      const idxPrenomAr = headers.findIndex(h => h.includes('prénom arabe') || h.includes('prenom arabe'));
 
                       const classId = (document.getElementById('import_class_id') as HTMLSelectElement).value;
 
@@ -4453,8 +4455,8 @@ function App() {
                       for (let i = 1; i < lines.length; i++) {
                         if (!lines[i].trim()) continue;
                         const cols = lines[i].split(/,|;/).map(c => c.trim().replace(/["']/g, ''));
-                        const nom = cols[idxNom];
-                        const prenom = cols[idxPrenom];
+                        const nom = idxNom !== -1 ? cols[idxNom] : null;
+                        const prenom = idxPrenom !== -1 ? cols[idxPrenom] : null;
                         if (!nom || !prenom) continue;
 
                         let parsedDate = '2000-01-01';
@@ -4483,6 +4485,8 @@ function App() {
                           school_id: currentSchoolId,
                           first_name: prenom,
                           last_name: nom,
+                          first_name_ar: (idxPrenomAr !== -1 && cols[idxPrenomAr]) ? cols[idxPrenomAr] : null,
+                          last_name_ar: (idxNomAr !== -1 && cols[idxNomAr]) ? cols[idxNomAr] : null,
                           birth_date: parsedDate,
                           matricule: (idxMatricule !== -1 && cols[idxMatricule]) ? cols[idxMatricule] : `STU-${Math.floor(Math.random()*100000)}`,
                           class_id: classId || null
@@ -4515,11 +4519,13 @@ function App() {
                       <ul style={{fontSize: '0.9rem', marginTop: '8px', paddingLeft: '24px', color: 'var(--text-secondary)'}}>
                         <li><strong>Nom</strong> (obligatoire)</li>
                         <li><strong>Prénom</strong> (obligatoire)</li>
+                        <li><strong>Nom Arabe</strong> (optionnel)</li>
+                        <li><strong>Prénom Arabe</strong> (optionnel)</li>
                         <li><strong>Date de naissance</strong> (YYYY-MM-DD, optionnel)</li>
                         <li><strong>Matricule</strong> (optionnel)</li>
                       </ul>
                       <button type="button" className="btn btn-outline" style={{marginTop: '12px'}} onClick={() => {
-                        const csvContent = "data:text/csv;charset=utf-8,Nom,Prénom,Date de naissance,Matricule\nDupont,Jean,2010-05-14,MAT-101\n";
+                        const csvContent = "data:text/csv;charset=utf-8,Nom,Prénom,Nom Arabe,Prénom Arabe,Date de naissance,Matricule\\nDupont,Jean,ديوبون,جان,2010-05-14,MAT-101\\n";
                         const encodedUri = encodeURI(csvContent);
                         const link = document.createElement("a");
                         link.setAttribute("href", encodedUri);
