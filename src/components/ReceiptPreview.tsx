@@ -56,7 +56,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
   return (
     <div className="receipt-container" style={{
       width: '100%',
-      maxWidth: '600px', // Wider to fit everything like in the image
+      maxWidth: '100%',
       margin: '0 auto',
       padding: '10px',
       backgroundColor: 'white',
@@ -71,12 +71,18 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
         position: 'relative'
       }}>
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-          <div style={{ fontSize: '18px', textTransform: 'uppercase' }}>{schoolName}</div>
-          <div style={{ fontSize: '16px', textTransform: 'uppercase', textDecoration: 'underline', marginTop: '4px', marginBottom: '4px' }}>
-            Reçu de Versement de Scolarité
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+          <div style={{ width: '80px', height: '80px' }}>
+            <img src={schoolInfo?.logo_url || '/logo-coran.jpg'} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
-          <div style={{ fontSize: '14px', marginTop: '4px' }}>CEL:{schoolPhone}</div>
+          <div style={{ textAlign: 'center', flex: 1, padding: '0 10px' }}>
+            <div style={{ fontSize: '20px', textTransform: 'uppercase', fontWeight: 'bold' }}>{schoolName}</div>
+            <div style={{ fontSize: '16px', textTransform: 'uppercase', textDecoration: 'underline', marginTop: '4px', marginBottom: '4px' }}>
+              Reçu de Versement de Scolarité
+            </div>
+            <div style={{ fontSize: '14px', marginTop: '4px' }}>CEL: {schoolPhone}</div>
+          </div>
+          <div style={{ width: '80px' }}></div>
         </div>
 
         {/* Row 1: Année Scolaire etc. */}
@@ -129,8 +135,9 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
               <td style={{ textAlign: 'right', paddingRight: '5px' }}>Reste:</td>
               <td style={{ textAlign: 'left' }}>{formatCurrency(reste)}</td>
               <td style={{ textAlign: 'center' }}></td>
-              <td colSpan={2} style={{ textAlign: 'center', paddingTop: '5px' }}>
-                Signature
+              <td colSpan={2} style={{ textAlign: 'center', paddingTop: '15px' }}>
+                <div style={{ textDecoration: 'underline' }}>Le Directeur</div>
+                <div style={{ marginTop: '30px', fontWeight: 'bold' }}>{schoolInfo?.director_name || "La Direction"}</div>
               </td>
             </tr>
           </tbody>
