@@ -15,6 +15,42 @@ interface BulletinPreviewProps {
 
 export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, students, evaluations, grades, period, schoolInfo, classSubjects, schedules, targetStudentId }) => {
   const { i18n } = useTranslation();
+
+  const translateBulletinWord = (word: string) => {
+    if (!i18n.language.startsWith('ar')) return word.toUpperCase();
+    const map: Record<string, string> = {
+      "Mathématiques": "الرياضيات",
+      "Français": "الفرنسية",
+      "Anglais": "الإنجليزية",
+      "Histoire-Géographie": "التاريخ والجغرافيا",
+      "Physique-Chimie": "الفيزياء والكيمياء",
+      "SVT": "علوم الحياة والأرض",
+      "EPS": "التربية البدنية",
+      "Philosophie": "الفلسفة",
+      "Informatique": "الإعلاميات",
+      "Espagnol": "الإسبانية",
+      "Allemand": "الألمانية",
+      "Arts Plastiques": "الفنون التشكيلية",
+      "Éducation Musicale": "التربية الموسيقية",
+      "DISCIPLINES": "المواد",
+      "MOY": "المعدل",
+      "COEF": "المعامل",
+      "Total": "المجموع",
+      "RANG": "الرتبة",
+      "Appréciations": "ملاحظات",
+      "PROFESSEUR": "الأستاذ",
+      "SIGNATURE": "التوقيع",
+      "BILANS LETTRES": "حصيلة الآداب",
+      "BILANS SCIENCES": "حصيلة العلوم",
+      "BILANS AUTRES": "حصيلة أخرى",
+      "LETTRES": "الآداب",
+      "SCIENCES": "العلوم",
+      "AUTRES": "أخرى"
+    };
+    // Match exact or uppercase
+    return map[word] || map[word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()] || word.toUpperCase();
+  };
+
   const formatNum = (num: number, decimals: number = 2) => {
     if (num === null || num === undefined) return "-";
     return new Intl.NumberFormat(i18n.language.startsWith("ar") ? "ar-EG" : "fr-FR", {
@@ -114,13 +150,14 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
   const classMin = rankings.length > 0 ? rankings[rankings.length - 1].avg : 0;
 
   const getAppreciation = (note: number) => {
-    if (note >= 16) return "Très Bien";
-    if (note >= 14) return "Bien";
-    if (note >= 12) return "Assez Bien";
-    if (note >= 10) return "Passable";
-    if (note >= 8) return "Insuffisant";
-    if (note >= 5) return "Faible";
-    return "Très Faible";
+    const isAr = i18n.language.startsWith("ar");
+    if (note >= 16) return isAr ? "جيد جداً" : "Très Bien";
+    if (note >= 14) return isAr ? "جيد" : "Bien";
+    if (note >= 12) return isAr ? "مستحسن" : "Assez Bien";
+    if (note >= 10) return isAr ? "مقبول" : "Passable";
+    if (note >= 8) return isAr ? "غير كاف" : "Insuffisant";
+    if (note >= 5) return isAr ? "ضعيف" : "Faible";
+    return isAr ? "ضعيف جداً" : "Très Faible";
   };
 
   const getRankStr = (rank: number) => {
@@ -179,7 +216,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
           
           return (
             <tr key={s}>
-              <td style={{textAlign: 'left', paddingLeft: '8px', fontWeight: 'bold'}}>{s.toUpperCase()}</td>
+              <td style={{textAlign: 'left', paddingLeft: '8px', fontWeight: 'bold'}}>{translateBulletinWord(s)}</td>
               <td>{formatNum(val, 2)}</td>
               <td>{formatNum(coef, 0)}</td>
               <td>{formatNum(total, 2)}</td>
@@ -198,7 +235,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
             <React.Fragment key={title}>
               {group.map(renderSubjectRow)}
               <tr className="bulletin-group-header">
-                <td colSpan={2}>BILANS {title}</td>
+                <td colSpan={2}>{i18n.language.startsWith('ar') ? 'حصيلة ' + translateBulletinWord(title) : 'BILANS ' + title.toUpperCase()}</td>
                 <td>{formatNum(tCoef, 0)}</td>
                 <td>{formatNum(tMoy, 2)}</td>
                 <td colSpan={4}></td>
@@ -213,16 +250,16 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
             {/* 1. Header Row */}
             <div className="bulletin-classic-header">
               <div className="header-left">
-                MINISTERE DE L'EDUCATION NATIONALE ET DE<br/>
-                L'ALPHABETISATION<br/>
+                {translateBulletinWord("MINISTERE DE L'EDUCATION NATIONALE ET DE")}<br/>
+                {translateBulletinWord("L'ALPHABETISATION")}<br/>
                 DREN {schoolInfo?.address?.toUpperCase() || '...'}
               </div>
               <div className="header-center">
-                <h2>BULLETIN TRIMESTRIEL DE NOTES</h2>
+                <h2>{translateBulletinWord("BULLETIN TRIMESTRIEL DE NOTES")}</h2>
                 <h3>{period}</h3>
               </div>
               <div className="header-right">
-                Année Scolaire<br/>
+                {translateBulletinWord("Année Scolaire")}<br/>
                 <strong>{formatNum(new Date().getFullYear() - 1, 0)} - {formatNum(new Date().getFullYear(), 0)}</strong>
               </div>
             </div>
@@ -237,10 +274,10 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
                 )}
               </div>
               <div className="school-details">
-                <p>Etablissement: <strong>{schoolInfo?.name?.toUpperCase() || "ÉTABLISSEMENT"}</strong></p>
+                <p>{translateBulletinWord("Etablissement")}: <strong>{schoolInfo?.name?.toUpperCase() || "ÉTABLISSEMENT"}</strong></p>
                 <div style={{display: 'flex', gap: '40px', marginTop: '5px'}}>
-                  <p>Adresse: <strong>{schoolInfo?.address || '...'}</strong></p>
-                  <p>Telephone: <strong>{schoolInfo?.phone || '...'}</strong></p>
+                  <p>{translateBulletinWord("Adresse")}: <strong>{schoolInfo?.address || '...'}</strong></p>
+                  <p>{translateBulletinWord("Telephone")}: <strong>{schoolInfo?.phone || '...'}</strong></p>
                 </div>
               </div>
               <div className="school-statut">
@@ -262,13 +299,13 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
               </div>
               <div className="col1" style={{flex: 1, padding: '5px', borderRight: '1px solid black'}}>
                 <p><strong>{st.first_name?.toUpperCase()} {st.last_name?.toUpperCase()}</strong></p>
-                <p>Matricule: <strong>{st.matricule || st.id.substring(0,8).toUpperCase()}</strong></p>
-                <p>Classe: <strong>{classData?.name}</strong></p>
-                <p>Effectif: <strong>{formatNum(students.length, 0)}</strong></p>
+                <p>{translateBulletinWord("Matricule")}: <strong>{st.matricule || st.id.substring(0,8).toUpperCase()}</strong></p>
+                <p>{translateBulletinWord("Classe")}: <strong>{classData?.name}</strong></p>
+                <p>{translateBulletinWord("Effectif")}: <strong>{formatNum(students.length, 0)}</strong></p>
               </div>
               <div className="col2">
-                <p>Sexe: <strong>{st.gender || '-'}</strong></p>
-                <p>Né(e) le: <strong>{st.birth_date ? new Date(st.birth_date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR') : '-'}</strong></p>
+                <p>{translateBulletinWord("Sexe")}: <strong>{st.gender || '-'}</strong></p>
+                <p>{translateBulletinWord("Né(e) le")}: <strong>{st.birth_date ? new Date(st.birth_date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR') : '-'}</strong></p>
                 <p>Lieu: <strong>-</strong></p>
                 <p>Nationalité: <strong>-</strong></p>
               </div>
@@ -282,14 +319,14 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
             <table className="bulletin-classic-table">
               <thead>
                 <tr>
-                  <th style={{width: '25%'}}>DISCIPLINES</th>
-                  <th style={{width: '8%'}}>MOY</th>
-                  <th style={{width: '8%'}}>COEF</th>
-                  <th style={{width: '10%'}}>Total</th>
-                  <th style={{width: '8%'}}>RANG</th>
-                  <th style={{width: '15%'}}>Appréciations</th>
-                  <th style={{width: '15%'}}>PROFESSEUR</th>
-                  <th style={{width: '11%'}}>SIGNATURE</th>
+                                    <th style={{width: '25%'}}>{translateBulletinWord("DISCIPLINES")}</th>
+                  <th style={{width: '8%'}}>{translateBulletinWord("MOY")}</th>
+                  <th style={{width: '8%'}}>{translateBulletinWord("COEF")}</th>
+                  <th style={{width: '10%'}}>{translateBulletinWord("Total")}</th>
+                  <th style={{width: '8%'}}>{translateBulletinWord("RANG")}</th>
+                  <th style={{width: '15%'}}>{translateBulletinWord("Appréciations")}</th>
+                  <th style={{width: '15%'}}>{translateBulletinWord("PROFESSEUR")}</th>
+                  <th style={{width: '11%'}}>{translateBulletinWord("SIGNATURE")}</th>
                 </tr>
               </thead>
               <tbody>

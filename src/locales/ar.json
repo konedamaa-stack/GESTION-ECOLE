@@ -120,7 +120,10 @@
     "appreciation": "التقدير",
     "absent": "غائب",
     "no_recent_grades": "لا توجد علامات مسجلة في الوقت الحالي.",
-    "free_time": "فارغ"
+    "free_time": "فارغ",
+    "matricule": "Matricule",
+    "last_name": "Nom",
+    "first_name": "Prénoms"
   },
   "dashboard": {
     "welcome": "مرحباً، {{name}} 👋",
@@ -145,7 +148,8 @@
     "scheduled_on": "مقرر في {{date}}",
     "no_upcoming_evaluations": "لا توجد تقييمات مقررة قريباً",
     "student_distribution": "توزيع الطلاب حسب الفصل",
-    "class_label": "الفصل : {{name}} | {{period}}"
+    "class_label": "الفصل : {{name}} | {{period}}",
+    "matricule_label": "Matricule"
   },
   "admin": {
     "sidebar": {
@@ -183,7 +187,7 @@
       "alert_presence": "تنبيه: تحقق من الحضور",
       "panel_title": "دليل الطلاب",
       "search_ph": "ابحث بالاسم أو رقم التسجيل...",
-      "col_matricule": "رقم التسجيل",
+      "col_matricule": "Matricule",
       "col_name": "الاسم واللقب",
       "col_class": "الفصل",
       "col_status": "الحالة",
@@ -237,7 +241,7 @@
       "title": "إدارة كشوف النقاط",
       "subtitle": "الإصدار، حساب المعدلات والإرسال إلى الأولياء.",
       "btn_generate": "إنشاء كشوف النقاط",
-      "panel_title": "الفصل الدراسي الحالي (ف2)",
+      "panel_title": "الفصل الدراسي الحالي",
       "col_class": "الفصل",
       "col_teacher": "الأستاذ الرئيسي",
       "col_avg": "معدل الفصل",
@@ -269,7 +273,7 @@
       "search_ph": "ابحث بالاسم أو المادة...",
       "col_name": "الاسم واللقب",
       "col_subject": "المادة الأساسية",
-      "col_matricule": "رقم التسجيل",
+      "col_matricule": "Matricule",
       "col_pwd": "كلمة المرور",
       "col_actions": "إجراءات",
       "btn_view_ids": "عرض بيانات الاعتماد",
@@ -469,15 +473,15 @@
       "comments": "تعليق (اختياري)",
       "save_absence": "حفظ الغياب",
       "student_info": "1. معلومات الطالب",
-      "last_name": "الاسم العائلي",
-      "first_name": "الاسم الشخصي",
+      "last_name": "Nom",
+      "first_name": "Prénom(s)",
       "birth_date": "تاريخ الميلاد",
       "class_assign": "القسم",
       "email": "البريد الإلكتروني",
       "password_default": "كلمة المرور (الافتراضية: passer123)",
       "parent_info": "2. معلومات ولي الأمر / الوصي",
-      "parent_last_name": "الاسم العائلي لولي الأمر",
-      "parent_first_name": "الاسم الشخصي لولي الأمر",
+      "parent_last_name": "Nom du parent",
+      "parent_first_name": "Prénom du parent",
       "phone": "رقم الهاتف",
       "fees_info": "3. رسوم التسجيل والدراسة",
       "reg_fee_amount": "مبلغ رسوم التسجيل (فرنك أفريقي)",

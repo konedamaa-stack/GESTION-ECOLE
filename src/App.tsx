@@ -674,6 +674,18 @@ function App() {
     const amount = (form.elements.namedItem('amount') as HTMLInputElement).value;
     const month = (form.elements.namedItem('month') as HTMLInputElement).value;
     const payment_method = (form.elements.namedItem('payment_method') as HTMLSelectElement).value;
+    const parsedAmount = parseFloat(amount);
+
+    const currentBalance = (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) +
+                           (loansData?.filter(l => l.status === 'Actif').reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
+                           (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
+                           (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
+                           (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0);
+
+    if (parsedAmount > currentBalance) {
+      alert(`Fonds insuffisants dans la caisse. Solde disponible : ${currentBalance} F.`);
+      return;
+    }
     
     try {
       const { error } = await supabase.from('employee_payments').insert([{
@@ -700,6 +712,18 @@ function App() {
     const amount = (form.elements.namedItem('amount') as HTMLInputElement).value;
     const month = (form.elements.namedItem('month') as HTMLInputElement).value;
     const payment_method = (form.elements.namedItem('payment_method') as HTMLSelectElement).value;
+    const parsedAmount = parseFloat(amount);
+
+    const currentBalance = (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) +
+                           (loansData?.filter(l => l.status === 'Actif').reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
+                           (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
+                           (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
+                           (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0);
+
+    if (parsedAmount > currentBalance) {
+      alert(`Fonds insuffisants dans la caisse. Solde disponible : ${currentBalance} F.`);
+      return;
+    }
     
     try {
       const { error } = await supabase.from('teacher_payments').insert([{
@@ -776,7 +800,8 @@ function App() {
     const parsedAmount = parseFloat(amount);
 
     // Calculate current available balance
-    const currentBalance = (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) -
+    const currentBalance = (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) +
+                           (loansData?.filter(l => l.status === 'Actif').reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                            (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                            (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                            (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0);
@@ -1415,6 +1440,23 @@ function App() {
     const totalClasses = classesData.length;
     const totalAbsences = absencesData.length;
 
+    const handlePurgeFinances = async () => {
+      if (!confirm('Êtes-vous sûr de vouloir PURGER toutes les données financières (Dépenses, Emprunts, Paiements, Factures) ? Cette action est irréversible.')) return;
+      try {
+        if (currentSchoolId) {
+          await supabase.from('expenses').delete().eq('school_id', currentSchoolId);
+          await supabase.from('loans').delete().eq('school_id', currentSchoolId);
+          await supabase.from('teacher_payments').delete().eq('school_id', currentSchoolId);
+          await supabase.from('employee_payments').delete().eq('school_id', currentSchoolId);
+          await supabase.from('invoices').delete().eq('school_id', currentSchoolId);
+          alert('Purge terminée ! La page va se recharger.');
+          window.location.reload();
+        }
+      } catch(err: any) {
+        alert('Erreur: ' + err.message);
+      }
+    };
+
     // Last 3 absences
     const recentAbsences = [...absencesData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 4);
     
@@ -1424,22 +1466,55 @@ function App() {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(0, 4);
 
-    // Data for PieChart
-    const classDistribution = classesData.map(c => ({
-      name: c.name,
-      value: studentsData.filter(s => s.class_id === c.id).length
-    })).filter(c => c.value > 0);
-    const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'];
-
     return (
       <div className="animate-fade-in">
-      {currentSchoolPlan === 'Pro' && (
-      <div className="dashboard-grid" style={{marginBottom: '24px'}}>
+
+
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">{t('dashboard.welcome', 'Bienvenue, {{name}} 👋', {name: session?.user?.email?.split('@')[0] || 'Adama'})}</h1>
+            <p className="page-subtitle">{t('dashboard.overview', "Voici l'aperçu de votre établissement pour aujourd'hui.")}</p>
+          </div>
+          <div style={{display: 'flex', gap: '10px'}}>
+            <button className="btn btn-danger" onClick={handlePurgeFinances} style={{backgroundColor: '#ef4444', color: 'white'}}>
+              🗑️ PURGER FINANCES
+            </button>
+            <button className="btn btn-outline" onClick={() => {
+              alert(t('dashboard.generating_report', "Génération du rapport en cours..."));
+              const reportContent = t('dashboard.report_content', "----- RAPPORT GLOBAL ${settingsData?.school_name?.toUpperCase() || 'ÉTABLISSEMENT'} -----\n\nTotal Élèves: {{students}}\nProfesseurs: {{teachers}}\nClasses: {{classes}}\nAbsences Totales: {{absences}}\n\nCe rapport a été généré automatiquement.", {
+              students: formatNum(totalStudents),
+              teachers: formatNum(totalTeachers),
+              classes: formatNum(totalClasses),
+              absences: formatNum(totalAbsences)
+            });
+            const blob = new Blob([reportContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `rapport_global.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }}>
+            {t('dashboard.download_report', "Télécharger le rapport")}
+          </button>
+        </div>
+
+        {/* Dynamic Stats */}
+      <div className="dashboard-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px'}}>
         <div className="stat-card delay-100">
           <div className="stat-icon" style={{backgroundColor: '#fee2e2', color: '#ef4444'}}>💸</div>
           <div className="stat-info">
             <h3>Total Dépenses Courantes</h3>
             <p className="stat-value">{formatNum(expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)} F</p>
+          </div>
+        </div>
+        <div className="stat-card delay-100">
+          <div className="stat-icon" style={{backgroundColor: '#e0f2fe', color: '#0ea5e9'}}>🏦</div>
+          <div className="stat-info">
+            <h3>Total Emprunts</h3>
+            <p className="stat-value">{formatNum(loansData?.filter(l => l.status === 'Actif').reduce((sum, item) => sum + Number(item.amount), 0) || 0)} F</p>
           </div>
         </div>
         <div className="stat-card delay-100">
@@ -1465,7 +1540,8 @@ function App() {
             <h3>Solde Caisse (Rentabilité)</h3>
             <p className="stat-value" style={{color: (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) + (loansData?.filter(l => l.status === 'Actif').reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) >= 0 ? '#10b981' : '#ef4444'}}>
               {formatNum(
-                (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) -
+                (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) +
+                (loansData?.filter(l => l.status === 'Actif').reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                 (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                 (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                 (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)
@@ -1474,36 +1550,6 @@ function App() {
           </div>
         </div>
       </div>
-      )}
-
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">{t('dashboard.welcome', 'Bienvenue, {{name}} 👋', {name: session?.user?.email?.split('@')[0] || 'Adama'})}</h1>
-            <p className="page-subtitle">{t('dashboard.overview', "Voici l'aperçu de votre établissement pour aujourd'hui.")}</p>
-          </div>
-          <button className="btn btn-outline" onClick={() => {
-            alert(t('dashboard.generating_report', "Génération du rapport en cours..."));
-            const reportContent = t('dashboard.report_content', "----- RAPPORT GLOBAL ${settingsData?.school_name?.toUpperCase() || 'ÉTABLISSEMENT'} -----\n\nTotal Élèves: {{students}}\nProfesseurs: {{teachers}}\nClasses: {{classes}}\nAbsences Totales: {{absences}}\n\nCe rapport a été généré automatiquement.", {
-              students: formatNum(totalStudents),
-              teachers: formatNum(totalTeachers),
-              classes: formatNum(totalClasses),
-              absences: formatNum(totalAbsences)
-            });
-            const blob = new Blob([reportContent], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `rapport_global.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-          }}>
-            {t('dashboard.download_report', "Télécharger le rapport")}
-          </button>
-        </div>
-
-        {/* Dynamic Stats */}
         <div className="stats-grid">
           <div className="stat-card delay-100" onClick={() => setActiveTab('students')} style={{cursor: 'pointer'}}>
             <div className="stat-header">
@@ -2088,8 +2134,7 @@ function App() {
         .eq('type', 'Moyenne Globale')
         .eq('school_id', currentSchoolId);
 
-      const subjects = ["Mathématiques", "Français", "Anglais", "Histoire-Géographie", "Physique-Chimie", "SVT", "EPS", "Philosophie", "Informatique"];
-      for(const subject of subjects) {
+      for(const subject of allSubjects) {
         let evId = existingDbEvals?.find(e => e.subject === subject)?.id || evaluationsData.find(e => e.class_id === globalGradeClassId && e.period === globalGradePeriod && e.type === "Moyenne Globale" && e.subject === subject)?.id;
         
         // Find if any grades exist for this subject
@@ -2262,12 +2307,19 @@ function App() {
       </div>
 
       
-      <div className="dashboard-grid" style={{marginBottom: '24px'}}>
+      <div className="dashboard-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px'}}>
         <div className="stat-card delay-100">
           <div className="stat-icon" style={{backgroundColor: '#fee2e2', color: '#ef4444'}}>💸</div>
           <div className="stat-info">
             <h3>{t('admin.expenses.total', 'Total Dépenses Courantes')}</h3>
             <p className="stat-value">{formatNum(expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)} F</p>
+          </div>
+        </div>
+        <div className="stat-card delay-100">
+          <div className="stat-icon" style={{backgroundColor: '#e0f2fe', color: '#0ea5e9'}}>🏦</div>
+          <div className="stat-info">
+            <h3>Total Emprunts</h3>
+            <p className="stat-value">{formatNum(loansData?.filter(l => l.status === 'Actif').reduce((sum, item) => sum + Number(item.amount), 0) || 0)} F</p>
           </div>
         </div>
         <div className="stat-card delay-100">
@@ -2293,7 +2345,8 @@ function App() {
             <h3>Solde Caisse (Rentabilité)</h3>
             <p className="stat-value" style={{color: (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) + (loansData?.filter(l => l.status === 'Actif').reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) >= 0 ? '#10b981' : '#ef4444'}}>
               {formatNum(
-                (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) -
+                (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) +
+                (loansData?.filter(l => l.status === 'Actif').reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                 (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                 (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                 (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)
@@ -2733,7 +2786,7 @@ function App() {
         </button>
       </div>
 
-      <div className="stats-grid finance-stats">
+      <div className="stats-grid finance-stats" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px'}}>
         <div className="stat-card delay-100">
           <div className="stat-header">
             <span className="stat-label">Total Attendu</span>
@@ -2780,12 +2833,24 @@ function App() {
 
         <div className="stat-card delay-400">
           <div className="stat-header">
+            <span className="stat-label">Total Emprunts</span>
+            <Icons.Database />
+          </div>
+          <div className="stat-value">{formatNum(loansData?.filter(l => l.status === 'Actif').reduce((sum, item) => sum + Number(item.amount), 0) || 0)}</div>
+          <div className="stat-trend trend-up">
+            F
+          </div>
+        </div>
+
+        <div className="stat-card delay-400">
+          <div className="stat-header">
             <span className="stat-label">Solde Caisse</span>
             <Icons.Database />
           </div>
           <div className="stat-value" style={{color: (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) + (loansData?.filter(l => l.status === 'Actif').reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) >= 0 ? '#10b981' : '#ef4444'}}>
             {formatNum(
-                (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) -
+                (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) +
+                (loansData?.filter(l => l.status === 'Actif').reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                 (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                 (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
                 (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)
@@ -3721,15 +3786,17 @@ function App() {
         </div>
         
         <ul className="nav-menu">
+          {(currentAdminRole === 'Director' || currentAdminRole === 'Secretary') && (
+            <li className="nav-item" onClick={() => { setIsQuickStartModalOpen(true); setIsMobileMenuOpen(false); }} style={{ background: 'var(--accent-color, #10b981)', color: 'white' }}>
+              <span>🚀</span> {t('admin.sidebar.quickstart', 'Guide de démarrage')}
+            </li>
+          )}
           <li className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }}>
             <Icons.Home /> {t('admin.sidebar.dashboard', 'Tableau de bord')}
           </li>
           
           {(currentAdminRole === 'Director' || currentAdminRole === 'Secretary') && (
             <>
-              <li className="nav-item" onClick={() => { setIsQuickStartModalOpen(true); setIsMobileMenuOpen(false); }} style={{ background: 'var(--accent-color, #8B5CF6)', color: 'white' }}>
-                <span>🚀</span> {t('admin.sidebar.quickstart', 'Guide de démarrage')}
-              </li>
               <li className={`nav-item ${activeTab === 'students' ? 'active' : ''}`} onClick={() => { setActiveTab('students'); setIsMobileMenuOpen(false); }}>
                 <Icons.Users /> {t('admin.sidebar.students', 'Gestion Élèves')}
               </li>
@@ -4858,7 +4925,7 @@ function App() {
                       <thead>
                         <tr style={{background: 'var(--surface-color)'}}>
                           <th style={{border: '1px solid var(--border-color)', padding: '12px', textAlign: 'left', minWidth: '150px'}}>Élève</th>
-                          {["Mathématiques", "Français", "Anglais", "Histoire-Géographie", "Physique-Chimie", "SVT", "EPS", "Philosophie", "Informatique"].map(sub => (
+                          {allSubjects.map(sub => (
                             <th key={sub} style={{border: '1px solid var(--border-color)', padding: '8px', textAlign: 'center'}} title={sub}>{sub.substring(0,4)}.</th>
                           ))}
                         </tr>
@@ -4867,7 +4934,7 @@ function App() {
                         {studentsData.filter(s => s.class_id === globalGradeClassId).map(st => (
                           <tr key={st.id}>
                             <td style={{border: '1px solid var(--border-color)', padding: '8px', fontWeight: 500}}>{st.first_name} {st.last_name}</td>
-                            {["Mathématiques", "Français", "Anglais", "Histoire-Géographie", "Physique-Chimie", "SVT", "EPS", "Philosophie", "Informatique"].map(sub => (
+                            {allSubjects.map(sub => (
                               <td key={sub} style={{border: '1px solid var(--border-color)', padding: '4px', textAlign: 'center'}}>
                                 <input 
                                   type="number" 

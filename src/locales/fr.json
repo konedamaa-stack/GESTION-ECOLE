@@ -237,7 +237,7 @@
       "title": "Gestion des Bulletins",
       "subtitle": "Édition, calcul des moyennes et envois aux parents.",
       "btn_generate": "Générer Bulletins",
-      "panel_title": "Trimestre en cours (T2)",
+      "panel_title": "Trimestre en cours",
       "col_class": "Classe",
       "col_teacher": "Prof. Principal",
       "col_avg": "Moy. Classe",
