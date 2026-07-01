@@ -1466,6 +1466,13 @@ function App() {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(0, 4);
 
+    const classDistribution = classesData.map(cls => ({
+      name: cls.name,
+      value: studentsData.filter(s => s.class_id === cls.id).length
+    })).filter(c => c.value > 0);
+
+    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
+
     return (
       <div className="animate-fade-in">
 
@@ -1499,6 +1506,7 @@ function App() {
           }}>
             {t('dashboard.download_report', "Télécharger le rapport")}
           </button>
+          </div>
         </div>
 
         {/* Dynamic Stats */}

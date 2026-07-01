@@ -35,7 +35,6 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
   const schoolName = schoolInfo?.name || "ÉTABLISSEMENT SCOLAIRE";
   const schoolPhone = schoolInfo?.phone || "00 00 00 00 00";
   const academicYear = schoolInfo?.academic_year || new Date().getFullYear() + " / " + (new Date().getFullYear() + 1);
-  const classNameAr = "روضة الأطفال"; // Optionnel : à lier si la classe a un nom en arabe
   const classNameFr = student?.class?.name || student?.classes?.name || "-";
   const receiptNo = invoice?.id ? invoice.id.split('-')[0].toUpperCase() : "-";
   const matricule = student?.matricule || "-";
