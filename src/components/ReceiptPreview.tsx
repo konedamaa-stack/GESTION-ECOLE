@@ -43,6 +43,8 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
     const index = studentInvoices.findIndex((inv: any) => inv.id === invoice.id);
     if (index !== -1) {
       installmentNum = index + 1;
+    } else {
+      installmentNum = studentInvoices.length + 1;
     }
   }
 
@@ -51,7 +53,8 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
     return `${n}ème`;
   };
   
-  const versementLabel = `${getOrdinal(installmentNum)} Versement:`;
+  const versementText = `${getOrdinal(installmentNum)} Versement`;
+  const versementLabel = `${versementText}:`;
 
   // Extracting data or falling back to mock data similar to the image
   const schoolName = schoolInfo?.name || "ÉTABLISSEMENT SCOLAIRE";
@@ -100,7 +103,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
           <div style={{ textAlign: 'center', flex: 1, padding: '0 5px', lineHeight: '1.2' }}>
             <div style={{ fontSize: '16px', textTransform: 'uppercase', fontWeight: 'bold' }}>{schoolName}</div>
             <div style={{ fontSize: '14px', textTransform: 'uppercase', textDecoration: 'underline', margin: '2px 0' }}>
-              Reçu de Versement de Scolarité
+              Reçu de {versementText} de Scolarité
             </div>
             <div style={{ fontSize: '12px' }}>CEL: {schoolPhone}</div>
           </div>
