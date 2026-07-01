@@ -4488,7 +4488,7 @@ function App() {
                           first_name_ar: (idxPrenomAr !== -1 && cols[idxPrenomAr]) ? cols[idxPrenomAr] : null,
                           last_name_ar: (idxNomAr !== -1 && cols[idxNomAr]) ? cols[idxNomAr] : null,
                           birth_date: parsedDate,
-                          matricule: (idxMatricule !== -1 && cols[idxMatricule]) ? cols[idxMatricule] : `STU-${Math.floor(Math.random()*100000)}`,
+                          matricule: (idxMatricule !== -1 && cols[idxMatricule]) ? cols[idxMatricule] : `STU-${Date.now().toString().slice(-4)}${i}${Math.floor(Math.random()*10000)}`,
                           class_id: classId || null
                         });
                       }
