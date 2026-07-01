@@ -66,85 +66,80 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
       fontSize: '14px',
     }}>
       <div style={{
-        border: '4px solid black',
-        padding: '15px 10px',
+        border: '2px solid black',
+        padding: '5px',
         position: 'relative'
       }}>
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-          <div style={{ width: '80px', height: '80px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+          <div style={{ width: '60px', height: '60px' }}>
             <img src={schoolInfo?.logo_url || '/logo-coran.jpg'} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
-          <div style={{ textAlign: 'center', flex: 1, padding: '0 10px' }}>
-            <div style={{ fontSize: '20px', textTransform: 'uppercase', fontWeight: 'bold' }}>{schoolName}</div>
-            <div style={{ fontSize: '16px', textTransform: 'uppercase', textDecoration: 'underline', marginTop: '4px', marginBottom: '4px' }}>
+          <div style={{ textAlign: 'center', flex: 1, padding: '0 5px', lineHeight: '1.2' }}>
+            <div style={{ fontSize: '16px', textTransform: 'uppercase', fontWeight: 'bold' }}>{schoolName}</div>
+            <div style={{ fontSize: '14px', textTransform: 'uppercase', textDecoration: 'underline', margin: '2px 0' }}>
               Reçu de Versement de Scolarité
             </div>
-            <div style={{ fontSize: '14px', marginTop: '4px' }}>CEL: {schoolPhone}</div>
+            <div style={{ fontSize: '12px' }}>CEL: {schoolPhone}</div>
           </div>
-          <div style={{ width: '80px' }}></div>
+          <div style={{ width: '60px' }}></div>
         </div>
 
         {/* Row 1: Année Scolaire etc. */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <span>Année Scolaire</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', fontSize: '12px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <span>Année Scolaire:</span>
             <span>{academicYear}</span>
           </div>
-          <div>{classNameFr}</div>
+          <div>Classe: {classNameFr}</div>
         </div>
 
         {/* Rows wrapper for table layout for exact alignment */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', lineHeight: '1.2' }}>
           <tbody>
-            {/* Row 2 */}
             <tr>
-              <td style={{ textAlign: 'right', paddingRight: '5px' }}>Recus N°:</td>
-              <td style={{ textAlign: 'left' }}>{receiptNo}</td>
-              <td style={{ textAlign: 'center' }}></td>
-              <td style={{ textAlign: 'right', paddingRight: '5px' }}>Matricule:</td>
-              <td style={{ textAlign: 'left' }}>{matricule}</td>
+              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>Recus N°:</td>
+              <td style={{ textAlign: 'left', paddingBottom: '2px' }}>{receiptNo}</td>
+              <td style={{ textAlign: 'center', paddingBottom: '2px' }}></td>
+              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>Matricule:</td>
+              <td style={{ textAlign: 'left', paddingBottom: '2px' }}>{matricule}</td>
             </tr>
-            {/* Row 3 */}
             <tr>
-              <td style={{ textAlign: 'right', paddingRight: '5px' }}>Scolarite:</td>
-              <td style={{ textAlign: 'left' }}>{formatCurrency(scolarite)}</td>
-              <td style={{ textAlign: 'center' }}></td>
-              <td style={{ textAlign: 'right', paddingRight: '5px' }}>Eleve:</td>
-              <td style={{ textAlign: 'left', fontSize: '16px' }} dir="rtl">{studentName}</td>
+              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>Scolarite:</td>
+              <td style={{ textAlign: 'left', paddingBottom: '2px' }}>{formatCurrency(scolarite)}</td>
+              <td style={{ textAlign: 'center', paddingBottom: '2px' }}></td>
+              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>Eleve:</td>
+              <td style={{ textAlign: 'left', fontSize: '13px', paddingBottom: '2px' }} dir="rtl">{studentName}</td>
             </tr>
-            {/* Row 4 */}
             <tr>
-              <td style={{ textAlign: 'right', paddingRight: '5px' }}>Versement:</td>
-              <td style={{ textAlign: 'left' }}>{formatCurrency(versement)}</td>
-              <td style={{ textAlign: 'center' }}>{paymentDate}</td>
-              <td style={{ textAlign: 'right', paddingRight: '5px' }}>Parent:</td>
-              <td style={{ textAlign: 'left', fontSize: '16px' }} dir="rtl">{parentName}</td>
+              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>Versement:</td>
+              <td style={{ textAlign: 'left', paddingBottom: '2px' }}>{formatCurrency(versement)}</td>
+              <td style={{ textAlign: 'center', paddingBottom: '2px' }}>{paymentDate}</td>
+              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>Parent:</td>
+              <td style={{ textAlign: 'left', fontSize: '13px', paddingBottom: '2px' }} dir="rtl">{parentName}</td>
             </tr>
-            {/* Row 5 */}
             <tr>
-              <td style={{ textAlign: 'right', paddingRight: '5px' }}>Total versé:</td>
-              <td style={{ textAlign: 'left' }}>{formatCurrency(totalPaid)}</td>
-              <td style={{ textAlign: 'center' }}></td>
-              <td colSpan={2} style={{ textAlign: 'center', paddingTop: '10px' }}>
+              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>Total versé:</td>
+              <td style={{ textAlign: 'left', paddingBottom: '2px' }}>{formatCurrency(totalPaid)}</td>
+              <td style={{ textAlign: 'center', paddingBottom: '2px' }}></td>
+              <td colSpan={2} style={{ textAlign: 'center', paddingTop: '4px', paddingBottom: '2px' }}>
                 {isSoldé && <span>Soldé</span>}
               </td>
             </tr>
-            {/* Row 6 */}
             <tr>
-              <td style={{ textAlign: 'right', paddingRight: '5px' }}>Reste:</td>
-              <td style={{ textAlign: 'left' }}>{formatCurrency(reste)}</td>
-              <td style={{ textAlign: 'center' }}></td>
-              <td colSpan={2} style={{ textAlign: 'center', paddingTop: '15px' }}>
+              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>Reste:</td>
+              <td style={{ textAlign: 'left', paddingBottom: '2px' }}>{formatCurrency(reste)}</td>
+              <td style={{ textAlign: 'center', paddingBottom: '2px' }}></td>
+              <td colSpan={2} style={{ textAlign: 'center', paddingTop: '8px' }}>
                 <div style={{ textDecoration: 'underline' }}>Le Directeur</div>
-                <div style={{ marginTop: '30px', fontWeight: 'bold' }}>{schoolInfo?.director_name || "La Direction"}</div>
+                <div style={{ marginTop: '20px', fontWeight: 'bold' }}>{schoolInfo?.director_name || "La Direction"}</div>
               </td>
             </tr>
           </tbody>
         </table>
 
         {/* Footer */}
-        <div style={{ marginTop: '15px', fontSize: '12px' }}>
+        <div style={{ marginTop: '8px', fontSize: '10px', textAlign: 'center' }}>
           Merci de Votre confiance! Rendez Vous le: {nextAppt}
         </div>
       </div>
