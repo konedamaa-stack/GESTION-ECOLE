@@ -4894,6 +4894,7 @@ function App() {
                           <ReceiptPreview 
                             invoice={selectedInvoice}
                             student={selectedStudent}
+                            invoicesData={invoicesData}
                             schoolInfo={{ ...settingsData, ...adminSchools.find(s => s.id === currentSchoolId) }}
                                                           studentReste={
                                 (() => {

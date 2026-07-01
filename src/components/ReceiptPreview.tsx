@@ -5,13 +5,15 @@ interface ReceiptPreviewProps {
   student?: any;
   schoolInfo?: any;
   studentReste?: number;
+  invoicesData?: any[];
 }
 
 export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ 
   invoice, 
   student, 
   schoolInfo, 
-  studentReste = 0 
+  studentReste = 0,
+  invoicesData = []
 }) => {
 
   useEffect(() => {
@@ -30,6 +32,26 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
     const date = new Date(dateString);
     return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
   };
+
+  // Calcul du numéro de versement
+  let installmentNum = 1;
+  if (invoicesData.length > 0 && invoice && student) {
+    const studentInvoices = invoicesData
+      .filter((inv: any) => inv.student_id === student.id && (inv.status === 'Payée' || inv.id === invoice.id))
+      .sort((a: any, b: any) => new Date(a.issue_date || a.paid_at || 0).getTime() - new Date(b.issue_date || b.paid_at || 0).getTime());
+    
+    const index = studentInvoices.findIndex((inv: any) => inv.id === invoice.id);
+    if (index !== -1) {
+      installmentNum = index + 1;
+    }
+  }
+
+  const getOrdinal = (n: number) => {
+    if (n === 1) return '1er';
+    return `${n}ème`;
+  };
+  
+  const versementLabel = `${getOrdinal(installmentNum)} Versement:`;
 
   // Extracting data or falling back to mock data similar to the image
   const schoolName = schoolInfo?.name || "ÉTABLISSEMENT SCOLAIRE";
@@ -112,7 +134,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
               <td style={{ textAlign: 'left', fontSize: '13px', paddingBottom: '2px' }} dir="rtl">{studentName}</td>
             </tr>
             <tr>
-              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>Versement:</td>
+              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>{versementLabel}</td>
               <td style={{ textAlign: 'left', paddingBottom: '2px' }}>{formatCurrency(versement)}</td>
               <td style={{ textAlign: 'center', paddingBottom: '2px' }}>{paymentDate}</td>
               <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>Parent:</td>
