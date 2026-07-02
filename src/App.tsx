@@ -3171,7 +3171,7 @@ function App() {
           </button>
         </div>
 
-        <div style={{display: 'flex', gap: '8px', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>
           <button className={`btn ${selectedClassForGrades !== 'validations' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setSelectedClassForGrades('')}>
             Toutes les Évaluations
           </button>
@@ -3273,7 +3273,7 @@ function App() {
           </>
         ) : (
           <div className="panel delay-100">
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>
+            <div style={{display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>
               <div>
                 <h3 style={{margin: '0 0 8px 0'}}>{activeEvaluation.name} ({activeEvaluation.subject})</h3>
                 <div style={{color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
@@ -3288,8 +3288,8 @@ function App() {
 
             <div style={{background: '#fff', border: '1px solid #d4d4d4', borderRadius: '4px', overflow: 'hidden', fontSize: '13px', fontFamily: 'Arial, sans-serif'}}>
               {/* Table Toolbar */}
-              <div style={{padding: '8px 12px', background: '#f5f5f5', borderBottom: '1px solid #d4d4d4', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                <div style={{display: 'flex', gap: '4px', alignItems: 'center'}}>
+              <div style={{padding: '8px 12px', background: '#f5f5f5', borderBottom: '1px solid #d4d4d4', display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'space-between', alignItems: 'center'}}>
+                <div style={{display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center'}}>
                   <button style={{background: '#e9ecef', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333'}}>{formatNum(studentsData.filter(s => s.class_id === activeEvaluation.class_id).length)} {t('admin.grades.results', 'résultats')}</button>
                   <button style={{background: '#fff', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333', marginLeft: '4px'}}>{formatNum(1)}</button>
                   <button style={{background: '#fff', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '3px', fontSize: '12px', color: '#333'}}>{formatNum(2)}</button>
@@ -3310,7 +3310,7 @@ function App() {
               
               {/* Data Table */}
               <div style={{overflowX: 'auto'}}>
-                <table style={{width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed'}}>
+                <table style={{width: '100%', minWidth: '900px', borderCollapse: 'collapse', tableLayout: 'fixed'}}>
                   <colgroup>
                     <col style={{width: '30px'}} />
                     <col style={{width: '100px'}} />
