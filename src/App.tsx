@@ -1440,22 +1440,7 @@ function App() {
     const totalClasses = classesData.length;
     const totalAbsences = absencesData.length;
 
-    const handlePurgeFinances = async () => {
-      if (!confirm('Êtes-vous sûr de vouloir PURGER toutes les données financières (Dépenses, Emprunts, Paiements, Factures) ? Cette action est irréversible.')) return;
-      try {
-        if (currentSchoolId) {
-          await supabase.from('expenses').delete().eq('school_id', currentSchoolId);
-          await supabase.from('loans').delete().eq('school_id', currentSchoolId);
-          await supabase.from('teacher_payments').delete().eq('school_id', currentSchoolId);
-          await supabase.from('employee_payments').delete().eq('school_id', currentSchoolId);
-          await supabase.from('invoices').delete().eq('school_id', currentSchoolId);
-          alert('Purge terminée ! La page va se recharger.');
-          window.location.reload();
-        }
-      } catch(err: any) {
-        alert('Erreur: ' + err.message);
-      }
-    };
+
 
     // Last 3 absences
     const recentAbsences = [...absencesData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 4);
@@ -1483,9 +1468,7 @@ function App() {
             <p className="page-subtitle">{t('dashboard.overview', "Voici l'aperçu de votre établissement pour aujourd'hui.")}</p>
           </div>
           <div style={{display: 'flex', gap: '10px'}}>
-            <button className="btn btn-danger" onClick={handlePurgeFinances} style={{backgroundColor: '#ef4444', color: 'white'}}>
-              🗑️ PURGER FINANCES
-            </button>
+
             <button className="btn btn-outline" onClick={() => {
               alert(t('dashboard.generating_report', "Génération du rapport en cours..."));
               const reportContent = t('dashboard.report_content', "----- RAPPORT GLOBAL ${settingsData?.school_name?.toUpperCase() || 'ÉTABLISSEMENT'} -----\n\nTotal Élèves: {{students}}\nProfesseurs: {{teachers}}\nClasses: {{classes}}\nAbsences Totales: {{absences}}\n\nCe rapport a été généré automatiquement.", {
