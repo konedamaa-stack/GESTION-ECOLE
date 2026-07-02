@@ -4441,7 +4441,7 @@ function App() {
                                         
                       if (!hasFrench && !hasArabic) {
                         alert("Format CSV invalide. Veuillez fournir les colonnes 'Nom' et 'Prénom' (ou 'Nom Arabe' et 'Prénom Arabe').");
-                        if(btn) { btn.disabled = false; btn.textContent = 'Lancer l\\'importation'; }
+                        if(btn) { btn.disabled = false; btn.textContent = "Lancer l'importation"; }
                         return;
                       }
 
@@ -4516,7 +4516,7 @@ function App() {
                       closeModal();
                     } catch (err: any) {
                       alert("Erreur lors de l'importation: " + err.message);
-                      if(btn) { btn.disabled = false; btn.textContent = 'Lancer l\'importation'; }
+                      if(btn) { btn.disabled = false; btn.textContent = "Lancer l'importation"; }
                     }
                   };
                   reader.readAsText(file);
