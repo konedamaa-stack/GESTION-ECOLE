@@ -4433,12 +4433,15 @@ function App() {
                       const lines = csvText.split('\n');
                       const headers = lines[0].toLowerCase().split(/,|;/).map(h => h.trim().replace(/["']/g, ''));
                       
-                      // Attendu: Nom, Prénom
-                      const requiredCols = ['nom', 'prénom'];
-                      const hasRequired = requiredCols.every(req => headers.some(h => h.includes(req) || h.includes('prenom')));
-                      if (!hasRequired) {
-                        alert("Format CSV invalide. Les colonnes 'Nom' et 'Prénom' sont obligatoires.");
-                        if(btn) { btn.disabled = false; btn.textContent = 'Lancer l\'importation'; }
+                      // Attendu: Nom/Prénom OU Nom Arabe/Prénom Arabe
+                      const hasFrench = headers.some(h => h === 'nom' || (h.includes('nom') && !h.includes('arabe'))) && 
+                                        headers.some(h => h === 'prénom' || h === 'prenom' || ((h.includes('prénom') || h.includes('prenom')) && !h.includes('arabe')));
+                      const hasArabic = headers.some(h => h.includes('nom arabe')) && 
+                                        headers.some(h => h.includes('prénom arabe') || h.includes('prenom arabe'));
+                                        
+                      if (!hasFrench && !hasArabic) {
+                        alert("Format CSV invalide. Veuillez fournir les colonnes 'Nom' et 'Prénom' (ou 'Nom Arabe' et 'Prénom Arabe').");
+                        if(btn) { btn.disabled = false; btn.textContent = 'Lancer l\\'importation'; }
                         return;
                       }
 
@@ -4455,9 +4458,15 @@ function App() {
                       for (let i = 1; i < lines.length; i++) {
                         if (!lines[i].trim()) continue;
                         const cols = lines[i].split(/,|;/).map(c => c.trim().replace(/["']/g, ''));
-                        const nom = idxNom !== -1 ? cols[idxNom] : null;
-                        const prenom = idxPrenom !== -1 ? cols[idxPrenom] : null;
-                        if (!nom || !prenom) continue;
+                        const nomFr = idxNom !== -1 ? cols[idxNom] : null;
+                        const prenomFr = idxPrenom !== -1 ? cols[idxPrenom] : null;
+                        const nomAr = idxNomAr !== -1 ? cols[idxNomAr] : null;
+                        const prenomAr = idxPrenomAr !== -1 ? cols[idxPrenomAr] : null;
+
+                        const finalNom = nomFr || nomAr;
+                        const finalPrenom = prenomFr || prenomAr;
+
+                        if (!finalNom || !finalPrenom) continue;
 
                         let parsedDate = '2000-01-01';
                         if (idxDate !== -1 && cols[idxDate]) {
@@ -4483,10 +4492,10 @@ function App() {
 
                         studentsToInsert.push({
                           school_id: currentSchoolId,
-                          first_name: prenom,
-                          last_name: nom,
-                          first_name_ar: (idxPrenomAr !== -1 && cols[idxPrenomAr]) ? cols[idxPrenomAr] : null,
-                          last_name_ar: (idxNomAr !== -1 && cols[idxNomAr]) ? cols[idxNomAr] : null,
+                          first_name: finalPrenom,
+                          last_name: finalNom,
+                          first_name_ar: prenomAr,
+                          last_name_ar: nomAr,
                           birth_date: parsedDate,
                           matricule: (idxMatricule !== -1 && cols[idxMatricule]) ? cols[idxMatricule] : `STU-${Date.now().toString().slice(-4)}${i}${Math.floor(Math.random()*10000)}`,
                           class_id: classId || null
@@ -4517,10 +4526,10 @@ function App() {
                       <h4 style={{marginBottom: '8px', fontWeight: 'bold'}}>Format attendu (Fichier CSV)</h4>
                       <p style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Créez un fichier Excel (.csv) avec les colonnes suivantes (les noms doivent être sur la première ligne) :</p>
                       <ul style={{fontSize: '0.9rem', marginTop: '8px', paddingLeft: '24px', color: 'var(--text-secondary)'}}>
-                        <li><strong>Nom</strong> (obligatoire)</li>
-                        <li><strong>Prénom</strong> (obligatoire)</li>
-                        <li><strong>Nom Arabe</strong> (optionnel)</li>
-                        <li><strong>Prénom Arabe</strong> (optionnel)</li>
+                        <li><strong>Nom</strong> (obligatoire si pas de Nom Arabe)</li>
+                        <li><strong>Prénom</strong> (obligatoire si pas de Prénom Arabe)</li>
+                        <li><strong>Nom Arabe</strong> (obligatoire si pas de Nom)</li>
+                        <li><strong>Prénom Arabe</strong> (obligatoire si pas de Prénom)</li>
                         <li><strong>Date de naissance</strong> (YYYY-MM-DD, optionnel)</li>
                         <li><strong>Matricule</strong> (optionnel)</li>
                       </ul>
