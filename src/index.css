@@ -577,9 +577,11 @@ html {
 @media screen and (max-width: 768px) {
   /* Make all tables scrollable horizontally without breaking internal layout */
   table {
-    display: block !important;
-    overflow-x: auto !important;
     white-space: nowrap !important;
+    width: 100% !important;
+  }
+  .table-responsive {
+    overflow-x: auto !important;
     width: 100% !important;
     -webkit-overflow-scrolling: touch;
   }
@@ -888,4 +890,14 @@ html {
 
 @media (max-width: 768px) {
   .hide-on-mobile { display: none !important; }
+}
+
+@media screen and (max-width: 768px) {
+  .filters-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .filters-bar > * {
+    width: 100% !important;
+  }
 }
