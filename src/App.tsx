@@ -4508,7 +4508,7 @@ function App() {
                         return;
                       }
 
-                      const { error } = await supabase.from('students').insert(studentsToInsert);
+                      const { error } = await supabase.from('students').upsert(studentsToInsert, { onConflict: 'matricule' });
                       if (error) throw error;
 
                       alert(studentsToInsert.length + " élèves importés avec succès !");
