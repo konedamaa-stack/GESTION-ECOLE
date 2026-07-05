@@ -10,6 +10,7 @@ import TeacherPortal from './components/TeacherPortal';
 import CommitteePortal from './components/CommitteePortal';
 import { BulletinPreview } from './components/BulletinPreview';
 import { ReceiptPreview } from './components/ReceiptPreview';
+import { SmallReceiptPreview } from './components/SmallReceiptPreview';
 import { TeacherReceiptPreview } from './components/TeacherReceiptPreview';
 import { ExpenseReceiptPreview } from './components/ExpenseReceiptPreview';
 import { SalaryReceiptPreview } from './components/SalaryReceiptPreview';
@@ -3093,14 +3094,22 @@ function App() {
                 <td style={{padding: '16px 0'}}>
                   <span className={`badge ${row.status === 'Payée' ? 'badge-success' : 'badge-warning'}`}>{row.status}</span>
                 </td>
-                <td style={{padding: '16px 0', textAlign: 'right'}}>
+                <td style={{padding: '16px 0', textAlign: 'right', display: 'flex', gap: '4px', justifyContent: 'flex-end'}}>
                   <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => {
                     const studentFull = studentsData.find(s => s.id === row.student_id);
                     setSelectedStudent(studentFull || row.students);
                     setSelectedInvoice(row);
                     setActiveModal('receipt_preview');
-                  }}>
-                    <Icons.Printer /> Imprimer
+                  }} title="Grand Format">
+                    <Icons.Printer /> Grand
+                  </button>
+                  <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => {
+                    const studentFull = studentsData.find(s => s.id === row.student_id);
+                    setSelectedStudent(studentFull || row.students);
+                    setSelectedInvoice(row);
+                    setActiveModal('small_receipt_preview');
+                  }} title="Petit Format">
+                    <Icons.Printer /> Petit
                   </button>
                 </td>
               </tr>
@@ -3951,7 +3960,7 @@ function App() {
       {/* Dynamic Modal Renderer */}
       {activeModal && (
         <div className="modal-overlay">
-          <div className="modal-content" style={['global_grades', 'bulletin_preview', 'receipt_preview'].includes(activeModal) ? {maxWidth: '1600px', width: '98%'} : {}} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={['global_grades', 'bulletin_preview', 'receipt_preview', 'small_receipt_preview'].includes(activeModal) ? {maxWidth: '1600px', width: '98%'} : {}} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>
                 {activeModal === 'quickCreate' && t('admin.modals.quickCreate', "Menu de Création Rapide")}
@@ -3974,6 +3983,7 @@ function App() {
                 {activeModal === 'global_grades' && "Saisie Globale des Notes"}
    {activeModal === 'bulletin_preview' && "Aperçu des Bulletins"}
    {activeModal === 'receipt_preview' && "Reçu de Paiement"}
+   {activeModal === 'small_receipt_preview' && "Reçu de Paiement (Petit Format)"}
    {activeModal === 'coefficients' && "Coefficients par Matière"}
    {activeModal === 'import' && "Importer des Élèves"}
               </h2>
@@ -4912,6 +4922,49 @@ function App() {
                 </div>
               )}
 
+        {activeModal === 'small_receipt_preview' && (
+                <div style={{display: 'flex', flexDirection: 'column', height: '100%', gap: '20px', width: '100%'}}>
+                  {(!selectedInvoice || !selectedStudent) ? (
+                    <div style={{padding: '40px', textAlign: 'center', color: 'var(--danger-color)'}}>
+                      <h3>Impossible d'afficher le reçu</h3>
+                      <p>Les données de l'élève ou de la facture sont introuvables. Veuillez réessayer.</p>
+                      <button className="btn btn-outline" onClick={closeModal} style={{marginTop: '20px'}}>Fermer</button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="print-controls" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <div style={{color: 'var(--text-secondary)'}}>
+                          Veuillez vérifier les informations avant impression.
+                        </div>
+                        <div>
+                          <button className="btn btn-primary" onClick={() => window.print()}><Icons.Download /> Imprimer / PDF</button>
+                        </div>
+                      </div>
+                      
+                      <div className="receipt-preview-container-wrapper bulletin-preview-container" style={{ overflowY: 'auto', flex: 1, padding: '20px', background: 'var(--surface-color-hover)', borderRadius: '8px' }}>
+                        <div className="receipt-preview-printable">
+                          <SmallReceiptPreview 
+                            invoice={selectedInvoice}
+                            student={selectedStudent}
+                            schoolInfo={{ ...settingsData, ...adminSchools.find(s => s.id === currentSchoolId) }}
+                            studentReste={
+                                (() => {
+                                  const total = Number(selectedStudent.tuition_fee) || Number(selectedStudent.classes?.tuition_fee) || 0;
+                                  let paye = invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
+                                  if (selectedInvoice && selectedInvoice.status === 'Payée' && !invoicesData.some((i: any) => i.id === selectedInvoice.id)) {
+                                    paye += Number(selectedInvoice.amount) || 0;
+                                  }
+                                  return Math.max(0, total - paye);
+                                })()
+                            }
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
               {activeModal === 'global_grades' && (
                 <div style={{width: '100%'}}>
                   <div style={{marginBottom: '16px', display: 'flex', gap: '16px', alignItems: 'flex-end'}}>
@@ -5253,8 +5306,9 @@ function App() {
                                   <td style={{padding: '12px 0'}}>
                                     <span className={`badge ${inv.status === 'Payée' ? 'badge-success' : 'badge-warning'}`}>{inv.status}</span>
                                   </td>
-                                  <td style={{padding: '12px 0', textAlign: 'right'}}>
-                                    <button className="btn btn-outline" style={{padding: '4px 8px'}} onClick={() => { setSelectedInvoice(inv); setActiveModal('receipt_preview'); }}>🖨️ Imprimer</button>
+                                  <td style={{padding: '12px 0', textAlign: 'right', display: 'flex', gap: '4px', justifyContent: 'flex-end'}}>
+                                    <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => { setSelectedInvoice(inv); setActiveModal('receipt_preview'); }} title="Grand Format">🖨️ Grand</button>
+                                    <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => { setSelectedInvoice(inv); setActiveModal('small_receipt_preview'); }} title="Petit Format">🖨️ Petit</button>
                                   </td>
                                 </tr>
                               ))}

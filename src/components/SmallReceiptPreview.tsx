@@ -52,90 +52,88 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
   return (
     <div className="small-receipt-container" style={{
       width: '100%',
-      maxWidth: '600px', // Wider to fit everything like in the image
+      maxWidth: '300px', // 80mm thermal printer format
       margin: '0 auto',
       padding: '10px',
       backgroundColor: 'white',
       color: 'black',
-      fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
-      fontWeight: 'bold',
-      fontSize: '14px',
+      fontFamily: '"Courier New", Courier, monospace',
+      fontSize: '12px',
+      lineHeight: '1.4'
     }}>
-      <div style={{
-        border: '4px solid black',
-        padding: '15px 10px',
-        position: 'relative'
-      }}>
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-          <div style={{ fontSize: '18px', textTransform: 'uppercase' }}>{schoolName}</div>
-          <div style={{ fontSize: '14px', marginTop: '4px' }}>CEL:{schoolPhone}</div>
-        </div>
+      {/* Header */}
+      <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+        <h3 style={{ margin: '0 0 5px 0', fontSize: '16px', textTransform: 'uppercase' }}>{schoolName}</h3>
+        <div style={{ fontSize: '11px' }}>CEL: {schoolPhone}</div>
+        <div style={{ fontSize: '11px' }}>Année Scolaire: {academicYear}</div>
+      </div>
 
-        {/* Row 1: Année Scolaire etc. */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <span>Année Scolaire</span>
-            <span>{academicYear}</span>
+      <div style={{ borderBottom: '1px dashed black', margin: '8px 0' }}></div>
+
+      {/* Meta info */}
+      <div style={{ fontSize: '11px', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Date:</span>
+          <span>{paymentDate}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Reçu N°:</span>
+          <span>{receiptNo}</span>
+        </div>
+      </div>
+
+      <div style={{ borderBottom: '1px dashed black', margin: '8px 0' }}></div>
+
+      {/* Student info */}
+      <div style={{ fontSize: '12px', marginBottom: '8px' }}>
+        <div style={{ marginBottom: '4px' }}>
+          Matricule: <span style={{ fontWeight: 'bold' }}>{matricule}</span>
+        </div>
+        <div style={{ marginBottom: '4px' }}>
+          Élève: <span style={{ fontWeight: 'bold' }}>{studentName}</span>
+        </div>
+        <div style={{ marginBottom: '4px' }}>
+          Classe: <span style={{ fontWeight: 'bold' }}>{classNameFr}</span> {classNameAr && <span dir="rtl" style={{fontFamily: 'Arial'}}>{classNameAr}</span>}
+        </div>
+        <div>
+          Parent: <span style={{ fontWeight: 'bold' }}>{parentName}</span>
+        </div>
+      </div>
+
+      <div style={{ borderBottom: '1px dashed black', margin: '8px 0' }}></div>
+
+      {/* Financial info */}
+      <div style={{ fontSize: '12px', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+          <span>Scolarité:</span>
+          <span>{formatCurrency(tuition)}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', fontWeight: 'bold', fontSize: '13px' }}>
+          <span>Versement:</span>
+          <span>{formatCurrency(payment)}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+          <span>Total versé:</span>
+          <span>{formatCurrency(totalPaid)}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', paddingTop: '6px', borderTop: '1px dotted #ccc' }}>
+          <span>Reste:</span>
+          <span style={{ fontWeight: 'bold' }}>{formatCurrency(reste)}</span>
+        </div>
+        {isSoldé && (
+          <div style={{ textAlign: 'center', marginTop: '8px', fontWeight: 'bold', padding: '4px', border: '1px solid black' }}>
+            SOLDÉ
           </div>
-          <div style={{ fontSize: '16px', fontFamily: 'Arial, sans-serif' }} dir="rtl">
-            {classNameAr}
-          </div>
-          <div>{classNameFr}</div>
-        </div>
+        )}
+      </div>
 
-        {/* Rows wrapper for table layout for exact alignment */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
-          <tbody>
-            {/* Row 2 */}
-            <tr>
-              <td style={{ textAlign: 'right', paddingRight: '5px' }}>Recus N°:</td>
-              <td style={{ textAlign: 'left' }}>{receiptNo}</td>
-              <td style={{ textAlign: 'center' }}></td>
-              <td style={{ textAlign: 'right', paddingRight: '5px' }}>Matricule:</td>
-              <td style={{ textAlign: 'left' }}>{matricule}</td>
-            </tr>
-            {/* Row 3 */}
-            <tr>
-              <td style={{ textAlign: 'right', paddingRight: '5px' }}>Scolarite:</td>
-              <td style={{ textAlign: 'left' }}>{formatCurrency(tuition)}</td>
-              <td style={{ textAlign: 'center' }}></td>
-              <td style={{ textAlign: 'right', paddingRight: '5px' }}>Eleve:</td>
-              <td style={{ textAlign: 'left', fontSize: '16px' }} dir="rtl">{studentName}</td>
-            </tr>
-            {/* Row 4 */}
-            <tr>
-              <td style={{ textAlign: 'right', paddingRight: '5px' }}>Versement:</td>
-              <td style={{ textAlign: 'left' }}>{formatCurrency(payment)}</td>
-              <td style={{ textAlign: 'center' }}>{paymentDate}</td>
-              <td style={{ textAlign: 'right', paddingRight: '5px' }}>Parent:</td>
-              <td style={{ textAlign: 'left', fontSize: '16px' }} dir="rtl">{parentName}</td>
-            </tr>
-            {/* Row 5 */}
-            <tr>
-              <td style={{ textAlign: 'right', paddingRight: '5px' }}>Total versé:</td>
-              <td style={{ textAlign: 'left' }}>{formatCurrency(totalPaid)}</td>
-              <td style={{ textAlign: 'center' }}></td>
-              <td colSpan={2} style={{ textAlign: 'center', paddingTop: '10px' }}>
-                {isSoldé && <span>Soldé</span>}
-              </td>
-            </tr>
-            {/* Row 6 */}
-            <tr>
-              <td style={{ textAlign: 'right', paddingRight: '5px' }}>Reste:</td>
-              <td style={{ textAlign: 'left' }}>{formatCurrency(reste)}</td>
-              <td style={{ textAlign: 'center' }}></td>
-              <td colSpan={2} style={{ textAlign: 'center', paddingTop: '5px' }}>
-                Signature
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div style={{ borderBottom: '1px dashed black', margin: '8px 0' }}></div>
 
-        {/* Footer */}
-        <div style={{ marginTop: '15px', fontSize: '12px' }}>
-          Merci de Votre confiance! Rendez Vous le: {nextAppt}
-        </div>
+      {/* Footer */}
+      <div style={{ textAlign: 'center', marginTop: '15px', fontSize: '11px' }}>
+        <div style={{ marginBottom: '30px' }}>Signature</div>
+        <div style={{ fontWeight: 'bold' }}>Merci de Votre confiance!</div>
+        <div style={{ marginTop: '4px' }}>Rendez-vous le: {nextAppt}</div>
       </div>
 
       <style dangerouslySetInnerHTML={{__html: `
@@ -146,9 +144,14 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
             position: absolute; 
             left: 0; 
             top: 0; 
-            width: 100%;
-            max-width: 100%;
-            padding: 0 !important;
+            width: 80mm; /* Standard POS printer width */
+            max-width: 80mm;
+            padding: 5mm !important;
+            margin: 0;
+          }
+          @page {
+            margin: 0;
+            size: 80mm auto; /* Thermal printer paper size */
           }
           .hide-print { display: none !important; }
         }
