@@ -138,22 +138,69 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
 
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          body * { visibility: hidden; }
-          .small-receipt-container, .small-receipt-container * { visibility: visible; }
-          .small-receipt-container { 
-            position: absolute; 
-            left: 0; 
-            top: 0; 
-            width: 80mm; /* Standard POS printer width */
-            max-width: 80mm;
-            padding: 5mm !important;
-            margin: 0;
+          /* 1. Hide the main app layout entirely */
+          .sidebar, .main-content, .sidebar-overlay {
+            display: none !important;
           }
+          
+          /* 2. Reset the app container and body to auto height */
+          html, body, #root, .app-container {
+            height: auto !important;
+            min-height: 0 !important;
+            width: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            background: white !important;
+            display: block !important;
+          }
+          
+          /* 3. Reset the modal overlay and content so they don't force full screen */
+          .modal-overlay, .modal-content {
+            position: static !important;
+            height: auto !important;
+            width: auto !important;
+            max-width: none !important;
+            max-height: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: none !important;
+            box-shadow: none !important;
+            border: none !important;
+            display: block !important;
+            transform: none !important;
+          }
+          
+          /* 4. Hide headers and controls */
+          .modal-header, .print-controls, .hide-print {
+            display: none !important;
+          }
+          
+          .receipt-preview-container-wrapper, .receipt-preview-printable {
+            padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
+            height: auto !important;
+            overflow: visible !important;
+          }
+          
+          /* 5. Finally, style the receipt itself */
+          .small-receipt-container { 
+            position: static !important;
+            width: 80mm !important; 
+            max-width: 80mm !important;
+            margin: 0 !important;
+            padding: 5mm !important; /* Some padding so it doesn't touch the exact edge */
+            box-sizing: border-box !important;
+            page-break-inside: avoid !important;
+          }
+          
           @page {
             margin: 0;
-            size: 80mm auto; /* Thermal printer paper size */
+            size: 80mm auto; /* Thermal printer continuous roll */
           }
-          .hide-print { display: none !important; }
         }
       `}} />
     </div>

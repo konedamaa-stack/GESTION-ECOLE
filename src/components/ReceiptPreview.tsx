@@ -171,17 +171,63 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
 
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          body * { visibility: hidden; }
-          .receipt-container, .receipt-container * { visibility: visible; }
-          .receipt-container { 
-            position: absolute; 
-            left: 0; 
-            top: 0; 
-            width: 100%;
-            max-width: 100%;
-            padding: 0 !important;
+          /* Hide main app layout entirely */
+          .sidebar, .main-content, .sidebar-overlay {
+            display: none !important;
           }
-          .hide-print { display: none !important; }
+          
+          /* Reset app container to auto height */
+          html, body, #root, .app-container {
+            height: auto !important;
+            min-height: 0 !important;
+            width: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            background: white !important;
+            display: block !important;
+          }
+          
+          /* Reset modal overlay */
+          .modal-overlay, .modal-content {
+            position: static !important;
+            height: auto !important;
+            width: auto !important;
+            max-width: none !important;
+            max-height: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: none !important;
+            box-shadow: none !important;
+            border: none !important;
+            display: block !important;
+            transform: none !important;
+          }
+          
+          /* Hide headers and controls */
+          .modal-header, .print-controls, .hide-print {
+            display: none !important;
+          }
+          
+          .receipt-preview-container-wrapper, .receipt-preview-printable {
+            padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
+            height: auto !important;
+            overflow: visible !important;
+          }
+          
+          .receipt-container { 
+            position: static !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+            page-break-inside: avoid !important;
+          }
         }
       `}} />
     </div>
