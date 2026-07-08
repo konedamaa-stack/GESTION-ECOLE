@@ -3984,6 +3984,7 @@ function App() {
    {activeModal === 'bulletin_preview' && "Aperçu des Bulletins"}
    {activeModal === 'receipt_preview' && "Reçu de Paiement"}
    {activeModal === 'small_receipt_preview' && "Reçu de Paiement (Petit Format)"}
+   {activeModal === 'receipt_choice' && "Format du Reçu"}
    {activeModal === 'coefficients' && "Coefficients par Matière"}
    {activeModal === 'import' && "Importer des Élèves"}
               </h2>
@@ -4864,6 +4865,24 @@ function App() {
           </div>
         )}
 
+        {activeModal === 'receipt_choice' && (
+                <div style={{textAlign: 'center', padding: '40px 20px'}}>
+                  <h3 style={{marginBottom: '24px', color: 'var(--primary-color)'}}>Choisissez le format d'impression</h3>
+                  <div style={{display: 'flex', justifyContent: 'center', gap: '20px'}}>
+                    <button type="button" className="btn btn-outline" style={{padding: '20px 40px', fontSize: '1.2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px'}} onClick={() => setActiveModal('receipt_preview')}>
+                      <Icons.FileText size={48} />
+                      <span>Grand Format (A4)</span>
+                    </button>
+                    <button type="button" className="btn btn-outline" style={{padding: '20px 40px', fontSize: '1.2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px'}} onClick={() => setActiveModal('small_receipt_preview')}>
+                      <Icons.File size={48} />
+                      <span>Petit Format (Ticket)</span>
+                    </button>
+                  </div>
+                  <div style={{marginTop: '32px'}}>
+                    <button type="button" className="btn btn-primary" onClick={closeModal}>Terminer</button>
+                  </div>
+                </div>
+        )}
         {activeModal === 'receipt_preview' && (
                 <div style={{display: 'flex', flexDirection: 'column', height: '100%', gap: '20px', width: '100%'}}>
                   {(!selectedInvoice || !selectedStudent) ? (
