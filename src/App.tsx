@@ -4870,11 +4870,11 @@ function App() {
                   <h3 style={{marginBottom: '24px', color: 'var(--primary-color)'}}>Choisissez le format d'impression</h3>
                   <div style={{display: 'flex', justifyContent: 'center', gap: '20px'}}>
                     <button type="button" className="btn btn-outline" style={{padding: '20px 40px', fontSize: '1.2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px'}} onClick={() => setActiveModal('receipt_preview')}>
-                      <Icons.FileText size={48} />
+                      <Icons.FileText />
                       <span>Grand Format (A4)</span>
                     </button>
                     <button type="button" className="btn btn-outline" style={{padding: '20px 40px', fontSize: '1.2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px'}} onClick={() => setActiveModal('small_receipt_preview')}>
-                      <Icons.File size={48} />
+                      <Icons.FileText />
                       <span>Petit Format (Ticket)</span>
                     </button>
                   </div>
