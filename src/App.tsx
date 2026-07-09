@@ -4478,7 +4478,7 @@ function App() {
                       const hasPrenoms = headers.some(h => h === 'prenoms' || h === 'prénoms' || h === 'prenom' || h === 'prénom');
                                         
                       if (!hasNom || !hasPrenoms) {
-                        alert("Format CSV invalide. Veuillez fournir les colonnes 'Nom', 'Prenoms', 'Date de Nasssance' et 'Matrcule'.");
+                        alert("Format CSV invalide. Veuillez fournir au minimum les colonnes 'Nom' et 'Prenoms'.");
                         if(btn) { btn.disabled = false; btn.textContent = "Lancer l'importation"; }
                         return;
                       }
@@ -4561,11 +4561,13 @@ function App() {
                       <ul style={{fontSize: '0.9rem', marginTop: '8px', paddingLeft: '24px', color: 'var(--text-secondary)'}}>
                         <li><strong>Nom</strong></li>
                         <li><strong>Prenoms</strong></li>
-                        <li><strong>Date de Nasssance</strong></li>
+                        <li><strong>Date de Nasssance</strong> (AAAA-MM-JJ)</li>
                         <li><strong>Matrcule</strong></li>
+                        <li><strong>Affecté</strong> (Optionnel: "Oui" ou "Non")</li>
+                        <li><strong>Sexe</strong> (Optionnel: "Masculin" ou "Féminin")</li>
                       </ul>
                       <button type="button" className="btn btn-outline" style={{marginTop: '12px'}} onClick={() => {
-                        const csvContent = "data:text/csv;charset=utf-8,Nom,Prenoms,Date de Nasssance,Matrcule\\nDupont,Jean,2010-05-14,MAT-101\\n";
+                        const csvContent = "data:text/csv;charset=utf-8,Nom,Prenoms,Date de Nasssance,Matrcule,Affecté,Sexe\\nDupont,Jean,2010-05-14,MAT-101,Non,Masculin\\nMartin,Sophie,2011-08-22,MAT-102,Oui,Féminin\\n";
                         const encodedUri = encodeURI(csvContent);
                         const link = document.createElement("a");
                         link.setAttribute("href", encodedUri);
