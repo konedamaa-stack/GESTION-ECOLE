@@ -967,7 +967,8 @@ function App() {
             tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : null,
             photo_url: photoUrl,
             affecte: formData.get('affecte') || 'Non affecté',
-            gender: formData.get('gender') || 'Masculin'
+            gender: formData.get('gender') || 'Masculin',
+            location: formData.get('location')
           };
           if (formData.get('matricule')) studentUpdate.matricule = formData.get('matricule');
           if (formData.get('password')) studentUpdate.password = formData.get('password');
@@ -991,7 +992,8 @@ function App() {
           tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : null,
           photo_url: photoUrl,
           affecte: formData.get('affecte') || 'Non affecté',
-          gender: formData.get('gender') || 'Masculin'
+          gender: formData.get('gender') || 'Masculin',
+          location: formData.get('location')
         };
         const { data: studentData, error: studentError } = await supabase.from('students').insert([{...student, school_id: currentSchoolId}]).select();
         if (studentError) throw studentError;
@@ -4364,6 +4366,10 @@ function App() {
                       <label>{t('admin.modals.photo', 'Photo de profil')}</label>
                       <input type="file" name="photo" accept="image/*" className="form-input" />
                     </div>
+                    <div className="form-group">
+                      <label>Lieu de résidence</label>
+                      <input type="text" name="location" className="form-input" placeholder="Ex: Abidjan, Divo" defaultValue={editEntity?.location || ""} />
+                    </div>
                   </div>
                   <div className="form-grid">
                     <div className="form-group">
@@ -4498,6 +4504,7 @@ function App() {
                       const idxMatricule = headers.findIndex(h => h.includes('matrcule') || h.includes('matricule'));
                       const idxAffecte = headers.findIndex(h => h === 'affecte' || h === 'affecté' || h.includes('affect'));
                       const idxGender = headers.findIndex(h => h === 'sexe' || h === 'genre' || h === 'gender');
+                      const idxStudentLocation = headers.findIndex(h => !h.includes('parent') && (h === 'lieu' || h === 'adresse' || h === 'location' || h.includes('résidence') || h.includes('residence')));
                       const idxParentNom = headers.findIndex(h => h.includes('parent') && (h.includes('nom') || h.includes('last')));
                       const idxParentPrenom = headers.findIndex(h => h.includes('parent') && (h.includes('prenom') || h.includes('first')));
                       const idxParentPhone = headers.findIndex(h => h.includes('parent') && (h.includes('tel') || h.includes('phone') || h.includes('mobile')));
@@ -4561,7 +4568,8 @@ function App() {
                           matricule: matricule,
                           class_id: classId || null,
                           affecte: (idxAffecte !== -1 && cols[idxAffecte]) ? (cols[idxAffecte].toLowerCase().includes('oui') || cols[idxAffecte].toLowerCase().includes('affect') ? 'Affecté' : 'Non affecté') : 'Non affecté',
-                          gender: (idxGender !== -1 && cols[idxGender]) ? (cols[idxGender].toLowerCase().startsWith('f') || cols[idxGender].toLowerCase().includes('fem') || cols[idxGender].toLowerCase().includes('fille') ? 'Féminin' : 'Masculin') : 'Masculin'
+                          gender: (idxGender !== -1 && cols[idxGender]) ? (cols[idxGender].toLowerCase().startsWith('f') || cols[idxGender].toLowerCase().includes('fem') || cols[idxGender].toLowerCase().includes('fille') ? 'Féminin' : 'Masculin') : 'Masculin',
+                          location: (idxStudentLocation !== -1 && cols[idxStudentLocation]) ? cols[idxStudentLocation] : null
                         });
                       }
 
@@ -4631,13 +4639,14 @@ function App() {
                         <li><strong>Matrcule</strong></li>
                         <li><strong>Affecté</strong> (Optionnel: "Oui" ou "Non")</li>
                         <li><strong>Sexe</strong> (Optionnel: "Masculin" ou "Féminin")</li>
+                        <li><strong>Lieu</strong> (Optionnel)</li>
                         <li><strong>Nom Parent</strong> (Optionnel)</li>
                         <li><strong>Prenoms Parent</strong> (Optionnel)</li>
                         <li><strong>Telephone Parent</strong> (Optionnel)</li>
                         <li><strong>Lieu Parent</strong> (Optionnel)</li>
                       </ul>
                       <button type="button" className="btn btn-outline" style={{marginTop: '12px'}} onClick={() => {
-                        const csvContent = "data:text/csv;charset=utf-8,Nom,Prenoms,Date de Nasssance,Matrcule,Affecté,Sexe,Nom Parent,Prenoms Parent,Telephone Parent,Lieu Parent\\nDupont,Jean,2010-05-14,MAT-101,Non,Masculin,Dupont,Pierre,0102030405,Abidjan\\nMartin,Sophie,2011-08-22,MAT-102,Oui,Féminin,Martin,Julie,0506070809,Divo\\n";
+                        const csvContent = "data:text/csv;charset=utf-8,Nom,Prenoms,Date de Nasssance,Matrcule,Affecté,Sexe,Lieu,Nom Parent,Prenoms Parent,Telephone Parent,Lieu Parent\\nDupont,Jean,2010-05-14,MAT-101,Non,Masculin,Abidjan,Dupont,Pierre,0102030405,Abidjan\\nMartin,Sophie,2011-08-22,MAT-102,Oui,Féminin,Divo,Martin,Julie,0506070809,Divo\\n";
                         const encodedUri = encodeURI(csvContent);
                         const link = document.createElement("a");
                         link.setAttribute("href", encodedUri);
@@ -5300,6 +5309,10 @@ function App() {
                         <div>
                           <span style={{color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'block'}}>Genre / Sexe</span>
                           <strong>{selectedStudent.gender || 'Masculin'}</strong>
+                        </div>
+                        <div>
+                          <span style={{color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'block'}}>Lieu de résidence</span>
+                          <strong>{selectedStudent.location || 'Non spécifié'}</strong>
                         </div>
                       </div>
 
