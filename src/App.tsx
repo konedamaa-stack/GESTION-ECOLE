@@ -1005,6 +1005,7 @@ function App() {
             last_name: formData.get('parent_last_name'),
             phone: formData.get('parent_phone'),
             email: formData.get('parent_email'),
+            location: formData.get('parent_location'),
           };
           parentObj = parent;
           const { data: parentData, error: parentError } = await supabase.from('parents').insert([{...parent, school_id: currentSchoolId}]).select();
@@ -1245,7 +1246,8 @@ function App() {
             first_name: formData.get('first_name'),
             last_name: formData.get('last_name'),
             phone: formData.get('phone'),
-            email: formData.get('email')
+            email: formData.get('email'),
+            location: formData.get('location')
           };
           const { error } = await supabase.from('parents').update(parentUpdate).eq('id', editEntity.id);
           if (error) throw error;
@@ -1256,7 +1258,8 @@ function App() {
             last_name: formData.get('last_name'),
             phone: formData.get('phone'),
             email: formData.get('email'),
-            school_id: currentSchoolId
+            school_id: currentSchoolId,
+            location: formData.get('location')
           };
           const { error } = await supabase.from('parents').insert([parent]);
           if (error) throw error;
@@ -2615,6 +2618,7 @@ function App() {
             <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.parents.col_name', 'Nom du Parent')}</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.parents.col_child', 'Enfant(s) Associé(s)')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Lieu</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.parents.col_phone', 'Téléphone')}</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.parents.col_access', 'Accès ENT')}</th>
               <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>{t('admin.parents.col_actions', 'Actions')}</th>
@@ -2632,6 +2636,7 @@ function App() {
                     </div>
                   ) : '-'}
                 </td>
+                <td style={{padding: '16px 0'}}>{row.location || '-'}</td>
                 <td style={{padding: '16px 0'}}>{row.phone || '-'}</td>
                 <td style={{padding: '16px 0'}}>{row.email ? 'Actif' : 'Non configuré'}</td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
@@ -4417,6 +4422,10 @@ function App() {
                       <label>{t('admin.modals.email', 'Email')}</label>
                       <input type="email" name="parent_email" className="form-input" />
                     </div>
+                    <div className="form-group">
+                      <label>Lieu de résidence</label>
+                      <input type="text" name="parent_location" className="form-input" placeholder="Ex: Abidjan, Divo" />
+                    </div>
                   </div>
 
                   <h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>{t('admin.modals.fees_info', "3. Frais d'Inscription & Scolarité")}</h3>
@@ -4492,6 +4501,7 @@ function App() {
                       const idxParentNom = headers.findIndex(h => h.includes('parent') && (h.includes('nom') || h.includes('last')));
                       const idxParentPrenom = headers.findIndex(h => h.includes('parent') && (h.includes('prenom') || h.includes('first')));
                       const idxParentPhone = headers.findIndex(h => h.includes('parent') && (h.includes('tel') || h.includes('phone') || h.includes('mobile')));
+                      const idxParentLocation = headers.findIndex(h => h.includes('parent') && (h.includes('lieu') || h.includes('address') || h.includes('adresse') || h.includes('location')));
                       const parentMappings: Record<string, any> = {};
 
                       const classId = (document.getElementById('import_class_id') as HTMLSelectElement).value;
@@ -4531,12 +4541,14 @@ function App() {
                         const parentNom = (idxParentNom !== -1 && cols[idxParentNom]) ? cols[idxParentNom] : null;
                         const parentPrenom = (idxParentPrenom !== -1 && cols[idxParentPrenom]) ? cols[idxParentPrenom] : null;
                         const parentPhone = (idxParentPhone !== -1 && cols[idxParentPhone]) ? cols[idxParentPhone] : null;
+                        const parentLocation = (idxParentLocation !== -1 && cols[idxParentLocation]) ? cols[idxParentLocation] : null;
 
                         if (parentNom && parentPrenom) {
                           parentMappings[matricule] = {
                             first_name: parentPrenom,
                             last_name: parentNom,
                             phone: parentPhone || null,
+                             location: parentLocation || null,
                             school_id: currentSchoolId
                           };
                         }
@@ -4622,9 +4634,10 @@ function App() {
                         <li><strong>Nom Parent</strong> (Optionnel)</li>
                         <li><strong>Prenoms Parent</strong> (Optionnel)</li>
                         <li><strong>Telephone Parent</strong> (Optionnel)</li>
+                        <li><strong>Lieu Parent</strong> (Optionnel)</li>
                       </ul>
                       <button type="button" className="btn btn-outline" style={{marginTop: '12px'}} onClick={() => {
-                        const csvContent = "data:text/csv;charset=utf-8,Nom,Prenoms,Date de Nasssance,Matrcule,Affecté,Sexe,Nom Parent,Prenoms Parent,Telephone Parent\\nDupont,Jean,2010-05-14,MAT-101,Non,Masculin,Dupont,Pierre,0102030405\\nMartin,Sophie,2011-08-22,MAT-102,Oui,Féminin,Martin,Julie,0506070809\\n";
+                        const csvContent = "data:text/csv;charset=utf-8,Nom,Prenoms,Date de Nasssance,Matrcule,Affecté,Sexe,Nom Parent,Prenoms Parent,Telephone Parent,Lieu Parent\\nDupont,Jean,2010-05-14,MAT-101,Non,Masculin,Dupont,Pierre,0102030405,Abidjan\\nMartin,Sophie,2011-08-22,MAT-102,Oui,Féminin,Martin,Julie,0506070809,Divo\\n";
                         const encodedUri = encodeURI(csvContent);
                         const link = document.createElement("a");
                         link.setAttribute("href", encodedUri);
@@ -4757,10 +4770,16 @@ function App() {
               )}
 
               {activeModal === 'parent' && (
-                    <div className="form-group">
-                      <label>{t('admin.modals.link_to_student', 'Lier à un élève (Matricule ou Nom)')}</label>
-                      <input type="text" className="form-input" />
-                    </div>
+                    <>
+                      <div className="form-group">
+                        <label>Lieu / Adresse de résidence</label>
+                        <input type="text" name="location" className="form-input" placeholder="Ex: Abidjan, Divo" defaultValue={editEntity?.location || ""} />
+                      </div>
+                      <div className="form-group">
+                        <label>{t('admin.modals.link_to_student', 'Lier à un élève (Matricule ou Nom)')}</label>
+                        <input type="text" className="form-input" />
+                      </div>
+                    </>
                   )}
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
