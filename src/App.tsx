@@ -4489,6 +4489,10 @@ function App() {
                       const idxMatricule = headers.findIndex(h => h.includes('matrcule') || h.includes('matricule'));
                       const idxAffecte = headers.findIndex(h => h === 'affecte' || h === 'affecté' || h.includes('affect'));
                       const idxGender = headers.findIndex(h => h === 'sexe' || h === 'genre' || h === 'gender');
+                      const idxParentNom = headers.findIndex(h => h.includes('parent') && (h.includes('nom') || h.includes('last')));
+                      const idxParentPrenom = headers.findIndex(h => h.includes('parent') && (h.includes('prenom') || h.includes('first')));
+                      const idxParentPhone = headers.findIndex(h => h.includes('parent') && (h.includes('tel') || h.includes('phone') || h.includes('mobile')));
+                      const parentMappings: Record<string, any> = {};
 
                       const classId = (document.getElementById('import_class_id') as HTMLSelectElement).value;
 
@@ -4523,12 +4527,26 @@ function App() {
                           }
                         }
 
+                        const matricule = (idxMatricule !== -1 && cols[idxMatricule]) ? cols[idxMatricule] : `STU-${Date.now().toString().slice(-4)}${i}${Math.floor(Math.random()*10000)}`;
+                        const parentNom = (idxParentNom !== -1 && cols[idxParentNom]) ? cols[idxParentNom] : null;
+                        const parentPrenom = (idxParentPrenom !== -1 && cols[idxParentPrenom]) ? cols[idxParentPrenom] : null;
+                        const parentPhone = (idxParentPhone !== -1 && cols[idxParentPhone]) ? cols[idxParentPhone] : null;
+
+                        if (parentNom && parentPrenom) {
+                          parentMappings[matricule] = {
+                            first_name: parentPrenom,
+                            last_name: parentNom,
+                            phone: parentPhone || null,
+                            school_id: currentSchoolId
+                          };
+                        }
+
                         studentsToInsert.push({
                           school_id: currentSchoolId,
                           first_name: finalPrenom,
                           last_name: finalNom,
                           birth_date: parsedDate,
-                          matricule: (idxMatricule !== -1 && cols[idxMatricule]) ? cols[idxMatricule] : `STU-${Date.now().toString().slice(-4)}${i}${Math.floor(Math.random()*10000)}`,
+                          matricule: matricule,
                           class_id: classId || null,
                           affecte: (idxAffecte !== -1 && cols[idxAffecte]) ? (cols[idxAffecte].toLowerCase().includes('oui') || cols[idxAffecte].toLowerCase().includes('affect') ? 'Affecté' : 'Non affecté') : 'Non affecté',
                           gender: (idxGender !== -1 && cols[idxGender]) ? (cols[idxGender].toLowerCase().startsWith('f') || cols[idxGender].toLowerCase().includes('fem') || cols[idxGender].toLowerCase().includes('fille') ? 'Féminin' : 'Masculin') : 'Masculin'
@@ -4541,8 +4559,44 @@ function App() {
                         return;
                       }
 
-                      const { error } = await supabase.from('students').upsert(studentsToInsert, { onConflict: 'matricule' });
+                      const { data: insertedStudents, error } = await supabase.from('students').upsert(studentsToInsert, { onConflict: 'matricule' }).select();
                       if (error) throw error;
+
+                      if (insertedStudents && insertedStudents.length > 0) {
+                        const parentsToInsert: any[] = [];
+                        insertedStudents.forEach(st => {
+                          const pInfo = parentMappings[st.matricule];
+                          if (pInfo) {
+                            parentsToInsert.push(pInfo);
+                          }
+                        });
+
+                        if (parentsToInsert.length > 0) {
+                          const { data: insertedParents, error: parentError } = await supabase.from('parents').insert(parentsToInsert).select();
+                          if (!parentError && insertedParents && insertedParents.length > 0) {
+                            const junctionRows: any[] = [];
+                            for (let k = 0; k < insertedParents.length; k++) {
+                              const pObj = insertedParents[k];
+                              const matchingStudent = insertedStudents.find(st => {
+                                const pInfo = parentMappings[st.matricule];
+                                return pInfo && pInfo.first_name === pObj.first_name && pInfo.last_name === pObj.last_name && pInfo.phone === pObj.phone;
+                              });
+
+                              if (matchingStudent) {
+                                  junctionRows.push({
+                                    student_id: matchingStudent.id,
+                                    parent_id: pObj.id,
+                                    relation_type: 'Parent'
+                                  });
+                              }
+                            }
+
+                            if (junctionRows.length > 0) {
+                              await supabase.from('student_parents').insert(junctionRows);
+                            }
+                          }
+                        }
+                      }
 
                       alert(studentsToInsert.length + " élèves importés avec succès !");
                       fetchStudents();
@@ -4565,9 +4619,12 @@ function App() {
                         <li><strong>Matrcule</strong></li>
                         <li><strong>Affecté</strong> (Optionnel: "Oui" ou "Non")</li>
                         <li><strong>Sexe</strong> (Optionnel: "Masculin" ou "Féminin")</li>
+                        <li><strong>Nom Parent</strong> (Optionnel)</li>
+                        <li><strong>Prenoms Parent</strong> (Optionnel)</li>
+                        <li><strong>Telephone Parent</strong> (Optionnel)</li>
                       </ul>
                       <button type="button" className="btn btn-outline" style={{marginTop: '12px'}} onClick={() => {
-                        const csvContent = "data:text/csv;charset=utf-8,Nom,Prenoms,Date de Nasssance,Matrcule,Affecté,Sexe\\nDupont,Jean,2010-05-14,MAT-101,Non,Masculin\\nMartin,Sophie,2011-08-22,MAT-102,Oui,Féminin\\n";
+                        const csvContent = "data:text/csv;charset=utf-8,Nom,Prenoms,Date de Nasssance,Matrcule,Affecté,Sexe,Nom Parent,Prenoms Parent,Telephone Parent\\nDupont,Jean,2010-05-14,MAT-101,Non,Masculin,Dupont,Pierre,0102030405\\nMartin,Sophie,2011-08-22,MAT-102,Oui,Féminin,Martin,Julie,0506070809\\n";
                         const encodedUri = encodeURI(csvContent);
                         const link = document.createElement("a");
                         link.setAttribute("href", encodedUri);
