@@ -1960,15 +1960,21 @@ function App() {
             <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
               <th style={{padding: '12px 0', fontWeight: 500}}>Classe</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>Niveau</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Effectif</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>Scolarité (F)</th>
               <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {classesData && classesData.length > 0 ? classesData.map((cls) => (
+            {classesData && classesData.length > 0 ? classesData.map((cls) => {
+              const studentCount = studentsData?.filter((s: any) => s.class_id === cls.id).length || 0;
+              return (
               <tr key={cls.id} style={{borderBottom: '1px solid var(--border-color)'}}>
                 <td style={{padding: '16px 0', fontWeight: 600}}>{cls.name}</td>
                 <td style={{padding: '16px 0'}}>{cls.level}</td>
+                <td style={{padding: '16px 0'}}>
+                  <span className="badge badge-info">{studentCount} {studentCount > 1 ? 'élèves' : 'élève'}</span>
+                </td>
                 <td style={{padding: '16px 0'}}>
                   {formatNum(cls.tuition_fee || 0)} F
                   <br />
@@ -1990,8 +1996,9 @@ function App() {
                   </button>
                 </td>
               </tr>
-            )) : (
-              <tr><td colSpan={4} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucune classe enregistrée.</td></tr>
+              );
+            }) : (
+              <tr><td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucune classe enregistrée.</td></tr>
             )}
           </tbody>
         </table>
