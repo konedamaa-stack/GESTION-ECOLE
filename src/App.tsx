@@ -1737,13 +1737,13 @@ function App() {
           <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
             <h3 className="panel-title student-print-title" style={{margin: 0}}>{t('admin.students.panel_title', 'Annuaire des Élèves')}</h3>
             <span style={{
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              backgroundColor: 'rgba(59, 130, 246, 0.12)',
               color: 'var(--primary-color)',
-              padding: '6px 12px',
-              borderRadius: '20px',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              border: '1px solid rgba(59, 130, 246, 0.2)',
+              padding: '8px 16px',
+              borderRadius: '24px',
+              fontSize: '1.1rem',
+              fontWeight: 700,
+              border: '1.5px solid rgba(59, 130, 246, 0.25)',
               display: 'inline-flex',
               alignItems: 'center'
             }}>
@@ -1968,13 +1968,13 @@ function App() {
           <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
             <h3 className="panel-title" style={{margin: 0}}>Gestion des Classes</h3>
             <span style={{
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              backgroundColor: 'rgba(59, 130, 246, 0.12)',
               color: 'var(--primary-color)',
-              padding: '6px 12px',
-              borderRadius: '20px',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              border: '1px solid rgba(59, 130, 246, 0.2)',
+              padding: '8px 16px',
+              borderRadius: '24px',
+              fontSize: '1.1rem',
+              fontWeight: 700,
+              border: '1.5px solid rgba(59, 130, 246, 0.25)',
               display: 'inline-flex',
               alignItems: 'center'
             }}>
