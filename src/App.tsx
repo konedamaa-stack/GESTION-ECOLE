@@ -1733,8 +1733,23 @@ function App() {
       </div>
 
       <div className="panel delay-300" id="student-list-panel">
-        <div className="panel-header">
-          <h3 className="panel-title student-print-title">{t('admin.students.panel_title', 'Annuaire des Élèves')} ({filteredStudents.length} {filteredStudents.length > 1 ? 'élèves' : 'élève'})</h3>
+        <div className="panel-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+            <h3 className="panel-title student-print-title" style={{margin: 0}}>{t('admin.students.panel_title', 'Annuaire des Élèves')}</h3>
+            <span style={{
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              color: 'var(--primary-color)',
+              padding: '6px 12px',
+              borderRadius: '20px',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              border: '1px solid rgba(59, 130, 246, 0.2)',
+              display: 'inline-flex',
+              alignItems: 'center'
+            }}>
+              {filteredStudents.length} {filteredStudents.length > 1 ? 'élèves' : 'élève'}
+            </span>
+          </div>
           <div className="student-filters" style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
             <button 
               className="btn btn-outline" 
@@ -1949,8 +1964,23 @@ function App() {
       </div>
 
       <div className="panel delay-300" style={{marginBottom: '24px'}}>
-        <div className="panel-header">
-          <h3 className="panel-title">Gestion des Classes</h3>
+        <div className="panel-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+            <h3 className="panel-title" style={{margin: 0}}>Gestion des Classes</h3>
+            <span style={{
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              color: 'var(--primary-color)',
+              padding: '6px 12px',
+              borderRadius: '20px',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              border: '1px solid rgba(59, 130, 246, 0.2)',
+              display: 'inline-flex',
+              alignItems: 'center'
+            }}>
+              {classesData.length} {classesData.length > 1 ? 'classes' : 'classe'}
+            </span>
+          </div>
           <button className="btn btn-primary" onClick={() => { setEditEntity(null); setActiveModal('class'); }}>
             <Icons.Plus /> {t('admin.pedagogy.btn_new_class', 'Nouvelle Classe')}
           </button>
