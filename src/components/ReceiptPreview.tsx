@@ -65,7 +65,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
   const matricule = student?.matricule || "-";
   
   // Calculs financiers
-  const scolarite = Number(student?.tuition_fee) || Number(student?.classes?.tuition_fee) || Number(invoice?.amount) || 0;
+  const scolarite = Number(student?.tuition_fee) || (student?.affecte === 'Affecté' ? Number(student?.classes?.tuition_fee_affecte) : Number(student?.classes?.tuition_fee)) || Number(invoice?.amount) || 0;
   const versement = invoice?.paid_amount !== undefined ? Number(invoice.paid_amount) : (Number(invoice?.amount) || 0);
   const reste = studentReste !== undefined ? Number(studentReste) : 0;
   const totalPaid = Math.max(0, scolarite - reste);
