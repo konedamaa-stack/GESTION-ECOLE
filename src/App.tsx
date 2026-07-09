@@ -1734,7 +1734,7 @@ function App() {
 
       <div className="panel delay-300" id="student-list-panel">
         <div className="panel-header">
-          <h3 className="panel-title student-print-title">{t('admin.students.panel_title', 'Annuaire des Élèves')}</h3>
+          <h3 className="panel-title student-print-title">{t('admin.students.panel_title', 'Annuaire des Élèves')} ({filteredStudents.length} {filteredStudents.length > 1 ? 'élèves' : 'élève'})</h3>
           <div className="student-filters" style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
             <button 
               className="btn btn-outline" 
