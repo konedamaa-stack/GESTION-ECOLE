@@ -98,6 +98,7 @@ function App() {
   const [selectedClassFilter, setSelectedClassFilter] = useState('all');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('Inscrit');
   const [selectedAffecteFilter, setSelectedAffecteFilter] = useState('all');
+  const [selectedPaymentFilter, setSelectedPaymentFilter] = useState('all');
   const [invoiceSearchQuery, setInvoiceSearchQuery] = useState('');
   const [financeStatusFilter, setFinanceStatusFilter] = useState('all');
   const [financeClassFilter, setFinanceClassFilter] = useState('all');
@@ -1684,7 +1685,21 @@ function App() {
       else matchClass = s.class_id === selectedClassFilter;
       const matchStatus = selectedStatusFilter === 'all' || (s.status || 'Inscrit') === selectedStatusFilter;
       const matchAffecte = selectedAffecteFilter === 'all' || (s.affecte || 'Non affecté') === selectedAffecteFilter;
-      return matchQuery && matchClass && matchStatus && matchAffecte;
+      
+      let matchPayment = true;
+      if (selectedPaymentFilter !== 'all') {
+        const studentInvoices = invoicesData.filter(inv => inv.student_id === s.id);
+        const studentPaye = studentInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+        const studentTotal = Number(s.tuition_fee) || (s.affecte === 'Affecté' ? Number(s.classes?.tuition_fee_affecte) : Number(s.classes?.tuition_fee)) || 0;
+        const studentReste = Math.max(0, studentTotal - studentPaye);
+        const isSolde = studentReste <= 0;
+        if (selectedPaymentFilter === 'soldes') {
+          matchPayment = isSolde;
+        } else if (selectedPaymentFilter === 'non_soldes') {
+          matchPayment = !isSolde;
+        }
+      }
+      return matchQuery && matchClass && matchStatus && matchAffecte && matchPayment;
     });
 
     return (
@@ -1750,6 +1765,20 @@ function App() {
               {filteredStudents.length} {filteredStudents.length > 1 ? 'élèves' : 'élève'}
             </span>
           </div>
+          <div className="print-only-filters-info" style={{width: '100%', fontSize: '1rem', color: 'var(--text-secondary)', marginTop: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>
+            <strong>Filtres actifs :</strong> Classe : {
+              selectedClassFilter === 'all' ? 'Toutes' : 
+              selectedClassFilter === 'unassigned' ? 'Sans classe' :
+              classesData.find(c => c.id === selectedClassFilter)?.name || ''
+            } 
+            {' • '}{
+              selectedPaymentFilter === 'all' ? 'Tous les paiements' :
+              selectedPaymentFilter === 'soldes' ? 'Soldés (Payé)' : 'Non Soldés'
+            }
+            {' • '}{
+              selectedAffecteFilter === 'all' ? 'Tous (Affecté & Non affecté)' : selectedAffecteFilter
+            }
+          </div>
           <div className="student-filters" style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
             <button 
               className="btn btn-outline" 
@@ -1785,6 +1814,16 @@ function App() {
               <option value="all">Tous (Affectation)</option>
               <option value="Affecté">Affectés (État)</option>
               <option value="Non affecté">Non affectés (Privé)</option>
+            </select>
+            <select 
+              className="form-select" 
+              value={selectedPaymentFilter} 
+              onChange={(e) => setSelectedPaymentFilter(e.target.value)}
+              style={{width: '180px', padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: '6px'}}
+            >
+              <option value="all">Tous (Paiement)</option>
+              <option value="soldes">Soldés (Payé)</option>
+              <option value="non_soldes">Non Soldés</option>
             </select>
             <select 
               className="form-select" 

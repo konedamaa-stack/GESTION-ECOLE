@@ -901,3 +901,36 @@ html {
     width: 100% !important;
   }
 }
+
+/* Student List Print Styling */
+.print-only-filters-info {
+  display: none !important;
+}
+
+@media print {
+  body.print-student-list .print-only-filters-info {
+    display: block !important;
+  }
+  body.print-student-list .page-header,
+  body.print-student-list .stats-grid,
+  body.print-student-list .sidebar,
+  body.print-student-list .top-header,
+  body.print-student-list .panel:not(#student-list-panel) {
+    display: none !important;
+  }
+  body.print-student-list #student-list-panel {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
+  body.print-student-list #student-list-panel .panel-header .student-filters,
+  body.print-student-list #student-list-panel .panel-header button {
+    display: none !important;
+  }
+  body.print-student-list #student-list-panel table th:last-child,
+  body.print-student-list #student-list-panel table td:last-child {
+    display: none !important;
+  }
+}
