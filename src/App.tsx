@@ -4488,6 +4488,7 @@ function App() {
                       const idxDate = headers.findIndex(h => h.includes('date') || h.includes('nasssance') || h.includes('naissance'));
                       const idxMatricule = headers.findIndex(h => h.includes('matrcule') || h.includes('matricule'));
                       const idxAffecte = headers.findIndex(h => h === 'affecte' || h === 'affecté' || h.includes('affect'));
+                      const idxGender = headers.findIndex(h => h === 'sexe' || h === 'genre' || h === 'gender');
 
                       const classId = (document.getElementById('import_class_id') as HTMLSelectElement).value;
 
@@ -4529,7 +4530,8 @@ function App() {
                           birth_date: parsedDate,
                           matricule: (idxMatricule !== -1 && cols[idxMatricule]) ? cols[idxMatricule] : `STU-${Date.now().toString().slice(-4)}${i}${Math.floor(Math.random()*10000)}`,
                           class_id: classId || null,
-                          affecte: (idxAffecte !== -1 && cols[idxAffecte]) ? (cols[idxAffecte].toLowerCase().includes('oui') || cols[idxAffecte].toLowerCase().includes('affect') ? 'Affecté' : 'Non affecté') : 'Non affecté'
+                          affecte: (idxAffecte !== -1 && cols[idxAffecte]) ? (cols[idxAffecte].toLowerCase().includes('oui') || cols[idxAffecte].toLowerCase().includes('affect') ? 'Affecté' : 'Non affecté') : 'Non affecté',
+                          gender: (idxGender !== -1 && cols[idxGender]) ? (cols[idxGender].toLowerCase().startsWith('f') || cols[idxGender].toLowerCase().includes('fem') || cols[idxGender].toLowerCase().includes('fille') ? 'Féminin' : 'Masculin') : 'Masculin'
                         });
                       }
 
