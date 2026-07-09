@@ -966,7 +966,8 @@ function App() {
             status: formData.get('status') || 'Inscrit',
             tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : null,
             photo_url: photoUrl,
-            affecte: formData.get('affecte') || 'Non affecté'
+            affecte: formData.get('affecte') || 'Non affecté',
+            gender: formData.get('gender') || 'Masculin'
           };
           if (formData.get('matricule')) studentUpdate.matricule = formData.get('matricule');
           if (formData.get('password')) studentUpdate.password = formData.get('password');
@@ -989,7 +990,8 @@ function App() {
           password: password,
           tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : null,
           photo_url: photoUrl,
-          affecte: formData.get('affecte') || 'Non affecté'
+          affecte: formData.get('affecte') || 'Non affecté',
+          gender: formData.get('gender') || 'Masculin'
         };
         const { data: studentData, error: studentError } = await supabase.from('students').insert([{...student, school_id: currentSchoolId}]).select();
         if (studentError) throw studentError;
@@ -4344,6 +4346,13 @@ function App() {
                       <label>{t('admin.modals.first_name', 'Prénom(s)')}</label>
                       <input type="text" name="first_name" className="form-input" required defaultValue={editEntity?.first_name || ""} />
                     </div>
+                    <div className="form-group">
+                      <label>Sexe</label>
+                      <select name="gender" className="form-select" required defaultValue={editEntity?.gender || "Masculin"}>
+                        <option value="Masculin">Masculin</option>
+                        <option value="Féminin">Féminin</option>
+                      </select>
+                    </div>
                   </div>
                   <div className="form-grid">
                     <div className="form-group">
@@ -5207,6 +5216,10 @@ function App() {
                         <div>
                           <span style={{color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'block'}}>{t('admin.modals.birth_date_title', 'Date de naissance')}</span>
                           <strong>{new Date(selectedStudent.birth_date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR')}</strong>
+                        </div>
+                        <div>
+                          <span style={{color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'block'}}>Genre / Sexe</span>
+                          <strong>{selectedStudent.gender || 'Masculin'}</strong>
                         </div>
                       </div>
 
