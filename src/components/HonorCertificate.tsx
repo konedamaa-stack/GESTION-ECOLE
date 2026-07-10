@@ -112,6 +112,7 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
         width: '297mm', 
         height: '210mm', 
         backgroundColor: '#fff', 
+        color: '#000000',
         position: 'relative',
         boxSizing: 'border-box',
         padding: '12mm',
@@ -126,7 +127,7 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
         <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: '5mm', boxSizing: 'border-box', textAlign: 'center' }}>
           
           {/* HEADER */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '11px', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '11px', fontWeight: 'bold', fontFamily: 'Arial, sans-serif', color: '#000000' }}>
             <div style={{ width: '30%', textAlign: 'center' }}>
               MINISTERE DE L'EDUCATION NATIONALE, DE<br/>L'ALPHABETISATION ET DE L'ENSEIGNEMENT<br/>TECHNIQUE
             </div>
@@ -164,10 +165,10 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           </div>
 
           {/* FOOTER */}
-          <div style={{ position: 'absolute', bottom: '10mm', right: '10mm', textAlign: 'center', width: '260px', fontFamily: 'Arial, sans-serif' }}>
-            <p style={{ margin: '0 0 10px 0', fontSize: '13px', fontWeight: 'bold' }}>Fait à {city}, le {today}</p>
-            <p style={{ margin: '0 0 35px 0', fontSize: '14px', fontWeight: 'bold', textDecoration: 'underline' }}>LE DIRECTEUR DES ÉTUDES</p>
-            <p style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>{signerName.toUpperCase()}</p>
+          <div style={{ position: 'absolute', bottom: '12mm', right: '12mm', textAlign: 'center', width: '280px', fontFamily: 'Arial, sans-serif', color: '#000000' }}>
+            <p style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: 'bold', color: '#000000' }}>Fait à {city}, le {today}</p>
+            <p style={{ margin: '0 0 35px 0', fontSize: '15px', fontWeight: 'bold', textDecoration: 'underline', color: '#000000' }}>LE DIRECTEUR DES ÉTUDES</p>
+            <p style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#000000' }}>{signerName.toUpperCase()}</p>
           </div>
         </div>
       </div>
