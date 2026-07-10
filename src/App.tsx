@@ -1675,32 +1675,33 @@ function App() {
     );
   };
 
-  const renderStudents = () => {
-    const filteredStudents = studentsData.filter(s => {
-      const matchQuery = (s.first_name + ' ' + s.last_name + ' ' + s.matricule).toLowerCase().includes(searchQuery.toLowerCase());
-      let matchClass = false;
-      if (selectedClassFilter === 'all') matchClass = true;
-      else if (selectedClassFilter === 'unassigned') matchClass = !s.class_id;
-      else if (selectedClassFilter === 'assigned') matchClass = !!s.class_id;
-      else matchClass = s.class_id === selectedClassFilter;
-      const matchStatus = selectedStatusFilter === 'all' || (s.status || 'Inscrit') === selectedStatusFilter;
-      const matchAffecte = selectedAffecteFilter === 'all' || (s.affecte || 'Non affecté') === selectedAffecteFilter;
-      
-      let matchPayment = true;
-      if (selectedPaymentFilter !== 'all') {
-        const studentInvoices = invoicesData.filter(inv => inv.student_id === s.id);
-        const studentPaye = studentInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
-        const studentTotal = Number(s.tuition_fee) || (s.affecte === 'Affecté' ? Number(s.classes?.tuition_fee_affecte) : Number(s.classes?.tuition_fee)) || 0;
-        const studentReste = Math.max(0, studentTotal - studentPaye);
-        const isSolde = studentReste <= 0;
-        if (selectedPaymentFilter === 'soldes') {
-          matchPayment = isSolde;
-        } else if (selectedPaymentFilter === 'non_soldes') {
-          matchPayment = !isSolde;
-        }
+  const filteredStudents = studentsData.filter(s => {
+    const matchQuery = (s.first_name + ' ' + s.last_name + ' ' + s.matricule).toLowerCase().includes(searchQuery.toLowerCase());
+    let matchClass = false;
+    if (selectedClassFilter === 'all') matchClass = true;
+    else if (selectedClassFilter === 'unassigned') matchClass = !s.class_id;
+    else if (selectedClassFilter === 'assigned') matchClass = !!s.class_id;
+    else matchClass = s.class_id === selectedClassFilter;
+    const matchStatus = selectedStatusFilter === 'all' || (s.status || 'Inscrit') === selectedStatusFilter;
+    const matchAffecte = selectedAffecteFilter === 'all' || (s.affecte || 'Non affecté') === selectedAffecteFilter;
+    
+    let matchPayment = true;
+    if (selectedPaymentFilter !== 'all') {
+      const studentInvoices = invoicesData.filter(inv => inv.student_id === s.id);
+      const studentPaye = studentInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+      const studentTotal = Number(s.tuition_fee) || (s.affecte === 'Affecté' ? Number(s.classes?.tuition_fee_affecte) : Number(s.classes?.tuition_fee)) || 0;
+      const studentReste = Math.max(0, studentTotal - studentPaye);
+      const isSolde = studentReste <= 0;
+      if (selectedPaymentFilter === 'soldes') {
+        matchPayment = isSolde;
+      } else if (selectedPaymentFilter === 'non_soldes') {
+        matchPayment = !isSolde;
       }
-      return matchQuery && matchClass && matchStatus && matchAffecte && matchPayment;
-    });
+    }
+    return matchQuery && matchClass && matchStatus && matchAffecte && matchPayment;
+  });
+
+  const renderStudents = () => {
 
     return (
     <div className="animate-fade-in">
@@ -3882,7 +3883,8 @@ function App() {
   }
 
   return (
-    <div className="app-container">
+    <>
+      <div className="app-container">
       {/* Sidebar Overlay for Mobile */}
       <div className={`sidebar-overlay ${isMobileMenuOpen ? 'open' : ''}`} onClick={() => setIsMobileMenuOpen(false)}></div>
       
@@ -5881,7 +5883,60 @@ function App() {
         <QuickStartGuideModal onClose={() => setIsQuickStartModalOpen(false)} />
       )}
     </div>
-  );
+
+    {/* Print Only Student List Container */}
+    <div className="print-only-student-list-container">
+      <h2 style={{ textAlign: 'center', marginBottom: '8px' }}>{t('admin.students.panel_title', 'Annuaire des Élèves')}</h2>
+      <div style={{ textAlign: 'center', fontSize: '10px', color: '#666', marginBottom: '16px', borderBottom: '1px solid #ccc', paddingBottom: '6px' }}>
+        <strong>Classe :</strong> {
+          selectedClassFilter === 'all' ? 'Toutes' : 
+          selectedClassFilter === 'unassigned' ? 'Sans classe' :
+          classesData.find(c => c.id === selectedClassFilter)?.name || ''
+        } 
+        {' • '}<strong>Paiement :</strong> {
+          selectedPaymentFilter === 'all' ? 'Tous' :
+          selectedPaymentFilter === 'soldes' ? 'Soldés (Payé)' : 'Non Soldés'
+        }
+        {' • '}<strong>Affectation :</strong> {
+          selectedAffecteFilter === 'all' ? 'Tous' : selectedAffecteFilter
+        }
+        {' • '}<strong>Effectif :</strong> {filteredStudents.length} élèves
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Matricule</th>
+            <th>Nom & Prénom</th>
+            <th>Sexe</th>
+            <th>Classe</th>
+            <th>Affectation</th>
+            <th>Statut</th>
+            <th>Reste à payer</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredStudents.map((row, i) => {
+            const studentInvoices = invoicesData.filter(inv => inv.student_id === row.id);
+            const studentPaye = studentInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+            const studentTotal = Number(row.tuition_fee) || (row.affecte === 'Affecté' ? Number(row.classes?.tuition_fee_affecte) : Number(row.classes?.tuition_fee)) || 0;
+            const studentReste = Math.max(0, studentTotal - studentPaye);
+            return (
+              <tr key={i}>
+                <td style={{ fontFamily: 'monospace' }}>{row.matricule}</td>
+                <td>{row.first_name} {row.last_name}</td>
+                <td>{row.gender || 'Masculin'}</td>
+                <td>{row.classes?.name || 'Non assigné'}</td>
+                <td>{row.affecte || 'Non affecté'}</td>
+                <td>{row.status || 'Inscrit'}</td>
+                <td>{studentReste === 0 ? 'Soldé' : `${formatNum(studentReste)} F`}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  </>
+);
 }
 
 export default App;

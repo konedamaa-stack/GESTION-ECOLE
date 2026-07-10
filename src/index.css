@@ -892,51 +892,39 @@ html {
   display: none !important;
 }
 
+.print-only-student-list-container {
+  display: none;
+}
+
 @media print {
-  body.print-student-list .print-only-filters-info {
-    display: block !important;
-  }
-  body.print-student-list .page-header,
-  body.print-student-list .stats-grid,
-  body.print-student-list .sidebar,
-  body.print-student-list .top-header,
-  body.print-student-list .panel:not(#student-list-panel) {
+  body.print-student-list .app-container {
     display: none !important;
   }
-  body.print-student-list .app-container,
-  body.print-student-list .main-content,
-  body.print-student-list .dashboard-scroll,
-  body.print-student-list .animate-fade-in {
+  body.print-student-list .print-only-student-list-container {
     display: block !important;
-    position: static !important;
-    height: auto !important;
-    min-height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
     width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    box-shadow: none !important;
-    background: transparent !important;
+    background: white !important;
+    color: black !important;
+    font-size: 11px !important;
+    padding: 10px !important;
   }
-  body.print-student-list #student-list-panel {
-    display: block !important;
-    position: static !important;
-    height: auto !important;
-    overflow: visible !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    background: transparent !important;
+  body.print-student-list .print-only-student-list-container table {
     width: 100% !important;
+    border-collapse: collapse !important;
   }
-  body.print-student-list #student-list-panel .panel-header .student-filters,
-  body.print-student-list #student-list-panel .panel-header button {
-    display: none !important;
+  body.print-student-list .print-only-student-list-container th,
+  body.print-student-list .print-only-student-list-container td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 6px 8px !important;
+    text-align: left !important;
+    font-size: 10px !important;
+    color: black !important;
   }
-  body.print-student-list #student-list-panel table th:last-child,
-  body.print-student-list #student-list-panel table td:last-child {
-    display: none !important;
+  body.print-student-list .print-only-student-list-container th {
+    background-color: #f1f5f9 !important;
+    font-weight: bold !important;
+  }
+  body.print-student-list .print-only-student-list-container tr {
+    page-break-inside: avoid !important;
   }
 }
