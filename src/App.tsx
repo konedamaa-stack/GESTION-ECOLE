@@ -4378,11 +4378,11 @@ function App() {
                   </div>
                   <div className="form-group">
                     <label>{t('admin.modals.motif', 'Motif du paiement')}</label>
-                    <select name="motif" className="form-select" required>
-                      <option>Frais d'inscription</option>
-                      <option>Mensualité (Scolarité)</option>
-                      <option>Frais de cantine</option>
-                      <option>Transport</option>
+                    <select name="motif" className="form-select" defaultValue="Frais de scolarité" required>
+                      <option value="Frais de scolarité">Frais de scolarité</option>
+                      <option value="Frais d'inscription">Frais d'inscription</option>
+                      <option value="Frais de cantine">Frais de cantine</option>
+                      <option value="Transport">Transport</option>
                     </select>
                   </div>
                   <div className="form-group">
