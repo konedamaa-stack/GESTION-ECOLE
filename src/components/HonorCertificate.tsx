@@ -124,10 +124,10 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
         <div style={{ position: 'absolute', top: '4mm', left: '4mm', right: '4mm', bottom: '4mm', border: '2mm solid #fff', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', top: '6mm', left: '6mm', right: '6mm', bottom: '6mm', border: '4mm solid #009e60', pointerEvents: 'none' }}></div>
         
-        <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: '5mm', boxSizing: 'border-box', textAlign: 'center' }}>
+        <div style={{ position: 'relative', width: '100%', height: '100%', boxSizing: 'border-box', padding: '5mm', fontFamily: 'Arial, sans-serif' }}>
           
           {/* HEADER */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '11px', fontWeight: 'bold', fontFamily: 'Arial, sans-serif', color: '#000000', height: '80px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '11px', fontWeight: 'bold', color: '#000000', height: '80px', marginBottom: '10px' }}>
             <div style={{ width: '30%', textAlign: 'center' }}>
               MINISTERE DE L'EDUCATION NATIONALE, DE<br/>L'ALPHABETISATION ET DE L'ENSEIGNEMENT<br/>TECHNIQUE
             </div>
@@ -142,52 +142,41 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
             </div>
           </div>
 
-          {/* TABLE LAYOUT FOR PERFECT SPACING AND NO OVERLAP */}
-          <table style={{ width: '100%', height: 'calc(100% - 80px)', borderCollapse: 'collapse', border: 'none', marginTop: '5px' }}>
-            <tbody>
-              {/* TITLE ROW */}
-              <tr>
-                <td colSpan={2} style={{ verticalAlign: 'middle', padding: '5px 0' }}>
-                  <div style={{ margin: '0 auto', width: '100%' }}>
-                    <GoldOrnament />
-                    <h1 style={{ 
-                      fontSize: '44px', 
-                      margin: '2px 0', 
-                      color: '#e5a93b', 
-                      textShadow: '1.5px 1.5px 0 #9a7d0a, -1px -1px 0 #9a7d0a, 1px -1px 0 #9a7d0a, -1px 1px 0 #9a7d0a, 1.5px -1.5px 0 #9a7d0a, 0px 4px 12px rgba(0,0,0,0.2)',
-                      fontFamily: '"Times New Roman", Times, serif',
-                      letterSpacing: '3px',
-                      fontWeight: 'bold'
-                    }}>Tableau d'honneur</h1>
-                    <GoldOrnament />
-                  </div>
-                </td>
-              </tr>
+          {/* TITLE */}
+          <div style={{ margin: '10px 0', textAlign: 'center' }}>
+            <GoldOrnament />
+            <h1 style={{ 
+              fontSize: '44px', 
+              margin: '2px 0', 
+              color: '#e5a93b', 
+              textShadow: '1.5px 1.5px 0 #9a7d0a, -1px -1px 0 #9a7d0a, 1px -1px 0 #9a7d0a, -1px 1px 0 #9a7d0a, 1.5px -1.5px 0 #9a7d0a, 0px 4px 12px rgba(0,0,0,0.2)',
+              fontFamily: '"Times New Roman", Times, serif',
+              letterSpacing: '3px',
+              fontWeight: 'bold',
+              display: 'inline-block'
+            }}>Tableau d'honneur</h1>
+            <GoldOrnament />
+          </div>
 
-              {/* BODY TEXT ROW */}
-              <tr>
-                <td colSpan={2} style={{ verticalAlign: 'middle', padding: '0 20px' }}>
-                  <div style={{ margin: '0 auto', maxWidth: '75%' }}>
-                    <p style={{ fontSize: '18px', lineHeight: '1.7', textAlign: 'center', fontFamily: 'Arial, sans-serif', margin: '0', color: '#111' }}>
-                      L'élève <strong>{student.first_name?.toUpperCase()} {student.last_name?.toUpperCase()}</strong> Matricule <strong>{student.matricule}</strong> en classe de <strong>{student.classes?.name || '...'}</strong> ayant obtenu une moyenne de <strong>{average.toFixed(2).replace('.', ',')}</strong> est inscrit(e) au <strong>Tableau d'Honneur {mention && `+ ${mention}`}</strong> pour sa bonne conduite et son travail durant le {period} de l'année scolaire <strong>{academicYear}</strong>.
-                    </p>
-                  </div>
-                </td>
-              </tr>
+          {/* BODY */}
+          <div style={{ margin: '15px auto', maxWidth: '75%', textAlign: 'center' }}>
+            <p style={{ fontSize: '18px', lineHeight: '1.7', fontFamily: 'Arial, sans-serif', margin: '0', color: '#111', display: 'inline-block' }}>
+              L'élève <strong>{student.first_name?.toUpperCase()} {student.last_name?.toUpperCase()}</strong> Matricule <strong>{student.matricule}</strong> en classe de <strong>{student.classes?.name || '...'}</strong> ayant obtenu une moyenne de <strong>{average.toFixed(2).replace('.', ',')}</strong> est inscrit(e) au <strong>Tableau d'Honneur {mention && `+ ${mention}`}</strong> pour sa bonne conduite et son travail durant le {period} de l'année scolaire <strong>{academicYear}</strong>.
+            </p>
+          </div>
 
-              {/* SIGNATURE ROW */}
-              <tr>
-                <td style={{ width: '50%' }}></td>
-                <td style={{ width: '50%', verticalAlign: 'top', textAlign: 'center', paddingTop: '15px', paddingRight: '10px' }}>
-                  <div style={{ display: 'inline-block', width: '280px', fontFamily: 'Arial, sans-serif', color: '#000000' }}>
-                    <p style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 'bold', color: '#000000' }}>Fait à {city}, le {today}</p>
-                    <p style={{ margin: '0 0 55px 0', fontSize: '14px', fontWeight: 'bold', textDecoration: 'underline', color: '#000000' }}>LE DIRECTEUR DES ÉTUDES</p>
-                    <p style={{ margin: 0, fontSize: '15px', fontWeight: 'bold', color: '#000000' }}>{signerName.toUpperCase()}</p>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          {/* CLEAR SPACER */}
+          <div style={{ clear: 'both', height: '20px' }}></div>
+
+          {/* FOOTER (SIGNATURE BLOCK) */}
+          <div style={{ float: 'right', width: '280px', textAlign: 'center', marginRight: '20px', color: '#000000', fontFamily: 'Arial, sans-serif' }}>
+            <p style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 'bold' }}>Fait à {city}, le {today}</p>
+            <p style={{ margin: '0 0 55px 0', fontSize: '14px', fontWeight: 'bold', textDecoration: 'underline' }}>LE DIRECTEUR DES ÉTUDES</p>
+            <p style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>{signerName.toUpperCase()}</p>
+          </div>
+
+          {/* END CLEAR */}
+          <div style={{ clear: 'both' }}></div>
         </div>
       </div>
     </div>
