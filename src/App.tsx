@@ -1227,6 +1227,21 @@ function App() {
           date: formData.get('date'),
           max_score: formData.get('max_score') || 20,
         };
+        
+        // Prevent duplicate evaluations for same class, subject, date, name and period
+        const isDuplicate = evaluationsData.some(ev => 
+          ev.class_id === evaluation.class_id &&
+          ev.subject === evaluation.subject &&
+          ev.date === evaluation.date &&
+          ev.name?.toLowerCase().trim() === evaluation.name?.toString().toLowerCase().trim() &&
+          ev.period === evaluation.period
+        );
+
+        if (isDuplicate) {
+          alert("Une évaluation identique (même classe, matière, date, nom et trimestre) existe déjà !");
+          return;
+        }
+
         const { error } = await supabase.from('evaluations').insert([{...evaluation, school_id: currentSchoolId}]);
         if (error) throw error;
         fetchEvaluations();
@@ -3383,7 +3398,10 @@ function App() {
                           <td style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
                             <button className="btn btn-primary" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => startGrading(evalu)}>{t('admin.grades.btn_grade', 'Saisir les notes')}</button>
                             {selectedClassForGrades === 'validations' && evalu.validation_status === 'pending' && (
-                              <button className="btn btn-success" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => handleValidationAction(evalu.id, 'approved')}>Approuver</button>
+                              <>
+                                <button className="btn btn-success" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => handleValidationAction(evalu.id, 'approved')}>Approuver</button>
+                                <button className="btn btn-danger" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => handleDeleteEvaluation(evalu.id)}>Supprimer</button>
+                              </>
                             )}
                             {evalu.validation_status === 'approved' && (
                                <button className={`btn ${evalu.locked ? 'btn-outline' : 'btn-danger'}`} style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => handleToggleLock(evalu.id, evalu.locked)}>

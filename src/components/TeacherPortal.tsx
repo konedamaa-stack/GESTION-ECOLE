@@ -82,6 +82,19 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
       school_id: session.school_id,
     };
 
+    // Prevent duplicate evaluations for same class, date, name and period
+    const isDuplicate = evaluationsData.some(ev => 
+      ev.class_id === newEval.class_id &&
+      ev.date === newEval.date &&
+      ev.name?.toLowerCase().trim() === newEval.name?.toString().toLowerCase().trim() &&
+      ev.period === newEval.period
+    );
+
+    if (isDuplicate) {
+      alert("Une évaluation identique (même classe, date, nom et trimestre) existe déjà !");
+      return;
+    }
+
     const { error } = await supabase.from('evaluations').insert([newEval]);
     if (!error) {
       alert(t('teacher.eval_created', "Évaluation créée avec succès"));
