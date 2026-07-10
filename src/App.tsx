@@ -4006,7 +4006,7 @@ function App() {
                 <Icons.CreditCard /> {t('admin.sidebar.finance', 'Comptabilité & Scolarité')}
               </li>
               <li className={`nav-item ${activeTab === 'depenses' ? 'active' : ''}`} onClick={() => { setActiveTab('depenses'); setIsMobileMenuOpen(false); }}>
-                <Icons.CreditCard /> {t('admin.sidebar.expenses', 'Dépenses et Emprunts')}
+                <Icons.CreditCard /> {t('admin.sidebar.expenses', 'Dépenses & Emprunts')}
               </li>
             </>
           )}
