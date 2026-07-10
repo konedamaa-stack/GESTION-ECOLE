@@ -14,7 +14,7 @@ interface HonorCertificateProps {
 
 // Gold Ornament component for certificate separators
 const GoldOrnament = () => (
-  <div style={{ display: 'flex', justifyContent: 'center', margin: '3px 0' }}>
+  <div style={{ display: 'flex', justifyContent: 'center', margin: '1px 0' }}>
     <svg width="200" height="16" viewBox="0 0 240 24" style={{ fill: 'none', stroke: '#d4af37', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
       {/* Left scroll wing */}
       <path d="M 120 12 C 100 2, 85 2, 60 12 C 35 22, 25 12, 10 12" />
@@ -143,7 +143,7 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           </div>
 
           {/* TITLE */}
-          <div style={{ margin: '8px 0' }}>
+          <div style={{ margin: '4px 0' }}>
             <GoldOrnament />
             <h1 style={{ 
               fontSize: '44px', 
@@ -158,7 +158,7 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           </div>
 
           {/* BODY */}
-          <div style={{ margin: '15px auto 5px auto', maxWidth: '72%', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60px' }}>
+          <div style={{ margin: '4px auto 2px auto', maxWidth: '70%', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '40px' }}>
             <p style={{ fontSize: '18px', lineHeight: '1.7', textAlign: 'center', fontFamily: 'Arial, sans-serif', margin: '0', color: '#111' }}>
               L'élève <strong>{student.first_name?.toUpperCase()} {student.last_name?.toUpperCase()}</strong> Matricule <strong>{student.matricule}</strong> en classe de <strong>{student.classes?.name || '...'}</strong> ayant obtenu une moyenne de <strong>{average.toFixed(2).replace('.', ',')}</strong> est inscrit(e) au <strong>Tableau d'Honneur {mention && `+ ${mention}`}</strong> pour sa bonne conduite et son travail durant le {period} de l'année scolaire <strong>{academicYear}</strong>.
             </p>
