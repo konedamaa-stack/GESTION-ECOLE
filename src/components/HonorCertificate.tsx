@@ -159,7 +159,7 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           </div>
 
           {/* BODY */}
-          <div style={{ margin: '15px auto', maxWidth: '75%', textAlign: 'center' }}>
+          <div style={{ margin: '12px auto', maxWidth: '63%', textAlign: 'center' }}>
             <p style={{ fontSize: '18px', lineHeight: '1.7', fontFamily: 'Arial, sans-serif', margin: '0', color: '#111', display: 'inline-block' }}>
               L'élève <strong>{student.first_name?.toUpperCase()} {student.last_name?.toUpperCase()}</strong> Matricule <strong>{student.matricule}</strong> en classe de <strong>{student.classes?.name || '...'}</strong> ayant obtenu une moyenne de <strong>{average.toFixed(2).replace('.', ',')}</strong> est inscrit(e) au <strong>Tableau d'Honneur {mention && `+ ${mention}`}</strong> pour sa bonne conduite et son travail durant le {period} de l'année scolaire <strong>{academicYear}</strong>.
             </p>
@@ -169,9 +169,9 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           <div style={{ clear: 'both', height: '10px' }}></div>
 
           {/* FOOTER (SIGNATURE BLOCK) */}
-          <div style={{ position: 'absolute', bottom: '18mm', right: '12mm', width: '280px', textAlign: 'center', color: '#000000', fontFamily: 'Arial, sans-serif' }}>
-            <p style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 'bold' }}>Fait à {city}, le {today}</p>
-            <p style={{ margin: '0 0 45px 0', fontSize: '14px', fontWeight: 'bold', textDecoration: 'underline' }}>LE DIRECTEUR DES ÉTUDES</p>
+          <div style={{ position: 'absolute', bottom: '11mm', right: '10mm', width: '280px', textAlign: 'center', color: '#000000', fontFamily: 'Arial, sans-serif' }}>
+            <p style={{ margin: '0 0 5px 0', fontSize: '13px', fontWeight: 'bold' }}>Fait à {city}, le {today}</p>
+            <p style={{ margin: '0 0 40px 0', fontSize: '14px', fontWeight: 'bold', textDecoration: 'underline' }}>LE DIRECTEUR DES ÉTUDES</p>
             <p style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>{signerName.toUpperCase()}</p>
           </div>
 
