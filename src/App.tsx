@@ -185,7 +185,7 @@ function App() {
     setBulletinPeriod(period);
     setBulletinTargetStudentId(studentId);
     setActiveModal('bulletin_preview');
-    const evals = evaluationsData.filter(e => e.class_id === classId && e.period === period);
+    const evals = evaluationsData.filter(e => e.class_id === classId && e.period === period && e.validation_status === 'approved');
     const evalIds = evals.map(e => e.id);
     if(evalIds.length > 0) {
       const { data } = await supabase.from('grades').select('*').in('evaluation_id', evalIds);
@@ -1226,6 +1226,7 @@ function App() {
           type: formData.get('type'),
           date: formData.get('date'),
           max_score: formData.get('max_score') || 20,
+          validation_status: 'approved', // Admin evaluations are pre-approved
         };
         
         // Prevent duplicate evaluations for same class, subject, date, name and period
@@ -2205,7 +2206,7 @@ function App() {
 
   const loadGlobalGrades = async (classId: string, period: string) => {
     // 1. Fetch all evaluations for this class and period
-    const allEvals = evaluationsData.filter(e => e.class_id === classId && e.period === period);
+    const allEvals = evaluationsData.filter(e => e.class_id === classId && e.period === period && e.validation_status === 'approved');
     const evalIds = allEvals.map(e => e.id);
     
     let allGrades: any[] = [];
@@ -2287,7 +2288,8 @@ function App() {
              type: "Moyenne Globale",
              date: new Date().toISOString().split('T')[0],
              max_score: 20,
-             school_id: currentSchoolId
+             school_id: currentSchoolId,
+             validation_status: 'approved' // Global averages are pre-approved
           }]).select();
           if(error) throw new Error("Erreur insertion évaluation " + subject + ": " + error.message);
           evId = data[0].id;
@@ -5034,7 +5036,7 @@ function App() {
 
               {activeModal === 'bulletin_preview' && (() => {
                 // Calculate Honor Roll eligible students
-                const classEvals = evaluationsData.filter(e => e.class_id === bulletinClassId && e.period === bulletinPeriod);
+                const classEvals = evaluationsData.filter(e => e.class_id === bulletinClassId && e.period === bulletinPeriod && e.validation_status === 'approved');
                 const classEvalIds = classEvals.map(e => e.id);
                 const classGrades = bulletinGrades.filter(g => classEvalIds.includes(g.evaluation_id));
                 const subjects = Array.from(new Set(classEvals.map(e => e.subject)));

@@ -30,7 +30,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
     }
 
     // Evaluations for the class
-    const { data: evals } = await supabase.from('evaluations').select('*').eq('class_id', student.class_id);
+    const { data: evals } = await supabase.from('evaluations').select('*').eq('class_id', student.class_id).eq('validation_status', 'approved');
     if (evals) setEvaluations(evals);
 
     // Grades for the student
