@@ -122,9 +122,18 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
       const current = prev[studentId] || { score: '', comment: '' };
       let newComment = current.comment;
       
+      let finalValue = value;
       if (field === 'score' && value !== '') {
-        const numVal = parseFloat(value);
+        let numVal = parseFloat(value);
         if (!isNaN(numVal)) {
+          if (numVal > maxScore) {
+            numVal = maxScore;
+            finalValue = maxScore.toString();
+          }
+          if (numVal < 0) {
+            numVal = 0;
+            finalValue = '0';
+          }
           newComment = getAutoAppreciation(numVal, maxScore);
         }
       }
@@ -133,7 +142,7 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
         ...prev,
         [studentId]: {
           ...current,
-          [field]: value,
+          [field]: finalValue,
           comment: field === 'score' && value !== '' ? newComment : (field === 'comment' ? value : current.comment)
         }
       };

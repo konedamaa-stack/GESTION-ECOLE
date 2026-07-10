@@ -1366,9 +1366,18 @@ function App() {
       const current = prev[studentId] || { score: '', comment: '' };
       let newComment = current.comment;
       
+      let finalValue = value;
       if (field === 'score' && value !== '') {
-        const numVal = parseFloat(value);
+        let numVal = parseFloat(value);
         if (!isNaN(numVal)) {
+          if (numVal > maxScore) {
+            numVal = maxScore;
+            finalValue = maxScore.toString();
+          }
+          if (numVal < 0) {
+            numVal = 0;
+            finalValue = '0';
+          }
           newComment = getAutoAppreciation(numVal, maxScore);
         }
       }
@@ -1377,7 +1386,7 @@ function App() {
         ...prev,
         [studentId]: {
           ...current,
-          [field]: value,
+          [field]: finalValue,
           comment: field === 'score' && value !== '' ? newComment : (field === 'comment' ? value : current.comment)
         }
       };
@@ -5349,7 +5358,17 @@ function App() {
                                   min="0" max="20" step="0.25"
                                   style={{width: '60px', padding: '6px', textAlign: 'center', border: '1px solid var(--border-color)', borderRadius: '4px'}}
                                   value={globalGrades[`${st.id}_${sub}`] || ""}
-                                  onChange={(e) => setGlobalGrades({...globalGrades, [`${st.id}_${sub}`]: e.target.value})}
+                                  onChange={(e) => {
+                                    let val = e.target.value;
+                                    if (val !== '') {
+                                      let numVal = parseFloat(val);
+                                      if (!isNaN(numVal)) {
+                                        if (numVal > 20) val = "20";
+                                        if (numVal < 0) val = "0";
+                                      }
+                                    }
+                                    setGlobalGrades({...globalGrades, [`${st.id}_${sub}`]: val});
+                                  }}
                                 />
                               </td>
                             ))}
