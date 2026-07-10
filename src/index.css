@@ -694,16 +694,38 @@ html {
     margin-bottom: 0 !important;
   }
 
+  body.print-finance-list .app-container,
+  body.print-finance-list .main-content,
+  body.print-finance-list .dashboard-scroll,
+  body.print-finance-list .animate-fade-in,
+  body.print-finance-class-summary .app-container,
+  body.print-finance-class-summary .main-content,
+  body.print-finance-class-summary .dashboard-scroll,
+  body.print-finance-class-summary .animate-fade-in {
+    display: block !important;
+    position: static !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
   body.print-finance-list #finance-list-panel,
   body.print-finance-class-summary #finance-class-summary-panel {
     display: block !important;
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    position: static !important;
+    height: auto !important;
+    overflow: visible !important;
     border: none !important;
     box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
     width: 100% !important;
   }
   
