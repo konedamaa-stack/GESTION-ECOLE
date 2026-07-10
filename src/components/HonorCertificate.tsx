@@ -158,17 +158,19 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           </div>
 
           {/* BODY */}
-          <div style={{ margin: '10px auto', maxWidth: '80%', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80px' }}>
+          <div style={{ margin: '15px auto 5px auto', maxWidth: '85%', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60px' }}>
             <p style={{ fontSize: '16px', lineHeight: '1.6', textAlign: 'center', fontFamily: 'Arial, sans-serif', margin: '0', color: '#111' }}>
               L'élève <strong>{student.first_name?.toUpperCase()} {student.last_name?.toUpperCase()}</strong> Matricule <strong>{student.matricule}</strong> en classe de <strong>{student.classes?.name || '...'}</strong> ayant obtenu une moyenne de <strong>{average.toFixed(2).replace('.', ',')}</strong> est inscrit(e) au <strong>Tableau d'Honneur {mention && `+ ${mention}`}</strong> pour sa bonne conduite et son travail durant le {period} de l'année scolaire <strong>{academicYear}</strong>.
             </p>
           </div>
 
           {/* FOOTER */}
-          <div style={{ position: 'absolute', bottom: '12mm', right: '12mm', textAlign: 'center', width: '280px', fontFamily: 'Arial, sans-serif', color: '#000000' }}>
-            <p style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: 'bold', color: '#000000' }}>Fait à {city}, le {today}</p>
-            <p style={{ margin: '0 0 35px 0', fontSize: '15px', fontWeight: 'bold', textDecoration: 'underline', color: '#000000' }}>LE DIRECTEUR DES ÉTUDES</p>
-            <p style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#000000' }}>{signerName.toUpperCase()}</p>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '15px', paddingRight: '20px', fontFamily: 'Arial, sans-serif', color: '#000000' }}>
+            <div style={{ textAlign: 'center', width: '280px' }}>
+              <p style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 'bold', color: '#000000' }}>Fait à {city}, le {today}</p>
+              <p style={{ margin: '0 0 30px 0', fontSize: '15px', fontWeight: 'bold', textDecoration: 'underline', color: '#000000' }}>LE DIRECTEUR DES ÉTUDES</p>
+              <p style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#000000' }}>{signerName.toUpperCase()}</p>
+            </div>
           </div>
         </div>
       </div>
