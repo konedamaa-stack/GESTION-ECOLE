@@ -12,6 +12,27 @@ interface HonorCertificateProps {
   onClose: () => void;
 }
 
+// Gold Ornament component for certificate separators
+const GoldOrnament = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', margin: '15px 0' }}>
+    <svg width="240" height="24" viewBox="0 0 240 24" style={{ fill: 'none', stroke: '#d4af37', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+      {/* Left scroll wing */}
+      <path d="M 120 12 C 100 2, 85 2, 60 12 C 35 22, 25 12, 10 12" />
+      <path d="M 110 12 C 100 16, 85 16, 75 12" />
+      <circle cx="35" cy="14" r="2.5" fill="#d4af37" />
+      
+      {/* Right scroll wing */}
+      <path d="M 120 12 C 140 2, 155 2, 180 12 C 205 22, 215 12, 230 12" />
+      <path d="M 130 12 C 140 16, 155 16, 165 12" />
+      <circle cx="205" cy="14" r="2.5" fill="#d4af37" />
+      
+      {/* Center loops and circle */}
+      <circle cx="120" cy="12" r="5" fill="#d4af37" />
+      <path d="M 114 12 C 114 7, 126 7, 126 12 C 126 17, 114 17, 114 12 Z" />
+    </svg>
+  </div>
+);
+
 export function HonorCertificate({ student, schoolInfo, period, average, mention, onClose }: HonorCertificateProps) {
   // const { t } = useTranslation();
   const printRef = useRef<HTMLDivElement>(null);
@@ -61,10 +82,10 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
         overflow: 'hidden',
         boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
       }}>
-        {/* Ivorian Borders */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, border: '8mm solid #009e60', pointerEvents: 'none' }}></div>
+        {/* Ivorian Borders: Orange on the outside, Green on the inside */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, border: '8mm solid #f77f00', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', top: '8mm', left: '8mm', right: '8mm', bottom: '8mm', border: '4mm solid #fff', pointerEvents: 'none' }}></div>
-        <div style={{ position: 'absolute', top: '12mm', left: '12mm', right: '12mm', bottom: '12mm', border: '8mm solid #f77f00', pointerEvents: 'none' }}></div>
+        <div style={{ position: 'absolute', top: '12mm', left: '12mm', right: '12mm', bottom: '12mm', border: '8mm solid #009e60', pointerEvents: 'none' }}></div>
         
         <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: '15mm', boxSizing: 'border-box', textAlign: 'center' }}>
           
@@ -85,17 +106,18 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           </div>
 
           {/* TITLE */}
-          <div style={{ margin: '40px 0' }}>
-            <div style={{ fontSize: '24px', color: '#d4af37', letterSpacing: '5px' }}>〰️〰️〰️〰️〰️〰️</div>
+          <div style={{ margin: '30px 0' }}>
+            <GoldOrnament />
             <h1 style={{ 
               fontSize: '56px', 
-              margin: '15px 0', 
-              color: '#fff', 
-              textShadow: '2px 2px 0 #b8860b, -1px -1px 0 #b8860b, 1px -1px 0 #b8860b, -1px 1px 0 #b8860b, 1px 1px 0 #b8860b, 0px 4px 15px rgba(0,0,0,0.4)',
+              margin: '5px 0', 
+              color: '#e5a93b', 
+              textShadow: '1.5px 1.5px 0 #9a7d0a, -1px -1px 0 #9a7d0a, 1px -1px 0 #9a7d0a, -1px 1px 0 #9a7d0a, 1.5px -1.5px 0 #9a7d0a, 0px 4px 12px rgba(0,0,0,0.2)',
               fontFamily: '"Times New Roman", Times, serif',
-              letterSpacing: '3px'
+              letterSpacing: '3px',
+              fontWeight: 'bold'
             }}>Tableau d'honneur</h1>
-            <div style={{ fontSize: '24px', color: '#d4af37', letterSpacing: '5px' }}>〰️〰️〰️〰️〰️〰️</div>
+            <GoldOrnament />
           </div>
 
           {/* BODY */}
