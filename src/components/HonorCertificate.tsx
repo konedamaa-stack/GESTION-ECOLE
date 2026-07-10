@@ -169,7 +169,7 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           <div style={{ clear: 'both', height: '10px' }}></div>
 
           {/* FOOTER (SIGNATURE BLOCK) */}
-          <div style={{ float: 'right', width: '280px', textAlign: 'center', marginRight: '20px', color: '#000000', fontFamily: 'Arial, sans-serif' }}>
+          <div style={{ position: 'absolute', bottom: '18mm', right: '12mm', width: '280px', textAlign: 'center', color: '#000000', fontFamily: 'Arial, sans-serif' }}>
             <p style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 'bold' }}>Fait à {city}, le {today}</p>
             <p style={{ margin: '0 0 45px 0', fontSize: '14px', fontWeight: 'bold', textDecoration: 'underline' }}>LE DIRECTEUR DES ÉTUDES</p>
             <p style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>{signerName.toUpperCase()}</p>
