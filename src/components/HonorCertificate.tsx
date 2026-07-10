@@ -134,7 +134,7 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
             <div style={{ width: '40%', textAlign: 'center' }}>
               REPUBLIQUE DE COTE D'IVOIRE<br/>
               <span style={{ fontWeight: 'normal', fontSize: '10px' }}>Union - Discipline - Travail</span><br/>
-              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Coat_of_arms_of_Ivory_Coast.svg/200px-Coat_of_arms_of_Ivory_Coast.svg.png" alt="Armoiries" style={{ width: '50px', marginTop: '4px' }}/>
+              <img src="/armoiries.svg" alt="Armoiries" style={{ width: '65px', marginTop: '4px', objectFit: 'contain' }}/>
             </div>
             <div style={{ width: '30%', textAlign: 'center' }}>
               {schoolInfo?.school_name?.toUpperCase() || "COLLEGE PRIVE ELISCHAMA DE DIVO"}<br/>
