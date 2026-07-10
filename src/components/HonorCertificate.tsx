@@ -66,6 +66,42 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
   
   return (
     <div className="receipt-preview-container-wrapper" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', zIndex: 10000, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto', padding: '20px' }}>
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          @page {
+            size: A4 landscape !important;
+            margin: 0 !important;
+          }
+          body * {
+            visibility: hidden !important;
+          }
+          .honor-certificate-page, .honor-certificate-page *,
+          .honor-certificate-page div, .honor-certificate-page p, .honor-certificate-page h1, .honor-certificate-page img, .honor-certificate-page svg {
+            visibility: visible !important;
+          }
+          .honor-certificate-page {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 297mm !important;
+            height: 210mm !important;
+            margin: 0 !important;
+            padding: 12mm !important;
+            box-shadow: none !important;
+            background: white !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .receipt-preview-container-wrapper {
+            background: transparent !important;
+            position: static !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            height: auto !important;
+            width: auto !important;
+          }
+        }
+      `}} />
       <div className="print-controls" style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
         <button className="btn btn-outline" style={{ background: 'white', color: 'black' }} onClick={onClose}>Fermer</button>
         <button className="btn btn-primary" onClick={handlePrint}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> Imprimer</button>
