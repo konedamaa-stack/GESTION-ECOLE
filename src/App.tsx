@@ -103,6 +103,7 @@ function App() {
   const [showHonorRollPanel, setShowHonorRollPanel] = useState(false);
   const [selectedHonorStudent, setSelectedHonorStudent] = useState<any | null>(null);
   const [invoiceSearchQuery, setInvoiceSearchQuery] = useState('');
+  const [parentSearchQuery, setParentSearchQuery] = useState('');
   const [financeStatusFilter, setFinanceStatusFilter] = useState('all');
   const [financeClassFilter, setFinanceClassFilter] = useState('all');
   const [selectedClassForSchedule, setSelectedClassForSchedule] = useState<string>('');
@@ -2704,6 +2705,22 @@ function App() {
       </div>
     </div>
   );
+  const filteredParents = parentsData.filter(parent => {
+    const q = parentSearchQuery.toLowerCase().trim();
+    if (!q) return true;
+    
+    const parentNameMatch = (parent.first_name + ' ' + parent.last_name).toLowerCase().includes(q);
+    const phoneMatch = (parent.phone || '').toLowerCase().includes(q);
+    const childMatch = parent.student_parents && parent.student_parents.some((sp: any) => {
+      if (sp.students) {
+        return (sp.students.first_name + ' ' + sp.students.last_name).toLowerCase().includes(q);
+      }
+      return false;
+    });
+
+    return parentNameMatch || phoneMatch || childMatch;
+  });
+
   const renderParents = () => (
     <div className="animate-fade-in">
       <div className="page-header">
@@ -2726,7 +2743,12 @@ function App() {
           <h3 className="panel-title">{t('admin.parents.panel_title', 'Base de données Parents')}</h3>
           <div className="header-search" style={{width: 300}}>
             <Icons.Search />
-            <input type="text" placeholder={t('admin.parents.search_ph', 'Rechercher un parent ou un élève...')} />
+            <input 
+              type="text" 
+              placeholder={t('admin.parents.search_ph', 'Rechercher un parent ou un élève...')} 
+              value={parentSearchQuery}
+              onChange={(e) => setParentSearchQuery(e.target.value)}
+            />
           </div>
         </div>
         <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
@@ -2741,7 +2763,7 @@ function App() {
             </tr>
           </thead>
           <tbody>
-            {parentsData && parentsData.length > 0 ? parentsData.map((row, i) => (
+            {filteredParents && filteredParents.length > 0 ? filteredParents.map((row, i) => (
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
                 <td style={{padding: '16px 0', fontWeight: 600}}>{row.first_name} {row.last_name}</td>
                 <td style={{padding: '16px 0'}}>
