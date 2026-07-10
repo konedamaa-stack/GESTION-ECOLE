@@ -123,7 +123,7 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
         <div style={{ position: 'absolute', top: '4mm', left: '4mm', right: '4mm', bottom: '4mm', border: '2mm solid #fff', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', top: '6mm', left: '6mm', right: '6mm', bottom: '6mm', border: '4mm solid #009e60', pointerEvents: 'none' }}></div>
         
-        <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: '15mm', boxSizing: 'border-box', textAlign: 'center' }}>
+        <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: '5mm', boxSizing: 'border-box', textAlign: 'center' }}>
           
           {/* HEADER */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '11px', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}>
@@ -157,19 +157,17 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           </div>
 
           {/* BODY */}
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 50px' }}>
-            <p style={{ fontSize: '17px', lineHeight: '1.6', textAlign: 'justify', fontFamily: 'Arial, sans-serif', margin: '0' }}>
+          <div style={{ margin: '10px auto', maxWidth: '80%', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80px' }}>
+            <p style={{ fontSize: '16px', lineHeight: '1.6', textAlign: 'center', fontFamily: 'Arial, sans-serif', margin: '0', color: '#111' }}>
               L'élève <strong>{student.first_name?.toUpperCase()} {student.last_name?.toUpperCase()}</strong> Matricule <strong>{student.matricule}</strong> en classe de <strong>{student.classes?.name || '...'}</strong> ayant obtenu une moyenne de <strong>{average.toFixed(2).replace('.', ',')}</strong> est inscrit(e) au <strong>Tableau d'Honneur {mention && `+ ${mention}`}</strong> pour sa bonne conduite et son travail durant le {period} de l'année scolaire <strong>{academicYear}</strong>.
             </p>
           </div>
 
           {/* FOOTER */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '30px', fontFamily: 'Arial, sans-serif' }}>
-            <div style={{ textAlign: 'center', width: '300px' }}>
-              <p style={{ margin: '0 0 15px 0', fontSize: '15px', fontWeight: 'bold' }}>Fait à {city}, le {today}</p>
-              <p style={{ margin: '0 0 50px 0', fontSize: '16px', fontWeight: 'bold', textDecoration: 'underline' }}>LE DIRECTEUR DES ÉTUDES</p>
-              <p style={{ margin: 0, fontSize: '17px', fontWeight: 'bold' }}>{signerName.toUpperCase()}</p>
-            </div>
+          <div style={{ position: 'absolute', bottom: '10mm', right: '10mm', textAlign: 'center', width: '260px', fontFamily: 'Arial, sans-serif' }}>
+            <p style={{ margin: '0 0 10px 0', fontSize: '13px', fontWeight: 'bold' }}>Fait à {city}, le {today}</p>
+            <p style={{ margin: '0 0 35px 0', fontSize: '14px', fontWeight: 'bold', textDecoration: 'underline' }}>LE DIRECTEUR DES ÉTUDES</p>
+            <p style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>{signerName.toUpperCase()}</p>
           </div>
         </div>
       </div>
