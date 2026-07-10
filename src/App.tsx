@@ -2945,6 +2945,17 @@ function App() {
             F
           </div>
         </div>
+        
+        <div className="stat-card delay-400">
+          <div className="stat-header">
+            <span className="stat-label">Total Dépenses</span>
+            <Icons.Database />
+          </div>
+          <div className="stat-value">{formatNum(expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)}</div>
+          <div className="stat-trend trend-down">
+            F
+          </div>
+        </div>
 
         <div className="stat-card delay-400">
           <div className="stat-header">
