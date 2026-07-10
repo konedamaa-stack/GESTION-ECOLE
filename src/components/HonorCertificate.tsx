@@ -14,7 +14,7 @@ interface HonorCertificateProps {
 
 // Gold Ornament component for certificate separators
 const GoldOrnament = () => (
-  <div style={{ display: 'flex', justifyContent: 'center', margin: '15px 0' }}>
+  <div style={{ display: 'flex', justifyContent: 'center', margin: '6px 0' }}>
     <svg width="240" height="24" viewBox="0 0 240 24" style={{ fill: 'none', stroke: '#d4af37', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
       {/* Left scroll wing */}
       <path d="M 120 12 C 100 2, 85 2, 60 12 C 35 22, 25 12, 10 12" />
@@ -118,10 +118,10 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
         overflow: 'hidden',
         boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
       }}>
-        {/* Ivorian Borders: Orange on the outside, Green on the inside */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, border: '8mm solid #f77f00', pointerEvents: 'none' }}></div>
-        <div style={{ position: 'absolute', top: '8mm', left: '8mm', right: '8mm', bottom: '8mm', border: '4mm solid #fff', pointerEvents: 'none' }}></div>
-        <div style={{ position: 'absolute', top: '12mm', left: '12mm', right: '12mm', bottom: '12mm', border: '8mm solid #009e60', pointerEvents: 'none' }}></div>
+        {/* Ivorian Borders: Thinner and optimized for space */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, border: '4mm solid #f77f00', pointerEvents: 'none' }}></div>
+        <div style={{ position: 'absolute', top: '4mm', left: '4mm', right: '4mm', bottom: '4mm', border: '2mm solid #fff', pointerEvents: 'none' }}></div>
+        <div style={{ position: 'absolute', top: '6mm', left: '6mm', right: '6mm', bottom: '6mm', border: '4mm solid #009e60', pointerEvents: 'none' }}></div>
         
         <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: '15mm', boxSizing: 'border-box', textAlign: 'center' }}>
           
@@ -133,20 +133,20 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
             <div style={{ width: '40%', textAlign: 'center' }}>
               REPUBLIQUE DE COTE D'IVOIRE<br/>
               <span style={{ fontWeight: 'normal', fontSize: '10px' }}>Union - Discipline - Travail</span><br/>
-              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Coat_of_arms_of_Ivory_Coast.svg/200px-Coat_of_arms_of_Ivory_Coast.svg.png" alt="Armoiries" style={{ width: '60px', marginTop: '10px' }}/>
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Coat_of_arms_of_Ivory_Coast.svg/200px-Coat_of_arms_of_Ivory_Coast.svg.png" alt="Armoiries" style={{ width: '50px', marginTop: '4px' }}/>
             </div>
             <div style={{ width: '30%', textAlign: 'center' }}>
               {schoolInfo?.school_name?.toUpperCase() || "COLLEGE PRIVE ELISCHAMA DE DIVO"}<br/>
-              {schoolInfo?.logo_url ? <img src={schoolInfo.logo_url} alt="Logo" style={{ width: '60px', marginTop: '10px' }}/> : null}
+              {schoolInfo?.logo_url ? <img src={schoolInfo.logo_url} alt="Logo" style={{ width: '50px', marginTop: '4px' }}/> : null}
             </div>
           </div>
 
           {/* TITLE */}
-          <div style={{ margin: '30px 0' }}>
+          <div style={{ margin: '15px 0' }}>
             <GoldOrnament />
             <h1 style={{ 
-              fontSize: '56px', 
-              margin: '5px 0', 
+              fontSize: '44px', 
+              margin: '2px 0', 
               color: '#e5a93b', 
               textShadow: '1.5px 1.5px 0 #9a7d0a, -1px -1px 0 #9a7d0a, 1px -1px 0 #9a7d0a, -1px 1px 0 #9a7d0a, 1.5px -1.5px 0 #9a7d0a, 0px 4px 12px rgba(0,0,0,0.2)',
               fontFamily: '"Times New Roman", Times, serif',
@@ -158,7 +158,7 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
 
           {/* BODY */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 50px' }}>
-            <p style={{ fontSize: '20px', lineHeight: '2.0', textAlign: 'justify', fontFamily: 'Arial, sans-serif' }}>
+            <p style={{ fontSize: '17px', lineHeight: '1.6', textAlign: 'justify', fontFamily: 'Arial, sans-serif', margin: '0' }}>
               L'élève <strong>{student.first_name?.toUpperCase()} {student.last_name?.toUpperCase()}</strong> Matricule <strong>{student.matricule}</strong> en classe de <strong>{student.classes?.name || '...'}</strong> ayant obtenu une moyenne de <strong>{average.toFixed(2).replace('.', ',')}</strong> est inscrit(e) au <strong>Tableau d'Honneur {mention && `+ ${mention}`}</strong> pour sa bonne conduite et son travail durant le {period} de l'année scolaire <strong>{academicYear}</strong>.
             </p>
           </div>
