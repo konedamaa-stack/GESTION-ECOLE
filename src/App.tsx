@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { HonorCertificate } from './components/HonorCertificate';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { useTranslation } from 'react-i18next';
@@ -99,6 +100,8 @@ function App() {
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('Inscrit');
   const [selectedAffecteFilter, setSelectedAffecteFilter] = useState('all');
   const [selectedPaymentFilter, setSelectedPaymentFilter] = useState('all');
+  const [showHonorRollPanel, setShowHonorRollPanel] = useState(false);
+  const [selectedHonorStudent, setSelectedHonorStudent] = useState<any | null>(null);
   const [invoiceSearchQuery, setInvoiceSearchQuery] = useState('');
   const [financeStatusFilter, setFinanceStatusFilter] = useState('all');
   const [financeClassFilter, setFinanceClassFilter] = useState('all');
@@ -4986,29 +4989,141 @@ function App() {
                 </form>
               )}
 
-              {activeModal === 'bulletin_preview' && (
-                <div style={{width: '100%'}}>
-                  <div className="print-controls" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
-                    <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-                      <div className="form-group" style={{marginBottom: 0}}>
-                        <label>Période</label>
-                        <select className="form-select" value={bulletinPeriod} onChange={(e) => loadBulletinData(bulletinClassId!, e.target.value)}>
-                          <option value="1er Trimestre">1er Trimestre</option>
-                          <option value="2ème Trimestre">2ème Trimestre</option>
-                          <option value="3ème Trimestre">3ème Trimestre</option>
-                          <option value="1er Semestre">1er Semestre</option>
-                          <option value="2ème Semestre">2ème Semestre</option>
-                        </select>
+              {activeModal === 'bulletin_preview' && (() => {
+                // Calculate Honor Roll eligible students
+                const classEvals = evaluationsData.filter(e => e.class_id === bulletinClassId && e.period === bulletinPeriod);
+                const classEvalIds = classEvals.map(e => e.id);
+                const classGrades = bulletinGrades.filter(g => classEvalIds.includes(g.evaluation_id));
+                const subjects = Array.from(new Set(classEvals.map(e => e.subject)));
+                const classStudents = studentsData.filter(s => s.class_id === bulletinClassId);
+
+                const getSubjectCoef = (subject: string, classId: string) => {
+                  if (!classSubjectsData) return 1;
+                  const subj = classSubjectsData.find(cs => cs.class_id === classId && cs.subject === subject);
+                  return subj ? subj.coefficient : 1;
+                };
+
+                const honorRollStudents = classStudents.map(st => {
+                  let totalWeightedScore = 0;
+                  let totalSubjectCoefs = 0;
+                  
+                  subjects.forEach(subject => {
+                    const subjectEvals = classEvals.filter(e => e.subject === subject);
+                    const subjectEvalIds = subjectEvals.map(e => e.id);
+                    const coef = getSubjectCoef(subject, bulletinClassId!);
+                    
+                    const studentSubjectGrades = classGrades.filter(g => g.student_id === st.id && subjectEvalIds.includes(g.evaluation_id) && g.score !== null);
+                    if (studentSubjectGrades.length > 0) {
+                      const sumNormalized = studentSubjectGrades.reduce((acc, curr) => {
+                        const ev = subjectEvals.find(e => e.id === curr.evaluation_id);
+                        const max = ev?.max_score || 20;
+                        return acc + (curr.score / max * 20);
+                      }, 0);
+                      
+                      const avg = sumNormalized / studentSubjectGrades.length;
+                      totalWeightedScore += (avg * coef);
+                      totalSubjectCoefs += coef;
+                    }
+                  });
+
+                  const generalAverage = totalSubjectCoefs > 0 ? (totalWeightedScore / totalSubjectCoefs) : 0;
+                  
+                  let mention = '';
+                  if (generalAverage >= 16) mention = 'Félicitations';
+                  else if (generalAverage >= 14) mention = 'Encouragements';
+                  else if (generalAverage >= 12) mention = 'Tableau d\'Honneur';
+
+                  return {
+                    student: st,
+                    average: generalAverage,
+                    mention
+                  };
+                }).filter(h => h.average >= 12)
+                  .sort((a, b) => b.average - a.average);
+
+                return (
+                  <div style={{width: '100%'}}>
+                    <div className="print-controls" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
+                      <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
+                        <div className="form-group" style={{marginBottom: 0}}>
+                          <label>Période</label>
+                          <select className="form-select" value={bulletinPeriod} onChange={(e) => loadBulletinData(bulletinClassId!, e.target.value)}>
+                            <option value="1er Trimestre">1er Trimestre</option>
+                            <option value="2ème Trimestre">2ème Trimestre</option>
+                            <option value="3ème Trimestre">3ème Trimestre</option>
+                            <option value="1er Semestre">1er Semestre</option>
+                            <option value="2ème Semestre">2ème Semestre</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div style={{display: 'flex', gap: '12px'}}>
+                        <button className="btn btn-outline" style={{borderColor: '#d4af37', color: '#d4af37', display: 'flex', alignItems: 'center', gap: '8px'}} onClick={() => setShowHonorRollPanel(!showHonorRollPanel)}>
+                          🏆 {showHonorRollPanel ? 'Masquer' : 'Afficher'} Tableau d'Honneur
+                        </button>
+                        <button className="btn btn-primary" onClick={() => {
+                          document.body.classList.add('print-bulletin');
+                          window.print();
+                          setTimeout(() => document.body.classList.remove('print-bulletin'), 500);
+                        }}><Icons.Download /> Imprimer / PDF Bulletins</button>
                       </div>
                     </div>
-                    <div>
-                      <button className="btn btn-primary" onClick={() => {
-                        document.body.classList.add('print-bulletin');
-                        window.print();
-                        setTimeout(() => document.body.classList.remove('print-bulletin'), 500);
-                      }}><Icons.Download /> Imprimer / PDF</button>
-                    </div>
-                  </div>
+
+                    {showHonorRollPanel && (
+                      <div className="panel animate-fade-in" style={{marginBottom: '24px', border: '1.5px solid #d4af37', backgroundColor: 'rgba(212, 175, 55, 0.03)'}}>
+                        <div className="panel-header" style={{borderBottom: '1px solid rgba(212, 175, 55, 0.2)', paddingBottom: '12px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                          <h3 className="panel-title" style={{color: '#b8860b', margin: 0}}>🏆 Tableau d'Honneur du {bulletinPeriod}</h3>
+                          <span style={{
+                            backgroundColor: 'rgba(212, 175, 55, 0.1)',
+                            color: '#b8860b',
+                            padding: '4px 10px',
+                            borderRadius: '16px',
+                            fontSize: '0.85rem',
+                            fontWeight: 600
+                          }}>
+                            {honorRollStudents.length} {honorRollStudents.length > 1 ? 'élèves méritants' : 'élève méritant'}
+                          </span>
+                        </div>
+                        {honorRollStudents.length > 0 ? (
+                          <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px'}}>
+                            {honorRollStudents.map((h, idx) => (
+                              <div key={idx} style={{
+                                background: 'white',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '12px',
+                                padding: '16px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '12px',
+                                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
+                              }}>
+                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                                  <strong style={{fontSize: '1.1rem', color: 'var(--text-primary)'}}>{h.student.first_name} {h.student.last_name}</strong>
+                                  <span style={{
+                                    backgroundColor: h.mention === 'Félicitations' ? '#DEF7EC' : h.mention === 'Encouragements' ? '#E1EFFE' : '#FEF08A',
+                                    color: h.mention === 'Félicitations' ? '#03543F' : h.mention === 'Encouragements' ? '#1E429F' : '#854D0E',
+                                    padding: '4px 8px',
+                                    borderRadius: '8px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600
+                                  }}>{h.mention}</span>
+                                </div>
+                                <div style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>
+                                  Moyenne : <strong style={{color: 'var(--primary-color)', fontSize: '1.1rem'}}>{h.average.toFixed(2).replace('.', ',')}</strong> / 20
+                                </div>
+                                <button className="btn btn-primary" style={{marginTop: 'auto', background: 'linear-gradient(135deg, #d4af37, #b8860b)', borderColor: '#b8860b', boxShadow: 'none'}} onClick={() => setSelectedHonorStudent(h)}>
+                                  📄 Générer l'Attestation
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{textAlign: 'center', padding: '24px', color: 'var(--text-secondary)'}}>
+                            Aucun élève de cette classe n'a obtenu une moyenne supérieure ou égale à 12/20 pour cette période.
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                   
                   <div className="bulletin-preview-container">
                     <BulletinPreview 
@@ -5024,7 +5139,8 @@ function App() {
                     />
                   </div>
                 </div>
-              )}
+              );
+            })()}
 
               {activeModal === 'expense_receipt_preview' && editEntity && (
           <div className="modal-content fade-in" style={{maxWidth: '1600px', width: '98%'}} onClick={e => e.stopPropagation()}>
@@ -5894,6 +6010,17 @@ function App() {
         <QuickStartGuideModal onClose={() => setIsQuickStartModalOpen(false)} />
       )}
     </div>
+
+    {selectedHonorStudent && (
+      <HonorCertificate 
+        student={selectedHonorStudent.student}
+        schoolInfo={{ ...settingsData, ...adminSchools.find((s: any) => s.id === currentSchoolId) }}
+        period={bulletinPeriod}
+        average={selectedHonorStudent.average}
+        mention={selectedHonorStudent.mention === 'Tableau d\'Honneur' ? '' : selectedHonorStudent.mention}
+        onClose={() => setSelectedHonorStudent(null)}
+      />
+    )}
 
     {/* Print Only Student List Container */}
     <div className="print-only-student-list-container">
