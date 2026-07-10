@@ -178,10 +178,10 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
               {/* SIGNATURE ROW */}
               <tr>
                 <td style={{ width: '50%' }}></td>
-                <td style={{ width: '50%', verticalAlign: 'bottom', textAlign: 'center', paddingBottom: '10px' }}>
+                <td style={{ width: '50%', verticalAlign: 'top', textAlign: 'center', paddingTop: '15px', paddingRight: '10px' }}>
                   <div style={{ display: 'inline-block', width: '280px', fontFamily: 'Arial, sans-serif', color: '#000000' }}>
                     <p style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 'bold', color: '#000000' }}>Fait à {city}, le {today}</p>
-                    <p style={{ margin: '0 0 15px 0', fontSize: '14px', fontWeight: 'bold', textDecoration: 'underline', color: '#000000' }}>LE DIRECTEUR DES ÉTUDES</p>
+                    <p style={{ margin: '0 0 55px 0', fontSize: '14px', fontWeight: 'bold', textDecoration: 'underline', color: '#000000' }}>LE DIRECTEUR DES ÉTUDES</p>
                     <p style={{ margin: 0, fontSize: '15px', fontWeight: 'bold', color: '#000000' }}>{signerName.toUpperCase()}</p>
                   </div>
                 </td>
