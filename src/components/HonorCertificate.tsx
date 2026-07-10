@@ -15,7 +15,7 @@ interface HonorCertificateProps {
 // Gold Ornament component for certificate separators
 const GoldOrnament = () => (
   <div style={{ display: 'flex', justifyContent: 'center', margin: '3px 0' }}>
-    <svg width="170" height="14" viewBox="0 0 240 24" style={{ fill: 'none', stroke: '#d4af37', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+    <svg width="200" height="16" viewBox="0 0 240 24" style={{ fill: 'none', stroke: '#d4af37', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
       {/* Left scroll wing */}
       <path d="M 120 12 C 100 2, 85 2, 60 12 C 35 22, 25 12, 10 12" />
       <path d="M 110 12 C 100 16, 85 16, 75 12" />
@@ -146,8 +146,8 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           <div style={{ margin: '8px 0' }}>
             <GoldOrnament />
             <h1 style={{ 
-              fontSize: '36px', 
-              margin: '1px 0', 
+              fontSize: '44px', 
+              margin: '2px 0', 
               color: '#e5a93b', 
               textShadow: '1.5px 1.5px 0 #9a7d0a, -1px -1px 0 #9a7d0a, 1px -1px 0 #9a7d0a, -1px 1px 0 #9a7d0a, 1.5px -1.5px 0 #9a7d0a, 0px 4px 12px rgba(0,0,0,0.2)',
               fontFamily: '"Times New Roman", Times, serif',
@@ -158,8 +158,8 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           </div>
 
           {/* BODY */}
-          <div style={{ margin: '8px auto 2px auto', maxWidth: '60%', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50px' }}>
-            <p style={{ fontSize: '15px', lineHeight: '1.5', textAlign: 'center', fontFamily: 'Arial, sans-serif', margin: '0', color: '#111' }}>
+          <div style={{ margin: '15px auto 5px auto', maxWidth: '72%', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60px' }}>
+            <p style={{ fontSize: '18px', lineHeight: '1.7', textAlign: 'center', fontFamily: 'Arial, sans-serif', margin: '0', color: '#111' }}>
               L'élève <strong>{student.first_name?.toUpperCase()} {student.last_name?.toUpperCase()}</strong> Matricule <strong>{student.matricule}</strong> en classe de <strong>{student.classes?.name || '...'}</strong> ayant obtenu une moyenne de <strong>{average.toFixed(2).replace('.', ',')}</strong> est inscrit(e) au <strong>Tableau d'Honneur {mention && `+ ${mention}`}</strong> pour sa bonne conduite et son travail durant le {period} de l'année scolaire <strong>{academicYear}</strong>.
             </p>
           </div>
