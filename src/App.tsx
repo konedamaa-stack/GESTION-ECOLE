@@ -1780,7 +1780,7 @@ function App() {
               selectedAffecteFilter === 'all' ? 'Tous (Affecté & Non affecté)' : selectedAffecteFilter
             }
           </div>
-          <div className="student-filters" style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+          <div className="student-filters" style={{display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap'}}>
             <button 
               className="btn btn-outline" 
               onClick={() => { document.body.classList.add('print-student-list'); window.print(); setTimeout(() => document.body.classList.remove('print-student-list'), 1000); }}
