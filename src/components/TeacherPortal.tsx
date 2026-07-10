@@ -18,6 +18,9 @@ const Icons = {
 export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { session: any, onLogout: () => void, onOpenBulletin?: (studentId: string, period: string, classId: string) => void }) {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // Parse multiple subjects taught by the teacher
+  const teacherSubjects = session.subject ? session.subject.split(',').map((s: any) => s.trim()) : [];
   const [classesData, setClassesData] = useState<any[]>([]);
   const [evaluationsData, setEvaluationsData] = useState<any[]>([]);
   const [studentsData, setStudentsData] = useState<any[]>([]);
@@ -47,11 +50,10 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
     const { data: classes } = await supabase.from('classes').select('*').eq('school_id', session.school_id);
     if (classes) setClassesData(classes);
 
-    // Fetch evaluations for this teacher's subject
+    // Fetch evaluations for this teacher's subjects
     const { data: evaluations } = await supabase.from('evaluations')
       .select('*, classes(name)')
-      
-      .eq('subject', session.subject).eq('school_id', session.school_id);
+      .in('subject', teacherSubjects).eq('school_id', session.school_id);
     if (evaluations) setEvaluationsData(evaluations);
 
     // Fetch students
@@ -72,9 +74,12 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
   const handleCreateEvaluation = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-        const newEval = {
+    
+    const chosenSubject = formData.get('subject') || (teacherSubjects.length > 0 ? teacherSubjects[0] : '');
+    
+    const newEval = {
       name: formData.get('name'),
-      subject: session.subject,
+      subject: chosenSubject,
       class_id: formData.get('class_id'),
       date: formData.get('date'),
       period: formData.get('period'),
@@ -356,6 +361,14 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
                     <label style={{fontWeight: 600, color: 'var(--text-secondary)'}}>{t('teacher.eval_title', "Titre de l'évaluation")}</label>
                     <input type="text" name="name" className="form-input" placeholder={t('teacher.eval_title_ph', "ex: Devoir Surveillé N°1")} required style={{width: '100%'}} />
                   </div>
+                  {teacherSubjects.length > 1 && (
+                    <div className="form-group">
+                      <label style={{fontWeight: 600, color: 'var(--text-secondary)'}}>{t('teacher.subject', "Matière")}</label>
+                      <select name="subject" className="form-input" required style={{width: '100%'}}>
+                        {teacherSubjects.map((s: any) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  )}
                   <div className="form-group">
                     <label style={{fontWeight: 600, color: 'var(--text-secondary)'}}>{t('teacher.class', "Classe")}</label>
                     <select name="class_id" className="form-input" required style={{width: '100%'}}>
