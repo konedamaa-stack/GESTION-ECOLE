@@ -14,8 +14,8 @@ interface HonorCertificateProps {
 
 // Gold Ornament component for certificate separators
 const GoldOrnament = () => (
-  <div style={{ display: 'flex', justifyContent: 'center', margin: '6px 0' }}>
-    <svg width="240" height="24" viewBox="0 0 240 24" style={{ fill: 'none', stroke: '#d4af37', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+  <div style={{ display: 'flex', justifyContent: 'center', margin: '3px 0' }}>
+    <svg width="170" height="14" viewBox="0 0 240 24" style={{ fill: 'none', stroke: '#d4af37', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
       {/* Left scroll wing */}
       <path d="M 120 12 C 100 2, 85 2, 60 12 C 35 22, 25 12, 10 12" />
       <path d="M 110 12 C 100 16, 85 16, 75 12" />
@@ -143,11 +143,11 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           </div>
 
           {/* TITLE */}
-          <div style={{ margin: '15px 0' }}>
+          <div style={{ margin: '8px 0' }}>
             <GoldOrnament />
             <h1 style={{ 
-              fontSize: '44px', 
-              margin: '2px 0', 
+              fontSize: '36px', 
+              margin: '1px 0', 
               color: '#e5a93b', 
               textShadow: '1.5px 1.5px 0 #9a7d0a, -1px -1px 0 #9a7d0a, 1px -1px 0 #9a7d0a, -1px 1px 0 #9a7d0a, 1.5px -1.5px 0 #9a7d0a, 0px 4px 12px rgba(0,0,0,0.2)',
               fontFamily: '"Times New Roman", Times, serif',
@@ -158,19 +158,17 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           </div>
 
           {/* BODY */}
-          <div style={{ margin: '15px auto 5px auto', maxWidth: '85%', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60px' }}>
-            <p style={{ fontSize: '16px', lineHeight: '1.6', textAlign: 'center', fontFamily: 'Arial, sans-serif', margin: '0', color: '#111' }}>
+          <div style={{ margin: '8px auto 2px auto', maxWidth: '60%', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50px' }}>
+            <p style={{ fontSize: '15px', lineHeight: '1.5', textAlign: 'center', fontFamily: 'Arial, sans-serif', margin: '0', color: '#111' }}>
               L'élève <strong>{student.first_name?.toUpperCase()} {student.last_name?.toUpperCase()}</strong> Matricule <strong>{student.matricule}</strong> en classe de <strong>{student.classes?.name || '...'}</strong> ayant obtenu une moyenne de <strong>{average.toFixed(2).replace('.', ',')}</strong> est inscrit(e) au <strong>Tableau d'Honneur {mention && `+ ${mention}`}</strong> pour sa bonne conduite et son travail durant le {period} de l'année scolaire <strong>{academicYear}</strong>.
             </p>
           </div>
 
           {/* FOOTER */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '15px', paddingRight: '20px', fontFamily: 'Arial, sans-serif', color: '#000000' }}>
-            <div style={{ textAlign: 'center', width: '280px' }}>
-              <p style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 'bold', color: '#000000' }}>Fait à {city}, le {today}</p>
-              <p style={{ margin: '0 0 15px 0', fontSize: '15px', fontWeight: 'bold', textDecoration: 'underline', color: '#000000' }}>LE DIRECTEUR DES ÉTUDES</p>
-              <p style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#000000' }}>{signerName.toUpperCase()}</p>
-            </div>
+          <div style={{ position: 'absolute', bottom: '6mm', right: '6mm', textAlign: 'center', width: '260px', fontFamily: 'Arial, sans-serif', color: '#000000' }}>
+            <p style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 'bold', color: '#000000' }}>Fait à {city}, le {today}</p>
+            <p style={{ margin: '0 0 20px 0', fontSize: '14px', fontWeight: 'bold', textDecoration: 'underline', color: '#000000' }}>LE DIRECTEUR DES ÉTUDES</p>
+            <p style={{ margin: 0, fontSize: '15px', fontWeight: 'bold', color: '#000000' }}>{signerName.toUpperCase()}</p>
           </div>
         </div>
       </div>
