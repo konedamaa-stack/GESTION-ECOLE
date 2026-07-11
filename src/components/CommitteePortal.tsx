@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BulletinPreview } from './BulletinPreview';
 import { supabase } from '../lib/supabase';
+import { applyThemeSettings } from '../lib/theme';
 
 import 'jspdf-autotable';
 
@@ -28,6 +29,10 @@ export default function CommitteePortal({ session, onLogout }: { session: any; o
   useEffect(() => {
     fetchData();
   }, [session]);
+
+  useEffect(() => {
+    applyThemeSettings(settings);
+  }, [settings]);
 
   const fetchData = async () => {
     const { data: cls } = await supabase.from('classes').select('*').eq('school_id', session.school_id).order('name');

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BulletinPreview } from './BulletinPreview';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
+import { applyThemeSettings } from '../lib/theme';
 
 import 'jspdf-autotable';
 
@@ -40,6 +41,10 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
   const [previewPeriod, setPreviewPeriod] = useState<string>('');
   const [previewStudentId, setPreviewStudentId] = useState<string | null>(null);
   const [classSubjects, setClassSubjects] = useState<any[]>([]);
+
+  useEffect(() => {
+    applyThemeSettings(settings);
+  }, [settings]);
 
   const formatNum = (num: number | string | undefined) => {
     if (num === undefined || num === null) return '';

@@ -18,6 +18,7 @@ import { SalaryReceiptPreview } from './components/SalaryReceiptPreview';
 import { SuperAdminPortal } from './components/SuperAdminPortal';
 import { PasswordRecovery } from './components/PasswordRecovery';
 import { UserSupportModal } from './components/UserSupportModal';
+import { applyThemeSettings } from './lib/theme';
 import { QuickStartGuideModal } from './components/QuickStartGuideModal';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import './App.css';
@@ -212,6 +213,10 @@ function App() {
   const [absencesData, setAbsencesData] = useState<any[]>([]);
   const [schedulesData, setSchedulesData] = useState<any[]>([]);
   const [settingsData, setSettingsData] = useState<any | null>(null);
+
+  useEffect(() => {
+    applyThemeSettings(settingsData);
+  }, [settingsData]);
   const [editEntity, setEditEntity] = useState<any>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [preselectedStudentId, setPreselectedStudentId] = useState<string | null>(null);
@@ -616,6 +621,9 @@ function App() {
       city: formData.get('city'),
       principal_name: formData.get('principal_name'),
       studies_director_name: formData.get('studies_director_name'),
+      primary_color: formData.get('primary_color'),
+      accent_color: formData.get('accent_color'),
+      font_main: formData.get('font_main'),
     };
     if (currentSchoolId) settingsObj.school_id = currentSchoolId;
     
@@ -3692,6 +3700,36 @@ function App() {
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
                   <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Nom du Directeur des Etudes</label>
                   <input type="text" name="studies_director_name" defaultValue={settingsData?.studies_director_name || ''} className="form-input" placeholder="Signature droite bulletin" />
+                </div>
+                
+                <div style={{marginTop: '24px', borderTop: '1px solid var(--border-color)', paddingTop: '24px'}}>
+                  <h4 style={{marginBottom: '16px'}}>Personnalisation du Design</h4>
+                  <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px'}}>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                      <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Couleur Principale</label>
+                      <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                        <input type="color" name="primary_color" defaultValue={settingsData?.primary_color || '#6366f1'} style={{width: '40px', height: '40px', padding: 0, border: 'none', borderRadius: '4px', cursor: 'pointer'}} />
+                        <input type="text" value={settingsData?.primary_color || '#6366f1'} className="form-input" disabled style={{flex: 1}} />
+                      </div>
+                    </div>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                      <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Couleur Secondaire (Accent)</label>
+                      <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                        <input type="color" name="accent_color" defaultValue={settingsData?.accent_color || '#10b981'} style={{width: '40px', height: '40px', padding: 0, border: 'none', borderRadius: '4px', cursor: 'pointer'}} />
+                        <input type="text" value={settingsData?.accent_color || '#10b981'} className="form-input" disabled style={{flex: 1}} />
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px'}}>
+                    <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Police de caractères</label>
+                    <select name="font_main" className="form-select" defaultValue={settingsData?.font_main || "'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif"}>
+                      <option value="'Inter', sans-serif">Inter (Moderne & Standard)</option>
+                      <option value="'Cairo', sans-serif">Cairo (Recommandé pour l'Arabe)</option>
+                      <option value="'Roboto', sans-serif">Roboto (Clair & Classique)</option>
+                      <option value="'Outfit', sans-serif">Outfit (Premium & Géométrique)</option>
+                      <option value="'Tajawal', sans-serif">Tajawal (Élégant & Fluide)</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </form>

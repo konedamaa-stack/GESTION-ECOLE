@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useTranslation } from 'react-i18next';
+import { applyThemeSettings } from '../lib/theme';
 
 export default function StudentPortal({ student, onLogout }: { student: any; onLogout: () => void }) {
   const { t, i18n } = useTranslation();
@@ -21,6 +22,10 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
   useEffect(() => {
     fetchData();
   }, [student.id, student.class_id]);
+
+  useEffect(() => {
+    applyThemeSettings(settings);
+  }, [settings]);
 
   const fetchData = async () => {
     // Schedules
