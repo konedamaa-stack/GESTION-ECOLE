@@ -115,7 +115,7 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
         color: '#000000',
         position: 'relative',
         boxSizing: 'border-box',
-        padding: '12mm',
+        padding: '10mm',
         overflow: 'hidden',
         boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
       }}>
@@ -127,31 +127,30 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
         <div style={{ position: 'relative', width: '100%', height: '100%', boxSizing: 'border-box', padding: '5mm', fontFamily: 'Arial, sans-serif' }}>
           
           {/* HEADER */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '11px', fontWeight: 'bold', color: '#000000', height: '80px', marginBottom: '10px' }}>
-            <div style={{ width: '30%', textAlign: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '9.5px', fontWeight: 'bold', color: '#000000', height: '65px', marginBottom: '12px', lineHeight: '1.3' }}>
+            <div style={{ width: '32%', textAlign: 'center' }}>
               MINISTERE DE L'EDUCATION NATIONALE, DE<br/>L'ALPHABETISATION ET DE L'ENSEIGNEMENT<br/>TECHNIQUE
             </div>
-            <div style={{ width: '40%', textAlign: 'center' }}>
+            <div style={{ width: '36%', textAlign: 'center' }}>
               REPUBLIQUE DE COTE D'IVOIRE<br/>
-              <span style={{ fontWeight: 'normal', fontSize: '10px' }}>Union - Discipline - Travail</span><br/>
-              <img src="/armoiries.svg" alt="Armoiries" style={{ width: '65px', marginTop: '4px', objectFit: 'contain' }}/>
+              <span style={{ fontWeight: 'normal', fontSize: '9px' }}>Union - Discipline - Travail</span><br/>
+              <img src="/armoiries.svg" alt="Armoiries" style={{ width: '50px', marginTop: '2px', objectFit: 'contain' }}/>
             </div>
-            <div style={{ width: '30%', textAlign: 'center' }}>
+            <div style={{ width: '32%', textAlign: 'center' }}>
               {schoolInfo?.school_name?.toUpperCase() || "COLLEGE PRIVE ELISCHAMA DE DIVO"}<br/>
-              {schoolInfo?.logo_url ? <img src={schoolInfo.logo_url} alt="Logo" style={{ width: '50px', marginTop: '4px' }}/> : null}
+              {schoolInfo?.logo_url ? <img src={schoolInfo.logo_url} alt="Logo" style={{ width: '40px', marginTop: '2px', objectFit: 'contain' }}/> : null}
             </div>
           </div>
 
           {/* TITLE */}
-          <div style={{ margin: '10px 0', textAlign: 'center' }}>
-            <GoldOrnament />
+          <div style={{ margin: '4px 0', textAlign: 'center' }}>
             <h1 style={{ 
-              fontSize: '44px', 
-              margin: '2px 0', 
+              fontSize: '36px', 
+              margin: '0 0 4px 0', 
               color: '#e5a93b', 
-              textShadow: '1.5px 1.5px 0 #9a7d0a, -1px -1px 0 #9a7d0a, 1px -1px 0 #9a7d0a, -1px 1px 0 #9a7d0a, 1.5px -1.5px 0 #9a7d0a, 0px 4px 12px rgba(0,0,0,0.2)',
+              textShadow: '1.2px 1.2px 0 #9a7d0a, -1px -1px 0 #9a7d0a, 1px -1px 0 #9a7d0a, -1px 1px 0 #9a7d0a, 1.2px -1.2px 0 #9a7d0a, 0px 3px 8px rgba(0,0,0,0.15)',
               fontFamily: '"Times New Roman", Times, serif',
-              letterSpacing: '3px',
+              letterSpacing: '2.5px',
               fontWeight: 'bold',
               display: 'inline-block'
             }}>Tableau d'honneur</h1>
@@ -159,8 +158,8 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           </div>
 
           {/* BODY */}
-          <div style={{ margin: '12px auto', maxWidth: '63%', textAlign: 'center' }}>
-            <p style={{ fontSize: '18px', lineHeight: '1.7', fontFamily: 'Arial, sans-serif', margin: '0', color: '#111', display: 'inline-block' }}>
+          <div style={{ margin: '8px auto', maxWidth: '82%', textAlign: 'center' }}>
+            <p style={{ fontSize: '16.5px', lineHeight: '1.6', fontFamily: 'Arial, sans-serif', margin: '0', color: '#111', display: 'inline-block' }}>
               L'élève <strong>{student.first_name?.toUpperCase()} {student.last_name?.toUpperCase()}</strong> Matricule <strong>{student.matricule}</strong> en classe de <strong>{student.classes?.name || '...'}</strong> ayant obtenu une moyenne de <strong>{average.toFixed(2).replace('.', ',')}</strong> est inscrit(e) au <strong>Tableau d'Honneur {mention && `+ ${mention}`}</strong> pour sa bonne conduite et son travail durant le {period} de l'année scolaire <strong>{academicYear}</strong>.
             </p>
           </div>
@@ -169,10 +168,10 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           <div style={{ clear: 'both', height: '10px' }}></div>
 
           {/* FOOTER (SIGNATURE BLOCK) */}
-          <div style={{ position: 'absolute', bottom: '11mm', right: '10mm', width: '280px', textAlign: 'center', color: '#000000', fontFamily: 'Arial, sans-serif' }}>
-            <p style={{ margin: '0 0 5px 0', fontSize: '13px', fontWeight: 'bold' }}>Fait à {city}, le {today}</p>
-            <p style={{ margin: '0 0 40px 0', fontSize: '14px', fontWeight: 'bold', textDecoration: 'underline' }}>LE DIRECTEUR DES ÉTUDES</p>
-            <p style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>{signerName.toUpperCase()}</p>
+          <div style={{ position: 'absolute', bottom: '8mm', right: '8mm', width: '280px', textAlign: 'center', color: '#000000', fontFamily: 'Arial, sans-serif' }}>
+            <p style={{ margin: '0 0 3px 0', fontSize: '12px', fontWeight: 'bold' }}>Fait à {city}, le {today}</p>
+            <p style={{ margin: '0 0 30px 0', fontSize: '13px', fontWeight: 'bold', textDecoration: 'underline' }}>LE DIRECTEUR DES ÉTUDES</p>
+            <p style={{ margin: 0, fontSize: '14px', fontWeight: 'bold' }}>{signerName.toUpperCase()}</p>
           </div>
 
           {/* END CLEAR */}
