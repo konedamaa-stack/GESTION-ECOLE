@@ -65,12 +65,25 @@ export default function CommitteePortal({ session, onLogout }: { session: any; o
     e.preventDefault();
     if (!selectedClass || !selectedSubject) return;
     try {
+      // Prevent duplicate evaluations for same class, subject, date, name and period
+      const isDuplicate = evaluations.some(ev => 
+        ev.class_id === selectedClass &&
+        ev.subject === selectedSubject &&
+        ev.period === newEval.period &&
+        ev.name?.toLowerCase().trim() === newEval.name?.toLowerCase().trim()
+      );
+      if (isDuplicate) {
+        alert("Une évaluation avec les mêmes caractéristiques (classe, matière, période, nom) existe déjà.");
+        return;
+      }
+
       const validSchoolId = session.school_id && session.school_id.length === 36 ? session.school_id : null;
       const { data, error } = await supabase.from('evaluations').insert([{
         ...newEval,
         class_id: selectedClass,
         subject: selectedSubject,
-        school_id: validSchoolId
+        school_id: validSchoolId,
+        validation_status: 'approved'
       }]).select();
       
       if (error) throw error;
@@ -126,6 +139,9 @@ export default function CommitteePortal({ session, onLogout }: { session: any; o
 
       const { error } = await supabase.from('grades').upsert(updates, { onConflict: 'evaluation_id,student_id' });
       if (error) throw error;
+
+      // Automatically approve evaluation when committee saves grades
+      await supabase.from('evaluations').update({ validation_status: 'approved' }).eq('id', selectedEval);
 
       alert("Notes enregistrées avec succès");
       fetchData(); // reload
