@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ReceiptPreviewProps {
   invoice?: any;
@@ -15,6 +16,14 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
   studentReste = 0,
   invoicesData = []
 }) => {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language.startsWith('ar');
+  const getArabicOrdinal = (n: number) => {
+    if (n === 1) return 'الدفعة الأولى';
+    if (n === 2) return 'الدفعة الثانية';
+    if (n === 3) return 'الدفعة الثالثة';
+    return `الدفعة ${n}`;
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -88,10 +97,10 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
       padding: '10px',
       backgroundColor: 'white',
       color: 'black',
-      fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+      fontFamily: isAr ? "'Cairo', 'Tajawal', sans-serif" : '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
       fontWeight: 'bold',
       fontSize: '14px',
-    }}>
+    }} dir={isAr ? 'rtl' : 'ltr'}>
       <div style={{
         border: '2px solid black',
         padding: '5px',
@@ -105,61 +114,61 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
           <div style={{ textAlign: 'center', flex: 1, padding: '0 5px', lineHeight: '1.2' }}>
             <div style={{ fontSize: '16px', textTransform: 'uppercase', fontWeight: 'bold' }}>{schoolName}</div>
             <div style={{ fontSize: '14px', textTransform: 'uppercase', textDecoration: 'underline', margin: '2px 0' }}>
-              Reçu de {versementText} de Scolarité
+              {isAr ? `وصل تسديد ${getArabicOrdinal(installmentNum)} للمصاريف` : `Reçu de ${versementText} de Scolarité`}
             </div>
-            <div style={{ fontSize: '12px' }}>CEL: {schoolPhone}</div>
+            <div style={{ fontSize: '12px' }}>{isAr ? 'الهاتف:' : 'CEL:'} {schoolPhone}</div>
           </div>
           <div style={{ width: '60px' }}></div>
         </div>
 
         {/* Row 1: Année Scolaire etc. */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', fontSize: '12px' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <span>Année Scolaire:</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', fontSize: '12px', flexDirection: isAr ? 'row-reverse' : 'row' }}>
+          <div style={{ display: 'flex', gap: '8px', flexDirection: isAr ? 'row-reverse' : 'row' }}>
+            <span>{isAr ? 'السنة الدراسية:' : 'Année Scolaire:'}</span>
             <span>{academicYear}</span>
           </div>
-          <div>Classe: {classNameFr}</div>
+          <div>{isAr ? 'القسم:' : 'Classe:'} {classNameFr}</div>
         </div>
 
         {/* Rows wrapper for table layout for exact alignment */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', lineHeight: '1.2' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', lineHeight: '1.2' }} dir={isAr ? 'rtl' : 'ltr'}>
           <tbody>
             <tr>
-              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>Recus N°:</td>
-              <td style={{ textAlign: 'left', paddingBottom: '2px' }}>{receiptNo}</td>
+              <td style={{ textAlign: isAr ? 'left' : 'right', paddingLeft: isAr ? '5px' : '0', paddingRight: isAr ? '0' : '5px', paddingBottom: '2px' }}>{isAr ? 'رقم الوصل:' : 'Recus N°:'}</td>
+              <td style={{ textAlign: isAr ? 'right' : 'left', paddingBottom: '2px' }}>{receiptNo}</td>
               <td style={{ textAlign: 'center', paddingBottom: '2px' }}></td>
-              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>Matricule:</td>
-              <td style={{ textAlign: 'left', paddingBottom: '2px' }}>{matricule}</td>
+              <td style={{ textAlign: isAr ? 'left' : 'right', paddingLeft: isAr ? '5px' : '0', paddingRight: isAr ? '0' : '5px', paddingBottom: '2px' }}>{isAr ? 'رقم التسجيل:' : 'Matricule:'}</td>
+              <td style={{ textAlign: isAr ? 'right' : 'left', paddingBottom: '2px' }}>{matricule}</td>
             </tr>
             <tr>
-              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>Scolarite:</td>
-              <td style={{ textAlign: 'left', paddingBottom: '2px' }}>{formatCurrency(scolarite)}</td>
+              <td style={{ textAlign: isAr ? 'left' : 'right', paddingLeft: isAr ? '5px' : '0', paddingRight: isAr ? '0' : '5px', paddingBottom: '2px' }}>{isAr ? 'المصاريف:' : 'Scolarite:'}</td>
+              <td style={{ textAlign: isAr ? 'right' : 'left', paddingBottom: '2px' }}>{formatCurrency(scolarite)}</td>
               <td style={{ textAlign: 'center', paddingBottom: '2px' }}></td>
-              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>Eleve:</td>
-              <td style={{ textAlign: 'left', fontSize: '13px', paddingBottom: '2px' }} dir="rtl">{studentName}</td>
+              <td style={{ textAlign: isAr ? 'left' : 'right', paddingLeft: isAr ? '5px' : '0', paddingRight: isAr ? '0' : '5px', paddingBottom: '2px' }}>{isAr ? 'التلميذ(ة):' : 'Eleve:'}</td>
+              <td style={{ textAlign: isAr ? 'right' : 'left', fontSize: '13px', paddingBottom: '2px' }} dir="rtl">{studentName}</td>
             </tr>
             <tr>
-              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>{versementLabel}</td>
-              <td style={{ textAlign: 'left', paddingBottom: '2px' }}>{formatCurrency(versement)}</td>
+              <td style={{ textAlign: isAr ? 'left' : 'right', paddingLeft: isAr ? '5px' : '0', paddingRight: isAr ? '0' : '5px', paddingBottom: '2px' }}>{isAr ? `${getArabicOrdinal(installmentNum)}:` : versementLabel}</td>
+              <td style={{ textAlign: isAr ? 'right' : 'left', paddingBottom: '2px' }}>{formatCurrency(versement)}</td>
               <td style={{ textAlign: 'center', paddingBottom: '2px' }}>{paymentDate}</td>
-              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>Parent:</td>
-              <td style={{ textAlign: 'left', fontSize: '13px', paddingBottom: '2px' }} dir="rtl">{parentName}</td>
+              <td style={{ textAlign: isAr ? 'left' : 'right', paddingLeft: isAr ? '5px' : '0', paddingRight: isAr ? '0' : '5px', paddingBottom: '2px' }}>{isAr ? 'ولي الأمر:' : 'Parent:'}</td>
+              <td style={{ textAlign: isAr ? 'right' : 'left', fontSize: '13px', paddingBottom: '2px' }} dir="rtl">{parentName}</td>
             </tr>
             <tr>
-              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>Total versé:</td>
-              <td style={{ textAlign: 'left', paddingBottom: '2px' }}>{formatCurrency(totalPaid)}</td>
+              <td style={{ textAlign: isAr ? 'left' : 'right', paddingLeft: isAr ? '5px' : '0', paddingRight: isAr ? '0' : '5px', paddingBottom: '2px' }}>{isAr ? 'إجمالي المدفوع:' : 'Total versé:'}</td>
+              <td style={{ textAlign: isAr ? 'right' : 'left', paddingBottom: '2px' }}>{formatCurrency(totalPaid)}</td>
               <td style={{ textAlign: 'center', paddingBottom: '2px' }}></td>
               <td colSpan={2} style={{ textAlign: 'center', paddingTop: '4px', paddingBottom: '2px' }}>
-                {isSoldé && <span>Soldé</span>}
+                {isSoldé && <span>{isAr ? 'خالص' : 'Soldé'}</span>}
               </td>
             </tr>
             <tr>
-              <td style={{ textAlign: 'right', paddingRight: '5px', paddingBottom: '2px' }}>Reste:</td>
-              <td style={{ textAlign: 'left', paddingBottom: '2px' }}>{formatCurrency(reste)}</td>
+              <td style={{ textAlign: isAr ? 'left' : 'right', paddingLeft: isAr ? '5px' : '0', paddingRight: isAr ? '0' : '5px', paddingBottom: '2px' }}>{isAr ? 'المتبقي:' : 'Reste:'}</td>
+              <td style={{ textAlign: isAr ? 'right' : 'left', paddingBottom: '2px' }}>{formatCurrency(reste)}</td>
               <td style={{ textAlign: 'center', paddingBottom: '2px' }}></td>
               <td colSpan={2} style={{ textAlign: 'center', paddingTop: '8px' }}>
-                <div style={{ textDecoration: 'underline' }}>Le Directeur</div>
-                <div style={{ marginTop: '20px', fontWeight: 'bold' }}>{schoolInfo?.director_name || "La Direction"}</div>
+                <div style={{ textDecoration: 'underline' }}>{isAr ? 'المدير' : 'Le Directeur'}</div>
+                <div style={{ marginTop: '20px', fontWeight: 'bold' }}>{schoolInfo?.director_name || (isAr ? 'الإدارة' : "La Direction")}</div>
               </td>
             </tr>
           </tbody>

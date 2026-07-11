@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface SmallReceiptPreviewProps {
   invoice?: any;
@@ -13,6 +14,8 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
   schoolInfo, 
   studentReste = 0 
 }) => {
+  const { i18n } = useTranslation();
+  const isAr = i18n.language.startsWith('ar');
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -36,7 +39,7 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
   let schoolPhone = schoolInfo?.phone || "00 00 00 00 00";
   schoolPhone = schoolPhone.replace(/^(cel|tel|tél|téléphone|phone)[:.\s]+/i, '');
   const academicYear = schoolInfo?.academic_year || "2025-2026";
-  const classNameAr = ""; 
+ 
   const classNameFr = student?.class?.name || "Mat A";
   const receiptNo = invoice?.id ? invoice.id.split('-')[0].toUpperCase() : "6949";
   const matricule = student?.matricule || "2067";
@@ -59,27 +62,27 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
       padding: '10px',
       backgroundColor: 'white',
       color: 'black',
-      fontFamily: '"Courier New", Courier, monospace',
+      fontFamily: isAr ? "'Cairo', 'Tajawal', sans-serif" : '"Courier New", Courier, monospace',
       fontSize: '12px',
       lineHeight: '1.4'
-    }}>
+    }} dir={isAr ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '10px' }}>
         <h3 style={{ margin: '0 0 5px 0', fontSize: '16px', textTransform: 'uppercase' }}>{schoolName}</h3>
-        <div style={{ fontSize: '11px' }}>CEL: {schoolPhone}</div>
-        <div style={{ fontSize: '11px' }}>Année Scolaire: {academicYear}</div>
+        <div style={{ fontSize: '11px' }}>{isAr ? 'الهاتف:' : 'CEL:'} {schoolPhone}</div>
+        <div style={{ fontSize: '11px' }}>{isAr ? 'السنة الدراسية:' : 'Année Scolaire:'} {academicYear}</div>
       </div>
 
       <div style={{ borderBottom: '1px dashed black', margin: '8px 0' }}></div>
 
       {/* Meta info */}
       <div style={{ fontSize: '11px', marginBottom: '8px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Date:</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: isAr ? 'row-reverse' : 'row' }}>
+          <span>{isAr ? 'التاريخ:' : 'Date:'}</span>
           <span>{paymentDate}</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Reçu N°:</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: isAr ? 'row-reverse' : 'row' }}>
+          <span>{isAr ? 'رقم الوصل:' : 'Reçu N°:'}</span>
           <span>{receiptNo}</span>
         </div>
       </div>
@@ -88,17 +91,21 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
 
       {/* Student info */}
       <div style={{ fontSize: '12px', marginBottom: '8px' }}>
-        <div style={{ marginBottom: '4px' }}>
-          Matricule: <span style={{ fontWeight: 'bold' }}>{matricule}</span>
+        <div style={{ display: 'flex', flexDirection: isAr ? 'row-reverse' : 'row', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <span>{isAr ? 'رقم التسجيل:' : 'Matricule:'}</span>
+          <span style={{ fontWeight: 'bold' }}>{matricule}</span>
         </div>
-        <div style={{ marginBottom: '4px' }}>
-          Élève: <span style={{ fontWeight: 'bold' }}>{studentName}</span>
+        <div style={{ display: 'flex', flexDirection: isAr ? 'row-reverse' : 'row', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <span>{isAr ? 'التلميذ(ة):' : 'Élève:'}</span>
+          <span style={{ fontWeight: 'bold' }}>{studentName}</span>
         </div>
-        <div style={{ marginBottom: '4px' }}>
-          Classe: <span style={{ fontWeight: 'bold' }}>{classNameFr}</span> {classNameAr && <span dir="rtl" style={{fontFamily: 'Arial'}}>{classNameAr}</span>}
+        <div style={{ display: 'flex', flexDirection: isAr ? 'row-reverse' : 'row', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <span>{isAr ? 'القسم:' : 'Classe:'}</span>
+          <span style={{ fontWeight: 'bold' }}>{classNameFr}</span>
         </div>
-        <div>
-          Parent: <span style={{ fontWeight: 'bold' }}>{parentName}</span>
+        <div style={{ display: 'flex', flexDirection: isAr ? 'row-reverse' : 'row', justifyContent: 'space-between' }}>
+          <span>{isAr ? 'ولي الأمر:' : 'Parent:'}</span>
+          <span style={{ fontWeight: 'bold' }}>{parentName}</span>
         </div>
       </div>
 
@@ -106,25 +113,25 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
 
       {/* Financial info */}
       <div style={{ fontSize: '12px', marginBottom: '8px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-          <span>Scolarité:</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', flexDirection: isAr ? 'row-reverse' : 'row' }}>
+          <span>{isAr ? 'المصاريف:' : 'Scolarité:'}</span>
           <span>{formatCurrency(tuition)}</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', fontWeight: 'bold', fontSize: '13px' }}>
-          <span>Versement:</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', fontWeight: 'bold', fontSize: '13px', flexDirection: isAr ? 'row-reverse' : 'row' }}>
+          <span>{isAr ? 'الدفعة:' : 'Versement:'}</span>
           <span>{formatCurrency(payment)}</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-          <span>Total versé:</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', flexDirection: isAr ? 'row-reverse' : 'row' }}>
+          <span>{isAr ? 'إجمالي المدفوع:' : 'Total versé:'}</span>
           <span>{formatCurrency(totalPaid)}</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', paddingTop: '6px', borderTop: '1px dotted #ccc' }}>
-          <span>Reste:</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', paddingTop: '6px', borderTop: '1px dotted #ccc', flexDirection: isAr ? 'row-reverse' : 'row' }}>
+          <span>{isAr ? 'المتبقي:' : 'Reste:'}</span>
           <span style={{ fontWeight: 'bold' }}>{formatCurrency(reste)}</span>
         </div>
         {isSoldé && (
           <div style={{ textAlign: 'center', marginTop: '8px', fontWeight: 'bold', padding: '4px', border: '1px solid black' }}>
-            SOLDÉ
+            {isAr ? 'خالص' : 'SOLDÉ'}
           </div>
         )}
       </div>
@@ -133,9 +140,9 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
 
       {/* Footer */}
       <div style={{ textAlign: 'center', marginTop: '15px', fontSize: '11px' }}>
-        <div style={{ marginBottom: '30px' }}>Signature</div>
-        <div style={{ fontWeight: 'bold' }}>Merci de Votre confiance!</div>
-        <div style={{ marginTop: '4px' }}>Rendez-vous le: {nextAppt}</div>
+        <div style={{ marginBottom: '30px' }}>{isAr ? 'التوقيع' : 'Signature'}</div>
+        <div style={{ fontWeight: 'bold' }}>{isAr ? 'شكراً لثقتكم!' : 'Merci de Votre confiance!'}</div>
+        <div style={{ marginTop: '4px' }}>{isAr ? ('موعدنا القادم يوم: ' + nextAppt) : ('Rendez-vous le: ' + nextAppt)}</div>
       </div>
 
       <style dangerouslySetInnerHTML={{__html: `

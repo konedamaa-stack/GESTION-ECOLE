@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 // import removed
@@ -34,7 +35,8 @@ const GoldOrnament = () => (
 );
 
 export function HonorCertificate({ student, schoolInfo, period, average, mention, onClose }: HonorCertificateProps) {
-  // const { t } = useTranslation();
+  const { i18n } = useTranslation();
+  const isAr = i18n.language.startsWith('ar');
   const printRef = useRef<HTMLDivElement>(null);
   const isGenerating = React.useRef(false);
 
@@ -118,22 +120,26 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
         padding: '10mm',
         overflow: 'hidden',
         boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
-      }}>
+      }} dir={isAr ? 'rtl' : 'ltr'}>
         {/* Ivorian Borders: Thinner and optimized for space */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, border: '4mm solid #f77f00', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', top: '4mm', left: '4mm', right: '4mm', bottom: '4mm', border: '2mm solid #fff', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', top: '6mm', left: '6mm', right: '6mm', bottom: '6mm', border: '4mm solid #009e60', pointerEvents: 'none' }}></div>
         
-        <div style={{ position: 'relative', width: '100%', height: '100%', boxSizing: 'border-box', padding: '5mm', fontFamily: 'Arial, sans-serif' }}>
+        <div style={{ position: 'relative', width: '100%', height: '100%', boxSizing: 'border-box', padding: '4mm', fontFamily: isAr ? "'Cairo', 'Tajawal', sans-serif" : "Arial, sans-serif" }}>
           
           {/* HEADER */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '9.5px', fontWeight: 'bold', color: '#000000', height: '65px', marginBottom: '12px', lineHeight: '1.3' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: isAr ? '11px' : '9.5px', fontWeight: 'bold', color: '#000000', height: '65px', marginBottom: '12px', lineHeight: '1.3', flexDirection: isAr ? 'row-reverse' : 'row' }}>
             <div style={{ width: '32%', textAlign: 'center' }}>
-              MINISTERE DE L'EDUCATION NATIONALE, DE<br/>L'ALPHABETISATION ET DE L'ENSEIGNEMENT<br/>TECHNIQUE
+              {isAr ? (
+                <>وزارة التربية الوطنية والتعليم الفني<br/>ومحو الأمية</>
+              ) : (
+                <>MINISTERE DE L'EDUCATION NATIONALE, DE<br/>L'ALPHABETISATION ET DE L'ENSEIGNEMENT<br/>TECHNIQUE</>
+              )}
             </div>
             <div style={{ width: '36%', textAlign: 'center' }}>
-              REPUBLIQUE DE COTE D'IVOIRE<br/>
-              <span style={{ fontWeight: 'normal', fontSize: '9px' }}>Union - Discipline - Travail</span><br/>
+              {isAr ? 'جمهورية كوت ديفوار' : "REPUBLIQUE DE COTE D'IVOIRE"}<br/>
+              <span style={{ fontWeight: 'normal', fontSize: '9px' }}>{isAr ? 'اتحاد - انضباط - عمل' : 'Union - Discipline - Travail'}</span><br/>
               <img src="/armoiries.svg" alt="Armoiries" style={{ width: '50px', marginTop: '2px', objectFit: 'contain' }}/>
             </div>
             <div style={{ width: '32%', textAlign: 'center' }}>
@@ -145,22 +151,30 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           {/* TITLE */}
           <div style={{ margin: '4px 0', textAlign: 'center' }}>
             <h1 style={{ 
-              fontSize: '36px', 
+              fontSize: isAr ? '40px' : '36px', 
               margin: '0 0 4px 0', 
               color: '#e5a93b', 
               textShadow: '1.2px 1.2px 0 #9a7d0a, -1px -1px 0 #9a7d0a, 1px -1px 0 #9a7d0a, -1px 1px 0 #9a7d0a, 1.2px -1.2px 0 #9a7d0a, 0px 3px 8px rgba(0,0,0,0.15)',
-              fontFamily: '"Times New Roman", Times, serif',
-              letterSpacing: '2.5px',
+              fontFamily: isAr ? "'Cairo', 'Tajawal', sans-serif" : '"Times New Roman", Times, serif',
+              letterSpacing: isAr ? '0px' : '2.5px',
               fontWeight: 'bold',
               display: 'inline-block'
-            }}>Tableau d'honneur</h1>
+            }}>{isAr ? 'لوحـة الشـرف' : "Tableau d'honneur"}</h1>
             <GoldOrnament />
           </div>
 
           {/* BODY */}
           <div style={{ margin: '8px auto', maxWidth: '82%', textAlign: 'center' }}>
-            <p style={{ fontSize: '16.5px', lineHeight: '1.6', fontFamily: 'Arial, sans-serif', margin: '0', color: '#111', display: 'inline-block' }}>
-              L'élève <strong>{student.first_name?.toUpperCase()} {student.last_name?.toUpperCase()}</strong> Matricule <strong>{student.matricule}</strong> en classe de <strong>{student.classes?.name || '...'}</strong> ayant obtenu une moyenne de <strong>{average.toFixed(2).replace('.', ',')}</strong> est inscrit(e) au <strong>Tableau d'Honneur {mention && `+ ${mention}`}</strong> pour sa bonne conduite et son travail durant le {period} de l'année scolaire <strong>{academicYear}</strong>.
+            <p style={{ fontSize: isAr ? '18px' : '16.5px', lineHeight: '1.6', fontFamily: isAr ? "'Cairo', 'Tajawal', sans-serif" : 'Arial, sans-serif', margin: '0', color: '#111', display: 'inline-block' }}>
+              {isAr ? (
+                <>
+                  إن التلميذ(ة) <strong>{student.first_name?.toUpperCase()} {student.last_name?.toUpperCase()}</strong> رقم التسجيل <strong>{student.matricule}</strong> في قسم <strong>{student.classes?.name || '...'}</strong> الحاصل(ة) على معدل <strong>{average.toFixed(2).replace('.', ',')}</strong> قد تم تسجيله(ا) في <strong>لوحة الشرف {mention && ('+ ' + mention)}</strong> تقديراً لحسن سلوكه(a) واجتهاده(a) خلال <strong>{period.includes('1er') ? 'الثلاثي الأول' : period.includes('2') ? 'الثلاثي الثاني' : 'الثلاثي الثالث'}</strong> من السنة الدراسية <strong>{academicYear}</strong>.
+                </>
+              ) : (
+                <>
+                  L'élève <strong>{student.first_name?.toUpperCase()} {student.last_name?.toUpperCase()}</strong> Matricule <strong>{student.matricule}</strong> en classe de <strong>{student.classes?.name || '...'}</strong> ayant obtenu une moyenne de <strong>{average.toFixed(2).replace('.', ',')}</strong> est inscrit(e) au <strong>Tableau d'Honneur {mention && ('+ ' + mention)}</strong> pour sa bonne conduite et son travail durant le {period} de l'année scolaire <strong>{academicYear}</strong>.
+                </>
+              )}
             </p>
           </div>
 
@@ -168,9 +182,9 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           <div style={{ clear: 'both', height: '10px' }}></div>
 
           {/* FOOTER (SIGNATURE BLOCK) */}
-          <div style={{ position: 'absolute', bottom: '8mm', right: '8mm', width: '280px', textAlign: 'center', color: '#000000', fontFamily: 'Arial, sans-serif' }}>
-            <p style={{ margin: '0 0 3px 0', fontSize: '12px', fontWeight: 'bold' }}>Fait à {city}, le {today}</p>
-            <p style={{ margin: '0 0 30px 0', fontSize: '13px', fontWeight: 'bold', textDecoration: 'underline' }}>LE DIRECTEUR DES ÉTUDES</p>
+          <div style={{ position: 'absolute', bottom: '8mm', left: isAr ? '8mm' : 'auto', right: isAr ? 'auto' : '8mm', width: '280px', textAlign: 'center', color: '#000000', fontFamily: isAr ? "'Cairo', 'Tajawal', sans-serif" : 'Arial, sans-serif' }}>
+            <p style={{ margin: '0 0 3px 0', fontSize: '12px', fontWeight: 'bold' }}>{isAr ? `حرر في ${city}، بتاريخ ${today}` : `Fait à ${city}, le ${today}`}</p>
+            <p style={{ margin: '0 0 30px 0', fontSize: '13px', fontWeight: 'bold', textDecoration: 'underline' }}>{isAr ? 'مدير الدراسات' : 'LE DIRECTEUR DES ÉTUDES'}</p>
             <p style={{ margin: 0, fontSize: '14px', fontWeight: 'bold' }}>{signerName.toUpperCase()}</p>
           </div>
 

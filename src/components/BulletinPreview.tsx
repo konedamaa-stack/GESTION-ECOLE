@@ -15,6 +15,7 @@ interface BulletinPreviewProps {
 
 export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, students, evaluations, grades, period, schoolInfo, classSubjects, schedules, targetStudentId }) => {
   const { i18n } = useTranslation();
+  const isAr = i18n.language.startsWith('ar');
 
   const translateBulletinWord = (word: string) => {
     if (!i18n.language.startsWith('ar')) return word.toUpperCase();
@@ -216,7 +217,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
           
           return (
             <tr key={s}>
-              <td style={{textAlign: 'left', paddingLeft: '8px', fontWeight: 'bold'}}>{translateBulletinWord(s)}</td>
+              <td style={{textAlign: isAr ? 'right' : 'left', paddingLeft: isAr ? '0' : '8px', paddingRight: isAr ? '8px' : '0', fontWeight: 'bold'}}>{translateBulletinWord(s)}</td>
               <td>{formatNum(val, 2)}</td>
               <td>{formatNum(coef, 0)}</td>
               <td>{formatNum(total, 2)}</td>
@@ -245,7 +246,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
         };
 
         return (
-          <div key={st.id} className="bulletin-classic-page">
+          <div key={st.id} className="bulletin-classic-page" dir={isAr ? "rtl" : "ltr"}>
             
             {/* 1. Header Row */}
             <div className="bulletin-classic-header">
