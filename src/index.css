@@ -1019,3 +1019,9 @@ html {
     display: none !important;
   }
 }
+
+/* Force Arabic fonts when direction is RTL */
+:root[dir="rtl"], html[dir="rtl"], body[dir="rtl"], [dir="rtl"] * {
+  --font-main: 'Cairo', 'Tajawal', sans-serif !important;
+  font-family: 'Cairo', 'Tajawal', sans-serif !important;
+}

@@ -269,9 +269,9 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
             <div className="bulletin-classic-school">
               <div className="school-logo">
                 {schoolInfo?.logo_url ? (
-                  <img src={schoolInfo.logo_url} alt="Logo" style={{width: '60px', height: '60px', borderRadius: '50%', objectFit: 'contain'}} />
+                  <img src={schoolInfo.logo_url} alt="Logo" style={{width: '80px', height: '80px', borderRadius: '50%', objectFit: 'contain'}} />
                 ) : (
-                  <div style={{width: '60px', height: '60px', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#94a3b8', fontSize: '0.8rem'}}>LOGO</div>
+                  <div style={{width: '80px', height: '80px', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#94a3b8', fontSize: '0.8rem'}}>LOGO</div>
                 )}
               </div>
               <div className="school-details">

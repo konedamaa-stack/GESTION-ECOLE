@@ -144,7 +144,7 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
             </div>
             <div style={{ width: '32%', textAlign: 'center' }}>
               {schoolInfo?.school_name?.toUpperCase() || "COLLEGE PRIVE ELISCHAMA DE DIVO"}<br/>
-              {schoolInfo?.logo_url ? <img src={schoolInfo.logo_url} alt="Logo" style={{ width: '40px', marginTop: '2px', objectFit: 'contain' }}/> : null}
+              {schoolInfo?.logo_url ? <img src={schoolInfo.logo_url} alt="Logo" style={{ width: '70px', height: '55px', marginTop: '2px', objectFit: 'contain' }}/> : null}
             </div>
           </div>
 

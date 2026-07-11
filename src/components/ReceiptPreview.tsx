@@ -108,7 +108,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
       }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-          <div style={{ width: '60px', height: '60px' }}>
+          <div style={{ width: '85px', height: '85px' }}>
             <img src={schoolInfo?.logo_url || '/logo-coran.jpg'} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <div style={{ textAlign: 'center', flex: 1, padding: '0 5px', lineHeight: '1.2' }}>
