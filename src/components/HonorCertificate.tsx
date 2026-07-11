@@ -126,7 +126,7 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
         <div style={{ position: 'absolute', top: '4mm', left: '4mm', right: '4mm', bottom: '4mm', border: '2mm solid #fff', pointerEvents: 'none' }}></div>
         <div style={{ position: 'absolute', top: '6mm', left: '6mm', right: '6mm', bottom: '6mm', border: '4mm solid #009e60', pointerEvents: 'none' }}></div>
         
-        <div style={{ position: 'relative', width: '100%', height: '100%', boxSizing: 'border-box', padding: '4mm', fontFamily: isAr ? "'Cairo', 'Tajawal', sans-serif" : "Arial, sans-serif" }}>
+        <div style={{ position: 'relative', width: '100%', height: '100%', boxSizing: 'border-box', padding: '4mm', fontFamily: isAr ? "'Traditional Arabic', 'Cairo', 'Tajawal', serif" : "Arial, sans-serif" }}>
           
           {/* HEADER */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: isAr ? '11px' : '9.5px', fontWeight: 'bold', color: '#000000', height: '65px', marginBottom: '12px', lineHeight: '1.3', flexDirection: isAr ? 'row-reverse' : 'row' }}>

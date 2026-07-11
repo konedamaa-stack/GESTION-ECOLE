@@ -62,7 +62,7 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
       padding: '10px',
       backgroundColor: 'white',
       color: 'black',
-      fontFamily: isAr ? "'Cairo', 'Tajawal', sans-serif" : '"Courier New", Courier, monospace',
+      fontFamily: isAr ? "'Traditional Arabic', 'Cairo', 'Tajawal', serif" : '"Courier New", Courier, monospace',
       fontSize: '12px',
       lineHeight: '1.4'
     }} dir={isAr ? 'rtl' : 'ltr'}>
