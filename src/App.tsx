@@ -1052,7 +1052,8 @@ function App() {
         fetchStudents();
         if (formData.get('reg_fee_amount') !== null && formData.get('reg_fee_amount') !== '') {
           fetchInvoices();
-          setSelectedStudent({ ...student, id: newStudentId, student_parents: parentObj ? [{ parents: parentObj }] : [] });
+          const clsForReceipt = classesData.find(c => c.id === student.class_id);
+          setSelectedStudent({ ...student, id: newStudentId, classes: clsForReceipt, student_parents: parentObj ? [{ parents: parentObj }] : [] });
           setSelectedInvoice(createdInvoice || {...invoicePayload, id: 'temp-id', issue_date: new Date().toISOString()});
           setActiveModal('receipt_preview');
           return;

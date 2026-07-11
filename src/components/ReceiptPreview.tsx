@@ -58,7 +58,8 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
 
   // Extracting data or falling back to mock data similar to the image
   const schoolName = schoolInfo?.school_name || schoolInfo?.name || "ÉTABLISSEMENT SCOLAIRE";
-  const schoolPhone = schoolInfo?.phone || "00 00 00 00 00";
+  let schoolPhone = schoolInfo?.phone || "00 00 00 00 00";
+  schoolPhone = schoolPhone.replace(/^(cel|tel|tél|téléphone|phone)[:.\s]+/i, '');
   const academicYear = schoolInfo?.academic_year || new Date().getFullYear() + " / " + (new Date().getFullYear() + 1);
   const classNameFr = student?.class?.name || student?.classes?.name || "-";
   const receiptNo = invoice?.id ? invoice.id.split('-')[0].toUpperCase() : "-";
@@ -72,7 +73,8 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
   
   const paymentDate = formatDate(invoice?.paid_at || new Date().toISOString());
   const studentName = student ? `${student.first_name} ${student.last_name}` : "Nom de l'élève";
-  const parentName = student?.parent_name || "-";
+  const parentObj = student?.student_parents && student.student_parents.length > 0 ? student.student_parents[0].parents : null;
+  const parentName = parentObj ? `${parentObj.first_name} ${parentObj.last_name}` : (student?.parent_name || "-");
   const isSoldé = reste <= 0;
   let defaultApptDate = new Date(invoice?.paid_at || new Date());
   defaultApptDate.setMonth(defaultApptDate.getMonth() + 2);

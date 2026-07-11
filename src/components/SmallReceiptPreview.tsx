@@ -33,9 +33,10 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
 
   // Extracting data or falling back to mock data similar to the image
   const schoolName = (schoolInfo?.school_name || schoolInfo?.name) || "GROUPE SCOLAIRE RAYATIL ISLAM";
-  const schoolPhone = schoolInfo?.phone || "07 07 42 64 82 / 05 05 91 82 29";
-  const academicYear = "2025 / 2026"; // Or from context
-  const classNameAr = "روضة الأطفال"; 
+  let schoolPhone = schoolInfo?.phone || "00 00 00 00 00";
+  schoolPhone = schoolPhone.replace(/^(cel|tel|tél|téléphone|phone)[:.\s]+/i, '');
+  const academicYear = schoolInfo?.academic_year || "2025-2026";
+  const classNameAr = ""; 
   const classNameFr = student?.class?.name || "Mat A";
   const receiptNo = invoice?.id ? invoice.id.split('-')[0].toUpperCase() : "6949";
   const matricule = student?.matricule || "2067";
@@ -44,7 +45,8 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
   const totalPaid = invoice?.total_paid || 33000; // Or calculate
   const paymentDate = formatDate(invoice?.paid_at || new Date().toISOString());
   const studentName = student ? `${student.first_name} ${student.last_name}` : "سونغالو تراوري";
-  const parentName = student?.parent_name || "جاكريجا تراوري";
+  const parentObj = student?.student_parents && student.student_parents.length > 0 ? student.student_parents[0].parents : null;
+  const parentName = parentObj ? `${parentObj.first_name} ${parentObj.last_name}` : (student?.parent_name || "-");
   const reste = studentReste !== undefined ? studentReste : 0;
   const isSoldé = reste <= 0;
   const nextAppt = formatDate(invoice?.next_appointment || new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString());
