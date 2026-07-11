@@ -282,7 +282,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
               </div>
               <div className="school-statut">
                 <div>
-                  <p>Code: <strong>{schoolInfo?.id ? schoolInfo.id.substring(0, 6).toUpperCase() : '...'}</strong></p>
+                  <p>Code: <strong>{schoolInfo?.id ? String(schoolInfo.id).substring(0, 6).toUpperCase() : '...'}</strong></p>
                   <p>Statut: <strong>Privé</strong></p>
                 </div>
               </div>
