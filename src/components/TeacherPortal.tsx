@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { BulletinPreview } from './BulletinPreview';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
-import jsPDF from 'jspdf';
+
 import 'jspdf-autotable';
 
 
@@ -15,7 +16,7 @@ const Icons = {
   LogOut: () => <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline strokeLinecap="round" strokeLinejoin="round" points="16 17 21 12 16 7"/><line strokeLinecap="round" strokeLinejoin="round" x1="21" y1="12" x2="9" y2="12"/></svg>,
 };
 
-export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { session: any, onLogout: () => void, onOpenBulletin?: (studentId: string, period: string, classId: string) => void }) {
+export default function TeacherPortal({ session, onLogout }: { session: any, onLogout: () => void, onOpenBulletin?: (studentId: string, period: string, classId: string) => void }) {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('dashboard');
   
@@ -35,6 +36,10 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [currentPdfDoc, setCurrentPdfDoc] = useState<any>(null);
   const [gradesData, setGradesData] = useState<any[]>([]);
+  const [previewClassId, setPreviewClassId] = useState<string | null>(null);
+  const [previewPeriod, setPreviewPeriod] = useState<string>('');
+  const [previewStudentId, setPreviewStudentId] = useState<string | null>(null);
+  const [classSubjects, setClassSubjects] = useState<any[]>([]);
 
   const formatNum = (num: number | string | undefined) => {
     if (num === undefined || num === null) return '';
@@ -69,6 +74,9 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
     // Fetch schedules for this teacher
     const { data: schedules } = await supabase.from('schedules').select('*').eq('teacher_id', session.id);
     if (schedules) setTeacherSchedules(schedules);
+
+    const { data: cs } = await supabase.from('class_subjects').select('*').eq('school_id', session.school_id);
+    if (cs) setClassSubjects(cs);
   };
 
   const handleCreateEvaluation = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -211,84 +219,7 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
       alert(t('teacher.save_error', "Erreur lors de l'enregistrement : ") + error.message);
     }
   };
-  const generatePDF = (student: any, period: string) => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.width;
-    
-    // Header
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.text(settings?.school_name || "Établissement", pageWidth / 2, 20, { align: "center" });
-    
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Bulletin de notes - ${period}`, pageWidth / 2, 28, { align: "center" });
-    doc.text(`Année Académique : ${settings?.academic_year || "2025-2026"}`, pageWidth / 2, 34, { align: "center" });
 
-    // Student Info
-    doc.setFontSize(11);
-    doc.text(`Élève : ${student.first_name} ${student.last_name}`, 14, 50);
-    doc.text(`Matricule : ${student.matricule}`, 14, 56);
-    const className = classesData.find(c => c.id === student.class_id)?.name || student.class_id;
-    doc.text(`Classe : ${className}`, 120, 50);
-
-    // Get evaluations for this period and this student's class
-    const periodEvals = evaluationsData.filter(e => e.period === period && e.class_id === student.class_id);
-    
-    // Aggregate by subject
-    const subjectGrades: Record<string, { total: number; count: number; maxTotal: number }> = {};
-    
-    periodEvals.forEach(ev => {
-      const g = gradesData.find(g => g.evaluation_id === ev.id && g.student_id === student.id);
-      if (g && g.score !== null) {
-        if (!subjectGrades[ev.subject]) {
-          subjectGrades[ev.subject] = { total: 0, count: 0, maxTotal: 0 };
-        }
-        subjectGrades[ev.subject].total += g.score;
-        subjectGrades[ev.subject].maxTotal += ev.max_score;
-        subjectGrades[ev.subject].count += 1;
-      }
-    });
-
-    const tableData: any[] = [];
-    let totalScore = 0;
-    let totalMax = 0;
-
-    Object.keys(subjectGrades).forEach(sub => {
-      const sg = subjectGrades[sub];
-      const avgSur20 = (sg.total / sg.maxTotal) * 20;
-      tableData.push([
-        sub,
-        `${sg.total.toFixed(2)} / ${sg.maxTotal}`,
-        avgSur20.toFixed(2),
-        "" // Appreciation
-      ]);
-      totalScore += avgSur20;
-      totalMax += 20;
-    });
-
-    const generalAvg = totalMax > 0 ? (totalScore / totalMax) * 20 : 0;
-
-    (doc as any).autoTable({
-      startY: 65,
-      head: [['Matière', 'Notes Obtenues', 'Moyenne (/20)', 'Appréciations']],
-      body: tableData,
-      theme: 'grid',
-      headStyles: { fillColor: [59, 130, 246] }
-    });
-
-    const finalY = (doc as any).lastAutoTable.finalY || 65;
-
-    doc.setFont("helvetica", "bold");
-    doc.text(`Moyenne Générale : ${generalAvg.toFixed(2)} / 20`, 14, finalY + 15);
-
-    doc.setFont("helvetica", "normal");
-    doc.text("Le Professeur principal", pageWidth - 50, finalY + 30);
-    
-    const pdfBlobUrl = doc.output('bloburl');
-    setCurrentPdfDoc(doc);
-    setPdfPreviewUrl(pdfBlobUrl.toString());
-  };
   return (
     <div className="student-portal">
       <header style={{background: 'var(--surface-color)', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.05)'}}>
@@ -654,9 +585,9 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
 <td style={{padding: '12px'}}>
   {classesData.find(c => c.id === selectedClass)?.principal_teacher_id === session.id ? (
     <div style={{display: 'flex', gap: '4px'}}>
-      <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '1er Trimestre', student.class_id) : generatePDF(student, '1er Trimestre')}>T1</button>
-      <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '2ème Trimestre', student.class_id) : generatePDF(student, '2ème Trimestre')}>T2</button>
-      <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '3ème Trimestre', student.class_id) : generatePDF(student, '3ème Trimestre')}>T3</button>
+      <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => { setPreviewClassId(student.class_id); setPreviewPeriod('1er Trimestre'); setPreviewStudentId(student.id); }}>T1</button>
+      <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => { setPreviewClassId(student.class_id); setPreviewPeriod('2ème Trimestre'); setPreviewStudentId(student.id); }}>T2</button>
+      <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => { setPreviewClassId(student.class_id); setPreviewPeriod('3ème Trimestre'); setPreviewStudentId(student.id); }}>T3</button>
     </div>
   ) : (
     <span style={{fontSize: '0.8rem', color: '#888'}}>Réservé au Professeur Principal</span>
@@ -683,6 +614,31 @@ export default function TeacherPortal({ session, onLogout, onOpenBulletin }: { s
           </div>
         )}
       </main>
+
+      {/* Bulletin Preview Modal */}
+      {previewClassId && (
+        <div className="modal-overlay" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999}}>
+          <div className="modal-content" style={{maxWidth: '1600px', width: '98%', height: '90vh', padding: '20px', background: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px'}}>
+              <h3 style={{margin: 0}}>Aperçu des Bulletins</h3>
+              <button className="close-btn" style={{background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem'}} onClick={() => setPreviewClassId(null)}>✕</button>
+            </div>
+            <div style={{flex: 1, overflowY: 'auto'}}>
+              <BulletinPreview 
+                classData={classesData.find(c => c.id === previewClassId)}
+                students={studentsData.filter(s => s.class_id === previewClassId)}
+                evaluations={evaluationsData.filter(e => e.class_id === previewClassId && e.period === previewPeriod && e.validation_status === 'approved')}
+                grades={gradesData}
+                period={previewPeriod}
+                schoolInfo={settings}
+                classSubjects={classSubjects.filter(cs => cs.class_id === previewClassId)}
+                schedules={[]}
+                targetStudentId={previewStudentId}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* PDF Modal */}
       {pdfPreviewUrl && (

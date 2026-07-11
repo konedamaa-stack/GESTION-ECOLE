@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
+import { BulletinPreview } from './BulletinPreview';
 import { supabase } from '../lib/supabase';
-import jsPDF from 'jspdf';
+
 import 'jspdf-autotable';
 
 
-export default function CommitteePortal({ session, onLogout, onOpenBulletin }: { session: any; onLogout: () => void; onOpenBulletin?: (studentId: string, period: string, classId: string) => void }) {
+export default function CommitteePortal({ session, onLogout }: { session: any; onLogout: () => void; onOpenBulletin?: (studentId: string, period: string, classId: string) => void }) {
   const [classes, setClasses] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [evaluations, setEvaluations] = useState<any[]>([]);
@@ -19,6 +20,10 @@ export default function CommitteePortal({ session, onLogout, onOpenBulletin }: {
   const [editingGrades, setEditingGrades] = useState<Record<string, { score: number | '', comment: string }>>({});
   const [settings, setSettings] = useState<any>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [previewClassId, setPreviewClassId] = useState<string | null>(null);
+  const [previewPeriod, setPreviewPeriod] = useState<string>('');
+  const [previewStudentId, setPreviewStudentId] = useState<string | null>(null);
+  const [classSubjects, setClassSubjects] = useState<any[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -39,6 +44,9 @@ export default function CommitteePortal({ session, onLogout, onOpenBulletin }: {
 
     const { data: set } = await supabase.from('school_settings').select('*').eq('school_id', session.school_id).limit(1).single();
     if (set) setSettings(set);
+
+    const { data: cs } = await supabase.from('class_subjects').select('*').eq('school_id', session.school_id);
+    if (cs) setClassSubjects(cs);
   };
 
   
@@ -128,83 +136,7 @@ export default function CommitteePortal({ session, onLogout, onOpenBulletin }: {
     return students.filter(s => s.class_id === selectedClass);
   };
 
-  const generatePDF = (student: any, period: string) => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.width;
-    
-    // Header
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.text(settings?.school_name || "Établissement", pageWidth / 2, 20, { align: "center" });
-    
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Bulletin de notes - ${period}`, pageWidth / 2, 28, { align: "center" });
-    doc.text(`Année Académique : ${settings?.academic_year || "2025-2026"}`, pageWidth / 2, 34, { align: "center" });
 
-    // Student Info
-    doc.setFontSize(11);
-    doc.text(`Élève : ${student.first_name} ${student.last_name}`, 14, 50);
-    doc.text(`Matricule : ${student.matricule}`, 14, 56);
-    const className = classes.find(c => c.id === student.class_id)?.name || student.class_id;
-    doc.text(`Classe : ${className}`, 120, 50);
-
-    // Get evaluations for this period and this student's class
-    const periodEvals = evaluations.filter(e => e.period === period && e.class_id === student.class_id);
-    
-    // Aggregate by subject
-    const subjectGrades: Record<string, { total: number; count: number; maxTotal: number }> = {};
-    
-    periodEvals.forEach(ev => {
-      const g = grades.find(g => g.evaluation_id === ev.id && g.student_id === student.id);
-      if (g && g.score !== null) {
-        if (!subjectGrades[ev.subject]) {
-          subjectGrades[ev.subject] = { total: 0, count: 0, maxTotal: 0 };
-        }
-        subjectGrades[ev.subject].total += g.score;
-        subjectGrades[ev.subject].maxTotal += ev.max_score;
-        subjectGrades[ev.subject].count += 1;
-      }
-    });
-
-    const tableData: any[] = [];
-    let totalScore = 0;
-    let totalMax = 0;
-
-    Object.keys(subjectGrades).forEach(sub => {
-      const sg = subjectGrades[sub];
-      // Convert everything to a base of 20 for the average
-      const avgSur20 = (sg.total / sg.maxTotal) * 20;
-      tableData.push([
-        sub,
-        `${sg.total.toFixed(2)} / ${sg.maxTotal}`,
-        avgSur20.toFixed(2),
-        "" // Appreciation
-      ]);
-      totalScore += avgSur20;
-      totalMax += 20;
-    });
-
-    const generalAvg = totalMax > 0 ? (totalScore / totalMax) * 20 : 0;
-
-    (doc as any).autoTable({
-      startY: 65,
-      head: [['Matière', 'Notes Obtenues', 'Moyenne (/20)', 'Appréciations']],
-      body: tableData,
-      theme: 'grid',
-      headStyles: { fillColor: [59, 130, 246] }
-    });
-
-    const finalY = (doc as any).lastAutoTable.finalY || 65;
-
-    doc.setFont("helvetica", "bold");
-    doc.text(`Moyenne Générale : ${generalAvg.toFixed(2)} / 20`, 14, finalY + 15);
-
-    doc.setFont("helvetica", "normal");
-    doc.text("Le Comité d'examen", pageWidth - 50, finalY + 30);
-    
-    setPdfPreviewUrl(doc.output('bloburl').toString());
-  };
 
   return (
     <div style={{minHeight: '100vh', background: 'var(--background-color)'}}>
@@ -276,9 +208,9 @@ export default function CommitteePortal({ session, onLogout, onOpenBulletin }: {
                     <td style={{padding: '16px'}}>{className}</td>
                     <td style={{padding: '16px'}}>
                       <div style={{display: 'flex', gap: '8px'}}>
-                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '1er Trimestre', student.class_id) : generatePDF(student, '1er Trimestre')}>T1</button>
-                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '2ème Trimestre', student.class_id) : generatePDF(student, '2ème Trimestre')}>T2</button>
-                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => onOpenBulletin ? onOpenBulletin(student.id, '3ème Trimestre', student.class_id) : generatePDF(student, '3ème Trimestre')}>T3</button>
+                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => { setPreviewClassId(student.class_id); setPreviewPeriod('1er Trimestre'); setPreviewStudentId(student.id); }}>T1</button>
+                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => { setPreviewClassId(student.class_id); setPreviewPeriod('2ème Trimestre'); setPreviewStudentId(student.id); }}>T2</button>
+                        <button className="btn btn-outline" style={{padding: '4px 12px', fontSize: '0.85rem'}} onClick={() => { setPreviewClassId(student.class_id); setPreviewPeriod('3ème Trimestre'); setPreviewStudentId(student.id); }}>T3</button>
                       </div>
                     </td>
                   </tr>
@@ -461,6 +393,31 @@ export default function CommitteePortal({ session, onLogout, onOpenBulletin }: {
           </div>
         )}
       </main>
+
+      {/* Bulletin Preview Modal */}
+      {previewClassId && (
+        <div className="modal-overlay" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999}}>
+          <div className="modal-content" style={{maxWidth: '1600px', width: '98%', height: '90vh', padding: '20px', background: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px'}}>
+              <h3 style={{margin: 0}}>Aperçu des Bulletins</h3>
+              <button className="close-btn" style={{background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem'}} onClick={() => setPreviewClassId(null)}>✕</button>
+            </div>
+            <div style={{flex: 1, overflowY: 'auto'}}>
+              <BulletinPreview 
+                classData={classes.find(c => c.id === previewClassId)}
+                students={students.filter(s => s.class_id === previewClassId)}
+                evaluations={evaluations.filter(e => e.class_id === previewClassId && e.period === previewPeriod && e.validation_status === 'approved')}
+                grades={grades}
+                period={previewPeriod}
+                schoolInfo={settings}
+                classSubjects={classSubjects.filter(cs => cs.class_id === previewClassId)}
+                schedules={[]}
+                targetStudentId={previewStudentId}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* PDF Modal */}
       {pdfPreviewUrl && (
