@@ -6051,28 +6051,11 @@ function App() {
       )}
       {/* Floating Support Button */}
       <button 
-        className="hide-print"
+        className="hide-print floating-support-btn"
         onClick={() => setIsSupportModalOpen(true)}
-        style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          background: 'var(--accent-color, #8B5CF6)',
-          color: 'white',
-          border: 'none',
-          borderRadius: '50px',
-          padding: '12px 24px',
-          fontSize: '1rem',
-          fontWeight: 600,
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-          cursor: 'pointer',
-          zIndex: 9999,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}
       >
-        <span>❓</span> Aide & Support
+        <span className="support-icon">❓</span>
+        <span className="support-text">Aide & Support</span>
       </button>
 
       {isSupportModalOpen && currentSchoolId && session && (
