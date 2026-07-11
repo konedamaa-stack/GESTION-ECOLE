@@ -113,11 +113,14 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
       return;
     }
 
-    const { error } = await supabase.from('evaluations').insert([newEval]);
+    const { data: inserted, error } = await supabase.from('evaluations').insert([newEval]).select();
     if (!error) {
       alert(t('teacher.eval_created', "Évaluation créée avec succès"));
       e.currentTarget.reset();
-      fetchData();
+      await fetchData();
+      if (inserted && inserted.length > 0) {
+        handleSelectEvaluation(inserted[0]);
+      }
     } else {
       alert(t('teacher.error', "Erreur: ") + error.message);
     }
