@@ -2825,7 +2825,7 @@ function App() {
         </button>
       </div>
 
-      <div className="panel delay-100">
+      <div className="panel delay-100 printable-schedule-wrapper">
         <div className="panel-header" style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
           <h3 className="panel-title" style={{margin: 0}}>{t('admin.schedules.panel_title', 'Planning de la classe')}</h3>
           <select 
@@ -2839,6 +2839,27 @@ function App() {
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
+          {selectedClassForSchedule && (
+            <button 
+              className="btn btn-outline" 
+              onClick={() => {
+                const styleEl = document.createElement('style');
+                styleEl.id = 'schedule-print-style';
+                styleEl.innerHTML = '@page { size: landscape; margin: 10mm; }';
+                document.head.appendChild(styleEl);
+                document.body.classList.add('printing-schedule');
+                window.print();
+                setTimeout(() => {
+                  document.body.classList.remove('printing-schedule');
+                  const existing = document.getElementById('schedule-print-style');
+                  if (existing) existing.remove();
+                }, 1000);
+              }}
+              style={{marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px'}}
+            >
+              <Icons.Printer /> {t('admin.schedules.print', 'Imprimer')}
+            </button>
+          )}
         </div>
 
         {selectedClassForSchedule ? (
@@ -5674,8 +5695,31 @@ function App() {
                       </div>
 
                       {/* Emploi du temps de la classe */}
-                      <h3 style={{marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', fontSize: '1.1rem'}}>{t('admin.modals.class_schedule', 'Emploi du temps')} ({selectedStudent.classes?.name})</h3>
-                      <div style={{marginBottom: '24px'}}>
+                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>
+                        <h3 style={{margin: 0, fontSize: '1.1rem'}}>{t('admin.modals.class_schedule', 'Emploi du temps')} ({selectedStudent.classes?.name})</h3>
+                        {schedulesData.filter(s => s.class_id === selectedStudent.class_id).length > 0 && (
+                          <button 
+                            className="btn btn-outline" 
+                            onClick={() => {
+                              const styleEl = document.createElement('style');
+                              styleEl.id = 'schedule-print-style';
+                              styleEl.innerHTML = '@page { size: landscape; margin: 10mm; }';
+                              document.head.appendChild(styleEl);
+                              document.body.classList.add('printing-schedule');
+                              window.print();
+                              setTimeout(() => {
+                                document.body.classList.remove('printing-schedule');
+                                const existing = document.getElementById('schedule-print-style');
+                                if (existing) existing.remove();
+                              }, 1000);
+                            }}
+                            style={{padding: '4px 8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px'}}
+                          >
+                            <Icons.Printer /> {t('admin.schedules.print', 'Imprimer')}
+                          </button>
+                        )}
+                      </div>
+                      <div style={{marginBottom: '24px'}} className="printable-schedule-wrapper">
                         {schedulesData.filter(s => s.class_id === selectedStudent.class_id).length > 0 ? (
                           <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px'}}>
                             {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'].map(day => {

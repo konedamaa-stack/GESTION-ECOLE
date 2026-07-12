@@ -216,8 +216,29 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
         )}
 
         {activeTab === 'schedule' && (
-          <div className="panel">
-            <h2 style={{marginTop: 0}}>{t('student.tab_schedule', 'Mon Emploi du Temps')}</h2>
+          <div className="panel printable-schedule-wrapper">
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
+              <h2 style={{marginTop: 0, marginBottom: 0}}>{t('student.tab_schedule', 'Mon Emploi du Temps')}</h2>
+              <button 
+                className="btn btn-outline" 
+                onClick={() => {
+                  const styleEl = document.createElement('style');
+                  styleEl.id = 'schedule-print-style';
+                  styleEl.innerHTML = '@page { size: landscape; margin: 10mm; }';
+                  document.head.appendChild(styleEl);
+                  document.body.classList.add('printing-schedule');
+                  window.print();
+                  setTimeout(() => {
+                    document.body.classList.remove('printing-schedule');
+                    const existing = document.getElementById('schedule-print-style');
+                    if (existing) existing.remove();
+                  }, 1000);
+                }}
+                style={{display: 'flex', alignItems: 'center', gap: '8px'}}
+              >
+                <span>🖨️</span> {t('student.print_schedule', 'Imprimer')}
+              </button>
+            </div>
             <div style={{display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '16px'}}>
               {days.map((day, index) => {
                 const dayKey = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][index];
