@@ -615,6 +615,8 @@ html {
   body.print-bulletin .page-header,
   body.print-bulletin .stats-grid,
   body.print-bulletin .sidebar,
+  body.print-bulletin .sidebar-overlay,
+  body.print-bulletin .modal-overlay,
   body.print-bulletin .top-header,
   body.print-bulletin .panel:not(.bulletin-preview-container),
   body.print-bulletin .print-controls {
@@ -640,11 +642,15 @@ html {
   body.print-finance-list .page-header,
   body.print-finance-list .stats-grid,
   body.print-finance-list .sidebar,
+  body.print-finance-list .sidebar-overlay,
+  body.print-finance-list .modal-overlay,
   body.print-finance-list .top-header,
   body.print-finance-list .panel:not(#finance-list-panel),
   body.print-finance-class-summary .page-header,
   body.print-finance-class-summary .stats-grid,
   body.print-finance-class-summary .sidebar,
+  body.print-finance-class-summary .sidebar-overlay,
+  body.print-finance-class-summary .modal-overlay,
   body.print-finance-class-summary .top-header,
   body.print-finance-class-summary .panel:not(#finance-class-summary-panel) {
     display: none !important;
@@ -733,6 +739,8 @@ html {
   body.print-student-list .page-header,
   body.print-student-list .stats-grid,
   body.print-student-list .sidebar,
+  body.print-student-list .sidebar-overlay,
+  body.print-student-list .modal-overlay,
   body.print-student-list .top-header,
   body.print-student-list .panel:not(#student-list-panel) {
     display: none !important;
