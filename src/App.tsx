@@ -5425,6 +5425,7 @@ function App() {
                                   return Math.max(0, total - paye);
                                 })()
                               }
+                            onClose={closeModal}
                           />
                         </div>
                       </div>
@@ -5468,6 +5469,7 @@ function App() {
                                   return Math.max(0, total - paye);
                                 })()
                             }
+                            onClose={closeModal}
                           />
                         </div>
                       </div>

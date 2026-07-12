@@ -6,23 +6,36 @@ interface SmallReceiptPreviewProps {
   student?: any;
   schoolInfo?: any;
   studentReste?: number;
+  onClose?: () => void;
 }
 
 export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({ 
   invoice, 
   student, 
   schoolInfo, 
-  studentReste = 0 
+  studentReste = 0,
+  onClose
 }) => {
   const { i18n } = useTranslation();
   const isAr = i18n.language.startsWith('ar');
 
   useEffect(() => {
+    const handleAfterPrint = () => {
+      if (onClose) {
+        onClose();
+      }
+    };
+    window.addEventListener('afterprint', handleAfterPrint);
+
     const timer = setTimeout(() => {
       window.print();
     }, 500);
-    return () => clearTimeout(timer);
-  }, []);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+  }, [onClose]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR').format(amount) + ' F';
