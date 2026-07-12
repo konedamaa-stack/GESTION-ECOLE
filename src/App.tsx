@@ -4497,10 +4497,46 @@ function App() {
                 <form onSubmit={handleFormSubmit}>
                   <div className="form-group">
                     <label>{t('admin.modals.student_concerned', 'Élève concerné')}</label>
-                    <select name="student_id" className="form-select" required>
-                      <option value="">Rechercher un élève...</option>
-                      {studentsData.map(s => <option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>)}
-                    </select>
+                    <input 
+                      type="text" 
+                      list="absence-students" 
+                      className="form-input" 
+                      placeholder="Rechercher matricule, élève ou parent..." 
+                      required
+                      defaultValue={
+                        preselectedStudentId 
+                          ? (() => {
+                              const s = studentsData.find(st => st.id === preselectedStudentId);
+                              if (!s) return "";
+                              const parentStr = s.student_parents && s.student_parents.length > 0 && s.student_parents[0].parents ? ` - Parent: ${s.student_parents[0].parents.first_name} ${s.student_parents[0].parents.last_name}` : '';
+                              return `${s.first_name} ${s.last_name} (${s.matricule})${parentStr}`;
+                            })()
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const match = studentsData.find(s => {
+                          const parentStr = s.student_parents && s.student_parents.length > 0 && s.student_parents[0].parents ? ` - Parent: ${s.student_parents[0].parents.first_name} ${s.student_parents[0].parents.last_name}` : '';
+                          return `${s.first_name} ${s.last_name} (${s.matricule})${parentStr}` === val;
+                        });
+                        if (match) {
+                           e.target.setCustomValidity('');
+                           const hiddenInput = document.getElementById('absence_hidden_student_id') as HTMLInputElement;
+                           if(hiddenInput) hiddenInput.value = match.id;
+                        } else {
+                           e.target.setCustomValidity('Veuillez sélectionner un élève dans la liste');
+                           const hiddenInput = document.getElementById('absence_hidden_student_id') as HTMLInputElement;
+                           if(hiddenInput) hiddenInput.value = '';
+                        }
+                      }}
+                    />
+                    <datalist id="absence-students">
+                      {studentsData.map(s => {
+                        const parentStr = s.student_parents && s.student_parents.length > 0 && s.student_parents[0].parents ? ` - Parent: ${s.student_parents[0].parents.first_name} ${s.student_parents[0].parents.last_name}` : '';
+                        return <option key={s.id} value={`${s.first_name} ${s.last_name} (${s.matricule})${parentStr}`} />;
+                      })}
+                    </datalist>
+                    <input type="hidden" name="student_id" id="absence_hidden_student_id" defaultValue={preselectedStudentId || ""} required />
                   </div>
                   <div className="form-grid">
                     <div className="form-group">
