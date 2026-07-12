@@ -1025,3 +1025,32 @@ html {
   --font-main: 'Traditional Arabic', 'Cairo', 'Tajawal', serif !important;
   font-family: 'Traditional Arabic', 'Cairo', 'Tajawal', serif !important;
 }
+
+/* Scale up all text elements globally in Arabic (RTL) mode since Traditional Arabic renders small */
+:root[dir="rtl"], html[dir="rtl"], body[dir="rtl"] {
+  font-size: 16.5px !important;
+}
+
+[dir="rtl"] .logo-text {
+  font-size: 1.25rem !important;
+}
+
+[dir="rtl"] .nav-item {
+  font-size: 1.1rem !important;
+}
+
+[dir="rtl"] input, [dir="rtl"] select, [dir="rtl"] button, [dir="rtl"] textarea {
+  font-size: 15px !important;
+}
+
+[dir="rtl"] table th, [dir="rtl"] table td {
+  font-size: 14.5px !important;
+}
+
+[dir="rtl"] .card-title, [dir="rtl"] .panel-title {
+  font-size: 1.3rem !important;
+}
+
+[dir="rtl"] .stat-value {
+  font-size: 2.1rem !important;
+}

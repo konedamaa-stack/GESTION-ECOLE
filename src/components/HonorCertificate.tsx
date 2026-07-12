@@ -129,7 +129,7 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
         <div style={{ position: 'relative', width: '100%', height: '100%', boxSizing: 'border-box', padding: '4mm', fontFamily: isAr ? "'Traditional Arabic', 'Cairo', 'Tajawal', serif" : "Arial, sans-serif" }}>
           
           {/* HEADER */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: isAr ? '11px' : '9.5px', fontWeight: 'bold', color: '#000000', height: '65px', marginBottom: '12px', lineHeight: '1.3', flexDirection: isAr ? 'row-reverse' : 'row' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: isAr ? '14px' : '9.5px', fontWeight: 'bold', color: '#000000', height: '65px', marginBottom: '12px', lineHeight: '1.3', flexDirection: isAr ? 'row-reverse' : 'row' }}>
             <div style={{ width: '32%', textAlign: 'center' }}>
               {isAr ? (
                 <>وزارة التربية الوطنية والتعليم الفني<br/>ومحو الأمية</>
@@ -151,7 +151,7 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
           {/* TITLE */}
           <div style={{ margin: '4px 0', textAlign: 'center' }}>
             <h1 style={{ 
-              fontSize: isAr ? '40px' : '36px', 
+              fontSize: isAr ? '48px' : '36px', 
               margin: '0 0 4px 0', 
               color: '#e5a93b', 
               textShadow: '1.2px 1.2px 0 #9a7d0a, -1px -1px 0 #9a7d0a, 1px -1px 0 #9a7d0a, -1px 1px 0 #9a7d0a, 1.2px -1.2px 0 #9a7d0a, 0px 3px 8px rgba(0,0,0,0.15)',
@@ -165,7 +165,7 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
 
           {/* BODY */}
           <div style={{ margin: '8px auto', maxWidth: '82%', textAlign: 'center' }}>
-            <p style={{ fontSize: isAr ? '18px' : '16.5px', lineHeight: '1.6', fontFamily: isAr ? "'Cairo', 'Tajawal', sans-serif" : 'Arial, sans-serif', margin: '0', color: '#111', display: 'inline-block' }}>
+            <p style={{ fontSize: isAr ? '22px' : '16.5px', lineHeight: '1.6', fontFamily: isAr ? "'Cairo', 'Tajawal', sans-serif" : 'Arial, sans-serif', margin: '0', color: '#111', display: 'inline-block' }}>
               {isAr ? (
                 <>
                   إن التلميذ(ة) <strong>{student.first_name?.toUpperCase()} {student.last_name?.toUpperCase()}</strong> رقم التسجيل <strong>{student.matricule}</strong> في قسم <strong>{student.classes?.name || '...'}</strong> الحاصل(ة) على معدل <strong>{average.toFixed(2).replace('.', ',')}</strong> قد تم تسجيله(ا) في <strong>لوحة الشرف {mention && ('+ ' + mention)}</strong> تقديراً لحسن سلوكه(a) واجتهاده(a) خلال <strong>{period.includes('1er') ? 'الثلاثي الأول' : period.includes('2') ? 'الثلاثي الثاني' : 'الثلاثي الثالث'}</strong> من السنة الدراسية <strong>{academicYear}</strong>.
@@ -183,9 +183,9 @@ export function HonorCertificate({ student, schoolInfo, period, average, mention
 
           {/* FOOTER (SIGNATURE BLOCK) */}
           <div style={{ position: 'absolute', bottom: '8mm', left: isAr ? '8mm' : 'auto', right: isAr ? 'auto' : '8mm', width: '280px', textAlign: 'center', color: '#000000', fontFamily: isAr ? "'Cairo', 'Tajawal', sans-serif" : 'Arial, sans-serif' }}>
-            <p style={{ margin: '0 0 3px 0', fontSize: '12px', fontWeight: 'bold' }}>{isAr ? `حرر في ${city}، بتاريخ ${today}` : `Fait à ${city}, le ${today}`}</p>
-            <p style={{ margin: '0 0 30px 0', fontSize: '13px', fontWeight: 'bold', textDecoration: 'underline' }}>{isAr ? 'مدير الدراسات' : 'LE DIRECTEUR DES ÉTUDES'}</p>
-            <p style={{ margin: 0, fontSize: '14px', fontWeight: 'bold' }}>{signerName.toUpperCase()}</p>
+            <p style={{ margin: '0 0 3px 0', fontSize: isAr ? '14px' : '12px', fontWeight: 'bold' }}>{isAr ? `حرر في ${city}، بتاريخ ${today}` : `Fait à ${city}, le ${today}`}</p>
+            <p style={{ margin: '0 0 30px 0', fontSize: isAr ? '15px' : '13px', fontWeight: 'bold', textDecoration: 'underline' }}>{isAr ? 'مدير الدراسات' : 'LE DIRECTEUR DES ÉTUDES'}</p>
+            <p style={{ margin: 0, fontSize: isAr ? '16px' : '14px', fontWeight: 'bold' }}>{signerName.toUpperCase()}</p>
           </div>
 
           {/* END CLEAR */}

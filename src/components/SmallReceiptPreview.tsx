@@ -63,7 +63,7 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
       backgroundColor: 'white',
       color: 'black',
       fontFamily: isAr ? "'Traditional Arabic', 'Cairo', 'Tajawal', serif" : '"Courier New", Courier, monospace',
-      fontSize: '12px',
+      fontSize: isAr ? '14px' : '12px',
       lineHeight: '1.4'
     }} dir={isAr ? 'rtl' : 'ltr'}>
       {/* Header */}
@@ -76,7 +76,7 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
       <div style={{ borderBottom: '1px dashed black', margin: '8px 0' }}></div>
 
       {/* Meta info */}
-      <div style={{ fontSize: '11px', marginBottom: '8px' }}>
+      <div style={{ fontSize: isAr ? '13px' : '11px', marginBottom: '8px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: isAr ? 'row-reverse' : 'row' }}>
           <span>{isAr ? 'التاريخ:' : 'Date:'}</span>
           <span>{paymentDate}</span>
@@ -117,7 +117,7 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
           <span>{isAr ? 'المصاريف:' : 'Scolarité:'}</span>
           <span>{formatCurrency(tuition)}</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', fontWeight: 'bold', fontSize: '13px', flexDirection: isAr ? 'row-reverse' : 'row' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', fontWeight: 'bold', fontSize: isAr ? '16px' : '13px', flexDirection: isAr ? 'row-reverse' : 'row' }}>
           <span>{isAr ? 'الدفعة:' : 'Versement:'}</span>
           <span>{formatCurrency(payment)}</span>
         </div>

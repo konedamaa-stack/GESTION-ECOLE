@@ -99,7 +99,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
       color: 'black',
       fontFamily: isAr ? "'Traditional Arabic', 'Cairo', 'Tajawal', serif" : '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
       fontWeight: 'bold',
-      fontSize: '14px',
+      fontSize: isAr ? '16.5px' : '14px',
     }} dir={isAr ? 'rtl' : 'ltr'}>
       <div style={{
         border: '2px solid black',
@@ -112,8 +112,8 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
             <img src={schoolInfo?.logo_url || '/logo-coran.jpg'} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <div style={{ textAlign: 'center', flex: 1, padding: '0 5px', lineHeight: '1.2' }}>
-            <div style={{ fontSize: '16px', textTransform: 'uppercase', fontWeight: 'bold' }}>{schoolName}</div>
-            <div style={{ fontSize: '14px', textTransform: 'uppercase', textDecoration: 'underline', margin: '2px 0' }}>
+            <div style={{ fontSize: isAr ? '20px' : '16px', textTransform: 'uppercase', fontWeight: 'bold' }}>{schoolName}</div>
+            <div style={{ fontSize: isAr ? '17px' : '14px', textTransform: 'uppercase', textDecoration: 'underline', margin: '2px 0' }}>
               {isAr ? `وصل تسديد ${getArabicOrdinal(installmentNum)} للمصاريف` : `Reçu de ${versementText} de Scolarité`}
             </div>
             <div style={{ fontSize: '12px' }}>{isAr ? 'الهاتف:' : 'CEL:'} {schoolPhone}</div>
@@ -122,7 +122,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
         </div>
 
         {/* Row 1: Année Scolaire etc. */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', fontSize: '12px', flexDirection: isAr ? 'row-reverse' : 'row' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', fontSize: isAr ? '14px' : '12px', flexDirection: isAr ? 'row-reverse' : 'row' }}>
           <div style={{ display: 'flex', gap: '8px', flexDirection: isAr ? 'row-reverse' : 'row' }}>
             <span>{isAr ? 'السنة الدراسية:' : 'Année Scolaire:'}</span>
             <span>{academicYear}</span>
