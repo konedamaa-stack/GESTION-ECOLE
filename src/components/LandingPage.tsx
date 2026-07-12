@@ -140,7 +140,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSuperA
               <span style={{ fontSize: '1.5rem' }}>📍</span>
               <div>
                 <strong>Adresse</strong><br />
-                123 Avenue de l'Éducation, 75000 Paris
+                Carrefour Libanais à Divo, à côté de la Mosquée Sounith
               </div>
             </div>
             
@@ -148,7 +148,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSuperA
               <span style={{ fontSize: '1.5rem' }}>📞</span>
               <div>
                 <strong>Téléphone</strong><br />
-                +33 1 23 45 67 89
+                +225 05 05 61 77 43 / +225 07 07 99 51 55
               </div>
             </div>
             
@@ -156,7 +156,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSuperA
               <span style={{ fontSize: '1.5rem' }}>✉️</span>
               <div>
                 <strong>Email</strong><br />
-                contact@sges-ecole.fr
+                konedamaa@gmail.com
               </div>
             </div>
           </div>
