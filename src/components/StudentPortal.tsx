@@ -224,7 +224,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
                 onClick={() => {
                   const styleEl = document.createElement('style');
                   styleEl.id = 'schedule-print-style';
-                  styleEl.innerHTML = '@page { size: landscape; margin: 10mm; }';
+                  styleEl.innerHTML = '@page { size: landscape; margin: 0; }';
                   document.head.appendChild(styleEl);
                   document.body.classList.add('printing-schedule');
                   window.print();

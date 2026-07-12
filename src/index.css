@@ -493,12 +493,12 @@ html {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 0.5cm;
+    margin: 0;
   }
   body {
     background-color: white !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 1.5cm !important;
   }
   .sidebar, .top-header, .btn, .modal-close, .print-controls, .modal-header {
     display: none !important;
@@ -1096,7 +1096,8 @@ html {
     top: 0 !important;
     width: 100% !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 1.5cm !important;
+    box-sizing: border-box !important;
     border: none !important;
     box-shadow: none !important;
     background: white !important;
