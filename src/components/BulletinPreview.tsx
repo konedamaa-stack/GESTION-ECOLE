@@ -84,11 +84,14 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
   });
 
   const subjects = Array.from(new Set(classEvals.map(e => e.subject)));
+  const subjectMaxScores: Record<string, number> = {};
 
   subjects.forEach(subject => {
     const subjectEvals = classEvals.filter(e => e.subject === subject);
     const subjectEvalIds = subjectEvals.map(e => e.id);
     const coef = getSubjectCoef(subject);
+    const subjectMaxScore = subjectEvals[0]?.max_score || 20;
+    subjectMaxScores[subject] = subjectMaxScore;
 
     students.forEach(st => {
       const studentSubjectGrades = classGrades.filter(g => g.student_id === st.id && subjectEvalIds.includes(g.evaluation_id) && g.score !== null);
@@ -96,13 +99,14 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
         const sumNormalized = studentSubjectGrades.reduce((acc, curr) => {
           const ev = subjectEvals.find(e => e.id === curr.evaluation_id);
           const max = ev?.max_score || 20;
-          return acc + (curr.score / max * 20);
+          return acc + (curr.score / max * subjectMaxScore);
         }, 0);
         
         const avg = sumNormalized / studentSubjectGrades.length;
         
         studentStats[st.id].subjects[subject] = avg;
-        studentStats[st.id].totalWeightedScore += (avg * coef);
+        const avg20 = (avg / subjectMaxScore) * 20;
+        studentStats[st.id].totalWeightedScore += (avg20 * coef);
         studentStats[st.id].totalSubjectCoefs += coef;
       }
     });
@@ -150,14 +154,15 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
   const classMax = rankings.length > 0 ? rankings[0].avg : 0;
   const classMin = rankings.length > 0 ? rankings[rankings.length - 1].avg : 0;
 
-  const getAppreciation = (note: number) => {
+  const getAppreciation = (note: number, subjectMaxScore = 20) => {
     const isAr = i18n.language.startsWith("ar");
-    if (note >= 16) return isAr ? "جيد جداً" : "Très Bien";
-    if (note >= 14) return isAr ? "جيد" : "Bien";
-    if (note >= 12) return isAr ? "مستحسن" : "Assez Bien";
-    if (note >= 10) return isAr ? "مقبول" : "Passable";
-    if (note >= 8) return isAr ? "غير كاف" : "Insuffisant";
-    if (note >= 5) return isAr ? "ضعيف" : "Faible";
+    const note20 = (note / subjectMaxScore) * 20;
+    if (note20 >= 16) return isAr ? "جيد جداً" : "Très Bien";
+    if (note20 >= 14) return isAr ? "جيد" : "Bien";
+    if (note20 >= 12) return isAr ? "مستحسن" : "Assez Bien";
+    if (note20 >= 10) return isAr ? "مقبول" : "Passable";
+    if (note20 >= 8) return isAr ? "غير كاف" : "Insuffisant";
+    if (note20 >= 5) return isAr ? "ضعيف" : "Faible";
     return isAr ? "ضعيف جداً" : "Très Faible";
   };
 
@@ -193,7 +198,9 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
           let tCoef = 0;
           group.forEach(s => {
             const coef = getSubjectCoef(s);
-            tMoy += stats.subjects[s] * coef;
+            const maxScore = subjectMaxScores[s] || 20;
+            const val20 = (stats.subjects[s] / maxScore) * 20;
+            tMoy += val20 * coef;
             tCoef += coef;
           });
           return { tMoy, tCoef };
@@ -214,15 +221,16 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
           const total = val * coef;
           const sRank = subjectRanks[s]?.[st.id];
           const teacherName = getTeacherName(s);
+          const maxScore = subjectMaxScores[s] || 20;
           
           return (
             <tr key={s}>
               <td style={{textAlign: isAr ? 'right' : 'left', paddingLeft: isAr ? '0' : '8px', paddingRight: isAr ? '8px' : '0', fontWeight: 'bold'}}>{translateBulletinWord(s)}</td>
-              <td>{formatNum(val, 2)}</td>
+              <td>{formatNum(val, 2)}{maxScore !== 20 ? ' /' + maxScore : ''}</td>
               <td>{formatNum(coef, 0)}</td>
-              <td>{formatNum(total, 2)}</td>
+              <td>{formatNum(total, 2)}{maxScore !== 20 ? ' /' + (maxScore * coef) : ''}</td>
               <td>{sRank ? getRankStr(sRank) : '-'}</td>
-              <td>{getAppreciation(val)}</td>
+              <td>{getAppreciation(val, maxScore)}</td>
               <td style={{fontSize: '0.75rem', color: '#475569'}}>{teacherName}</td>
               <td></td>
             </tr>
