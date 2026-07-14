@@ -616,7 +616,6 @@ html {
   body.print-bulletin .stats-grid,
   body.print-bulletin .sidebar,
   body.print-bulletin .sidebar-overlay,
-  body.print-bulletin .modal-overlay,
   body.print-bulletin .top-header,
   body.print-bulletin .panel:not(.bulletin-preview-container),
   body.print-bulletin .print-controls {
