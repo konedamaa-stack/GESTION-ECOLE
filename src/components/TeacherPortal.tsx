@@ -331,6 +331,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                       <option value="Devoir à la maison">Devoir à la maison</option>
                       <option value="Composition">Composition</option>
                       <option value="Examen blanc">Examen blanc</option>
+                      <option value="Intero">Interrogation (Intero)</option>
                     </select>
                   </div>
                   <div className="form-group">

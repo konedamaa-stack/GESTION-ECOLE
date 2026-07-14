@@ -5579,6 +5579,7 @@ function App() {
                         <option value="Devoir à la maison">Devoir à la maison</option>
                         <option value="Composition">Composition</option>
                         <option value="Examen blanc">Examen blanc</option>
+                        <option value="Intero">Interrogation (Intero)</option>
                       </select>
                     </div>
                   </div>
