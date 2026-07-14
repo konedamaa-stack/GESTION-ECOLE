@@ -97,6 +97,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
       date: formData.get('date'),
       period: formData.get('period'),
       type: formData.get('type'),
+      max_score: Number(formData.get('max_score')) || 20,
       school_id: session.school_id,
     };
 
@@ -335,6 +336,10 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                   <div className="form-group">
                     <label style={{fontWeight: 600, color: 'var(--text-secondary)'}}>{t('teacher.date', "Date")}</label>
                     <input type="date" name="date" className="form-input" required style={{width: '100%'}} />
+                  </div>
+                  <div className="form-group">
+                    <label style={{fontWeight: 600, color: 'var(--text-secondary)'}}>{t('admin.modals.max_score', 'Noté sur (Maximum)')}</label>
+                    <input type="number" name="max_score" className="form-input" required defaultValue="20" min="1" style={{width: '100%'}} />
                   </div>
                 </div>
                 <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end'}}>
