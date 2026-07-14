@@ -120,7 +120,15 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
       e.currentTarget.reset();
       await fetchData();
       if (inserted && inserted.length > 0) {
-        handleSelectEvaluation(inserted[0]);
+        // Fetch new evaluation with class details for proper list selection
+        const { data: fullInserted } = await supabase
+          .from('evaluations')
+          .select('*, classes(name)')
+          .eq('id', inserted[0].id)
+          .single();
+        
+        setActiveTab('evaluations');
+        handleSelectEvaluation(fullInserted || inserted[0]);
       }
     } else {
       alert(t('teacher.error', "Erreur: ") + error.message);
