@@ -120,7 +120,8 @@ function App() {
   const [activeEvaluation, setActiveEvaluation] = useState<any>(null);
   const [globalGradeClassId, setGlobalGradeClassId] = useState<string | null>(null);
   const [globalGradePeriod, setGlobalGradePeriod] = useState<string>('1er Trimestre');
-  // unused reinscriptionAverage
+  const [reinscriptionAverage, setReinscriptionAverage] = useState<number | null>(null);
+  const [isMoyenneLoading, setIsMoyenneLoading] = useState<boolean>(false);
   const [globalGrades, setGlobalGrades] = useState<{[key: string]: string}>({});
   const [bulletinClassId, setBulletinClassId] = useState<string | null>(null);
   const [bulletinTargetStudentId, setBulletinTargetStudentId] = useState<string | null>(null);
@@ -141,6 +142,8 @@ function App() {
       fetchClassSubjects();
     }
   }, [currentSchoolId]);
+
+
   
   const handleSaveCoefficients = async (e: any) => {
     e.preventDefault();
@@ -218,6 +221,88 @@ function App() {
     applyThemeSettings(settingsData);
   }, [settingsData]);
   const [editEntity, setEditEntity] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchReinscriptionAverage = async () => {
+      if (activeModal === 'reinscription' && editEntity) {
+        setIsMoyenneLoading(true);
+        setReinscriptionAverage(null);
+        try {
+          const classId = editEntity.class_id;
+          
+          // Fetch evaluations for this class (validation_status = 'approved')
+          const { data: evals } = await supabase
+            .from('evaluations')
+            .select('*')
+            .eq('class_id', classId)
+            .eq('validation_status', 'approved');
+          
+          if (!evals || evals.length === 0) {
+            setIsMoyenneLoading(false);
+            return;
+          }
+          
+          const evalIds = evals.map((e: any) => e.id);
+          
+          // Fetch all grades for this student for these evaluations
+          const { data: studentGrades } = await supabase
+            .from('grades')
+            .select('*')
+            .eq('student_id', editEntity.id)
+            .in('evaluation_id', evalIds);
+            
+          if (!studentGrades || studentGrades.length === 0) {
+            setIsMoyenneLoading(false);
+            return;
+          }
+          
+          // Fetch class subject coefficients
+          const { data: classSubjects } = await supabase
+            .from('class_subjects')
+            .select('*')
+            .eq('class_id', classId);
+            
+          const subjects = Array.from(new Set(evals.map((e: any) => e.subject)));
+          
+          let totalWeightedScore = 0;
+          let totalCoefs = 0;
+          
+          subjects.forEach(subject => {
+            const subjectEvals = evals.filter((e: any) => e.subject === subject);
+            const subjectEvalIds = subjectEvals.map((e: any) => e.id);
+            const subGrades = studentGrades.filter((g: any) => subjectEvalIds.includes(g.evaluation_id) && g.score !== null);
+            
+            if (subGrades.length > 0) {
+              const subjectMaxScore = subjectEvals[0]?.max_score || 20;
+              const sumNormalized = subGrades.reduce((acc: number, curr: any) => {
+                const ev = subjectEvals.find((e: any) => e.id === curr.evaluation_id);
+                const max = ev?.max_score || 20;
+                return acc + (curr.score / max * subjectMaxScore);
+              }, 0);
+              const subjectAverage = sumNormalized / subGrades.length;
+              
+              const coefObj = classSubjects ? classSubjects.find((cs: any) => cs.subject === subject) : null;
+              const coef = coefObj ? coefObj.coefficient : 1;
+              const average20 = (subjectAverage / subjectMaxScore) * 20;
+              
+              totalWeightedScore += average20 * coef;
+              totalCoefs += coef;
+            }
+          });
+          
+          if (totalCoefs > 0) {
+            setReinscriptionAverage(totalWeightedScore / totalCoefs);
+          }
+        } catch (e) {
+          console.error("Error computing average:", e);
+        } finally {
+          setIsMoyenneLoading(false);
+        }
+      }
+    };
+    
+    fetchReinscriptionAverage();
+  }, [activeModal, editEntity]);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [preselectedStudentId, setPreselectedStudentId] = useState<string | null>(null);
   const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
@@ -1946,6 +2031,13 @@ function App() {
                   }}><Icons.RefreshCw /></button>
                   <button className="btn btn-outline" title="Modifier" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('student'); }}>✏️</button>
                   <button className="btn btn-outline" title="Supprimer" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--error-color)', borderColor: 'var(--error-color)'}} onClick={() => handleDeleteStudent(row.id)}>🗑️</button>
+                  <button className="btn btn-outline" title="Bulletin" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--success-color)', borderColor: 'var(--success-color)'}} onClick={() => { 
+                    if(row.class_id) {
+                      loadBulletinData(row.class_id, '1er Trimestre', row.id);
+                    } else {
+                      alert(t('admin.students.msg_no_class', "Cet élève n'est assigné à aucune classe."));
+                    }
+                  }}>📄 Bulletin</button>
                   <button className="btn btn-outline" title="Emploi du temps" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { 
                     if(row.class_id) {
                       setSelectedClassForSchedule(row.class_id);
@@ -4280,8 +4372,8 @@ function App() {
               
               {activeModal === 'reinscription' && editEntity && (() => {
                 let autoClassId = editEntity.class_id;
-                let message = "Calcul de la moyenne en cours...";
-                let studentMoyenne: any = null;
+                let message = isMoyenneLoading ? "Calcul de la moyenne en cours..." : "Aucune moyenne calculée pour l'année écoulée (pas de notes).";
+                let studentMoyenne = reinscriptionAverage;
 
                 if (studentMoyenne !== null) {
                   if (studentMoyenne >= 10) {
@@ -4289,12 +4381,12 @@ function App() {
                     if (currentClass && currentClass.next_class_id) {
                       autoClassId = currentClass.next_class_id;
                       const nextClass = classesData.find(c => c.id === autoClassId);
-                      message = `Moyenne d'admission atteinte (${studentMoyenne.toFixed(2)}/20). Passage automatique en ${nextClass?.name || 'Classe Supérieure'}.`;
+                      message = "Moyenne d'admission atteinte (" + studentMoyenne.toFixed(2) + "/20). Passage automatique en " + (nextClass?.name || 'Classe Supérieure') + ".";
                     } else {
-                      message = `Moyenne d'admission atteinte (${studentMoyenne.toFixed(2)}/20) mais aucune classe supérieure définie.`;
+                      message = "Moyenne d'admission atteinte (" + studentMoyenne.toFixed(2) + "/20) mais aucune classe supérieure définie.";
                     }
                   } else {
-                    message = `Moyenne insuffisante (${studentMoyenne.toFixed(2)}/20). Redoublement conseillé.`;
+                    message = "Moyenne insuffisante (" + studentMoyenne.toFixed(2) + "/20). Redoublement conseillé.";
                   }
                 }
 
