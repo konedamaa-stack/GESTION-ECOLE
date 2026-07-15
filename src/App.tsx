@@ -605,7 +605,11 @@ function App() {
     if (data) setStudentDocumentsData(data);
   };
   const fetchEvaluations = async () => {
-    const { data } = await supabase.from('evaluations').select(`*, classes(name)`).eq('school_id', currentSchoolId);
+    const { data } = await supabase
+      .from('evaluations')
+      .select(`*, classes(name)`)
+      .eq('school_id', currentSchoolId)
+      .order('date', { ascending: false });
     if (data) setEvaluationsData(data);
   };
 
@@ -1340,7 +1344,6 @@ function App() {
 
         const { data: inserted, error } = await supabase.from('evaluations').insert([{...evaluation, school_id: currentSchoolId}]).select();
         if (error) throw error;
-        await fetchEvaluations();
         
         if (inserted && inserted.length > 0) {
           const { data: fullInserted } = await supabase
@@ -1349,11 +1352,14 @@ function App() {
             .eq('id', inserted[0].id)
             .single();
             
+          const newEvalObj = fullInserted || inserted[0];
+          setEvaluationsData(prev => [newEvalObj, ...prev]);
           setSelectedClassForGrades(evaluation.class_id as string);
           setSelectedPeriodForGrades(evaluation.period as string);
           setActiveTab('grades');
-          startGrading(fullInserted || inserted[0]);
+          startGrading(newEvalObj);
         }
+        await fetchEvaluations();
       }
       else if (activeModal === 'bulletin') {
         alert("Génération terminée ! Le document va être téléchargé.");

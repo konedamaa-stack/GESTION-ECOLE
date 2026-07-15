@@ -63,7 +63,8 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     // Fetch evaluations for this teacher's subjects
     const { data: evaluations } = await supabase.from('evaluations')
       .select('*, classes(name)')
-      .in('subject', teacherSubjects).eq('school_id', session.school_id);
+      .in('subject', teacherSubjects).eq('school_id', session.school_id)
+      .order('date', { ascending: false });
     if (evaluations) setEvaluationsData(evaluations);
 
     // Fetch students
@@ -118,7 +119,6 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     if (!error) {
       alert(t('teacher.eval_created', "Évaluation créée avec succès"));
       e.currentTarget.reset();
-      await fetchData();
       if (inserted && inserted.length > 0) {
         // Fetch new evaluation with class details for proper list selection
         const { data: fullInserted } = await supabase
@@ -127,9 +127,12 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
           .eq('id', inserted[0].id)
           .single();
         
+        const newEvalWithClassObj = fullInserted || inserted[0];
+        setEvaluationsData(prev => [newEvalWithClassObj, ...prev]);
         setActiveTab('evaluations');
-        handleSelectEvaluation(fullInserted || inserted[0]);
+        handleSelectEvaluation(newEvalWithClassObj);
       }
+      await fetchData();
     } else {
       alert(t('teacher.error', "Erreur: ") + error.message);
     }
