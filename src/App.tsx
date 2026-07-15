@@ -1338,9 +1338,22 @@ function App() {
           return;
         }
 
-        const { error } = await supabase.from('evaluations').insert([{...evaluation, school_id: currentSchoolId}]);
+        const { data: inserted, error } = await supabase.from('evaluations').insert([{...evaluation, school_id: currentSchoolId}]).select();
         if (error) throw error;
-        fetchEvaluations();
+        await fetchEvaluations();
+        
+        if (inserted && inserted.length > 0) {
+          const { data: fullInserted } = await supabase
+            .from('evaluations')
+            .select('*, classes(name)')
+            .eq('id', inserted[0].id)
+            .single();
+            
+          setSelectedClassForGrades(evaluation.class_id as string);
+          setSelectedPeriodForGrades(evaluation.period as string);
+          setActiveTab('grades');
+          startGrading(fullInserted || inserted[0]);
+        }
       }
       else if (activeModal === 'bulletin') {
         alert("Génération terminée ! Le document va être téléchargé.");
