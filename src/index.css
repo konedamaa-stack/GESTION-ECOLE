@@ -618,7 +618,9 @@ html {
   body.print-bulletin .sidebar-overlay,
   body.print-bulletin .top-header,
   body.print-bulletin .panel:not(.bulletin-preview-container),
-  body.print-bulletin .print-controls {
+  body.print-bulletin .print-controls,
+  body.print-bulletin header,
+  body.print-bulletin main {
     display: none !important;
   }
   body.print-bulletin .bulletin-preview-container,

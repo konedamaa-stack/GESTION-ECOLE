@@ -419,9 +419,22 @@ export default function CommitteePortal({ session, onLogout }: { session: any; o
       {previewClassId && (
         <div className="modal-overlay" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999}}>
           <div className="modal-content" style={{maxWidth: '1600px', width: '98%', height: '90vh', padding: '20px', background: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
-            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px'}}>
+            <div className="modal-header print-controls" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px'}}>
               <h3 style={{margin: 0}}>Aperçu des Bulletins</h3>
-              <button className="close-btn" style={{background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem'}} onClick={() => setPreviewClassId(null)}>✕</button>
+              <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={() => {
+                    document.body.classList.add('print-bulletin');
+                    window.print();
+                    setTimeout(() => document.body.classList.remove('print-bulletin'), 500);
+                  }}
+                  style={{padding: '6px 16px', display: 'flex', alignItems: 'center', gap: '8px'}}
+                >
+                  Imprimer / PDF
+                </button>
+                <button className="close-btn" style={{background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem'}} onClick={() => setPreviewClassId(null)}>✕</button>
+              </div>
             </div>
             <div style={{flex: 1, overflowY: 'auto'}}>
               <BulletinPreview 
