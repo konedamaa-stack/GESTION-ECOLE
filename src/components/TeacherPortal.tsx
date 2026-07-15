@@ -120,19 +120,16 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
       alert(t('teacher.eval_created', "Évaluation créée avec succès"));
       e.currentTarget.reset();
       if (inserted && inserted.length > 0) {
-        // Fetch new evaluation with class details for proper list selection
-        const { data: fullInserted } = await supabase
-          .from('evaluations')
-          .select('*, classes(name)')
-          .eq('id', inserted[0].id)
-          .single();
+        const clsObj = classesData.find(c => c.id === inserted[0].class_id);
+        const newEvalWithClassObj = {
+          ...inserted[0],
+          classes: clsObj ? { name: clsObj.name } : null
+        };
         
-        const newEvalWithClassObj = fullInserted || inserted[0];
         setEvaluationsData(prev => [newEvalWithClassObj, ...prev]);
         setActiveTab('evaluations');
         handleSelectEvaluation(newEvalWithClassObj);
       }
-      await fetchData();
     } else {
       alert(t('teacher.error', "Erreur: ") + error.message);
     }
@@ -143,11 +140,14 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     setSelectedClass(ev.class_id);
     setSelectedStudents([]);
     
-    // Load existing grades
+    // Load existing grades safely
     const evalGrades = gradesData.filter(g => g.evaluation_id === ev.id);
     const initialInputs: Record<string, {score: string, comment: string}> = {};
     evalGrades.forEach(g => {
-      initialInputs[g.student_id] = { score: g.score.toString(), comment: g.comment || '' };
+      initialInputs[g.student_id] = { 
+        score: g.score !== null && g.score !== undefined ? g.score.toString() : '', 
+        comment: g.comment || '' 
+      };
     });
     setGradesInput(initialInputs);
   };

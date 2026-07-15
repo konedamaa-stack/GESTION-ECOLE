@@ -1346,20 +1346,18 @@ function App() {
         if (error) throw error;
         
         if (inserted && inserted.length > 0) {
-          const { data: fullInserted } = await supabase
-            .from('evaluations')
-            .select('*, classes(name)')
-            .eq('id', inserted[0].id)
-            .single();
-            
-          const newEvalObj = fullInserted || inserted[0];
+          const clsObj = classesData.find((c: any) => c.id === inserted[0].class_id);
+          const newEvalObj = {
+            ...inserted[0],
+            classes: clsObj ? { name: clsObj.name } : null
+          };
+          
           setEvaluationsData(prev => [newEvalObj, ...prev]);
           setSelectedClassForGrades(evaluation.class_id as string);
           setSelectedPeriodForGrades(evaluation.period as string);
           setActiveTab('grades');
           startGrading(newEvalObj);
         }
-        await fetchEvaluations();
       }
       else if (activeModal === 'bulletin') {
         alert("Génération terminée ! Le document va être téléchargé.");
