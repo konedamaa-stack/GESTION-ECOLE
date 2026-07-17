@@ -4151,7 +4151,7 @@ function App() {
         
         <ul className="nav-menu">
           {(currentAdminRole === 'Director' || currentAdminRole === 'Secretary') && (
-            <li className="nav-item" onClick={() => { setIsQuickStartModalOpen(true); setIsMobileMenuOpen(false); }} style={{ background: 'var(--accent-color, #10b981)', color: 'white' }}>
+            <li className="nav-item" onClick={() => { setIsQuickStartModalOpen(true); setIsMobileMenuOpen(false); }} style={{ background: '#8B4513', color: 'white' }}>
               <span>🚀</span> {t('admin.sidebar.quickstart', 'Guide de démarrage')}
             </li>
           )}
