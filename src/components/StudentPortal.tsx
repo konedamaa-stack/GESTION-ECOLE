@@ -129,16 +129,19 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
 
   const days = [t('student.monday', 'Lundi'), t('student.tuesday', 'Mardi'), t('student.wednesday', 'Mercredi'), t('student.thursday', 'Jeudi'), t('student.friday', 'Vendredi'), t('student.saturday', 'Samedi')];
 
+  const isParent = localStorage.getItem('sges_is_parent') === 'true';
+  const parentData = isParent ? JSON.parse(localStorage.getItem('sges_parent_data') || '{}') : null;
+
   return (
     <div style={{minHeight: '100vh', background: 'var(--background-color)'}}>
       <header style={{background: 'var(--surface-color)', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.05)'}}>
         <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
           <div style={{width: 40, height: 40, background: 'var(--primary-color)', borderRadius: '8px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1.2rem'}}>
-            S
+            {isParent ? 'P' : 'S'}
           </div>
           <div>
-            <h1 style={{margin: 0, fontSize: '1.2rem'}}>{t('student.portal_title', 'Portail Élève')}</h1>
-            <p style={{margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem'}}>{settings?.school_name}</p>
+            <h1 style={{margin: 0, fontSize: '1.2rem'}}>{isParent ? "Espace Parent d'élève" : t('student.portal_title', 'Portail Élève')}</h1>
+            <p style={{margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem'}}>{isParent ? `Parent : ${parentData?.first_name} ${parentData?.last_name}` : settings?.school_name}</p>
           </div>
         </div>
         <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
@@ -151,18 +154,38 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
       </header>
 
       <main style={{padding: '32px', maxWidth: '1200px', margin: '0 auto'}}>
+        {isParent && (
+          <div style={{
+            background: 'rgba(34, 197, 94, 0.1)',
+            border: '1px solid rgba(34, 197, 94, 0.2)',
+            color: '#86efac',
+            padding: '16px',
+            borderRadius: '12px',
+            marginBottom: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <span>👨‍👩‍👦</span>
+            <div>
+              <strong style={{ display: 'block', marginBottom: '2px', color: 'white' }}>Suivi scolaire de {student.first_name} {student.last_name}</strong>
+              <span style={{ fontSize: '0.85rem', color: '#a7f3d0' }}>Vous consultez en temps réel le dossier, les notes et l'emploi du temps de votre enfant.</span>
+            </div>
+          </div>
+        )}
+
         <div style={{display: 'flex', gap: '16px', marginBottom: '32px'}}>
           <button 
             className={`btn ${activeTab === 'grades' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => setActiveTab('grades')}
           >
-            {t('student.tab_grades', 'Mes Notes & Bulletins')}
+            {isParent ? "Notes & Bulletins de l'élève" : t('student.tab_grades', 'Mes Notes & Bulletins')}
           </button>
           <button 
             className={`btn ${activeTab === 'schedule' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => setActiveTab('schedule')}
           >
-            {t('student.tab_schedule', 'Mon Emploi du Temps')}
+            {isParent ? "Emploi du Temps" : t('student.tab_schedule', 'Mon Emploi du Temps')}
           </button>
         </div>
 

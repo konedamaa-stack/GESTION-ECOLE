@@ -77,9 +77,13 @@ function App() {
     const saved = localStorage.getItem('sges_committee_session');
     return saved ? JSON.parse(saved) : null;
   });
+  const [employeeSession, setEmployeeSession] = useState<any>(() => {
+    const saved = localStorage.getItem('sges_employee');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sges_tab') || 'dashboard');
   const [activeSettingsTab, setActiveSettingsTab] = useState('general');
-  const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [activeModalState, setActiveModalState] = useState<string | null>(null);
   const [selectedTeacherPayment, setSelectedTeacherPayment] = useState<any>(null);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [isQuickStartModalOpen, setIsQuickStartModalOpen] = useState(false);
@@ -92,6 +96,26 @@ function App() {
   const [currentSchoolPlan, setCurrentSchoolPlan] = useState<string>('Standard');
   // unused currentSchoolEndDate
   const [currentAdminRole, setCurrentAdminRole] = useState<string>('Director');
+
+  const activeModal = activeModalState;
+  const setActiveModal = (modal: string | null) => {
+    if (currentAdminRole === 'Supervisor') {
+      const allowedModals = [
+        'bulletin_preview',
+        'receipt_preview',
+        'small_receipt_preview',
+        'receipt_choice',
+        'studentDossier',
+        'bulletin'
+      ];
+      if (modal && !allowedModals.includes(modal)) {
+        alert("Action non autorisée : Le rôle Superviseur est limité à la lecture et à l'impression.");
+        return;
+      }
+    }
+    setActiveModalState(modal);
+  };
+
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('Secretary');
   const [invitedAdmins, setInvitedAdmins] = useState<any[]>([]);
@@ -329,6 +353,13 @@ function App() {
     }
   }, [session, isSuperAdminFlow]);
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setEmployeeSession(null);
+    localStorage.removeItem('sges_employee');
+    localStorage.removeItem('sges_login_role');
+  };
+
   const handleRemoveChild = async (studentId: string, parentId: string) => {
     if (window.confirm("Voulez-vous vraiment retirer cet enfant de ce parent ?")) {
       try {
@@ -385,19 +416,34 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (studentSession) localStorage.setItem('sges_student', JSON.stringify(studentSession));
-    else localStorage.removeItem('sges_student');
+    if (studentSession) {
+      localStorage.setItem('sges_student', JSON.stringify(studentSession));
+    } else {
+      localStorage.removeItem('sges_student');
+      localStorage.removeItem('sges_is_parent');
+      localStorage.removeItem('sges_parent_data');
+    }
     
     if (teacherSession) localStorage.setItem('sges_teacher', JSON.stringify(teacherSession));
     else localStorage.removeItem('sges_teacher');
 
     if (committeeSession) localStorage.setItem('sges_committee_session', JSON.stringify(committeeSession));
     else localStorage.removeItem('sges_committee_session');
-  }, [studentSession, teacherSession, committeeSession]);
+
+    if (employeeSession) localStorage.setItem('sges_employee', JSON.stringify(employeeSession));
+    else localStorage.removeItem('sges_employee');
+  }, [studentSession, teacherSession, committeeSession, employeeSession]);
 
   useEffect(() => {
     localStorage.setItem('sges_tab', activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    if (employeeSession) {
+      setCurrentSchoolId(employeeSession.school_id);
+      setCurrentAdminRole(employeeSession.role);
+    }
+  }, [employeeSession]);
 
   useEffect(() => {
     if (session) {
@@ -411,6 +457,8 @@ function App() {
     useEffect(() => {
     if (session) {
       loadSchools();
+    } else {
+      localStorage.removeItem('sges_login_role');
     }
   }, [session]);
 
@@ -436,7 +484,12 @@ function App() {
         const activeSchoolId = currentSchoolId || allSchools[0].id;
         setCurrentSchoolId(activeSchoolId);
         updateSchoolPlanState(allSchools.find(s => s.id === activeSchoolId) || allSchools[0]);
-        setCurrentAdminRole('Director'); // Super admin has director access
+        const loginRole = localStorage.getItem('sges_login_role');
+        if (loginRole === 'Supervisor') {
+          setCurrentAdminRole('Supervisor');
+        } else {
+          setCurrentAdminRole('Director'); // Super admin has director access
+        }
       }
     } else {
       const { data: adminLinks } = await supabase.from('school_admins').select('school_id, role, schools(*)').eq('user_id', session.user.id);
@@ -449,7 +502,12 @@ function App() {
         
         // Find role for current school
         const activeLink = adminLinks.find((link: any) => link.school_id === activeSchoolId);
-        setCurrentAdminRole(activeLink?.role || 'Director');
+        const loginRole = localStorage.getItem('sges_login_role');
+        if (loginRole === 'Supervisor') {
+          setCurrentAdminRole('Supervisor');
+        } else {
+          setCurrentAdminRole(activeLink?.role || 'Director');
+        }
       } else {
         setShowSchoolModal(true);
       }
@@ -1110,6 +1168,7 @@ function App() {
             phone: formData.get('parent_phone'),
             email: formData.get('parent_email'),
             location: formData.get('parent_location'),
+            password: 'passer123'
           };
           parentObj = parent;
           const { data: parentData, error: parentError } = await supabase.from('parents').insert([{...parent, school_id: currentSchoolId}]).select();
@@ -1215,15 +1274,31 @@ function App() {
         closeModal();
       }
       else if (activeModal === 'employee') {
-        const employee = {
-          first_name: formData.get('first_name'),
-          last_name: formData.get('last_name'),
-          role: formData.get('role'),
-          phone: formData.get('phone'),
-          email: formData.get('email'),
-        };
-        const { error } = await supabase.from('employees').insert([{...employee, school_id: currentSchoolId}]);
-        if (error) throw error;
+        if (editEntity) {
+          const employeeUpdate: any = {
+            first_name: formData.get('first_name'),
+            last_name: formData.get('last_name'),
+            role: formData.get('role'),
+            phone: formData.get('phone'),
+            email: formData.get('email')
+          };
+          if (formData.get('password')) employeeUpdate.password = formData.get('password');
+          const { error } = await supabase.from('employees').update(employeeUpdate).eq('id', editEntity.id);
+          if (error) throw error;
+          alert("Employé mis à jour avec succès !");
+        } else {
+          const employee = {
+            first_name: formData.get('first_name'),
+            last_name: formData.get('last_name'),
+            role: formData.get('role'),
+            phone: formData.get('phone'),
+            email: formData.get('email'),
+            password: formData.get('password') || 'passer123'
+          };
+          const { error } = await supabase.from('employees').insert([{...employee, school_id: currentSchoolId}]);
+          if (error) throw error;
+          alert("L'employé a été ajouté avec succès !");
+        }
         fetchEmployees();
       }
       else if (activeModal === 'absence') {
@@ -1381,7 +1456,8 @@ function App() {
             last_name: formData.get('last_name'),
             phone: formData.get('phone'),
             email: formData.get('email'),
-            location: formData.get('location')
+            location: formData.get('location'),
+            ...(formData.get('password') ? { password: formData.get('password') } : {})
           };
           const { error } = await supabase.from('parents').update(parentUpdate).eq('id', editEntity.id);
           if (error) throw error;
@@ -1393,7 +1469,8 @@ function App() {
             phone: formData.get('phone'),
             email: formData.get('email'),
             school_id: currentSchoolId,
-            location: formData.get('location')
+            location: formData.get('location'),
+            password: formData.get('password') || 'passer123'
           };
           const { error } = await supabase.from('parents').insert([parent]);
           if (error) throw error;
@@ -3937,6 +4014,7 @@ function App() {
                       <option value="Director">Directeur (Accès Total)</option>
                       <option value="Secretary">Secrétaire (Pas d'accès Finances)</option>
                       <option value="Accountant">Comptable (Finances Uniquement)</option>
+                      <option value="Supervisor">Superviseur (Lecture & Impression uniquement)</option>
                     </select>
                     <button type="submit" className="btn btn-primary">Inviter</button>
                   </form>
@@ -3957,8 +4035,8 @@ function App() {
                             <tr key={admin.id} style={{borderBottom: '1px solid var(--border-color)'}}>
                               <td style={{padding: '12px'}}>{admin.email}</td>
                               <td style={{padding: '12px'}}>
-                                <span className={`badge ${admin.role === 'Director' ? 'badge-primary' : admin.role === 'Accountant' ? 'badge-success' : 'badge-warning'}`}>
-                                  {admin.role === 'Director' ? 'Directeur' : admin.role === 'Secretary' ? 'Secrétaire' : 'Comptable'}
+                                <span className={`badge ${admin.role === 'Director' ? 'badge-primary' : admin.role === 'Accountant' ? 'badge-success' : admin.role === 'Secretary' ? 'badge-warning' : 'badge-info'}`}>
+                                  {admin.role === 'Director' ? 'Directeur' : admin.role === 'Secretary' ? 'Secrétaire' : admin.role === 'Accountant' ? 'Comptable' : 'Superviseur'}
                                 </span>
                               </td>
                               <td style={{padding: '12px', color: 'var(--text-secondary)'}}>
@@ -4105,15 +4183,21 @@ function App() {
     }} />;
   }
 
-    if (currentView === 'landing' && !session && !studentSession && !teacherSession && !committeeSession) {
+    if (currentView === 'landing' && !session && !studentSession && !teacherSession && !committeeSession && !employeeSession) {
     return <LandingPage onLoginClick={() => setCurrentView('app')} onSuperAdminClick={() => { setIsSuperAdminFlow(true); setCurrentView('app'); }} />;
   }
 
-  if (!session && !studentSession && !teacherSession && !committeeSession) {
+  if (!session && !studentSession && !teacherSession && !committeeSession && !employeeSession) {
     if (isSuperAdminFlow) {
       return <SuperAdminAuth onBack={() => { setIsSuperAdminFlow(false); setCurrentView('landing'); }} />;
     }
-    return <Auth onStudentLogin={(s) => setStudentSession(s)} onTeacherLogin={(t) => setTeacherSession(t)} onCommitteeLogin={(c) => setCommitteeSession(c)} onBack={() => setCurrentView('landing')} />;
+    return <Auth 
+      onStudentLogin={(s) => setStudentSession(s)} 
+      onTeacherLogin={(t) => setTeacherSession(t)} 
+      onCommitteeLogin={(c) => setCommitteeSession(c)} 
+      onEmployeeLogin={(emp) => setEmployeeSession(emp)}
+      onBack={() => setCurrentView('landing')} 
+    />;
   }
 
   if (studentSession) {
@@ -4213,7 +4297,7 @@ function App() {
               </li>
             </>
           )}
-          <li className="nav-item" onClick={() => supabase.auth.signOut()} style={{color: 'var(--danger-color, #ef4444)', marginTop: 'auto'}}>
+          <li className="nav-item" onClick={handleLogout} style={{color: 'var(--danger-color, #ef4444)', marginTop: 'auto'}}>
             <Icons.LogOut /> {t('admin.header.logout', 'Se déconnecter')}
           </li>
         </ul>
@@ -4255,9 +4339,11 @@ function App() {
             <button className="btn btn-outline" style={{padding: '4px 8px'}} onClick={toggleLanguage}>
               {i18n.language.startsWith('ar') ? 'Français' : 'العربية'}
             </button>
-            <button className="btn btn-primary" onClick={() => setActiveModal('quickCreate')}>
-              <Icons.Plus /> {t('admin.header.new', 'Nouveau')}
-            </button>
+            {currentAdminRole !== 'Supervisor' && (
+              <button className="btn btn-primary" onClick={() => setActiveModal('quickCreate')}>
+                <Icons.Plus /> {t('admin.header.new', 'Nouveau')}
+              </button>
+            )}
             <button className="action-btn" onClick={() => alert(t('admin.header.no_notifications', "Vous n'avez pas de nouvelles notifications."))}>
               <Icons.Bell />
               <span className="action-badge"></span>
@@ -4266,7 +4352,12 @@ function App() {
               <div className="avatar">A</div>
               <div className="user-info">
                 <span className="user-name">{session?.user?.email || 'Adama Traoré'}</span>
-                <span className="user-role">{t('admin.header.director', 'Directeur')}</span>
+                <span className="user-role">
+                  {currentAdminRole === 'Director' ? 'Directeur' : 
+                   currentAdminRole === 'Secretary' ? 'Secrétaire' : 
+                   currentAdminRole === 'Accountant' ? 'Comptable' : 
+                   currentAdminRole === 'Supervisor' ? 'Superviseur' : 'Administrateur'}
+                </span>
               </div>
               
               {isProfileMenuOpen && (
@@ -4283,7 +4374,7 @@ function App() {
                   boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
                   zIndex: 100
                 }}>
-                  <div className="dropdown-item" onClick={() => supabase.auth.signOut()} style={{
+                  <div className="dropdown-item" onClick={handleLogout} style={{
                     padding: '10px 16px', 
                     display: 'flex', 
                     alignItems: 'center', 
@@ -4304,6 +4395,23 @@ function App() {
 
         {/* Dashboard Scroll Area */}
         <div className="dashboard-scroll">
+          {currentAdminRole === 'Supervisor' && (
+            <div style={{
+              background: 'rgba(59, 130, 246, 0.1)',
+              border: '1px solid rgba(59, 130, 246, 0.2)',
+              color: '#93c5fd',
+              padding: '12px 16px',
+              borderRadius: '12px',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              fontSize: '0.95rem'
+            }}>
+              <span>ℹ️</span>
+              <span><strong>Mode Superviseur :</strong> Vous disposez d'un accès en lecture seule. Les modifications sont désactivées, mais vous pouvez consulter et imprimer les rapports.</span>
+            </div>
+          )}
           {activeTab === 'dashboard' && renderDashboard()}
           {activeTab === 'students' && renderStudents()}
           {activeTab === 'absences' && renderAbsences()}
@@ -5065,10 +5173,10 @@ function App() {
                       <label>{t('admin.modals.email', 'Email')}</label>
                       <input type="email" name="email" className="form-input" required={['teacher', 'committee_member'].includes(activeModal)} defaultValue={editEntity?.email || ""} />
                     </div>
-                    {['teacher', 'employee', 'committee_member'].includes(activeModal) && (
+                    {['teacher', 'employee', 'committee_member', 'parent'].includes(activeModal) && (
                       <div className="form-group">
                         <label>{t('admin.modals.password_optional', 'Mot de passe (facultatif)')}</label>
-                        <input type="text" name="password" className="form-input" placeholder={editEntity ? "Laisser vide pour ne pas changer" : "Généré automatiquement"} />
+                        <input type="text" name="password" className="form-input" placeholder={editEntity ? "Laisser vide pour ne pas changer" : (['parent', 'employee'].includes(activeModal) ? "Par défaut: passer123" : "Généré automatiquement")} />
                       </div>
                     )}
                   </div>
@@ -5110,7 +5218,13 @@ function App() {
                   {activeModal === 'employee' && (
                     <div className="form-group">
                       <label>{t('admin.modals.role', 'Poste / Rôle')}</label>
-                      <input type="text" name="role" className="form-input" required />
+                      <select name="role" className="form-select" required defaultValue={editEntity?.role || "Secretary"}>
+                        <option value="Secretary">Secrétaire</option>
+                        <option value="Accountant">Comptable</option>
+                        <option value="Supervisor">Superviseur</option>
+                        <option value="Administratif">Administratif</option>
+                        <option value="Autre">Autre</option>
+                      </select>
                     </div>
                   )}
                   
