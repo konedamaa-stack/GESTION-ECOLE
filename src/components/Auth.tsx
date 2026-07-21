@@ -483,7 +483,6 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
               value={selectedRole}
               onChange={(e) => handleRoleChange(e.target.value as AuthRole)}
             >
-              <option value="Supervisor">Superviseur (Lecture & Impression)</option>
               <option value="Director">Administrateur (Accès Total)</option>
               <option value="Secretary">Secrétaire</option>
               <option value="Accountant">Comptable</option>
@@ -491,6 +490,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
               <option value="Committee">Comité d'examen</option>
               <option value="Student">Élève</option>
               <option value="Parent">Parent d'élève</option>
+              <option value="Supervisor">Superviseur (Lecture & Impression)</option>
             </select>
           </div>
         )}
