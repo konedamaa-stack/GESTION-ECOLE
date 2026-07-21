@@ -644,7 +644,8 @@
 
   .modal-content {
     width: 95%;
-    margin: 16px;
+    max-height: 82vh;
+    margin: 8px;
   }
 
   .quick-actions {
