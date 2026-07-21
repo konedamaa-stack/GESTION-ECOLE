@@ -8,7 +8,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 async function restore() {
   const { data, error } = await supabase.auth.signUp({
     email: 'konedamaa@gmail.com',
-    password: 'SuperAdminPassword123!',
+    password: 'Madouu1966',
   });
 
   if (error) {
@@ -16,7 +16,7 @@ async function restore() {
   } else {
     console.log("Succès ! Compte recréé.");
     console.log("Email : konedamaa@gmail.com");
-    console.log("Mot de passe : SuperAdminPassword123!");
+    console.log("Mot de passe : Madouu1966");
   }
 }
 
