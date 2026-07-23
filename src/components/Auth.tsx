@@ -9,7 +9,7 @@ type AuthRole = 'Supervisor' | 'Director' | 'Secretary' | 'Accountant' | 'Teache
 export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin, onEmployeeLogin, onBack }: { onStudentLogin?: (student: any) => void, onTeacherLogin?: (teacher: any) => void, onCommitteeLogin?: (committee: any) => void, onEmployeeLogin?: (employee: any) => void, onBack?: () => void }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<AuthMode>('login');
-  const [selectedRole, setSelectedRole] = useState<AuthRole>('Supervisor');
+  const [selectedRole, setSelectedRole] = useState<AuthRole>('Director');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,7 +46,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
     setEmail('');
     setPassword('');
     if (newMode === 'login') {
-      setSelectedRole('Supervisor');
+      setSelectedRole('Director');
     } else if (newMode === 'teacher_login') {
       setSelectedRole('Teacher');
     } else if (newMode === 'student_login') {

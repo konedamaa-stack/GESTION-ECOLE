@@ -912,8 +912,11 @@ function App() {
     if (!currentSchoolId) return;
     const form = e.target as HTMLFormElement;
     const lender_name = (form.elements.namedItem('lender_name') as HTMLInputElement).value;
+    const borrower_name = (form.elements.namedItem('borrower_name') as HTMLInputElement)?.value || '';
     const amount = parseFloat((form.elements.namedItem('amount') as HTMLInputElement).value);
     const loan_date = (form.elements.namedItem('loan_date') as HTMLInputElement).value;
+    const due_date = (form.elements.namedItem('due_date') as HTMLInputElement)?.value || null;
+    const repayment_method = (form.elements.namedItem('repayment_method') as HTMLSelectElement)?.value || 'Espèces';
     const description = (form.elements.namedItem('description') as HTMLTextAreaElement).value;
     const status = (form.elements.namedItem('status') as HTMLSelectElement)?.value || 'Actif';
 
@@ -921,19 +924,34 @@ function App() {
       if (editEntity) {
         const { error } = await supabase
           .from('loans')
-          .update({ lender_name, amount, loan_date, description, status })
+          .update({ lender_name, borrower_name, amount, loan_date, due_date, repayment_method, description, status })
           .eq('id', editEntity.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('loans')
-          .insert([{ school_id: currentSchoolId, lender_name, amount, loan_date, description, status }]);
+          .insert([{ school_id: currentSchoolId, lender_name, borrower_name, amount, loan_date, due_date, repayment_method, description, status }]);
         if (error) throw error;
       }
       await fetchLoans();
       closeModal();
     } catch (err: any) {
       console.error('Error saving loan:', err);
+      alert('Erreur: ' + err.message);
+    }
+  };
+
+  const handleSettleLoan = async (loan: any) => {
+    if (!confirm(`Confirmer le règlement/remboursement de l'emprunt de ${formatNum(loan.amount)} F (${loan.lender_name}) ?`)) return;
+    try {
+      const { error } = await supabase
+        .from('loans')
+        .update({ status: 'Remboursé' })
+        .eq('id', loan.id);
+      if (error) throw error;
+      await fetchLoans();
+    } catch (err: any) {
+      console.error('Error settling loan:', err);
       alert('Erreur: ' + err.message);
     }
   };
@@ -1723,7 +1741,7 @@ function App() {
         </div>
 
         {/* Dynamic Stats */}
-      <div className="dashboard-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px'}}>
+      <div className="dashboard-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '16px', marginBottom: '24px'}}>
         <div className="stat-card delay-100">
           <div className="stat-icon" style={{backgroundColor: '#fee2e2', color: '#ef4444'}}>💸</div>
           <div className="stat-info">
@@ -2591,15 +2609,17 @@ function App() {
       </div>
 
       <div className="panel" style={{marginBottom: '32px'}}>
-        <h3 className="panel-title">Historique des Emprunts</h3>
+        <h3 className="panel-title">Historique des Emprunts & Suivi des Règlements</h3>
         <div className="table-responsive">
           <table className="table">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Prêteur (Banque/Org.)</th>
+                <th>Date Prêt</th>
+                <th>Prêteur / Organisme</th>
+                <th>Emprunteur / Bénéficiaire</th>
                 <th>Montant</th>
-                <th>Motif</th>
+                <th>Mode de Règlement</th>
+                <th>Échéance</th>
                 <th>Statut</th>
                 <th style={{textAlign: 'right'}}>Actions</th>
               </tr>
@@ -2609,19 +2629,37 @@ function App() {
                 <tr key={loan.id}>
                   <td>{new Date(loan.loan_date).toLocaleDateString('fr-FR')}</td>
                   <td style={{fontWeight: 'bold'}}>{loan.lender_name}</td>
+                  <td>{loan.borrower_name || <span style={{color: '#9ca3af', fontStyle: 'italic'}}>Établissement</span>}</td>
                   <td style={{fontWeight: 'bold', color: '#10b981'}}>+{formatNum(loan.amount)} F</td>
-                  <td>{loan.description || '-'}</td>
+                  <td>
+                    <span className="badge" style={{background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)'}}>
+                      💳 {loan.repayment_method || 'Espèces'}
+                    </span>
+                  </td>
+                  <td>
+                    {loan.due_date ? new Date(loan.due_date).toLocaleDateString('fr-FR') : '-'}
+                  </td>
                   <td>
                     <span className={`badge ${loan.status === 'Actif' ? 'badge-primary' : 'badge-success'}`}>{loan.status}</span>
                   </td>
                   <td style={{textAlign: 'right'}}>
+                    {loan.status === 'Actif' && (
+                      <button 
+                        className="btn btn-outline" 
+                        style={{padding: '4px 8px', marginRight: '8px', fontSize: '0.8rem', color: '#10b981', borderColor: '#10b981'}} 
+                        onClick={() => handleSettleLoan(loan)}
+                        title="Marquer comme Remboursé / Régler"
+                      >
+                        ✅ Régler
+                      </button>
+                    )}
                     <button className="btn btn-outline" style={{padding: '4px 8px', marginRight: '8px', fontSize: '0.8rem'}} onClick={() => { setEditEntity(loan); setActiveModal('loan'); }}>✏️</button>
                     <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem', color: '#ef4444', borderColor: '#ef4444'}} onClick={() => handleDeleteLoan(loan.id)}>🗑️</button>
                   </td>
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={6} style={{textAlign: 'center', padding: '24px'}}>
+                  <td colSpan={8} style={{textAlign: 'center', padding: '24px'}}>
                     Aucun emprunt enregistré
                   </td>
                 </tr>
@@ -2642,7 +2680,7 @@ function App() {
       </div>
 
       
-      <div className="dashboard-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px'}}>
+      <div className="dashboard-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '16px', marginBottom: '24px'}}>
         <div className="stat-card delay-100">
           <div className="stat-icon" style={{backgroundColor: '#fee2e2', color: '#ef4444'}}>💸</div>
           <div className="stat-info">
@@ -4235,7 +4273,7 @@ function App() {
         
         <ul className="nav-menu">
           {(currentAdminRole === 'Director' || currentAdminRole === 'Secretary') && (
-            <li className="nav-item" onClick={() => { setIsQuickStartModalOpen(true); setIsMobileMenuOpen(false); }} style={{ background: '#8B4513', color: 'white' }}>
+            <li className="nav-item" onClick={() => { setIsQuickStartModalOpen(true); setIsMobileMenuOpen(false); }} style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', color: 'white' }}>
               <span>🚀</span> {t('admin.sidebar.quickstart', 'Guide de démarrage')}
             </li>
           )}
@@ -6232,9 +6270,15 @@ function App() {
               <button className="close-btn" onClick={closeModal}>×</button>
             </div>
             <form onSubmit={handleAddLoan} className="modal-body">
-              <div className="form-group">
-                <label>Nom du prêteur (Banque, Organisation...)</label>
-                <input type="text" name="lender_name" className="form-control" required defaultValue={editEntity?.lender_name || ''} />
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Nom du prêteur (Banque, Organisation...)</label>
+                  <input type="text" name="lender_name" className="form-control" required defaultValue={editEntity?.lender_name || ''} placeholder="Ex: Banque Atlantique, M. KONE..." />
+                </div>
+                <div className="form-group">
+                  <label>Emprunteur / Bénéficiaire</label>
+                  <input type="text" name="borrower_name" className="form-control" defaultValue={editEntity?.borrower_name || ''} placeholder="Ex: Établissement, Nom de la personne..." />
+                </div>
               </div>
               <div className="form-row">
                 <div className="form-group">
@@ -6242,13 +6286,29 @@ function App() {
                   <input type="number" name="amount" className="form-control" required min="0" step="1" defaultValue={editEntity?.amount || ''} />
                 </div>
                 <div className="form-group">
-                  <label>Date</label>
+                  <label>Mode de Règlement / Remboursement</label>
+                  <select name="repayment_method" className="form-control" defaultValue={editEntity?.repayment_method || 'Espèces'}>
+                    <option value="Espèces">Espèces</option>
+                    <option value="Virement bancaire">Virement bancaire</option>
+                    <option value="Chèque">Chèque</option>
+                    <option value="Mobile Money">Mobile Money</option>
+                    <option value="Prélèvement">Prélèvement</option>
+                  </select>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Date de l'emprunt</label>
                   <input type="date" name="loan_date" className="form-control" required defaultValue={editEntity?.loan_date || new Date().toISOString().split('T')[0]} />
+                </div>
+                <div className="form-group">
+                  <label>Date limite (Échéance)</label>
+                  <input type="date" name="due_date" className="form-control" defaultValue={editEntity?.due_date || ''} />
                 </div>
               </div>
               <div className="form-group">
-                <label>Motif de l'emprunt</label>
-                <textarea name="description" className="form-control" rows={3} defaultValue={editEntity?.description || ''} placeholder="Ex: Achat de bus scolaire..."></textarea>
+                <label>Motif / Détails de l'emprunt</label>
+                <textarea name="description" className="form-control" rows={3} defaultValue={editEntity?.description || ''} placeholder="Ex: Achat de matériel informatique, Réparation bus..."></textarea>
               </div>
               {editEntity && (
                 <div className="form-group">
