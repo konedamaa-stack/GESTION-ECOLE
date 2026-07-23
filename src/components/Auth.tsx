@@ -455,29 +455,23 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
 
   return (
     <div className="auth-container">
+      {/* Top Header Bar Matching Landing Page */}
+      <header className="auth-top-header">
+        <a href="#" className="auth-header-logo" onClick={(e) => { e.preventDefault(); if (onBack) onBack(); }}>
+          <span className="auth-header-logo-badge">S</span>
+          <span style={{ color: '#4f46e5', fontWeight: 800 }}>GESTION ETABLISSEMENT SCOLAIRE</span>
+        </a>
+        <div className="auth-header-nav">
+          {onBack && (
+            <a href="#" className="auth-header-link" onClick={(e) => { e.preventDefault(); onBack(); }}>Accueil</a>
+          )}
+          {onBack && (
+            <button className="auth-header-btn" onClick={onBack}>← Retour à l'accueil</button>
+          )}
+        </div>
+      </header>
+
       <div className="auth-card">
-        {onBack && (
-          <button 
-            onClick={onBack}
-            style={{
-              background: 'var(--surface-color-hover)', 
-              border: '1px solid var(--border-color)', 
-              borderRadius: '8px',
-              color: 'var(--text-color)', 
-              cursor: 'pointer', 
-              display: 'inline-flex', 
-              alignItems: 'center', 
-              gap: '8px', 
-              marginBottom: '1.5rem', 
-              fontSize: '0.9rem', 
-              padding: '8px 16px',
-              fontWeight: 500,
-              transition: 'all 0.2s'
-            }}
-          >
-            ← Retour à l'accueil
-          </button>
-        )}
         {/* Ivory Coast Badge Logo & Title */}
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
           <div className="gestion-ecole-badge-logo">
