@@ -6,12 +6,24 @@ import './Auth.css';
 type AuthMode = 'login' | 'register' | 'forgot_password' | 'student_login' | 'teacher_login' | 'committee_login' | 'accept_invite' | 'parent_login';
 type AuthRole = 'Supervisor' | 'Director' | 'Secretary' | 'Accountant' | 'Teacher' | 'Committee' | 'Student' | 'Parent';
 
+const ROLES_CONFIG: { role: AuthRole; label: string; icon: string; color: string; bg: string; glow: string; desc: string }[] = [
+  { role: 'Director', label: 'Administrateur', icon: '👑', color: '#A855F7', bg: 'rgba(168, 85, 247, 0.15)', glow: 'rgba(168, 85, 247, 0.4)', desc: 'Accès Total' },
+  { role: 'Secretary', label: 'Secrétaire', icon: '📑', color: '#06B6D4', bg: 'rgba(6, 182, 212, 0.15)', glow: 'rgba(6, 182, 212, 0.4)', desc: 'Inscriptions & Admin' },
+  { role: 'Accountant', label: 'Comptable', icon: '💳', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)', glow: 'rgba(245, 158, 11, 0.4)', desc: 'Finances & Caisse' },
+  { role: 'Teacher', label: 'Enseignant', icon: '🧑‍🏫', color: '#10B981', bg: 'rgba(16, 185, 129, 0.15)', glow: 'rgba(16, 185, 129, 0.4)', desc: 'Notes & Évaluations' },
+  { role: 'Committee', label: 'Comité Examen', icon: '🏆', color: '#6366F1', bg: 'rgba(99, 102, 241, 0.15)', glow: 'rgba(99, 102, 241, 0.4)', desc: 'Bulletins & Relevés' },
+  { role: 'Student', label: 'Élève', icon: '🎓', color: '#0D9488', bg: 'rgba(13, 148, 136, 0.15)', glow: 'rgba(13, 148, 136, 0.4)', desc: 'Espace Élève' },
+  { role: 'Parent', label: 'Parent d\'élève', icon: '👨‍👩‍👧‍👦', color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.15)', glow: 'rgba(59, 130, 246, 0.4)', desc: 'Suivi Enfant' },
+  { role: 'Supervisor', label: 'Superviseur', icon: '👁️', color: '#F43F5E', bg: 'rgba(244, 63, 94, 0.15)', glow: 'rgba(244, 63, 94, 0.4)', desc: 'Lecture & Rapports' },
+];
+
 export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin, onEmployeeLogin, onBack }: { onStudentLogin?: (student: any) => void, onTeacherLogin?: (teacher: any) => void, onCommitteeLogin?: (committee: any) => void, onEmployeeLogin?: (employee: any) => void, onBack?: () => void }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<AuthMode>('login');
   const [selectedRole, setSelectedRole] = useState<AuthRole>('Director');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -466,7 +478,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
             ← Retour à l'accueil
           </button>
         )}
-        {/* Ivory Coast Badge Logo & Title (Qui es-tu ?) */}
+        {/* Ivory Coast Badge Logo & Title */}
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
           <div className="gestion-ecole-badge-logo">
             <div className="badge-flag-stripe stripe-orange"></div>
@@ -479,73 +491,56 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
             <div className="badge-flag-stripe stripe-green"></div>
           </div>
           <h1 className="gestion-ecole-title">GestionEcole</h1>
-          <p className="gestion-ecole-subtitle">Qui es-tu ?</p>
+          <p className="gestion-ecole-subtitle">Qui es-tu ? Choisissez votre rôle pour vous connecter</p>
         </div>
         
-        {/* Qui es-tu ? 3 Role Selection Cards */}
+        {/* 8-Role Interactive Cards Grid */}
         {mode !== 'accept_invite' && mode !== 'forgot_password' && mode !== 'register' && (
-          <div className="qui-es-tu-cards-container">
-            <div 
-              className={`qui-card ${['Supervisor', 'Director', 'Secretary', 'Accountant', 'Teacher', 'Committee'].includes(selectedRole) ? 'active' : ''}`}
-              onClick={() => handleRoleChange('Director')}
-            >
-              <div className="qui-card-icon icon-orange">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="7" width="20" height="14" rx="3" ry="3" />
-                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                </svg>
-              </div>
-              <span className="qui-card-label">Je suis employé</span>
-            </div>
-
-            <div 
-              className={`qui-card ${selectedRole === 'Student' ? 'active' : ''}`}
-              onClick={() => handleRoleChange('Student')}
-            >
-              <div className="qui-card-icon icon-green">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                  <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-                </svg>
-              </div>
-              <span className="qui-card-label">Je suis élève</span>
-            </div>
-
-            <div 
-              className={`qui-card ${selectedRole === 'Parent' ? 'active' : ''}`}
-              onClick={() => handleRoleChange('Parent')}
-            >
-              <div className="qui-card-icon icon-blue">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-              </div>
-              <span className="qui-card-label">Je suis parent</span>
-            </div>
+          <div className="roles-8-grid">
+            {ROLES_CONFIG.map((cfg) => {
+              const isActive = selectedRole === cfg.role;
+              return (
+                <div
+                  key={cfg.role}
+                  className={`role-8-card ${isActive ? 'active' : ''}`}
+                  style={{
+                    '--theme-color': cfg.color,
+                    '--theme-glow': cfg.glow,
+                  } as React.CSSProperties}
+                  onClick={() => handleRoleChange(cfg.role)}
+                >
+                  {isActive && <div className="role-8-active-badge">✓</div>}
+                  <div 
+                    className="role-8-card-icon-wrapper" 
+                    style={{ background: cfg.bg, color: cfg.color }}
+                  >
+                    {cfg.icon}
+                  </div>
+                  <span className="role-8-card-title">{cfg.label}</span>
+                  <span className="role-8-card-desc">{cfg.desc}</span>
+                </div>
+              );
+            })}
           </div>
         )}
 
-        {/* Sub-Role Selector for Employees */}
-        {mode !== 'accept_invite' && mode !== 'forgot_password' && mode !== 'register' && ['Supervisor', 'Director', 'Secretary', 'Accountant', 'Teacher', 'Committee'].includes(selectedRole) && (
-          <div className="auth-input-group" style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>💼</span> Fonction / Poste occupé
-            </label>
-            <select
-              className="auth-select"
-              value={selectedRole}
-              onChange={(e) => handleRoleChange(e.target.value as AuthRole)}
-            >
-              <option value="Director">Administrateur (Accès Total)</option>
-              <option value="Secretary">Secrétaire</option>
-              <option value="Accountant">Comptable</option>
-              <option value="Teacher">Enseignant</option>
-              <option value="Committee">Comité d'examen</option>
-              <option value="Supervisor">Superviseur (Lecture & Impression)</option>
-            </select>
+        {/* Selected Role Portal Header Banner */}
+        {mode !== 'accept_invite' && mode !== 'forgot_password' && mode !== 'register' && (
+          <div className="active-portal-header">
+            {(() => {
+              const currentCfg = ROLES_CONFIG.find(c => c.role === selectedRole) || ROLES_CONFIG[0];
+              return (
+                <>
+                  <div className="active-portal-icon" style={{ background: currentCfg.bg, color: currentCfg.color }}>
+                    {currentCfg.icon}
+                  </div>
+                  <div className="active-portal-text">
+                    <span className="active-portal-title">Espace : {currentCfg.label}</span>
+                    <span className="active-portal-subtitle">{currentCfg.desc}</span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
 
@@ -611,14 +606,24 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
 
               <div className="auth-input-group">
                 <label>{t('auth.password_label', 'Mot de passe')}</label>
-                <input
-                  type="password"
-                  className="auth-input"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
+                <div className="password-input-wrapper">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    className="auth-input"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button 
+                    type="button" 
+                    className="password-toggle-btn" 
+                    onClick={() => setShowPassword(!showPassword)}
+                    title={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                  >
+                    {showPassword ? "🙈" : "👁️"}
+                  </button>
+                </div>
               </div>
             </>
           )}
