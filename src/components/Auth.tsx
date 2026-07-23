@@ -453,13 +453,63 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
     );
   }
 
+  // Role-specific descriptions for the left banner
+  const getWelcomeContent = () => {
+    switch (selectedRole) {
+      case 'Parent':
+        return {
+          title: 'Content de vous revoir !',
+          desc: 'Entrez vos infos pour suivre la scolarité de votre enfant.'
+        };
+      case 'Student':
+        return {
+          title: 'Bienvenue cher élève !',
+          desc: 'Connectez-vous pour consulter vos notes, bulletins et emplois du temps.'
+        };
+      case 'Teacher':
+        return {
+          title: 'Espace Enseignant !',
+          desc: 'Accédez à votre cahier de notes, saisissez les évaluations et suivez vos classes.'
+        };
+      case 'Secretary':
+        return {
+          title: 'Portail Secrétariat !',
+          desc: 'Gérez les inscriptions des élèves, la scolarité et les dossiers administratifs.'
+        };
+      case 'Accountant':
+        return {
+          title: 'Gestion Financière !',
+          desc: 'Suivez la caisse, les dépenses, factures et règlements d\'écolage.'
+        };
+      case 'Committee':
+        return {
+          title: 'Comité d\'Examen !',
+          desc: 'Accédez aux délibérations, validation des bulletins et synthèses.'
+        };
+      case 'Supervisor':
+        return {
+          title: 'Supervision Globale !',
+          desc: 'Espace de lecture seule, statistiques et impression des rapports.'
+        };
+      case 'Director':
+      default:
+        return {
+          title: 'Direction & Administration !',
+          desc: 'Pilotez l\'ensemble des activités et paramètres de votre établissement.'
+        };
+    }
+  };
+
+  const welcomeInfo = getWelcomeContent();
+  const currentRoleCfg = ROLES_CONFIG.find(c => c.role === selectedRole) || ROLES_CONFIG[0];
+
   return (
     <div className="auth-container">
       {/* Top Header Bar Matching Landing Page */}
       <header className="auth-top-header">
         <a href="#" className="auth-header-logo" onClick={(e) => { e.preventDefault(); if (onBack) onBack(); }}>
           <span className="auth-header-logo-badge">S</span>
-          <span style={{ color: '#4f46e5', fontWeight: 800 }}>GESTION ETABLISSEMENT SCOLAIRE</span>
+          <span style={{ color: '#3b82f6', fontWeight: 800 }}>GESTION ETABLISSEMENT SCOLAIRE</span>
         </a>
         <div className="auth-header-nav">
           {onBack && (
@@ -471,191 +521,182 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
         </div>
       </header>
 
-      <div className="auth-card">
-        {/* Ivory Coast Badge Logo & Title */}
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <div className="gestion-ecole-badge-logo">
-            <div className="badge-flag-stripe stripe-orange"></div>
-            <div className="badge-flag-stripe stripe-white">
-              <svg className="cap-icon" viewBox="0 0 24 24" fill="none" stroke="#1E293B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-              </svg>
-            </div>
-            <div className="badge-flag-stripe stripe-green"></div>
+      {/* Split-Screen Main Auth Card */}
+      <div className="auth-split-card">
+        {/* Left Blue Wave Panel */}
+        <div className="auth-split-left">
+          <div>
+            <h2 className="auth-split-welcome-title">{welcomeInfo.title}</h2>
+            <p className="auth-split-welcome-desc">{welcomeInfo.desc}</p>
           </div>
-          <h1 className="gestion-ecole-title">GestionEcole</h1>
-          <p className="gestion-ecole-subtitle">Qui es-tu ? Choisissez votre rôle pour vous connecter</p>
-        </div>
-        
-        {/* 8-Role Interactive Cards Grid */}
-        {mode !== 'accept_invite' && mode !== 'forgot_password' && mode !== 'register' && (
-          <div className="roles-8-grid">
-            {ROLES_CONFIG.map((cfg) => {
-              const isActive = selectedRole === cfg.role;
-              return (
-                <div
-                  key={cfg.role}
-                  className={`role-8-card ${isActive ? 'active' : ''}`}
-                  style={{
-                    '--theme-color': cfg.color,
-                    '--theme-glow': cfg.glow,
-                  } as React.CSSProperties}
-                  onClick={() => handleRoleChange(cfg.role)}
-                >
-                  {isActive && <div className="role-8-active-badge">✓</div>}
-                  <div 
-                    className="role-8-card-icon-wrapper" 
-                    style={{ background: cfg.bg, color: cfg.color }}
-                  >
-                    {cfg.icon}
-                  </div>
-                  <span className="role-8-card-title">{cfg.label}</span>
-                  <span className="role-8-card-desc">{cfg.desc}</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
 
-        {/* Selected Role Portal Header Banner */}
-        {mode !== 'accept_invite' && mode !== 'forgot_password' && mode !== 'register' && (
-          <div className="active-portal-header">
-            {(() => {
-              const currentCfg = ROLES_CONFIG.find(c => c.role === selectedRole) || ROLES_CONFIG[0];
-              return (
-                <>
-                  <div className="active-portal-icon" style={{ background: currentCfg.bg, color: currentCfg.color }}>
-                    {currentCfg.icon}
-                  </div>
-                  <div className="active-portal-text">
-                    <span className="active-portal-title">Espace : {currentCfg.label}</span>
-                    <span className="active-portal-subtitle">{currentCfg.desc}</span>
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-        )}
-
-        {renderContent()}
-
-        {error && <div className="auth-error">{error}</div>}
-        {message && <div className="auth-success">{message}</div>}
-
-        <form onSubmit={handleAuth} className="auth-form">
-          {mode !== 'forgot_password' && (
-            <>
-              {selectedRole === 'Parent' ? (
-                <div className="auth-input-group">
-                  <label>Email ou Numéro de Téléphone</label>
-                  <input
-                    type="text"
-                    className="auth-input"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Ex: parent@ecole.com ou 0707..."
-                    required
-                  />
-                </div>
-              ) : selectedRole === 'Student' ? (
-                <div className="auth-input-group">
-                  <label>{t('auth.matricule_label', 'Matricule de l\'élève')}</label>
-                  <input
-                    type="text"
-                    className="auth-input"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Ex: ELV-2024-1234"
-                    required
-                  />
-                </div>
-              ) : selectedRole === 'Teacher' ? (
-                <div className="auth-input-group">
-                  <label>Email ou Matricule de l'enseignant</label>
-                  <input
-                    type="text"
-                    className="auth-input"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Ex: prof@ecole.com ou PRF-2026-..."
-                    required
-                  />
-                </div>
-              ) : (
-                <div className="auth-input-group">
-                  <label>{selectedRole === 'Committee' ? 'Email du Comité' : t('auth.admin_email_label', 'Email')}</label>
-                  <input
-                    type="email"
-                    className="auth-input"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@ecole.com"
-                    disabled={mode === 'accept_invite'}
-                    style={mode === 'accept_invite' ? { background: 'var(--surface-color-hover)', cursor: 'not-allowed' } : {}}
-                    required
-                  />
-                </div>
-              )}
-
-              <div className="auth-input-group">
-                <label>{t('auth.password_label', 'Mot de passe')}</label>
-                <div className="password-input-wrapper">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    className="auth-input"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                  />
-                  <button 
-                    type="button" 
-                    className="password-toggle-btn" 
-                    onClick={() => setShowPassword(!showPassword)}
-                    title={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-                  >
-                    {showPassword ? "🙈" : "👁️"}
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-
-          {mode === 'forgot_password' && (
-            <div className="auth-input-group">
-              <label>{t('auth.admin_email_label', 'Email Administrateur')}</label>
-              <input
-                type="email"
-                className="auth-input"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@ecole.com"
-                required
-              />
-            </div>
-          )}
-
-          <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? t('auth.loading', 'Chargement...') : ['login', 'student_login', 'teacher_login', 'committee_login', 'parent_login'].includes(mode) ? t('auth.btn_login', 'Se connecter') : mode === 'register' ? t('auth.btn_register', "S'inscrire") : mode === 'accept_invite' ? "Accepter l'invitation" : t('auth.btn_send_link', 'Envoyer le lien')}
-          </button>
-        </form>
-
-        <div className="auth-links">
-          {mode === 'login' ? (
-            <>
-              <button className="auth-link" onClick={() => handleModeSwitch('forgot_password')}>
-                {t('auth.forgot_password_link', 'Mot de passe oublié ?')}
-              </button>
-              <button className="auth-link" onClick={() => handleModeSwitch('register')}>
-                {t('auth.register_link', "S'inscrire")}
-              </button>
-            </>
-          ) : !['student_login', 'teacher_login', 'committee_login', 'parent_login'].includes(mode) ? (
-            <button className="auth-link" style={{ margin: '0 auto' }} onClick={() => handleModeSwitch('login')}>
-              {t('auth.back_to_login', 'Retour à la connexion')}
+          <div className="auth-split-register-block">
+            <p className="auth-split-register-question">Tu n'as pas de compte ?</p>
+            <button 
+              type="button" 
+              className="auth-pill-outline-btn" 
+              onClick={() => handleModeSwitch('register')}
+            >
+              S'inscrire
             </button>
-          ) : null}
+          </div>
+        </div>
+
+        {/* Right Form Panel */}
+        <div className="auth-split-right">
+          <div className="auth-split-form-header">
+            <h2 className="auth-split-form-title">Se connecter</h2>
+            <p className="auth-split-form-subtitle">
+              connexion en tant que {currentRoleCfg.label.toLowerCase()}
+            </p>
+          </div>
+
+          {/* Role selector mini grid (8 Roles) */}
+          {mode !== 'accept_invite' && mode !== 'forgot_password' && mode !== 'register' && (
+            <div className="roles-8-grid">
+              {ROLES_CONFIG.map((cfg) => {
+                const isActive = selectedRole === cfg.role;
+                return (
+                  <div
+                    key={cfg.role}
+                    className={`role-8-card ${isActive ? 'active' : ''}`}
+                    onClick={() => handleRoleChange(cfg.role)}
+                    title={cfg.label}
+                  >
+                    <div 
+                      className="role-8-card-icon-wrapper" 
+                      style={{ background: cfg.bg, color: cfg.color }}
+                    >
+                      {cfg.icon}
+                    </div>
+                    <span className="role-8-card-title">{cfg.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {renderContent()}
+
+          {error && <div className="auth-error">{error}</div>}
+          {message && <div className="auth-success">{message}</div>}
+
+          <form onSubmit={handleAuth} className="auth-form">
+            {mode !== 'forgot_password' && (
+              <>
+                {selectedRole === 'Parent' ? (
+                  <div className="blue-input-group">
+                    <label>mail</label>
+                    <input
+                      type="text"
+                      className="blue-input"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="parent@gmail.com"
+                      required
+                    />
+                  </div>
+                ) : selectedRole === 'Student' ? (
+                  <div className="blue-input-group">
+                    <label>matricule</label>
+                    <input
+                      type="text"
+                      className="blue-input"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Ex: ELV-2024-1234"
+                      required
+                    />
+                  </div>
+                ) : selectedRole === 'Teacher' ? (
+                  <div className="blue-input-group">
+                    <label>mail ou matricule</label>
+                    <input
+                      type="text"
+                      className="blue-input"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="prof@ecole.com"
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div className="blue-input-group">
+                    <label>mail</label>
+                    <input
+                      type="email"
+                      className="blue-input"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="admin@gmail.com"
+                      disabled={mode === 'accept_invite'}
+                      style={mode === 'accept_invite' ? { background: '#e2e8f0', cursor: 'not-allowed' } : {}}
+                      required
+                    />
+                  </div>
+                )}
+
+                <div className="blue-input-group">
+                  <label>mot de passe</label>
+                  <div className="blue-input-password-wrapper">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className="blue-input"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                    />
+                    <button 
+                      type="button" 
+                      className="eye-toggle-btn" 
+                      onClick={() => setShowPassword(!showPassword)}
+                      title={showPassword ? "Masquer" : "Afficher"}
+                    >
+                      {showPassword ? "🙈" : "👁️"}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {mode === 'forgot_password' && (
+              <div className="blue-input-group">
+                <label>mail</label>
+                <input
+                  type="email"
+                  className="blue-input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@ecole.com"
+                  required
+                />
+              </div>
+            )}
+
+            <div className="auth-split-actions">
+              <button type="submit" className="auth-pill-primary-btn" disabled={loading}>
+                {loading ? 'Chargement...' : 'connexion'}
+              </button>
+              {onBack && (
+                <button type="button" className="auth-retour-link" onClick={onBack}>
+                  Retour &rsaquo;
+                </button>
+              )}
+            </div>
+          </form>
+
+          <div style={{ marginTop: '12px' }}>
+            {mode === 'login' || mode === 'parent_login' || mode === 'student_login' || mode === 'teacher_login' || mode === 'committee_login' ? (
+              <button type="button" className="auth-forgot-link" onClick={() => handleModeSwitch('forgot_password')}>
+                Mot de passe oublié
+              </button>
+            ) : mode === 'forgot_password' ? (
+              <button type="button" className="auth-forgot-link" onClick={() => handleModeSwitch('login')}>
+                Retour à la connexion
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>
