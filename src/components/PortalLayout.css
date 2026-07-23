@@ -198,7 +198,14 @@
 }
 
 .portal-header-block {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
+}
+
+.portal-header-with-action {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
 }
 
 .portal-page-title {
@@ -214,6 +221,29 @@
   color: #64748b;
   margin: 0;
   font-weight: 400;
+}
+
+/* Print Pill Button */
+.print-pill-btn {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  padding: 8px 20px;
+  border-radius: 24px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.print-pill-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
 }
 
 /* Children Cards Grid (Mes enfants) */
@@ -293,4 +323,58 @@
 .child-chevron {
   color: #94a3b8;
   font-size: 1.2rem;
+}
+
+/* Pill Tabs Rows (Children Pills & Trimestre Pills) */
+.pill-tabs-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.pill-tab-btn {
+  padding: 8px 22px;
+  border-radius: 30px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid #e2e8f0;
+  outline: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pill-tab-btn.active {
+  background-color: #3b82f6;
+  color: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+.pill-tab-btn.inactive {
+  background-color: #ffffff;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+.pill-tab-btn.inactive:hover {
+  background-color: #f8fafc;
+  color: #1e293b;
+  border-color: #cbd5e1;
+}
+
+/* Empty State Card */
+.empty-bulletin-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 32px 28px;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  font-weight: 400;
+  margin-top: 16px;
 }
