@@ -104,9 +104,15 @@ function App() {
         'bulletin_preview',
         'receipt_preview',
         'small_receipt_preview',
+        'teacher_receipt_preview',
+        'expense_receipt_preview',
+        'salary_receipt_preview',
         'receipt_choice',
         'studentDossier',
-        'bulletin'
+        'bulletin',
+        'parent_invoices',
+        'parent_children',
+        'certificate'
       ];
       if (modal && !allowedModals.includes(modal)) {
         alert("Action non autorisée : Le rôle Superviseur est limité à la lecture et à l'impression.");
@@ -4272,7 +4278,7 @@ function App() {
         </div>
         
         <ul className="nav-menu">
-          {(currentAdminRole === 'Director' || currentAdminRole === 'Secretary') && (
+          {(currentAdminRole === 'Director' || currentAdminRole === 'Secretary' || currentAdminRole === 'Supervisor') && (
             <li className="nav-item" onClick={() => { setIsQuickStartModalOpen(true); setIsMobileMenuOpen(false); }} style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', color: 'white' }}>
               <span>🚀</span> {t('admin.sidebar.quickstart', 'Guide de démarrage')}
             </li>
@@ -4281,7 +4287,7 @@ function App() {
             <Icons.Home /> {t('admin.sidebar.dashboard', 'Tableau de bord')}
           </li>
           
-          {(currentAdminRole === 'Director' || currentAdminRole === 'Secretary') && (
+          {(currentAdminRole === 'Director' || currentAdminRole === 'Secretary' || currentAdminRole === 'Supervisor') && (
             <>
               <li className={`nav-item ${activeTab === 'students' ? 'active' : ''}`} onClick={() => { setActiveTab('students'); setIsMobileMenuOpen(false); }}>
                 <Icons.Users /> {t('admin.sidebar.students', 'Gestion Élèves')}
@@ -4313,7 +4319,7 @@ function App() {
             </>
           )}
 
-          {(currentAdminRole === 'Director' || currentAdminRole === 'Accountant') && (
+          {(currentAdminRole === 'Director' || currentAdminRole === 'Accountant' || currentAdminRole === 'Supervisor') && (
             <>
               <li className={`nav-item ${activeTab === 'scolarite' ? 'active' : ''}`} onClick={() => { setActiveTab('scolarite'); setIsMobileMenuOpen(false); }}>
                 <Icons.CreditCard /> {t('admin.sidebar.finance', 'Comptabilité & Scolarité')}
@@ -4324,7 +4330,7 @@ function App() {
             </>
           )}
 
-          {currentAdminRole === 'Director' && (
+          {(currentAdminRole === 'Director' || currentAdminRole === 'Supervisor') && (
             <>
               <li className={`nav-item ${activeTab === 'rh' ? 'active' : ''}`} onClick={() => { setActiveTab('rh'); setIsMobileMenuOpen(false); }}>
                 <Icons.Briefcase /> {t('admin.sidebar.rh', 'RH & Admin')}
