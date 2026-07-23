@@ -466,17 +466,73 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
             ← Retour à l'accueil
           </button>
         )}
-        <div className="auth-logo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-          </svg>
+        {/* Ivory Coast Badge Logo & Title (Qui es-tu ?) */}
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <div className="gestion-ecole-badge-logo">
+            <div className="badge-flag-stripe stripe-orange"></div>
+            <div className="badge-flag-stripe stripe-white">
+              <svg className="cap-icon" viewBox="0 0 24 24" fill="none" stroke="#1E293B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+              </svg>
+            </div>
+            <div className="badge-flag-stripe stripe-green"></div>
+          </div>
+          <h1 className="gestion-ecole-title">GestionEcole</h1>
+          <p className="gestion-ecole-subtitle">Qui es-tu ?</p>
         </div>
         
-        {/* Toggle Login Type */}
+        {/* Qui es-tu ? 3 Role Selection Cards */}
         {mode !== 'accept_invite' && mode !== 'forgot_password' && mode !== 'register' && (
-          <div className="auth-input-group" style={{ marginBottom: '24px' }}>
+          <div className="qui-es-tu-cards-container">
+            <div 
+              className={`qui-card ${['Supervisor', 'Director', 'Secretary', 'Accountant', 'Teacher', 'Committee'].includes(selectedRole) ? 'active' : ''}`}
+              onClick={() => handleRoleChange('Director')}
+            >
+              <div className="qui-card-icon icon-orange">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="7" width="20" height="14" rx="3" ry="3" />
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                </svg>
+              </div>
+              <span className="qui-card-label">Je suis employé</span>
+            </div>
+
+            <div 
+              className={`qui-card ${selectedRole === 'Student' ? 'active' : ''}`}
+              onClick={() => handleRoleChange('Student')}
+            >
+              <div className="qui-card-icon icon-green">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                  <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                </svg>
+              </div>
+              <span className="qui-card-label">Je suis élève</span>
+            </div>
+
+            <div 
+              className={`qui-card ${selectedRole === 'Parent' ? 'active' : ''}`}
+              onClick={() => handleRoleChange('Parent')}
+            >
+              <div className="qui-card-icon icon-blue">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
+              <span className="qui-card-label">Je suis parent</span>
+            </div>
+          </div>
+        )}
+
+        {/* Sub-Role Selector for Employees */}
+        {mode !== 'accept_invite' && mode !== 'forgot_password' && mode !== 'register' && ['Supervisor', 'Director', 'Secretary', 'Accountant', 'Teacher', 'Committee'].includes(selectedRole) && (
+          <div className="auth-input-group" style={{ marginBottom: '20px' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>👤</span> Espace de connexion / Rôle
+              <span>💼</span> Fonction / Poste occupé
             </label>
             <select
               className="auth-select"
@@ -488,8 +544,6 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
               <option value="Accountant">Comptable</option>
               <option value="Teacher">Enseignant</option>
               <option value="Committee">Comité d'examen</option>
-              <option value="Student">Élève</option>
-              <option value="Parent">Parent d'élève</option>
               <option value="Supervisor">Superviseur (Lecture & Impression)</option>
             </select>
           </div>
