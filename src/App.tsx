@@ -238,7 +238,6 @@ function App() {
   const [teachersData, setTeachersData] = useState<any[]>([]);
   const [committeeMembers, setCommitteeMembers] = useState<any[]>([]);
   const [employeesData, setEmployeesData] = useState<any[]>([]);
-  const [parentsData, setParentsData] = useState<any[]>([]);
   const [expensesData, setExpensesData] = useState<any[]>([]);
   const [loansData, setLoansData] = useState<any[]>([]);
   const [teacherPaymentsData, setTeacherPaymentsData] = useState<any[]>([]);
@@ -341,11 +340,6 @@ function App() {
   const [showSuperAdmin, setShowSuperAdmin] = useState(() => localStorage.getItem('sges_super_admin_mode') === 'true');
   const [isSuperAdminFlow, setIsSuperAdminFlow] = useState(false);
   const [recoveryMode, setRecoveryMode] = useState(false);
-  const fetchParents = async () => {
-    const { data } = await supabase.from('parents').select('*, student_parents(student_id, parent_id, students(id, first_name, last_name))').eq('school_id', currentSchoolId || '');
-    if (data) setParentsData(data);
-  };
-
   useEffect(() => {
     if (session && isSuperAdminFlow) {
       const SUPER_ADMIN_EMAILS = ['konedamaa@gmail.com'];
