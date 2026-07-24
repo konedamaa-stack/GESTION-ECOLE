@@ -5423,46 +5423,67 @@ function App() {
                     <label style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: '8px', display: 'block', color: 'var(--primary-color)' }}>
                       ➕ Ajouter un autre enfant à ce parent :
                     </label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <input 
-                        type="text" 
-                        id="add_child_modal_input"
-                        list="modal_all_students_list" 
-                        className="form-input" 
-                        placeholder="Rechercher par Matricule ou Nom (ex: ELV-2024-001)..." 
-                        style={{ flex: 1 }}
-                      />
-                      <datalist id="modal_all_students_list">
-                        {studentsData.flatMap((st: any) => [
-                          <option key={`${st.id}-1`} value={`${st.matricule} - ${st.first_name} ${st.last_name}`}>
-                            {st.classes?.name ? `Classe: ${st.classes.name}` : ''}
-                          </option>,
-                          <option key={`${st.id}-2`} value={`${st.matricule} - ${st.last_name} ${st.first_name}`}>
-                            {st.classes?.name ? `Classe: ${st.classes.name}` : ''}
-                          </option>
-                        ])}
-                      </datalist>
-                      <button 
-                        type="button" 
-                        className="btn btn-primary"
-                        onClick={async () => {
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <select 
+                        id="add_child_modal_select"
+                        className="form-select"
+                        style={{ width: '100%' }}
+                        onChange={(e) => {
                           const input = document.getElementById('add_child_modal_input') as HTMLInputElement;
-                          const val = input ? input.value.trim() : '';
-                          if (!val) {
-                            alert("Veuillez sélectionner ou taper un élève.");
-                            return;
-                          }
-                          const targetStudent = findMatchingStudent(val);
-                          if (targetStudent) {
-                            await handleAddChild(targetStudent.id, editEntity.id);
-                            input.value = '';
-                          } else {
-                            alert("Élève non trouvé dans l'établissement. Veuillez vérifier le nom ou le matricule.");
-                          }
+                          if (input) input.value = e.target.value;
                         }}
                       >
-                        Lier
-                      </button>
+                        <option value="">-- Choisir dans la liste des élèves inscrits ({studentsData.length}) --</option>
+                        {studentsData.map((st: any) => (
+                          <option key={st.id} value={`${st.first_name} ${st.last_name}`}>
+                            {st.first_name} {st.last_name} ({st.matricule}) {st.classes?.name ? `• ${st.classes.name}` : ''}
+                          </option>
+                        ))}
+                      </select>
+
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input 
+                          type="text" 
+                          id="add_child_modal_input"
+                          list="modal_all_students_list" 
+                          className="form-input" 
+                          placeholder="Ou tapez un Nom / Matricule..." 
+                          style={{ flex: 1 }}
+                        />
+                        <datalist id="modal_all_students_list">
+                          {studentsData.flatMap((st: any) => [
+                            <option key={`${st.id}-1`} value={`${st.matricule} - ${st.first_name} ${st.last_name}`}>
+                              {st.classes?.name ? `Classe: ${st.classes.name}` : ''}
+                            </option>,
+                            <option key={`${st.id}-2`} value={`${st.matricule} - ${st.last_name} ${st.first_name}`}>
+                              {st.classes?.name ? `Classe: ${st.classes.name}` : ''}
+                            </option>
+                          ])}
+                        </datalist>
+                        <button 
+                          type="button" 
+                          className="btn btn-primary"
+                          onClick={async () => {
+                            const input = document.getElementById('add_child_modal_input') as HTMLInputElement;
+                            const select = document.getElementById('add_child_modal_select') as HTMLSelectElement;
+                            const val = (input && input.value.trim()) || (select && select.value.trim()) || '';
+                            if (!val) {
+                              alert("Veuillez sélectionner ou taper le nom d'un élève.");
+                              return;
+                            }
+                            const targetStudent = findMatchingStudent(val);
+                            if (targetStudent) {
+                              await handleAddChild(targetStudent.id, editEntity.id);
+                              if (input) input.value = '';
+                              if (select) select.value = '';
+                            } else {
+                              alert(`L'élève "${val}" n'a pas été trouvé dans votre établissement.\n\nAssurez-vous qu'il a bien été créé dans la rubrique "Gestion Élèves".`);
+                            }
+                          }}
+                        >
+                          Lier l'élève
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
