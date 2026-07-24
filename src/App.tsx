@@ -372,6 +372,7 @@ function App() {
         const { error } = await supabase.from('student_parents').delete().match({ student_id: studentId, parent_id: parentId });
         if (error) throw error;
         fetchParents();
+        fetchStudents();
         if (editEntity && editEntity.id === parentId) {
            setEditEntity({
              ...editEntity,
@@ -676,21 +677,6 @@ function App() {
       closeModal();
     } catch (err: any) {
       alert("Erreur lors de la liaison : " + err.message);
-    }
-  };
-
-  const handleRemoveChild = async (studentId: string, parentId: string) => {
-    if (window.confirm("Êtes-vous sûr de vouloir retirer cet enfant de ce parent ?")) {
-      try {
-        const { error } = await supabase.from('student_parents').delete().eq('student_id', studentId).eq('parent_id', parentId);
-        if (error) throw error;
-
-        fetchParents();
-        fetchStudents();
-        closeModal();
-      } catch (err: any) {
-        alert("Erreur lors du retrait : " + err.message);
-      }
     }
   };
 
