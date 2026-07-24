@@ -5393,6 +5393,43 @@ function App() {
                     </div>
                   )}
                   
+                  {activeModal === 'parent' && (
+                    <>
+                      <div className="form-group">
+                        <label>Lieu / Adresse de résidence</label>
+                        <input type="text" name="location" className="form-input" placeholder="Ex: Abidjan, Divo" defaultValue={editEntity?.location || ""} />
+                      </div>
+                      <div className="form-group">
+                        <label>{t('admin.modals.link_to_student', 'Lier à un élève (Matricule ou Nom)')}</label>
+                        <input 
+                          type="text" 
+                          name="student_query"
+                          list="students_list" 
+                          className="form-input" 
+                          placeholder="Rechercher par Matricule ou Nom (ex: ELV-2024-001 ou KONE)..." 
+                          defaultValue={editEntity?.student_parents?.[0]?.students ? `${editEntity.student_parents[0].students.matricule} - ${editEntity.student_parents[0].students.first_name} ${editEntity.student_parents[0].students.last_name}` : ""}
+                        />
+                        <datalist id="students_list">
+                          {studentsData.map((st: any) => (
+                            <option key={st.id} value={`${st.matricule} - ${st.first_name} ${st.last_name}`}>
+                              {st.classes?.name ? `Classe: ${st.classes.name}` : ''}
+                            </option>
+                          ))}
+                        </datalist>
+                        <small style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>
+                          Sélectionnez ou tapez le matricule / nom de l'élève pour le lier à ce compte parent.
+                        </small>
+                      </div>
+                    </>
+                  )}
+                  <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
+                    <button type="submit" className="btn btn-primary">{editEntity ? 'Mettre à jour' : t('admin.modals.create_profile', 'Créer le profil')}</button>
+                  </div>
+                </form>
+              )}
+
+              {/* Multi-Child Management Modal */}
               {activeModal === 'parent_children' && (() => {
                 const parentObj = editEntity || {};
                 const parentId = parentObj.id;
@@ -5500,42 +5537,6 @@ function App() {
                   </div>
                 );
               })()}
-
-              {activeModal === 'parent' && (
-                <>
-                  <div className="form-group">
-                    <label>Lieu / Adresse de résidence</label>
-                    <input type="text" name="location" className="form-input" placeholder="Ex: Abidjan, Divo" defaultValue={editEntity?.location || ""} />
-                  </div>
-                  <div className="form-group">
-                    <label>{t('admin.modals.link_to_student', 'Lier à un élève (Matricule ou Nom)')}</label>
-                    <input 
-                      type="text" 
-                      name="student_query"
-                      list="students_list" 
-                      className="form-input" 
-                      placeholder="Rechercher par Matricule ou Nom (ex: ELV-2024-001 ou KONE)..." 
-                      defaultValue={editEntity?.student_parents?.[0]?.students ? `${editEntity.student_parents[0].students.matricule} - ${editEntity.student_parents[0].students.first_name} ${editEntity.student_parents[0].students.last_name}` : ""}
-                    />
-                    <datalist id="students_list">
-                      {studentsData.map((st: any) => (
-                        <option key={st.id} value={`${st.matricule} - ${st.first_name} ${st.last_name}`}>
-                          {st.classes?.name ? `Classe: ${st.classes.name}` : ''}
-                        </option>
-                      ))}
-                    </datalist>
-                    <small style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>
-                      Sélectionnez ou tapez le matricule / nom de l'élève pour le lier à ce compte parent.
-                    </small>
-                  </div>
-                </>
-              )}
-                  <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
-                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
-                    <button type="submit" className="btn btn-primary">{editEntity ? 'Mettre à jour' : t('admin.modals.create_profile', 'Créer le profil')}</button>
-                  </div>
-                </form>
-              )}
 
               {activeModal === 'parent_invoices' && editEntity && (() => {
                 const studentIds = editEntity.student_parents?.map((sp: any) => sp.student_id) || [];
