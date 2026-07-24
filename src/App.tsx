@@ -652,6 +652,51 @@ function App() {
     }
   };
 
+  const findMatchingStudent = (query: string) => {
+    if (!query || !query.trim()) return null;
+    const q = query.trim().toLowerCase();
+    
+    // 1. Exact match by ID or Matricule
+    let match = studentsData.find(s => 
+      s.id === q ||
+      (s.matricule && s.matricule.toLowerCase() === q)
+    );
+    if (match) return match;
+
+    // 2. Full string matches (both First Last and Last First)
+    match = studentsData.find(s => {
+      const fn = (s.first_name || '').toLowerCase();
+      const ln = (s.last_name || '').toLowerCase();
+      const mat = (s.matricule || '').toLowerCase();
+      const name1 = `${fn} ${ln}`.trim();
+      const name2 = `${ln} ${fn}`.trim();
+
+      return (
+        q === `${mat} - ${name1}` ||
+        q === `${mat} - ${name2}` ||
+        q === name1 ||
+        q === name2 ||
+        (mat && q.includes(mat)) ||
+        name1.includes(q) ||
+        name2.includes(q) ||
+        q.includes(name1) ||
+        q.includes(name2)
+      );
+    });
+    if (match) return match;
+
+    // 3. Word token matching: every word in query exists in student info
+    const words = q.replace(/[^a-z0-9]/g, ' ').split(/\s+/).filter(Boolean);
+    if (words.length > 0) {
+      match = studentsData.find(s => {
+        const fullText = `${s.matricule || ''} ${s.first_name || ''} ${s.last_name || ''}`.toLowerCase();
+        return words.every(w => fullText.includes(w));
+      });
+    }
+
+    return match || null;
+  };
+
   const handleAddChild = async (studentId: string, parentId: string) => {
     try {
       const { data: existing } = await supabase
@@ -1503,17 +1548,8 @@ function App() {
         alert("Le message a été envoyé avec succès !");
       }
       else if (activeModal === 'parent') {
-        const studentQuery = (formData.get('student_query') as string || '').trim().toLowerCase();
-        let targetStudent = null;
-
-        if (studentQuery) {
-          targetStudent = studentsData.find(s => 
-            s.matricule?.toLowerCase() === studentQuery ||
-            `${s.matricule} - ${s.first_name} ${s.last_name}`.toLowerCase() === studentQuery ||
-            studentQuery.includes(s.matricule?.toLowerCase()) ||
-            `${s.first_name} ${s.last_name}`.toLowerCase().includes(studentQuery)
-          );
-        }
+        const studentQuery = (formData.get('student_query') as string || '').trim();
+        const targetStudent = findMatchingStudent(studentQuery);
 
         let parentId = editEntity?.id;
 
@@ -5383,33 +5419,31 @@ function App() {
                         style={{ flex: 1 }}
                       />
                       <datalist id="modal_all_students_list">
-                        {studentsData.map((st: any) => (
-                          <option key={st.id} value={`${st.matricule} - ${st.first_name} ${st.last_name}`}>
+                        {studentsData.flatMap((st: any) => [
+                          <option key={`${st.id}-1`} value={`${st.matricule} - ${st.first_name} ${st.last_name}`}>
+                            {st.classes?.name ? `Classe: ${st.classes.name}` : ''}
+                          </option>,
+                          <option key={`${st.id}-2`} value={`${st.matricule} - ${st.last_name} ${st.first_name}`}>
                             {st.classes?.name ? `Classe: ${st.classes.name}` : ''}
                           </option>
-                        ))}
+                        ])}
                       </datalist>
                       <button 
                         type="button" 
                         className="btn btn-primary"
                         onClick={async () => {
                           const input = document.getElementById('add_child_modal_input') as HTMLInputElement;
-                          const val = input ? input.value.trim().toLowerCase() : '';
+                          const val = input ? input.value.trim() : '';
                           if (!val) {
                             alert("Veuillez sélectionner ou taper un élève.");
                             return;
                           }
-                          const targetStudent = studentsData.find(s => 
-                            s.matricule?.toLowerCase() === val ||
-                            `${s.matricule} - ${s.first_name} ${s.last_name}`.toLowerCase() === val ||
-                            val.includes(s.matricule?.toLowerCase()) ||
-                            `${s.first_name} ${s.last_name}`.toLowerCase().includes(val)
-                          );
+                          const targetStudent = findMatchingStudent(val);
                           if (targetStudent) {
                             await handleAddChild(targetStudent.id, editEntity.id);
                             input.value = '';
                           } else {
-                            alert("Élève non trouvé dans l'établissement. Veuillez sélectionner une valeur suggérée dans la liste.");
+                            alert("Élève non trouvé dans l'établissement. Veuillez vérifier le nom ou le matricule.");
                           }
                         }}
                       >
