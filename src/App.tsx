@@ -5393,104 +5393,113 @@ function App() {
                     </div>
                   )}
                   
-              {activeModal === 'parent_children' && editEntity && (
-                <div style={{ padding: '8px 0' }}>
-                  <div style={{ marginBottom: '16px', color: 'var(--text-secondary)', fontSize: '0.92rem' }}>
-                    Enfants rattachés à <strong>{editEntity.first_name} {editEntity.last_name}</strong> :
-                  </div>
-                  {editEntity.student_parents && editEntity.student_parents.length > 0 ? (
-                    <ul style={{listStyle: 'none', padding: 0, margin: 0}}>
-                      {editEntity.student_parents.map((sp: any, idx: number) => (
-                        <li key={idx} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', borderBottom: '1px solid var(--border-color)'}}>
-                          <div>
-                            <span style={{fontWeight: 600, display: 'block'}}>{sp.students?.first_name} {sp.students?.last_name}</span>
-                            <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
-                              Matricule: {sp.students?.matricule} {sp.students?.classes?.name ? `• Classe: ${sp.students.classes.name}` : ''}
-                            </span>
-                          </div>
-                          <button className="btn" style={{backgroundColor: '#fee2e2', color: '#ef4444', padding: '6px 12px', fontSize: '0.85rem', cursor: 'pointer', borderRadius: '6px', border: 'none'}} onClick={() => handleRemoveChild(sp.student_id, sp.parent_id)}>
-                            Retirer
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p style={{color: 'var(--text-secondary)', textAlign: 'center', padding: '12px 0'}}>Aucun enfant associé à ce parent pour l'instant.</p>
-                  )}
+              {activeModal === 'parent_children' && (() => {
+                const parentObj = editEntity || {};
+                const parentId = parentObj.id;
+                const parentName = parentObj.first_name ? `${parentObj.first_name} ${parentObj.last_name}` : 'Parent';
+                const linkedChildren = parentObj.student_parents || [];
 
-                  {/* Add Another Child Form */}
-                  <div style={{ marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-                    <label style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: '8px', display: 'block', color: 'var(--primary-color)' }}>
-                      ➕ Ajouter un autre enfant à ce parent :
-                    </label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <select 
-                        id="add_child_modal_select"
-                        className="form-select"
-                        style={{ width: '100%' }}
-                        onChange={(e) => {
-                          const input = document.getElementById('add_child_modal_input') as HTMLInputElement;
-                          if (input) input.value = e.target.value;
-                        }}
-                      >
-                        <option value="">-- Choisir dans la liste des élèves inscrits ({studentsData.length}) --</option>
-                        {studentsData.map((st: any) => (
-                          <option key={st.id} value={`${st.first_name} ${st.last_name}`}>
-                            {st.first_name} {st.last_name} ({st.matricule}) {st.classes?.name ? `• ${st.classes.name}` : ''}
-                          </option>
+                return (
+                  <div style={{ padding: '8px 0' }}>
+                    <div style={{ marginBottom: '16px', color: 'var(--text-secondary)', fontSize: '0.92rem' }}>
+                      Enfants rattachés à <strong>{parentName}</strong> :
+                    </div>
+                    {linkedChildren.length > 0 ? (
+                      <ul style={{listStyle: 'none', padding: 0, margin: 0}}>
+                        {linkedChildren.map((sp: any, idx: number) => (
+                          <li key={idx} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', borderBottom: '1px solid var(--border-color)'}}>
+                            <div>
+                              <span style={{fontWeight: 600, display: 'block'}}>{sp.students?.first_name} {sp.students?.last_name}</span>
+                              <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
+                                Matricule: {sp.students?.matricule} {sp.students?.classes?.name ? `• Classe: ${sp.students.classes.name}` : ''}
+                              </span>
+                            </div>
+                            <button className="btn" style={{backgroundColor: '#fee2e2', color: '#ef4444', padding: '6px 12px', fontSize: '0.85rem', cursor: 'pointer', borderRadius: '6px', border: 'none'}} onClick={() => handleRemoveChild(sp.student_id, parentId)}>
+                              Retirer
+                            </button>
+                          </li>
                         ))}
-                      </select>
+                      </ul>
+                    ) : (
+                      <p style={{color: 'var(--text-secondary)', textAlign: 'center', padding: '12px 0'}}>Aucun enfant associé à ce parent pour l'instant.</p>
+                    )}
 
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <input 
-                          type="text" 
-                          id="add_child_modal_input"
-                          list="modal_all_students_list" 
-                          className="form-input" 
-                          placeholder="Ou tapez un Nom / Matricule..." 
-                          style={{ flex: 1 }}
-                        />
-                        <datalist id="modal_all_students_list">
-                          {studentsData.flatMap((st: any) => [
-                            <option key={`${st.id}-1`} value={`${st.matricule} - ${st.first_name} ${st.last_name}`}>
-                              {st.classes?.name ? `Classe: ${st.classes.name}` : ''}
-                            </option>,
-                            <option key={`${st.id}-2`} value={`${st.matricule} - ${st.last_name} ${st.first_name}`}>
-                              {st.classes?.name ? `Classe: ${st.classes.name}` : ''}
-                            </option>
-                          ])}
-                        </datalist>
-                        <button 
-                          type="button" 
-                          className="btn btn-primary"
-                          onClick={async () => {
+                    {/* Add Another Child Form */}
+                    <div style={{ marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                      <label style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '10px', display: 'block', color: 'var(--primary-color)' }}>
+                        ➕ Ajouter un autre enfant à ce parent :
+                      </label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <select 
+                          id="add_child_modal_select"
+                          className="form-select"
+                          style={{ width: '100%' }}
+                          onChange={(e) => {
                             const input = document.getElementById('add_child_modal_input') as HTMLInputElement;
-                            const select = document.getElementById('add_child_modal_select') as HTMLSelectElement;
-                            const val = (input && input.value.trim()) || (select && select.value.trim()) || '';
-                            if (!val) {
-                              alert("Veuillez sélectionner ou taper le nom d'un élève.");
-                              return;
-                            }
-                            const targetStudent = findMatchingStudent(val);
-                            if (targetStudent) {
-                              await handleAddChild(targetStudent.id, editEntity.id);
-                              if (input) input.value = '';
-                              if (select) select.value = '';
-                            } else {
-                              alert(`L'élève "${val}" n'a pas été trouvé dans votre établissement.\n\nAssurez-vous qu'il a bien été créé dans la rubrique "Gestion Élèves".`);
-                            }
+                            if (input) input.value = e.target.value;
                           }}
                         >
-                          Lier l'élève
-                        </button>
+                          <option value="">-- Choisir dans la liste des élèves inscrits ({studentsData.length}) --</option>
+                          {studentsData.map((st: any) => (
+                            <option key={st.id} value={`${st.first_name} ${st.last_name}`}>
+                              {st.first_name} {st.last_name} ({st.matricule}) {st.classes?.name ? `• ${st.classes.name}` : ''}
+                            </option>
+                          ))}
+                        </select>
+
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input 
+                            type="text" 
+                            id="add_child_modal_input"
+                            list="modal_all_students_list" 
+                            className="form-input" 
+                            placeholder="Ou tapez un Nom / Matricule..." 
+                            style={{ flex: 1 }}
+                          />
+                          <datalist id="modal_all_students_list">
+                            {studentsData.flatMap((st: any) => [
+                              <option key={`${st.id}-1`} value={`${st.matricule} - ${st.first_name} ${st.last_name}`}>
+                                {st.classes?.name ? `Classe: ${st.classes.name}` : ''}
+                              </option>,
+                              <option key={`${st.id}-2`} value={`${st.matricule} - ${st.last_name} ${st.first_name}`}>
+                                {st.classes?.name ? `Classe: ${st.classes.name}` : ''}
+                              </option>
+                            ])}
+                          </datalist>
+                          <button 
+                            type="button" 
+                            className="btn btn-primary"
+                            onClick={async () => {
+                              const input = document.getElementById('add_child_modal_input') as HTMLInputElement;
+                              const select = document.getElementById('add_child_modal_select') as HTMLSelectElement;
+                              const val = (input && input.value.trim()) || (select && select.value.trim()) || '';
+                              if (!val) {
+                                alert("Veuillez sélectionner ou taper le nom d'un élève.");
+                                return;
+                              }
+                              const targetStudent = findMatchingStudent(val);
+                              if (targetStudent && parentId) {
+                                await handleAddChild(targetStudent.id, parentId);
+                                if (input) input.value = '';
+                                if (select) select.value = '';
+                              } else if (!parentId) {
+                                alert("Erreur: Identifiant du parent manquant.");
+                              } else {
+                                alert(`L'élève "${val}" n'a pas été trouvé dans votre établissement.\n\nAssurez-vous qu'il a bien été créé dans la rubrique "Gestion Élèves".`);
+                              }
+                            }}
+                          >
+                            Lier l'élève
+                          </button>
+                        </div>
                       </div>
                     </div>
+                    <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
+                      <button type="button" className="btn btn-outline" onClick={closeModal}>Fermer</button>
+                    </div>
                   </div>
-                  <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
-                    <button type="button" className="btn btn-outline" onClick={closeModal}>Fermer</button>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               {activeModal === 'parent' && (
                 <>
