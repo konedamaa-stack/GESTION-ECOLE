@@ -712,14 +712,28 @@ function App() {
 
       const { error } = await supabase.from('student_parents').insert({
         parent_id: parentId,
-        student_id: studentId
+        student_id: studentId,
+        relation_type: 'Parent'
       });
       if (error) throw error;
 
       alert("Enfant lié au parent avec succès !");
+      
+      const addedStudent = studentsData.find(s => s.id === studentId);
+      if (editEntity && editEntity.id === parentId && addedStudent) {
+        const newObj = {
+          parent_id: parentId,
+          student_id: studentId,
+          students: addedStudent
+        };
+        setEditEntity({
+          ...editEntity,
+          student_parents: [...(editEntity.student_parents || []), newObj]
+        });
+      }
+
       fetchParents();
       fetchStudents();
-      closeModal();
     } catch (err: any) {
       alert("Erreur lors de la liaison : " + err.message);
     }
