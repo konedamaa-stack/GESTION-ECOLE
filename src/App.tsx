@@ -1474,6 +1474,20 @@ function App() {
         alert("Le message a été envoyé avec succès !");
       }
       else if (activeModal === 'parent') {
+        const studentQuery = (formData.get('student_query') as string || '').trim().toLowerCase();
+        let targetStudent = null;
+
+        if (studentQuery) {
+          targetStudent = studentsData.find(s => 
+            s.matricule?.toLowerCase() === studentQuery ||
+            `${s.matricule} - ${s.first_name} ${s.last_name}`.toLowerCase() === studentQuery ||
+            studentQuery.includes(s.matricule?.toLowerCase()) ||
+            `${s.first_name} ${s.last_name}`.toLowerCase().includes(studentQuery)
+          );
+        }
+
+        let parentId = editEntity?.id;
+
         if (editEntity) {
           const parentUpdate = {
             first_name: formData.get('first_name'),
@@ -1485,7 +1499,6 @@ function App() {
           };
           const { error } = await supabase.from('parents').update(parentUpdate).eq('id', editEntity.id);
           if (error) throw error;
-          alert("Parent mis à jour avec succès !");
         } else {
           const parent = {
             first_name: formData.get('first_name'),
@@ -1496,11 +1509,32 @@ function App() {
             location: formData.get('location'),
             password: formData.get('password') || 'passer123'
           };
-          const { error } = await supabase.from('parents').insert([parent]);
+          const { data: createdParents, error } = await supabase.from('parents').insert([parent]).select();
           if (error) throw error;
-          alert("Le parent a été ajouté avec succès !");
+          if (createdParents && createdParents.length > 0) {
+            parentId = createdParents[0].id;
+          }
         }
+
+        // Link student if found
+        if (targetStudent && parentId) {
+          const { data: existingLink } = await supabase
+            .from('student_parents')
+            .select('*')
+            .eq('parent_id', parentId)
+            .eq('student_id', targetStudent.id);
+
+          if (!existingLink || existingLink.length === 0) {
+            await supabase.from('student_parents').insert({
+              parent_id: parentId,
+              student_id: targetStudent.id
+            });
+          }
+        }
+
+        alert(editEntity ? (targetStudent ? "Parent mis à jour et lié à l'élève avec succès !" : "Parent mis à jour avec succès !") : (targetStudent ? "Le parent a été ajouté et lié à l'élève avec succès !" : "Le parent a été ajouté avec succès !"));
         fetchParents();
+        fetchStudents();
       }
       
       closeModal();
@@ -5301,17 +5335,34 @@ function App() {
               )}
 
               {activeModal === 'parent' && (
-                    <>
-                      <div className="form-group">
-                        <label>Lieu / Adresse de résidence</label>
-                        <input type="text" name="location" className="form-input" placeholder="Ex: Abidjan, Divo" defaultValue={editEntity?.location || ""} />
-                      </div>
-                      <div className="form-group">
-                        <label>{t('admin.modals.link_to_student', 'Lier à un élève (Matricule ou Nom)')}</label>
-                        <input type="text" className="form-input" />
-                      </div>
-                    </>
-                  )}
+                <>
+                  <div className="form-group">
+                    <label>Lieu / Adresse de résidence</label>
+                    <input type="text" name="location" className="form-input" placeholder="Ex: Abidjan, Divo" defaultValue={editEntity?.location || ""} />
+                  </div>
+                  <div className="form-group">
+                    <label>{t('admin.modals.link_to_student', 'Lier à un élève (Matricule ou Nom)')}</label>
+                    <input 
+                      type="text" 
+                      name="student_query"
+                      list="students_list" 
+                      className="form-input" 
+                      placeholder="Rechercher par Matricule ou Nom (ex: ELV-2024-001 ou KONE)..." 
+                      defaultValue={editEntity?.student_parents?.[0]?.students ? `${editEntity.student_parents[0].students.matricule} - ${editEntity.student_parents[0].students.first_name} ${editEntity.student_parents[0].students.last_name}` : ""}
+                    />
+                    <datalist id="students_list">
+                      {studentsData.map((st: any) => (
+                        <option key={st.id} value={`${st.matricule} - ${st.first_name} ${st.last_name}`}>
+                          {st.classes?.name ? `Classe: ${st.classes.name}` : ''}
+                        </option>
+                      ))}
+                    </datalist>
+                    <small style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>
+                      Sélectionnez ou tapez le matricule / nom de l'élève pour le lier à ce compte parent.
+                    </small>
+                  </div>
+                </>
+              )}
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
                     <button type="submit" className="btn btn-primary">{editEntity ? 'Mettre à jour' : t('admin.modals.create_profile', 'Créer le profil')}</button>
