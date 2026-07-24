@@ -8,9 +8,11 @@ export function AdminList({ onSwitchToSchool }: { onSwitchToSchool?: (schoolId: 
 
   // Search, Filter & Sort States
   const [searchQuery, setSearchQuery] = useState('');
+  const [schoolFilter, setSchoolFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'this_week' | 'this_month' | 'custom'>('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [sortBy, setSortBy] = useState<'date' | 'school' | 'email'>('date');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
   const sqlScript = `alter table public.schools add column if not exists subscription_plan varchar(50) default 'Standard';
@@ -137,6 +139,21 @@ $$;`;
     alert("Script SQL copié dans le presse-papier !");
   };
 
+  // Get list of distinct school names for the school dropdown filter
+  const uniqueSchoolNames = Array.from(
+    new Set(admins.map(a => a.school_name).filter(Boolean))
+  ).sort();
+
+  // Column Sort Toggle Handler
+  const handleColumnSort = (column: 'date' | 'school' | 'email') => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortBy(column);
+      setSortOrder(column === 'date' ? 'desc' : 'asc');
+    }
+  };
+
   // Filter & Sort Logic
   const filteredAndSortedAdmins = admins.filter(admin => {
     // 1. Search Query filter
@@ -145,7 +162,11 @@ $$;`;
       (admin.school_name || '').toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
 
-    // 2. Date filter
+    // 2. School filter
+    if (schoolFilter === 'no_school' && admin.school_name) return false;
+    if (schoolFilter !== 'all' && schoolFilter !== 'no_school' && admin.school_name !== schoolFilter) return false;
+
+    // 3. Date filter
     if (!admin.created_at) return true;
     const adminDate = new Date(admin.created_at);
     
@@ -177,9 +198,19 @@ $$;`;
     }
     return true;
   }).sort((a, b) => {
-    const dateA = new Date(a.created_at || 0).getTime();
-    const dateB = new Date(b.created_at || 0).getTime();
-    return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    if (sortBy === 'school') {
+      const nameA = a.school_name || 'ZZZ';
+      const nameB = b.school_name || 'ZZZ';
+      return sortOrder === 'desc' ? nameB.localeCompare(nameA) : nameA.localeCompare(nameB);
+    } else if (sortBy === 'email') {
+      const emailA = a.email || '';
+      const emailB = b.email || '';
+      return sortOrder === 'desc' ? emailB.localeCompare(emailA) : emailA.localeCompare(emailB);
+    } else {
+      const dateA = new Date(a.created_at || 0).getTime();
+      const dateB = new Date(b.created_at || 0).getTime();
+      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    }
   });
 
   if (isLoading) {
@@ -234,76 +265,87 @@ $$;`;
       </div>
 
       {/* Filter Toolbar */}
-      <div style={{ background: 'var(--surface-color)', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', justifyContent: 'space-between' }}>
-        {/* Search */}
-        <div style={{ flex: '1', minWidth: '240px' }}>
-          <input
-            type="text"
-            placeholder="🔍 Rechercher par email ou établissement..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--background-color)', color: 'var(--text-color)', fontSize: '0.9rem', outline: 'none' }}
-          />
+      <div style={{ background: 'var(--surface-color)', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* Search Bar */}
+          <div style={{ flex: '1', minWidth: '240px' }}>
+            <input
+              type="text"
+              placeholder="🔍 Rechercher par email ou établissement..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--background-color)', color: 'var(--text-color)', fontSize: '0.9rem', outline: 'none' }}
+            />
+          </div>
+
+          {/* School Filter Dropdown */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+              🏫 Établissement :
+            </label>
+            <select
+              value={schoolFilter}
+              onChange={(e) => setSchoolFilter(e.target.value)}
+              style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--background-color)', color: 'var(--text-color)', fontSize: '0.9rem', cursor: 'pointer', outline: 'none', maxWidth: '220px' }}
+            >
+              <option value="all">Tous les établissements</option>
+              <option value="no_school">Sans établissement (Comptes orphelins)</option>
+              {uniqueSchoolNames.map((sName: any) => (
+                <option key={sName} value={sName}>{sName}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {/* Date Filter Presets */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <label style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-            📅 Date d'inscription :
-          </label>
-          <select
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value as any)}
-            style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--background-color)', color: 'var(--text-color)', fontSize: '0.9rem', cursor: 'pointer', outline: 'none' }}
-          >
-            <option value="all">Toutes les dates</option>
-            <option value="today">Aujourd'hui</option>
-            <option value="this_week">Cette semaine</option>
-            <option value="this_month">Ce mois-ci</option>
-            <option value="custom">Période personnalisée</option>
-          </select>
+        {/* Date Filter Toolbar & Order Switcher */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <label style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+              📅 Date d'inscription :
+            </label>
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value as any)}
+              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--background-color)', color: 'var(--text-color)', fontSize: '0.88rem', cursor: 'pointer', outline: 'none' }}
+            >
+              <option value="all">Toutes les dates</option>
+              <option value="today">Aujourd'hui</option>
+              <option value="this_week">Cette semaine</option>
+              <option value="this_month">Ce mois-ci</option>
+              <option value="custom">Période personnalisée</option>
+            </select>
 
-          {/* Custom Date Range */}
-          {dateFilter === 'custom' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--background-color)', color: 'var(--text-color)', fontSize: '0.85rem' }}
-                title="Date de début"
-              />
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>à</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--background-color)', color: 'var(--text-color)', fontSize: '0.85rem' }}
-                title="Date de fin"
-              />
-            </div>
+            {/* Custom Date Range */}
+            {dateFilter === 'custom' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  style={{ padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--background-color)', color: 'var(--text-color)', fontSize: '0.85rem' }}
+                  title="Date de début"
+                />
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>à</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  style={{ padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--background-color)', color: 'var(--text-color)', fontSize: '0.85rem' }}
+                  title="Date de fin"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Quick Reset Filters Button */}
+          {(searchQuery || schoolFilter !== 'all' || dateFilter !== 'all') && (
+            <button
+              onClick={() => { setSearchQuery(''); setSchoolFilter('all'); setDateFilter('all'); setStartDate(''); setEndDate(''); }}
+              style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.82rem', cursor: 'pointer' }}
+            >
+              🔄 Réinitialiser filtres
+            </button>
           )}
-
-          {/* Sort Order Toggle */}
-          <button
-            onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-            style={{
-              padding: '10px 16px',
-              borderRadius: '8px',
-              border: '1px solid var(--border-color)',
-              background: 'var(--background-color)',
-              color: 'var(--text-color)',
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-            title="Changer l'ordre de tri par date"
-          >
-            {sortOrder === 'desc' ? '⬇️ Récent ➔ Ancien' : '⬆️ Ancien ➔ Récent'}
-          </button>
         </div>
       </div>
 
@@ -312,15 +354,27 @@ $$;`;
         <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'var(--surface-color-hover)', borderBottom: '1px solid var(--border-color)' }}>
-              <th style={{ padding: '16px', textAlign: 'left' }}>Email Administrateur</th>
-              <th style={{ padding: '16px', textAlign: 'left' }}>Établissement</th>
+              <th 
+                style={{ padding: '16px', textAlign: 'left', cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => handleColumnSort('email')}
+                title="Cliquer pour trier par email"
+              >
+                Email Administrateur {sortBy === 'email' && (sortOrder === 'desc' ? '⬇️' : '⬆️')}
+              </th>
+              <th 
+                style={{ padding: '16px', textAlign: 'left', cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => handleColumnSort('school')}
+                title="Cliquer pour trier par établissement"
+              >
+                Établissement {sortBy === 'school' && (sortOrder === 'desc' ? '⬇️' : '⬆️')}
+              </th>
               <th style={{ padding: '16px', textAlign: 'left' }}>Plan Actuel</th>
               <th 
                 style={{ padding: '16px', textAlign: 'left', cursor: 'pointer', userSelect: 'none' }}
-                onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+                onClick={() => handleColumnSort('date')}
                 title="Cliquer pour trier par date d'inscription"
               >
-                Date d'inscription {sortOrder === 'desc' ? '⬇️' : '⬆️'}
+                Date d'inscription {sortBy === 'date' && (sortOrder === 'desc' ? '⬇️' : '⬆️')}
               </th>
               <th style={{ padding: '16px', textAlign: 'right' }}>Action</th>
             </tr>
@@ -329,7 +383,7 @@ $$;`;
             {filteredAndSortedAdmins.length === 0 ? (
               <tr>
                 <td colSpan={5} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                  {admins.length === 0 ? "Aucun administrateur trouvé." : "Aucun résultat ne correspond aux filtres de date et recherche."}
+                  {admins.length === 0 ? "Aucun administrateur trouvé." : "Aucun résultat ne correspond aux filtres d'établissement et de recherche."}
                 </td>
               </tr>
             ) : (
