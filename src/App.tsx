@@ -651,6 +651,49 @@ function App() {
     }
   };
 
+  const handleAddChild = async (studentId: string, parentId: string) => {
+    try {
+      const { data: existing } = await supabase
+        .from('student_parents')
+        .select('*')
+        .eq('parent_id', parentId)
+        .eq('student_id', studentId);
+
+      if (existing && existing.length > 0) {
+        alert("Cet enfant est déjà lié à ce parent !");
+        return;
+      }
+
+      const { error } = await supabase.from('student_parents').insert({
+        parent_id: parentId,
+        student_id: studentId
+      });
+      if (error) throw error;
+
+      alert("Enfant lié au parent avec succès !");
+      fetchParents();
+      fetchStudents();
+      closeModal();
+    } catch (err: any) {
+      alert("Erreur lors de la liaison : " + err.message);
+    }
+  };
+
+  const handleRemoveChild = async (studentId: string, parentId: string) => {
+    if (window.confirm("Êtes-vous sûr de vouloir retirer cet enfant de ce parent ?")) {
+      try {
+        const { error } = await supabase.from('student_parents').delete().eq('student_id', studentId).eq('parent_id', parentId);
+        if (error) throw error;
+
+        fetchParents();
+        fetchStudents();
+        closeModal();
+      } catch (err: any) {
+        alert("Erreur lors du retrait : " + err.message);
+      }
+    }
+  };
+
   const handleDeleteParent = async (id: string) => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer ce parent ?")) {
       try {
@@ -5307,7 +5350,7 @@ function App() {
                   )}
                   
               {activeModal === 'parent_children' && editEntity && (
-                <div className="modal-content" style={{maxWidth: '500px'}} onClick={(e) => e.stopPropagation()}>
+                <div className="modal-content" style={{maxWidth: '520px'}} onClick={(e) => e.stopPropagation()}>
                   <div className="modal-header">
                     <h3>Enfants de {editEntity.first_name} {editEntity.last_name}</h3>
                     <button className="btn-close" onClick={closeModal}><Icons.X /></button>
@@ -5317,19 +5360,74 @@ function App() {
                       <ul style={{listStyle: 'none', padding: 0, margin: 0}}>
                         {editEntity.student_parents.map((sp: any, idx: number) => (
                           <li key={idx} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', borderBottom: '1px solid var(--border-color)'}}>
-                            <span style={{fontWeight: 500}}>{sp.students?.first_name} {sp.students?.last_name}</span>
-                            <button className="btn" style={{backgroundColor: '#fee2e2', color: '#ef4444', padding: '4px 8px', fontSize: '0.85rem'}} onClick={() => handleRemoveChild(sp.student_id, sp.parent_id)}>
+                            <div>
+                              <span style={{fontWeight: 600, display: 'block'}}>{sp.students?.first_name} {sp.students?.last_name}</span>
+                              <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
+                                Matricule: {sp.students?.matricule} {sp.students?.classes?.name ? `• Classe: ${sp.students.classes.name}` : ''}
+                              </span>
+                            </div>
+                            <button className="btn" style={{backgroundColor: '#fee2e2', color: '#ef4444', padding: '6px 12px', fontSize: '0.85rem', cursor: 'pointer', borderRadius: '6px', border: 'none'}} onClick={() => handleRemoveChild(sp.student_id, sp.parent_id)}>
                               Retirer
                             </button>
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <p style={{color: 'var(--text-secondary)', textAlign: 'center', padding: '20px 0'}}>Aucun enfant associé.</p>
+                      <p style={{color: 'var(--text-secondary)', textAlign: 'center', padding: '12px 0'}}>Aucun enfant associé à ce parent pour l'instant.</p>
                     )}
+
+                    {/* Add Another Child Form */}
+                    <div style={{ marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                      <label style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: '8px', display: 'block', color: 'var(--primary-color)' }}>
+                        ➕ Ajouter un autre enfant à ce parent :
+                      </label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input 
+                          type="text" 
+                          id="add_child_modal_input"
+                          list="modal_all_students_list" 
+                          className="form-input" 
+                          placeholder="Rechercher par Matricule ou Nom (ex: ELV-2024-001)..." 
+                          style={{ flex: 1 }}
+                        />
+                        <datalist id="modal_all_students_list">
+                          {studentsData.map((st: any) => (
+                            <option key={st.id} value={`${st.matricule} - ${st.first_name} ${st.last_name}`}>
+                              {st.classes?.name ? `Classe: ${st.classes.name}` : ''}
+                            </option>
+                          ))}
+                        </datalist>
+                        <button 
+                          type="button" 
+                          className="btn btn-primary"
+                          onClick={async () => {
+                            const input = document.getElementById('add_child_modal_input') as HTMLInputElement;
+                            const val = input ? input.value.trim().toLowerCase() : '';
+                            if (!val) {
+                              alert("Veuillez sélectionner ou taper un élève.");
+                              return;
+                            }
+                            const targetStudent = studentsData.find(s => 
+                              s.matricule?.toLowerCase() === val ||
+                              `${s.matricule} - ${s.first_name} ${s.last_name}`.toLowerCase() === val ||
+                              val.includes(s.matricule?.toLowerCase()) ||
+                              `${s.first_name} ${s.last_name}`.toLowerCase().includes(val)
+                            );
+                            if (targetStudent) {
+                              await handleAddChild(targetStudent.id, editEntity.id);
+                              input.value = '';
+                            } else {
+                              alert("Élève non trouvé dans l'établissement. Veuillez sélectionner une valeur suggérée dans la liste.");
+                            }
+                          }}
+                        >
+                          Lier
+                        </button>
+                      </div>
+                    </div>
                   </div>
                   <div className="modal-footer">
-                    <button type="button" className="btn btn-primary" onClick={closeModal}>Fermer</button>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>Fermer</button>
                   </div>
                 </div>
               )}
