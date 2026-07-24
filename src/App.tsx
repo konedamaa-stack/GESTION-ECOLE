@@ -3069,19 +3069,28 @@ function App() {
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
                 <td style={{padding: '16px 0', fontWeight: 600}}>{row.first_name} {row.last_name}</td>
                 <td style={{padding: '16px 0'}}>
-                  {row.student_parents?.length > 0 ? (
-                    <div style={{display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap'}}>
-                      <span className="badge badge-primary">{row.student_parents.length} {row.student_parents.length > 1 ? 'élèves' : 'élève'}</span>
-                      <span>{row.student_parents.map((sp: any) => sp.students?.first_name + ' ' + sp.students?.last_name).filter(Boolean).join(', ')}</span>
-                    </div>
-                  ) : '-'}
+                  <button 
+                    onClick={() => { setEditEntity(row); setActiveModal('parent_children'); }} 
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'none', color: 'inherit', textAlign: 'left' }}
+                    title="Cliquer pour gérer les enfants de ce parent"
+                  >
+                    {row.student_parents?.length > 0 ? (
+                      <div style={{display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap'}}>
+                        <span className="badge badge-primary">👨‍👩‍👧‍👦 {row.student_parents.length} {row.student_parents.length > 1 ? 'élèves' : 'élève'}</span>
+                        <span style={{ textDecoration: 'underline' }}>{row.student_parents.map((sp: any) => sp.students?.first_name + ' ' + sp.students?.last_name).filter(Boolean).join(', ')}</span>
+                      </div>
+                    ) : (
+                      <span className="badge" style={{ background: '#fee2e2', color: '#ef4444', textDecoration: 'none' }}>➕ Lier un enfant</span>
+                    )}
+                  </button>
                 </td>
                 <td style={{padding: '16px 0'}}>{row.location || '-'}</td>
                 <td style={{padding: '16px 0'}}>{row.phone || '-'}</td>
                 <td style={{padding: '16px 0'}}>{row.email ? 'Actif' : 'Non configuré'}</td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
-                  <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('parent'); }}>✏️ Modifier</button>
-                  <button className="btn btn-outline" title="Supprimer" style={{padding: '6px 12px', color: 'var(--error-color)', borderColor: 'var(--error-color)'}} onClick={() => handleDeleteParent(row.id)}>🗑️ Supprimer</button>
+                  <button className="btn btn-primary" style={{padding: '6px 12px', marginRight: '8px', fontSize: '0.85rem'}} onClick={() => { setEditEntity(row); setActiveModal('parent_children'); }}>👨‍👩‍👧‍👦 Enfants ({row.student_parents?.length || 0})</button>
+                  <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px', fontSize: '0.85rem'}} onClick={() => { setEditEntity(row); setActiveModal('parent'); }}>✏️ Modifier</button>
+                  <button className="btn btn-outline" title="Supprimer" style={{padding: '6px 12px', fontSize: '0.85rem', color: 'var(--error-color)', borderColor: 'var(--error-color)'}} onClick={() => handleDeleteParent(row.id)}>🗑️ Supprimer</button>
                 </td>
               </tr>
             )) : (
