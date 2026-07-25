@@ -109,36 +109,64 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
     if (set) setSettings(set);
   };
 
-  const generatePDF = (period: string) => {
+  const generatePDF = (period: string, mode: 'download' | 'print' | 'preview' = 'download') => {
     const target = selectedStudent || student;
+    if (!target) {
+      alert("Aucun élève sélectionné.");
+      return;
+    }
+
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     
-    doc.setFontSize(18);
+    doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(settings?.school_name || "GestionEcole", pageWidth / 2, 20, { align: "center" });
+    doc.setTextColor(15, 23, 42);
+    doc.text((settings?.school_name || "ÉTABLISSEMENT SCOLAIRE").toUpperCase(), pageWidth / 2, 16, { align: "center" });
     
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    doc.text(`${t('student.report_card', 'Bulletin de notes')} - ${period}`, pageWidth / 2, 28, { align: "center" });
-    doc.text(`${t('student.academic_year', 'Année Académique')} : ${settings?.academic_year || "2025-2026"}`, pageWidth / 2, 34, { align: "center" });
-
     doc.setFontSize(11);
-    doc.text(`${t('student.student_label', 'Élève')} : ${target.first_name} ${target.last_name}`, 14, 50);
-    doc.text(`${t('student.matricule_label', 'Matricule')} : ${target.matricule}`, 14, 56);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(71, 85, 105);
+    doc.text(`BULLETIN DE NOTES - ${period.toUpperCase()}`, pageWidth / 2, 23, { align: "center" });
+    doc.text(`Année Académique : ${settings?.academic_year || "2024-2025"}`, pageWidth / 2, 29, { align: "center" });
 
-    const periodEvals = evaluations.filter(e => e.period === period || e.period === period.replace('Trimestre ', '1er Trimestre'));
+    // Divider
+    doc.setDrawColor(37, 99, 235);
+    doc.setLineWidth(0.8);
+    doc.line(14, 33, pageWidth - 14, 33);
+
+    // Student metadata
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text(`Élève : ${target.first_name || ''} ${target.last_name || ''}`, 14, 42);
+    doc.text(`Matricule : ${target.matricule || '---'}`, 14, 48);
+    doc.text(`Classe : ${target.classes?.name || '---'}`, pageWidth - 60, 42);
+
+    // Filter evaluations matching period
+    const isPeriodMatch = (evPeriod: string, selPeriod: string) => {
+      if (!evPeriod) return false;
+      if (evPeriod === selPeriod) return true;
+      if (selPeriod === 'Trimestre 1' && (evPeriod === '1er Trimestre' || evPeriod === 'Trimestre 1')) return true;
+      if (selPeriod === 'Trimestre 2' && (evPeriod === '2ème Trimestre' || evPeriod === 'Trimestre 2')) return true;
+      if (selPeriod === 'Trimestre 3' && (evPeriod === '3ème Trimestre' || evPeriod === 'Trimestre 3')) return true;
+      return false;
+    };
+
+    const targetGrades = grades.filter(g => g.student_id === target.id || !g.student_id);
     const subjectGrades: Record<string, { total: number; count: number; maxTotal: number }> = {};
-    
-    periodEvals.forEach(ev => {
-      const g = grades.find(g => g.evaluation_id === ev.id);
-      if (g && g.score !== null) {
-        if (!subjectGrades[ev.subject]) {
-          subjectGrades[ev.subject] = { total: 0, count: 0, maxTotal: 0 };
+
+    evaluations.forEach(ev => {
+      if (isPeriodMatch(ev.period, period)) {
+        const g = targetGrades.find(g => g.evaluation_id === ev.id);
+        if (g && g.score !== null && g.score !== undefined) {
+          if (!subjectGrades[ev.subject]) {
+            subjectGrades[ev.subject] = { total: 0, count: 0, maxTotal: 0 };
+          }
+          subjectGrades[ev.subject].total += Number(g.score);
+          subjectGrades[ev.subject].maxTotal += Number(ev.max_score || 20);
+          subjectGrades[ev.subject].count += 1;
         }
-        subjectGrades[ev.subject].total += g.score;
-        subjectGrades[ev.subject].maxTotal += ev.max_score;
-        subjectGrades[ev.subject].count += 1;
       }
     });
 
@@ -148,12 +176,13 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
 
     Object.keys(subjectGrades).forEach(sub => {
       const sg = subjectGrades[sub];
-      const avgSur20 = (sg.total / sg.maxTotal) * 20;
+      const avgSur20 = sg.maxTotal > 0 ? (sg.total / sg.maxTotal) * 20 : 0;
+      const appreciation = avgSur20 >= 16 ? "Très bien" : avgSur20 >= 14 ? "Bien" : avgSur20 >= 12 ? "Assez bien" : avgSur20 >= 10 ? "Passable" : "Insuffisant";
       tableData.push([
         sub,
         `${sg.total.toFixed(2)} / ${sg.maxTotal}`,
         avgSur20.toFixed(2),
-        ""
+        appreciation
       ]);
       totalScore += avgSur20;
       totalMax += 20;
@@ -162,23 +191,40 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
     const generalAvg = totalMax > 0 ? (totalScore / totalMax) * 20 : 0;
 
     (doc as any).autoTable({
-      startY: 65,
+      startY: 55,
       head: [[t('student.subject', 'Matière'), t('student.marks_obtained', 'Notes Obtenues'), t('student.average_20', 'Moyenne (/20)'), t('student.appreciations', 'Appréciations')]],
-      body: tableData,
+      body: tableData.length > 0 ? tableData : [['Aucune note enregistrée', '---', '---', '---']],
       theme: 'grid',
-      headStyles: { fillColor: [59, 130, 246] }
+      headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold' },
+      styles: { fontSize: 9, cellPadding: 4 }
     });
 
-    const finalY = (doc as any).lastAutoTable.finalY || 65;
+    const finalY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 12 : 120;
 
     doc.setFont("helvetica", "bold");
-    doc.text(`${t('student.general_avg', 'Moyenne Générale')} : ${generalAvg.toFixed(2)} / 20`, 14, finalY + 15);
+    doc.setFontSize(10);
+    doc.text(`${t('student.general_avg', 'Moyenne Générale')} : ${generalAvg.toFixed(2)} / 20`, 14, finalY);
 
     doc.setFont("helvetica", "normal");
-    doc.text(t('student.director', "Le Directeur"), pageWidth - 50, finalY + 30);
-    doc.text(settings?.director_name || "", pageWidth - 50, finalY + 45);
+    doc.text(t('student.director', "Le Directeur / La Direction"), pageWidth - 65, finalY + 15);
+    if (settings?.director_name) {
+      doc.text(settings.director_name, pageWidth - 65, finalY + 22);
+    }
 
-    setPdfPreviewUrl(doc.output('bloburl').toString());
+    const fileName = `Bulletin_${(target.last_name || 'Eleve').replace(/\s+/g, '_')}_${(target.first_name || '').replace(/\s+/g, '_')}_${period.replace(/\s+/g, '_')}.pdf`;
+
+    if (mode === 'download') {
+      doc.save(fileName);
+    } else if (mode === 'print') {
+      doc.autoPrint();
+      const blobUrl = doc.output('bloburl').toString();
+      const printWin = window.open(blobUrl, '_blank');
+      if (!printWin) {
+        doc.save(fileName);
+      }
+    } else {
+      setPdfPreviewUrl(doc.output('bloburl').toString());
+    }
   };
 
   const days = [t('student.monday', 'Lundi'), t('student.tuesday', 'Mardi'), t('student.wednesday', 'Mercredi'), t('student.thursday', 'Jeudi'), t('student.friday', 'Vendredi'), t('student.saturday', 'Samedi')];
@@ -356,7 +402,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
               </div>
               <button 
                 className="print-pill-btn" 
-                onClick={() => generatePDF(selectedPeriod)}
+                onClick={() => generatePDF(selectedPeriod, 'print')}
               >
                 🖨️ Imprimer
               </button>
@@ -407,7 +453,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
                   <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>
                     Détail des notes ({selectedPeriod})
                   </h3>
-                  <button className="print-pill-btn" onClick={() => generatePDF(selectedPeriod)}>
+                  <button className="print-pill-btn" onClick={() => generatePDF(selectedPeriod, 'download')}>
                     📄 Télécharger le Bulletin PDF
                   </button>
                 </div>
