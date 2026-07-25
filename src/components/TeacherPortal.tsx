@@ -89,7 +89,8 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
 
   const handleCreateEvaluation = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    const formEl = e.currentTarget;
+    const formData = new FormData(formEl);
     
     const chosenSubject = formData.get('subject') || (teacherSubjects.length > 0 ? teacherSubjects[0] : '');
     const classId = formData.get('class_id') as string;
@@ -124,7 +125,10 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
       const { data: inserted, error } = await supabase.from('evaluations').insert([newEval]).select('*, classes(name)');
       if (error) throw error;
 
-      e.currentTarget.reset();
+      if (formEl) {
+        formEl.reset();
+      }
+      setSelectedEvalClassId('');
       
       const clsObj = classesData.find(c => c.id === classId);
       const createdRecord = inserted && inserted.length > 0 ? inserted[0] : null;

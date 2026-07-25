@@ -1644,8 +1644,9 @@ function App() {
   const handleDocumentUpload = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedStudent) return;
+    const formEl = e.currentTarget;
     
-    const formData = new FormData(e.currentTarget);
+    const formData = new FormData(formEl);
     const file = formData.get('file') as File;
     const documentType = formData.get('document_type') as string;
     const documentName = formData.get('document_name') as string;
@@ -1684,7 +1685,7 @@ function App() {
 
       // Refresh list
       fetchStudentDocuments(selectedStudent.id);
-      (e.target as HTMLFormElement).reset();
+      if (formEl) formEl.reset();
       
     } catch (error: any) {
       alert("Erreur lors de l'upload: " + error.message);
