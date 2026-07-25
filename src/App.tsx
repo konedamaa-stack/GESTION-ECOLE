@@ -3190,15 +3190,88 @@ function App() {
       styleEl.id = 'schedule-print-style';
       styleEl.innerHTML = `
         @media print {
-          @page { size: landscape; margin: 8mm; }
-          body { background: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          .portal-sidebar, .portal-header, .page-header, .panel-header, button, select, .delete-course-btn, nav, header { display: none !important; }
-          .printable-schedule-wrapper { border: none !important; box-shadow: none !important; padding: 0 !important; width: 100% !important; margin: 0 !important; }
-          .schedule-print-header { display: flex !important; flex-direction: column !important; gap: 4px !important; margin-bottom: 12px !important; border-bottom: 2px solid #0f172a !important; padding-bottom: 8px !important; }
-          table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; page-break-inside: avoid !important; }
-          th, td { border: 1px solid #64748b !important; padding: 4px !important; font-size: 0.75rem !important; vertical-align: top !important; }
-          th { background-color: #f1f5f9 !important; color: #0f172a !important; font-weight: bold !important; text-align: center !important; }
-          .course-item { background: #eff6ff !important; border-left: 3px solid #2563eb !important; padding: 3px 5px !important; margin-bottom: 2px !important; border-radius: 3px !important; font-size: 0.75rem !important; }
+          @page { size: landscape; margin: 5mm; }
+          html, body {
+            height: 100% !important;
+            max-height: 100vh !important;
+            overflow: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .portal-sidebar, 
+          .portal-header, 
+          .page-header, 
+          .panel-header, 
+          button, 
+          select, 
+          .delete-course-btn, 
+          nav, 
+          header,
+          footer,
+          .modal-overlay,
+          .dashboard-scroll > div:not(.printable-schedule-wrapper) {
+            display: none !important;
+          }
+          .portal-wrapper, 
+          .portal-main, 
+          .dashboard-scroll, 
+          .printable-schedule-wrapper {
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: white !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+          }
+          .schedule-print-header {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 2px !important;
+            margin-bottom: 6px !important;
+            border-bottom: 2px solid #0f172a !important;
+            padding-bottom: 4px !important;
+          }
+          table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            table-layout: fixed !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            margin: 0 !important;
+          }
+          th, td {
+            border: 1px solid #475569 !important;
+            padding: 2px 4px !important;
+            font-size: 0.7rem !important;
+            line-height: 1.15 !important;
+            vertical-align: top !important;
+          }
+          th {
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
+            font-weight: bold !important;
+            text-align: center !important;
+            padding: 4px !important;
+          }
+          td {
+            height: 38px !important;
+          }
+          .course-item {
+            background: #eff6ff !important;
+            border-left: 3px solid #2563eb !important;
+            padding: 2px 4px !important;
+            margin-bottom: 1px !important;
+            border-radius: 2px !important;
+            font-size: 0.68rem !important;
+            line-height: 1.1 !important;
+          }
         }
       `;
       document.head.appendChild(styleEl);
