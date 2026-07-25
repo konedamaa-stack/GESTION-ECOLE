@@ -1542,17 +1542,23 @@ function App() {
           return;
         }
 
-        const { data: inserted, error } = await supabase.from('evaluations').insert([{...evaluation, school_id: currentSchoolId}]).select();
+        const { data: inserted, error } = await supabase.from('evaluations').insert([{...evaluation, school_id: currentSchoolId}]).select('*, classes(name)');
         if (error) throw error;
         
+        await fetchEvaluations();
+
         if (inserted && inserted.length > 0) {
           const clsObj = classesData.find((c: any) => c.id === inserted[0].class_id);
           const newEvalObj = {
             ...inserted[0],
-            classes: clsObj ? { name: clsObj.name } : null
+            classes: inserted[0].classes || (clsObj ? { name: clsObj.name } : null)
           };
           
-          setEvaluationsData(prev => [newEvalObj, ...prev]);
+          setEvaluationsData(prev => {
+            const filtered = prev.filter(e => e.id !== newEvalObj.id);
+            return [newEvalObj, ...filtered];
+          });
+
           setSelectedClassForGrades(evaluation.class_id as string);
           setSelectedPeriodForGrades(evaluation.period as string);
           setActiveTab('grades');

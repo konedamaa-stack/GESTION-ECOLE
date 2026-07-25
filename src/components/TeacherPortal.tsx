@@ -42,6 +42,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
   const [previewStudentId, setPreviewStudentId] = useState<string | null>(null);
   const [classSubjects, setClassSubjects] = useState<any[]>([]);
   const [selectedEvalClassId, setSelectedEvalClassId] = useState<string>('');
+  const [isCreatingEval, setIsCreatingEval] = useState<boolean>(false);
 
   useEffect(() => {
     applyThemeSettings(settings);
@@ -61,10 +62,10 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     const { data: classes } = await supabase.from('classes').select('*').eq('school_id', session.school_id);
     if (classes) setClassesData(classes);
 
-    // Fetch evaluations for this teacher's subjects
+    // Fetch evaluations for this school
     const { data: evaluations } = await supabase.from('evaluations')
       .select('*, classes(name)')
-      .in('subject', teacherSubjects).eq('school_id', session.school_id)
+      .eq('school_id', session.school_id)
       .order('date', { ascending: false });
     if (evaluations) setEvaluationsData(evaluations);
 
@@ -91,11 +92,12 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     const formData = new FormData(e.currentTarget);
     
     const chosenSubject = formData.get('subject') || (teacherSubjects.length > 0 ? teacherSubjects[0] : '');
+    const classId = formData.get('class_id') as string;
     
     const newEval = {
       name: formData.get('name'),
       subject: chosenSubject,
-      class_id: formData.get('class_id'),
+      class_id: classId,
       date: formData.get('date'),
       period: formData.get('period'),
       type: formData.get('type'),
@@ -116,23 +118,37 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
       return;
     }
 
-    const { data: inserted, error } = await supabase.from('evaluations').insert([newEval]).select();
-    if (!error) {
-      alert(t('teacher.eval_created', "Évaluation créée avec succès"));
+    setIsCreatingEval(true);
+
+    try {
+      const { data: inserted, error } = await supabase.from('evaluations').insert([newEval]).select('*, classes(name)');
+      if (error) throw error;
+
       e.currentTarget.reset();
-      if (inserted && inserted.length > 0) {
-        const clsObj = classesData.find(c => c.id === inserted[0].class_id);
-        const newEvalWithClassObj = {
-          ...inserted[0],
-          classes: clsObj ? { name: clsObj.name } : null
-        };
-        
-        setEvaluationsData(prev => [newEvalWithClassObj, ...prev]);
-        setActiveTab('evaluations');
-        handleSelectEvaluation(newEvalWithClassObj);
-      }
-    } else {
-      alert(t('teacher.error', "Erreur: ") + error.message);
+      
+      const clsObj = classesData.find(c => c.id === classId);
+      const createdRecord = inserted && inserted.length > 0 ? inserted[0] : null;
+      const evalToSelect = createdRecord 
+        ? { ...createdRecord, classes: createdRecord.classes || (clsObj ? { name: clsObj.name } : null) }
+        : { ...newEval, id: 'temp_' + Date.now(), classes: clsObj ? { name: clsObj.name } : null };
+
+      // Immediately sync state so dropdown contains the evaluation 100%
+      setEvaluationsData(prev => {
+        const filtered = prev.filter(ev => ev.id !== evalToSelect.id);
+        return [evalToSelect, ...filtered];
+      });
+
+      // Re-fetch all data from database asynchronously to guarantee sync
+      await fetchData();
+
+      setActiveTab('evaluations');
+      handleSelectEvaluation(evalToSelect);
+
+      alert(t('teacher.eval_created', "Évaluation créée avec succès"));
+    } catch (err: any) {
+      alert(t('teacher.error', "Erreur: ") + (err.message || err));
+    } finally {
+      setIsCreatingEval(false);
     }
   };
 
