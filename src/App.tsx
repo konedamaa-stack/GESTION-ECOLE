@@ -3186,101 +3186,98 @@ function App() {
     const hasSelection = scheduleViewMode === 'class' ? Boolean(selectedClassForSchedule) : Boolean(selectedTeacherForSchedule);
 
     const handlePrintSchedule = () => {
-      const styleEl = document.createElement('style');
-      styleEl.id = 'schedule-print-style';
-      styleEl.innerHTML = `
-        @media print {
-          @page { size: landscape; margin: 5mm; }
-          html, body {
-            height: 100% !important;
-            max-height: 100vh !important;
-            overflow: hidden !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
+      const selectedClassObj = classesData.find(c => c.id === selectedClassForSchedule);
+      const selectedTeacherObj = teachersData.find(t => t.id === selectedTeacherForSchedule);
+
+      const daysValues = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+      const timeSlots = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+
+      let currentSchedules: any[] = [];
+      if (scheduleViewMode === 'class') {
+        currentSchedules = schedulesData.filter(s => s.class_id === selectedClassForSchedule);
+      } else {
+        currentSchedules = schedulesData.filter(s => s.teacher_id === selectedTeacherForSchedule);
+      }
+
+      const schoolName = settingsData?.school_name || "ÉTABLISSEMENT SCOLAIRE";
+      const titleText = scheduleViewMode === 'class' ? 'EMPLOI DU TEMPS DE LA CLASSE' : 'EMPLOI DU TEMPS INDIVIDUEL ENSEIGNANT';
+      const targetText = scheduleViewMode === 'class' 
+        ? `CLASSE : ${selectedClassObj?.name || '---'}` 
+        : `PROFESSEUR : ${selectedTeacherObj ? `${selectedTeacherObj.first_name} ${selectedTeacherObj.last_name}` : '---'}`;
+
+      let tableRowsHtml = '';
+      timeSlots.forEach(hour => {
+        tableRowsHtml += `<tr>`;
+        tableRowsHtml += `<td style="text-align: center; font-weight: bold; background: #f8fafc; font-size: 0.72rem; vertical-align: middle;">${hour}</td>`;
+        daysValues.forEach(day => {
+          const courses = currentSchedules.filter(s => s.day_of_week === day && s.start_time.startsWith(hour));
+          tableRowsHtml += `<td style="height: 36px; vertical-align: top; padding: 2px;">`;
+          courses.forEach(c => {
+            const teacherName = c.teachers ? `${c.teachers.first_name} ${c.teachers.last_name}` : '';
+            const className = c.classes?.name || (classesData.find(cl => cl.id === c.class_id)?.name) || '';
+            const subText = scheduleViewMode === 'class' ? (teacherName ? `Prof: ${teacherName}` : '') : (className ? `Classe: ${className}` : '');
+            const timeStr = `${c.start_time?.substring(0,5) || ''} - ${c.end_time?.substring(0,5) || ''}`;
+
+            tableRowsHtml += `
+              <div style="background: #eff6ff; border-left: 3px solid #2563eb; padding: 2px 4px; margin-bottom: 2px; border-radius: 2px; font-size: 0.68rem; color: #1e3a8a;">
+                <div style="font-weight: bold; color: #1d4ed8;">${c.subject || ''}</div>
+                <div style="color: #475569; font-size: 0.64rem;">🕒 ${timeStr}</div>
+                ${subText ? `<div style="color: #334155; font-size: 0.64rem; font-weight: 600;">${subText}</div>` : ''}
+              </div>
+            `;
+          });
+          tableRowsHtml += `</td>`;
+        });
+        tableRowsHtml += `</tr>`;
+      });
+
+      const printContainer = document.createElement('div');
+      printContainer.id = 'schedule-print-container';
+      printContainer.innerHTML = `
+        <style>
+          @media print {
+            @page { size: landscape; margin: 5mm; }
+            html, body { margin: 0 !important; padding: 0 !important; background: white !important; height: auto !important; overflow: visible !important; }
+            body > *:not(#schedule-print-container) { display: none !important; }
+            #schedule-print-container { display: block !important; width: 100% !important; background: white !important; font-family: system-ui, -apple-system, sans-serif !important; color: #0f172a !important; }
+            .print-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 6px; margin-bottom: 8px; }
+            .print-table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: avoid; }
+            .print-table th, .print-table td { border: 1px solid #475569; padding: 2px 4px; font-size: 0.7rem; }
+            .print-table th { background: #f1f5f9; color: #0f172a; font-weight: bold; text-align: center; padding: 5px; }
           }
-          .portal-sidebar, 
-          .portal-header, 
-          .page-header, 
-          .panel-header, 
-          button, 
-          select, 
-          .delete-course-btn, 
-          nav, 
-          header,
-          footer,
-          .modal-overlay,
-          .dashboard-scroll > div:not(.printable-schedule-wrapper) {
-            display: none !important;
+          @media screen {
+            #schedule-print-container { display: none !important; }
           }
-          .portal-wrapper, 
-          .portal-main, 
-          .dashboard-scroll, 
-          .printable-schedule-wrapper {
-            padding: 0 !important;
-            margin: 0 !important;
-            border: none !important;
-            box-shadow: none !important;
-            background: white !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            height: auto !important;
-            min-height: 0 !important;
-            overflow: visible !important;
-          }
-          .schedule-print-header {
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 2px !important;
-            margin-bottom: 6px !important;
-            border-bottom: 2px solid #0f172a !important;
-            padding-bottom: 4px !important;
-          }
-          table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-            table-layout: fixed !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            margin: 0 !important;
-          }
-          th, td {
-            border: 1px solid #475569 !important;
-            padding: 2px 4px !important;
-            font-size: 0.7rem !important;
-            line-height: 1.15 !important;
-            vertical-align: top !important;
-          }
-          th {
-            background-color: #f1f5f9 !important;
-            color: #0f172a !important;
-            font-weight: bold !important;
-            text-align: center !important;
-            padding: 4px !important;
-          }
-          td {
-            height: 38px !important;
-          }
-          .course-item {
-            background: #eff6ff !important;
-            border-left: 3px solid #2563eb !important;
-            padding: 2px 4px !important;
-            margin-bottom: 1px !important;
-            border-radius: 2px !important;
-            font-size: 0.68rem !important;
-            line-height: 1.1 !important;
-          }
-        }
+        </style>
+        <div class="print-header">
+          <div>
+            <h2 style="margin: 0; font-size: 1.15rem; color: #0f172a; font-weight: bold; text-transform: uppercase;">ÉTABLISSEMENT : ${schoolName}</h2>
+            <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #475569;">Année Scolaire : 2024 - 2025</p>
+          </div>
+          <div style="text-align: right;">
+            <h1 style="margin: 0; font-size: 1.25rem; color: #2563eb; font-weight: bold; text-transform: uppercase;">${titleText}</h1>
+            <div style="font-size: 1.05rem; font-weight: bold; color: #0f172a; margin-top: 2px; text-transform: uppercase;">${targetText}</div>
+          </div>
+        </div>
+        <table class="print-table">
+          <thead>
+            <tr>
+              <th style="width: 9%;">Heure</th>
+              ${daysValues.map(d => `<th style="width: 15%;">${d}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRowsHtml}
+          </tbody>
+        </table>
       `;
-      document.head.appendChild(styleEl);
-      document.body.classList.add('printing-schedule');
+
+      document.body.appendChild(printContainer);
       window.print();
       setTimeout(() => {
-        document.body.classList.remove('printing-schedule');
-        const existing = document.getElementById('schedule-print-style');
-        if (existing) existing.remove();
+        if (printContainer && printContainer.parentNode) {
+          printContainer.parentNode.removeChild(printContainer);
+        }
       }, 1000);
     };
 
