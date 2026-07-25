@@ -247,6 +247,8 @@ function App() {
   const [schedulesData, setSchedulesData] = useState<any[]>([]);
   const [settingsData, setSettingsData] = useState<any | null>(null);
   const [selectedScheduleTeacherId, setSelectedScheduleTeacherId] = useState<string>('');
+  const [scheduleViewMode, setScheduleViewMode] = useState<'class' | 'teacher'>('class');
+  const [selectedTeacherForSchedule, setSelectedTeacherForSchedule] = useState<string>('');
 
   useEffect(() => {
     applyThemeSettings(settingsData);
@@ -3168,16 +3170,53 @@ function App() {
       t('admin.schedules.days.friday', 'Vendredi'),
       t('admin.schedules.days.saturday', 'Samedi')
     ];
-    // Map them up
     const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-    const currentSchedules = schedulesData.filter(s => s.class_id === selectedClassForSchedule);
-    
+    const timeSlots = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+
+    const selectedClassObj = classesData.find(c => c.id === selectedClassForSchedule);
+    const selectedTeacherObj = teachersData.find(t => t.id === selectedTeacherForSchedule);
+
+    let currentSchedules: any[] = [];
+    if (scheduleViewMode === 'class') {
+      currentSchedules = schedulesData.filter(s => s.class_id === selectedClassForSchedule);
+    } else {
+      currentSchedules = schedulesData.filter(s => s.teacher_id === selectedTeacherForSchedule);
+    }
+
+    const hasSelection = scheduleViewMode === 'class' ? Boolean(selectedClassForSchedule) : Boolean(selectedTeacherForSchedule);
+
+    const handlePrintSchedule = () => {
+      const styleEl = document.createElement('style');
+      styleEl.id = 'schedule-print-style';
+      styleEl.innerHTML = `
+        @media print {
+          @page { size: landscape; margin: 8mm; }
+          body { background: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .portal-sidebar, .portal-header, .page-header, .panel-header, button, select, .delete-course-btn, nav, header { display: none !important; }
+          .printable-schedule-wrapper { border: none !important; box-shadow: none !important; padding: 0 !important; width: 100% !important; margin: 0 !important; }
+          .schedule-print-header { display: flex !important; flex-direction: column !important; gap: 4px !important; margin-bottom: 12px !important; border-bottom: 2px solid #0f172a !important; padding-bottom: 8px !important; }
+          table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; page-break-inside: avoid !important; }
+          th, td { border: 1px solid #64748b !important; padding: 4px !important; font-size: 0.75rem !important; vertical-align: top !important; }
+          th { background-color: #f1f5f9 !important; color: #0f172a !important; font-weight: bold !important; text-align: center !important; }
+          .course-item { background: #eff6ff !important; border-left: 3px solid #2563eb !important; padding: 3px 5px !important; margin-bottom: 2px !important; border-radius: 3px !important; font-size: 0.75rem !important; }
+        }
+      `;
+      document.head.appendChild(styleEl);
+      document.body.classList.add('printing-schedule');
+      window.print();
+      setTimeout(() => {
+        document.body.classList.remove('printing-schedule');
+        const existing = document.getElementById('schedule-print-style');
+        if (existing) existing.remove();
+      }, 1000);
+    };
+
     return (
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
           <h1 className="page-title">{t('admin.schedules.title', 'Emplois du Temps')}</h1>
-          <p className="page-subtitle">{t('admin.schedules.subtitle', 'Gestion des plannings par classe.')}</p>
+          <p className="page-subtitle">{t('admin.schedules.subtitle', 'Gestion et impression des plannings par classe ou par enseignant.')}</p>
         </div>
         <button className="btn btn-primary" onClick={() => setActiveModal('schedule')}>
           <Icons.Plus /> {t('admin.schedules.btn_add', 'Ajouter un cours')}
@@ -3185,73 +3224,129 @@ function App() {
       </div>
 
       <div className="panel delay-100 printable-schedule-wrapper">
-        <div className="panel-header" style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-          <h3 className="panel-title" style={{margin: 0}}>{t('admin.schedules.panel_title', 'Planning de la classe')}</h3>
-          <select 
-            className="form-select" 
-            style={{width: '250px'}} 
-            value={selectedClassForSchedule} 
-            onChange={(e) => setSelectedClassForSchedule(e.target.value)}
-          >
-            <option value="">{t('admin.schedules.select_class', '-- Sélectionner une classe --')}</option>
-            {classesData.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-          {selectedClassForSchedule && (
+        <div className="panel-header" style={{display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap'}}>
+          <div style={{display: 'flex', background: 'var(--surface-color-hover)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-color)'}}>
+            <button
+              type="button"
+              className={`btn ${scheduleViewMode === 'class' ? 'btn-primary' : 'btn-outline'}`}
+              style={{padding: '6px 16px', fontSize: '0.88rem', border: 'none'}}
+              onClick={() => setScheduleViewMode('class')}
+            >
+              🏫 Par Classe
+            </button>
+            <button
+              type="button"
+              className={`btn ${scheduleViewMode === 'teacher' ? 'btn-primary' : 'btn-outline'}`}
+              style={{padding: '6px 16px', fontSize: '0.88rem', border: 'none'}}
+              onClick={() => setScheduleViewMode('teacher')}
+            >
+              👨‍🏫 Par Enseignant (Individuel)
+            </button>
+          </div>
+
+          {scheduleViewMode === 'class' ? (
+            <select 
+              className="form-select" 
+              style={{width: '260px'}} 
+              value={selectedClassForSchedule} 
+              onChange={(e) => setSelectedClassForSchedule(e.target.value)}
+            >
+              <option value="">{t('admin.schedules.select_class', '-- Sélectionner une classe --')}</option>
+              {classesData.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          ) : (
+            <select 
+              className="form-select" 
+              style={{width: '280px'}} 
+              value={selectedTeacherForSchedule} 
+              onChange={(e) => setSelectedTeacherForSchedule(e.target.value)}
+            >
+              <option value="">-- Sélectionner un Enseignant --</option>
+              {teachersData.map(t => (
+                <option key={t.id} value={t.id}>{t.first_name} {t.last_name} {t.subject ? `(${t.subject})` : ''}</option>
+              ))}
+            </select>
+          )}
+
+          {hasSelection && (
             <button 
               className="btn btn-outline" 
-              onClick={() => {
-                const styleEl = document.createElement('style');
-                styleEl.id = 'schedule-print-style';
-                styleEl.innerHTML = '@page { size: landscape; margin: 0; }';
-                document.head.appendChild(styleEl);
-                document.body.classList.add('printing-schedule');
-                window.print();
-                setTimeout(() => {
-                  document.body.classList.remove('printing-schedule');
-                  const existing = document.getElementById('schedule-print-style');
-                  if (existing) existing.remove();
-                }, 1000);
-              }}
+              onClick={handlePrintSchedule}
               style={{marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px'}}
             >
-              <Icons.Printer /> {t('admin.schedules.print', 'Imprimer')}
+              <Icons.Printer /> {t('admin.schedules.print', 'Imprimer sur 1 page')}
             </button>
           )}
         </div>
 
-        {selectedClassForSchedule ? (
+        {/* Printable Banner Header (Visible strictly during Print) */}
+        <div className="schedule-print-header" style={{ display: 'none' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0f172a', paddingBottom: '8px', marginBottom: '12px' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                ÉTABLISSEMENT : {settingsData?.school_name || "ÉTABLISSEMENT SCOLAIRE"}
+              </h2>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#475569' }}>
+                Année Scolaire : 2024 - 2025
+              </p>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <h1 style={{ margin: 0, fontSize: '1.35rem', color: '#2563eb', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                {scheduleViewMode === 'class' ? 'EMPLOI DU TEMPS DE LA CLASSE' : 'EMPLOI DU TEMPS INDIVIDUEL ENSEIGNANT'}
+              </h1>
+              <div style={{ fontSize: '1.15rem', fontWeight: 'bold', color: '#0f172a', marginTop: '4px', textTransform: 'uppercase' }}>
+                {scheduleViewMode === 'class' 
+                  ? `CLASSE : ${selectedClassObj?.name || '---'}`
+                  : `PROFESSEUR : ${selectedTeacherObj ? `${selectedTeacherObj.first_name} ${selectedTeacherObj.last_name}` : '---'}`}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {hasSelection ? (
           <div style={{overflowX: 'auto', marginTop: '16px'}}>
-            <table style={{width: '100%', borderCollapse: 'collapse', minWidth: '800px'}}>
+            <table style={{width: '100%', borderCollapse: 'collapse', minWidth: '850px'}}>
               <thead>
                 <tr>
-                  <th style={{padding: '12px', border: '1px solid var(--border-color)', background: 'var(--surface-color-hover)', width: '10%'}}>{t('admin.schedules.col_time', 'Heure')}</th>
+                  <th style={{padding: '10px', border: '1px solid var(--border-color)', background: 'var(--surface-color-hover)', width: '10%', textAlign: 'center'}}>{t('admin.schedules.col_time', 'Heure')}</th>
                   {daysValues.map(day => (
-                    <th key={day} style={{padding: '12px', border: '1px solid var(--border-color)', background: 'var(--surface-color-hover)', width: '15%', textAlign: 'center'}}>{day}</th>
+                    <th key={day} style={{padding: '10px', border: '1px solid var(--border-color)', background: 'var(--surface-color-hover)', width: '15%', textAlign: 'center'}}>{day}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map(hour => (
+                {timeSlots.map(hour => (
                   <tr key={hour}>
-                    <td style={{padding: '12px', border: '1px solid var(--border-color)', textAlign: 'center', fontWeight: 500, color: 'var(--text-secondary)'}}>{hour}</td>
+                    <td style={{padding: '10px', border: '1px solid var(--border-color)', textAlign: 'center', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '0.85rem'}}>{hour}</td>
                     {days.map((day) => {
                       const courses = currentSchedules.filter(s => s.day_of_week === day && s.start_time.startsWith(hour));
                       return (
-                        <td key={day} style={{padding: '8px', border: '1px solid var(--border-color)', verticalAlign: 'top', height: '80px'}}>
+                        <td key={day} style={{padding: '6px', border: '1px solid var(--border-color)', verticalAlign: 'top', height: '65px'}}>
                           {courses.map((course, i) => (
-                            <div key={i} style={{position: 'relative', background: 'rgba(59, 130, 246, 0.1)', borderLeft: '3px solid var(--primary-color)', padding: '6px', borderRadius: '4px', marginBottom: '4px', fontSize: '0.85rem'}}>
+                            <div key={i} className="course-item" style={{position: 'relative', background: 'rgba(59, 130, 246, 0.1)', borderLeft: '3px solid var(--primary-color)', padding: '6px', borderRadius: '4px', marginBottom: '4px', fontSize: '0.82rem'}}>
                               <button 
+                                className="delete-course-btn"
                                 onClick={(e) => { e.stopPropagation(); handleDeleteSchedule(course.id); }}
-                                style={{position: 'absolute', top: '2px', right: '4px', background: 'transparent', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', fontSize: '1rem', padding: '0 4px', fontWeight: 'bold'}}
+                                style={{position: 'absolute', top: '2px', right: '4px', background: 'transparent', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', fontSize: '0.95rem', padding: '0 4px', fontWeight: 'bold'}}
                                 title="Supprimer ce cours"
                               >
                                 &times;
                               </button>
-                              <div style={{fontWeight: 600, color: 'var(--primary-color)', paddingRight: '16px'}}>{course.subject}</div>
-                              <div style={{color: 'var(--text-secondary)', fontSize: '0.75rem'}}>{course?.start_time?.substring(0,5)} - {course?.end_time?.substring(0,5)}</div>
-                              <div style={{color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '2px'}}>{course.teachers?.first_name} {course.teachers?.last_name}</div>
+                              <div style={{fontWeight: 700, color: 'var(--primary-color)', paddingRight: '16px'}}>{course.subject}</div>
+                              <div style={{color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '2px'}}>
+                                🕒 {course?.start_time?.substring(0,5)} - {course?.end_time?.substring(0,5)}
+                              </div>
+                              {scheduleViewMode === 'class' ? (
+                                <div style={{color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '2px', fontWeight: 500}}>
+                                  👨‍🏫 {course.teachers ? `${course.teachers.first_name} ${course.teachers.last_name}` : 'Non assigné'}
+                                </div>
+                              ) : (
+                                <div style={{color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '2px', fontWeight: 600}}>
+                                  🏫 Classe : {course.classes?.name || (classesData.find(c => c.id === course.class_id)?.name) || '---'}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </td>
@@ -3264,7 +3359,9 @@ function App() {
           </div>
         ) : (
           <div style={{padding: '40px', textAlign: 'center', color: 'var(--text-secondary)'}}>
-            {t('admin.schedules.empty_state', 'Veuillez sélectionner une classe pour afficher son emploi du temps.')}
+            {scheduleViewMode === 'class' 
+              ? t('admin.schedules.empty_state', 'Veuillez sélectionner une classe pour afficher son emploi du temps.')
+              : 'Veuillez sélectionner un enseignant pour afficher son emploi du temps individuel.'}
           </div>
         )}
       </div>
