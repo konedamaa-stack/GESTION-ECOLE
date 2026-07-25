@@ -249,6 +249,7 @@ function App() {
   const [selectedScheduleTeacherId, setSelectedScheduleTeacherId] = useState<string>('');
   const [scheduleViewMode, setScheduleViewMode] = useState<'class' | 'teacher'>('class');
   const [selectedTeacherForSchedule, setSelectedTeacherForSchedule] = useState<string>('');
+  const [selectedEvalClassId, setSelectedEvalClassId] = useState<string>('');
 
   useEffect(() => {
     applyThemeSettings(settingsData);
@@ -258,6 +259,9 @@ function App() {
   useEffect(() => {
     if (activeModal === 'schedule') {
       setSelectedScheduleTeacherId(editEntity?.teacher_id || '');
+    }
+    if (activeModal === 'evaluation') {
+      setSelectedEvalClassId(editEntity?.class_id || '');
     }
   }, [activeModal, editEntity]);
 
@@ -6198,14 +6202,17 @@ function App() {
 
               {activeModal === 'evaluation' && (
                 <form onSubmit={handleFormSubmit}>
-                  <div className="form-group">
-                    <label>{t('admin.modals.eval_name', "Nom de l'évaluation")}</label>
-                    <input type="text" name="name" className="form-input" required placeholder="Ex: Devoir de Mathématiques N°1" />
-                  </div>
                   <div className="form-grid">
                     <div className="form-group">
                       <label>{t('admin.modals.class_assign', 'Classe')}</label>
-                      <select name="class_id" className="form-select" required>
+                      <select 
+                        name="class_id" 
+                        className="form-select" 
+                        required
+                        value={selectedEvalClassId}
+                        onChange={(e) => setSelectedEvalClassId(e.target.value)}
+                      >
+                        <option value="">-- Sélectionner une classe --</option>
                         {classesData.map(cls => (
                           <option key={cls.id} value={cls.id}>{cls.name}</option>
                         ))}
@@ -6213,18 +6220,40 @@ function App() {
                     </div>
                     <div className="form-group">
                       <label>{t('admin.modals.taught_subject', 'Matière')}</label>
-                      <select name="subject" className="form-input" required defaultValue={editEntity?.subject || ""}>
-                        <option value="">Sélectionnez une matière</option>
-                        {allSubjects.map(subj => (
-                          <option key={subj} value={subj}>{subj}</option>
-                        ))}
-                      </select>
+                      {(() => {
+                        const availableSubjects = (() => {
+                          if (!selectedEvalClassId) return allSubjects;
+                          const csSubjects = (classSubjectsData || []).filter((cs: any) => cs.class_id === selectedEvalClassId).map((cs: any) => cs.subject);
+                          const schedSubjects = (schedulesData || []).filter((s: any) => s.class_id === selectedEvalClassId).map((s: any) => s.subject);
+                          const combined = Array.from(new Set([...csSubjects, ...schedSubjects])).filter(Boolean);
+                          return combined.length > 0 ? combined : allSubjects;
+                        })();
+
+                        return (
+                          <select name="subject" className="form-input" required defaultValue={editEntity?.subject || ""}>
+                            <option value="">
+                              {selectedEvalClassId 
+                                ? (availableSubjects.length > 0 ? "-- Sélectionner une matière --" : "Aucune matière rattachée")
+                                : "-- Choisissez d'abord une classe --"}
+                            </option>
+                            {availableSubjects.map(subj => (
+                              <option key={subj} value={subj}>{subj}</option>
+                            ))}
+                          </select>
+                        );
+                      })()}
                     </div>
                   </div>
-                  <div className="form-grid">
+
+                  <div className="form-group" style={{marginTop: '16px'}}>
+                    <label>{t('admin.modals.eval_name', "Nom de l'évaluation")}</label>
+                    <input type="text" name="name" className="form-input" required placeholder="Ex: Devoir de Mathématiques N°1" defaultValue={editEntity?.name || ""} />
+                  </div>
+
+                  <div className="form-grid" style={{marginTop: '16px'}}>
                     <div className="form-group">
                       <label>{t('admin.modals.term', 'Période')}</label>
-                      <select name="period" className="form-select" required>
+                      <select name="period" className="form-select" required defaultValue={editEntity?.period || "1er Trimestre"}>
                         <option value="1er Trimestre">1er Trimestre</option>
                         <option value="2ème Trimestre">2ème Trimestre</option>
                         <option value="3ème Trimestre">3ème Trimestre</option>
@@ -6234,7 +6263,7 @@ function App() {
                     </div>
                     <div className="form-group">
                       <label>{t('admin.modals.eval_type', "Type d'évaluation")}</label>
-                      <select name="type" className="form-select" required>
+                      <select name="type" className="form-select" required defaultValue={editEntity?.type || "Devoir de classe"}>
                         <option value="Devoir de classe">Devoir de classe</option>
                         <option value="Devoir à la maison">Devoir à la maison</option>
                         <option value="Composition">Composition</option>
@@ -6243,16 +6272,18 @@ function App() {
                       </select>
                     </div>
                   </div>
-                  <div className="form-grid">
+
+                  <div className="form-grid" style={{marginTop: '16px'}}>
                     <div className="form-group">
                       <label>{t('admin.modals.date', 'Date')}</label>
-                      <input type="date" name="date" className="form-input" required defaultValue={new Date().toISOString().split('T')[0]} />
+                      <input type="date" name="date" className="form-input" required defaultValue={editEntity?.date || new Date().toISOString().split('T')[0]} />
                     </div>
                     <div className="form-group">
                       <label>{t('admin.modals.max_score', 'Noté sur (Maximum)')}</label>
-                      <input type="number" name="max_score" className="form-input" required defaultValue="20" min="1" />
+                      <input type="number" name="max_score" className="form-input" required defaultValue={editEntity?.max_score || "20"} min="1" />
                     </div>
                   </div>
+
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
                     <button type="submit" className="btn btn-primary">{t('admin.modals.create_eval', "Créer l'évaluation")}</button>

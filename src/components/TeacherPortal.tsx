@@ -41,6 +41,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
   const [previewPeriod, setPreviewPeriod] = useState<string>('');
   const [previewStudentId, setPreviewStudentId] = useState<string | null>(null);
   const [classSubjects, setClassSubjects] = useState<any[]>([]);
+  const [selectedEvalClassId, setSelectedEvalClassId] = useState<string>('');
 
   useEffect(() => {
     applyThemeSettings(settings);
@@ -308,33 +309,73 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
               </div>
               <form onSubmit={handleCreateEvaluation}>
                 <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px'}}>
+                  
+                  {/* 1. Classe (Sélectionnée d'abord) */}
+                  <div className="form-group">
+                    <label style={{fontWeight: 600, color: 'var(--text-secondary)'}}>{t('teacher.class', "Classe")}</label>
+                    <select 
+                      name="class_id" 
+                      className="form-input" 
+                      required 
+                      style={{width: '100%'}}
+                      value={selectedEvalClassId}
+                      onChange={(e) => setSelectedEvalClassId(e.target.value)}
+                    >
+                      <option value="">{t('teacher.select_class', "-- Sélectionner une classe --")}</option>
+                      {classesData.filter(c => teacherSchedules.some(s => s.class_id === c.id) || c.principal_teacher_id === session.id || evaluationsData.some(ev => ev.class_id === c.id)).map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 2. Matière (Filtrée aussitôt selon la classe sélectionnée) */}
+                  <div className="form-group">
+                    <label style={{fontWeight: 600, color: 'var(--text-secondary)'}}>{t('teacher.subject', "Matière")}</label>
+                    {(() => {
+                      const availableSubjects = (() => {
+                        if (!selectedEvalClassId) return teacherSubjects;
+                        const csSubjects = (classSubjects || []).filter((cs: any) => cs.class_id === selectedEvalClassId).map((cs: any) => cs.subject);
+                        const schedSubjects = (teacherSchedules || []).filter((s: any) => s.class_id === selectedEvalClassId).map((s: any) => s.subject);
+                        const combined = Array.from(new Set([...csSubjects, ...schedSubjects])).filter(Boolean);
+                        if (teacherSubjects.length > 0) {
+                          const filtered = combined.filter((s: any) => teacherSubjects.includes(s));
+                          if (filtered.length > 0) return filtered;
+                        }
+                        return combined.length > 0 ? combined : teacherSubjects;
+                      })();
+
+                      return (
+                        <select name="subject" className="form-input" required style={{width: '100%'}}>
+                          <option value="">
+                            {selectedEvalClassId 
+                              ? (availableSubjects.length > 0 ? "-- Sélectionner la matière --" : "Aucune matière rattachée")
+                              : "-- Choisissez d'abord une classe --"}
+                          </option>
+                          {availableSubjects.map((s: any) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      );
+                    })()}
+                  </div>
+
+                  {/* 3. Titre de l'évaluation */}
                   <div className="form-group">
                     <label style={{fontWeight: 600, color: 'var(--text-secondary)'}}>{t('teacher.eval_title', "Titre de l'évaluation")}</label>
                     <input type="text" name="name" className="form-input" placeholder={t('teacher.eval_title_ph', "ex: Devoir Surveillé N°1")} required style={{width: '100%'}} />
                   </div>
-                  {teacherSubjects.length > 1 && (
-                    <div className="form-group">
-                      <label style={{fontWeight: 600, color: 'var(--text-secondary)'}}>{t('teacher.subject', "Matière")}</label>
-                      <select name="subject" className="form-input" required style={{width: '100%'}}>
-                        {teacherSubjects.map((s: any) => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </div>
-                  )}
-                  <div className="form-group">
-                    <label style={{fontWeight: 600, color: 'var(--text-secondary)'}}>{t('teacher.class', "Classe")}</label>
-                    <select name="class_id" className="form-input" required style={{width: '100%'}}>
-                      <option value="">{t('teacher.select_class', "Sélectionner une classe")}</option>
-                      {classesData.filter(c => teacherSchedules.some(s => s.class_id === c.id) || c.principal_teacher_id === session.id || evaluationsData.some(ev => ev.class_id === c.id)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                  </div>
+
+                  {/* 4. Période */}
                   <div className="form-group">
                     <label style={{fontWeight: 600, color: 'var(--text-secondary)'}}>{t('teacher.period', "Période")}</label>
                     <select name="period" className="form-input" required style={{width: '100%'}}>
                       <option value="1er Trimestre">{t('teacher.term_1', "1er Trimestre")}</option>
                       <option value="2ème Trimestre">{t('teacher.term_2', "2ème Trimestre")}</option>
                       <option value="3ème Trimestre">{t('teacher.term_3', "3ème Trimestre")}</option>
+                      <option value="1er Semestre">1er Semestre</option>
+                      <option value="2ème Semestre">2ème Semestre</option>
                     </select>
                   </div>
+
+                  {/* 5. Type d'évaluation */}
                   <div className="form-group">
                     <label style={{fontWeight: 600, color: 'var(--text-secondary)'}}>{t('admin.modals.eval_type', "Type d'évaluation")}</label>
                     <select name="type" className="form-input" required style={{width: '100%'}}>
@@ -345,10 +386,14 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                       <option value="Intero">Interrogation (Intero)</option>
                     </select>
                   </div>
+
+                  {/* 6. Date */}
                   <div className="form-group">
                     <label style={{fontWeight: 600, color: 'var(--text-secondary)'}}>{t('teacher.date', "Date")}</label>
-                    <input type="date" name="date" className="form-input" required style={{width: '100%'}} />
+                    <input type="date" name="date" className="form-input" required defaultValue={new Date().toISOString().split('T')[0]} style={{width: '100%'}} />
                   </div>
+
+                  {/* 7. Noté sur (Maximum) */}
                   <div className="form-group">
                     <label style={{fontWeight: 600, color: 'var(--text-secondary)'}}>{t('admin.modals.max_score', 'Noté sur (Maximum)')}</label>
                     <input type="number" name="max_score" className="form-input" required defaultValue="20" min="1" style={{width: '100%'}} />
