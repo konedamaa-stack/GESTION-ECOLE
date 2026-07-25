@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { applyThemeSettings } from '../lib/theme';
 
+import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 
@@ -185,6 +186,117 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     if (ratio >= 0.5) return "Passable";
     if (ratio >= 0.4) return "Insuffisant";
     return "Peut mieux faire";
+  };
+
+  const handleExportPDF = () => {
+    if (!selectedEvaluation) return;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+
+    const clsObj = classesData.find(c => c.id === selectedEvaluation.class_id) || selectedEvaluation.classes;
+    const className = clsObj?.name || '---';
+    const schoolName = settings?.school_name || "ÉTABLISSEMENT SCOLAIRE";
+
+    // Header
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text(schoolName.toUpperCase(), pageWidth / 2, 16, { align: "center" });
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(71, 85, 105);
+    doc.text("FICHE DE NOTES & PROCÈS-VERBAL D'ÉVALUATION", pageWidth / 2, 23, { align: "center" });
+    doc.text("Année Scolaire : 2024 - 2025", pageWidth / 2, 29, { align: "center" });
+
+    // Divider
+    doc.setDrawColor(37, 99, 235);
+    doc.setLineWidth(0.8);
+    doc.line(14, 33, pageWidth - 14, 33);
+
+    // Metadata Box
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+
+    doc.text(`Titre : ${selectedEvaluation.name}`, 14, 42);
+    doc.text(`Classe : ${className}`, 14, 48);
+    doc.text(`Matière : ${selectedEvaluation.subject || '---'}`, 14, 54);
+
+    doc.text(`Période : ${selectedEvaluation.period || '---'}`, pageWidth / 2, 42);
+    doc.text(`Type : ${selectedEvaluation.type || 'Devoir'}`, pageWidth / 2, 48);
+    doc.text(`Noté sur : ${selectedEvaluation.max_score || 20} pts`, pageWidth / 2, 54);
+
+    const formattedDate = selectedEvaluation.date ? new Date(selectedEvaluation.date).toLocaleDateString('fr-FR') : '---';
+    doc.text(`Date : ${formattedDate}`, pageWidth - 60, 42);
+
+    // Table Data Construction
+    const classStudents = studentsData.filter(s => s.class_id === selectedEvaluation.class_id)
+      .sort((a, b) => (a.last_name || '').localeCompare(b.last_name || ''));
+
+    const tableData: any[] = [];
+    let sumScores = 0;
+    let countGraded = 0;
+
+    classStudents.forEach((student, index) => {
+      const inputVal = gradesInput[student.id]?.score;
+      const scoreNum = inputVal !== undefined && inputVal !== '' ? parseFloat(inputVal) : null;
+      let scoreStr = '---';
+      let appreciation = 'Non noté';
+
+      if (scoreNum !== null && !isNaN(scoreNum)) {
+        scoreStr = `${scoreNum} / ${selectedEvaluation.max_score || 20}`;
+        appreciation = getAutoAppreciation(scoreNum, selectedEvaluation.max_score || 20);
+        sumScores += scoreNum;
+        countGraded++;
+      }
+
+      tableData.push([
+        index + 1,
+        student.matricule || '---',
+        `${student.last_name || ''} ${student.first_name || ''}`.trim(),
+        scoreStr,
+        appreciation
+      ]);
+    });
+
+    (doc as any).autoTable({
+      startY: 60,
+      head: [['N°', 'Matricule', 'Nom & Prénom de l\'Élève', `Note (/${selectedEvaluation.max_score || 20})`, 'Appréciation']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [37, 99, 235],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        halign: 'center'
+      },
+      columnStyles: {
+        0: { cellWidth: 12, halign: 'center' },
+        1: { cellWidth: 32, halign: 'center' },
+        2: { cellWidth: 70 },
+        3: { cellWidth: 35, halign: 'center', fontStyle: 'bold' },
+        4: { cellWidth: 40 }
+      },
+      styles: {
+        fontSize: 9,
+        cellPadding: 3
+      }
+    });
+
+    const finalY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 12 : 200;
+    const classAvg = countGraded > 0 ? (sumScores / countGraded).toFixed(2) : '---';
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Effectif total : ${classStudents.length} élèves  |  Élèves notés : ${countGraded}  |  Moyenne classe : ${classAvg} / ${selectedEvaluation.max_score || 20}`, 14, finalY);
+
+    doc.setFont("helvetica", "normal");
+    doc.text("Signature de l'Enseignant :", 14, finalY + 18);
+    doc.text("Cachet & Signature Direction :", pageWidth - 70, finalY + 18);
+
+    doc.save(`Fiche_Notes_${selectedEvaluation.name.replace(/\s+/g, '_')}_${className}.pdf`);
   };
 
   const handleGradeChange = (studentId: string, field: 'score' | 'comment', value: string, maxScore: number) => {
@@ -481,7 +593,15 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
               </div>
               
               {selectedEvaluation && (
-                <div style={{display: 'flex', gap: '12px', alignItems: 'flex-end'}}>
+                <div style={{display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap'}}>
+                  <button 
+                    type="button" 
+                    className="btn btn-outline" 
+                    onClick={handleExportPDF} 
+                    style={{height: '42px', display: 'flex', alignItems: 'center', gap: '6px', color: '#dc2626', borderColor: '#fca5a5', background: '#fef2f2', fontWeight: 600}}
+                  >
+                    📄 Télécharger la Fiche PDF
+                  </button>
                   <button className="btn btn-primary" onClick={handleSaveGrades} style={{height: '42px'}} disabled={selectedEvaluation.locked}>
                     {selectedEvaluation.locked ? '🔒 Évaluation Clôturée' : t('teacher.save_grades', "Enregistrer les notes")}
                   </button>

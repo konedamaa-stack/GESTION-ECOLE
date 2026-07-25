@@ -18,6 +18,8 @@ import { SalaryReceiptPreview } from './components/SalaryReceiptPreview';
 import { SuperAdminPortal } from './components/SuperAdminPortal';
 import { PasswordRecovery } from './components/PasswordRecovery';
 import { UserSupportModal } from './components/UserSupportModal';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { applyThemeSettings } from './lib/theme';
 import { QuickStartGuideModal } from './components/QuickStartGuideModal';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -4034,6 +4036,9 @@ function App() {
                 </div>
               </div>
               <div style={{display: 'flex', flexWrap: 'wrap', gap: '12px'}}>
+                <button type="button" className="btn btn-outline" onClick={handleExportAdminPDF} style={{display: 'flex', alignItems: 'center', gap: '6px', color: '#dc2626', borderColor: '#fca5a5', background: '#fef2f2', fontWeight: 600}}>
+                  📄 Télécharger la Fiche PDF
+                </button>
                 <button className="btn btn-outline" onClick={() => setActiveEvaluation(null)}>{t('admin.grades.btn_back', 'Retour')}</button>
                 <button className="btn btn-primary" onClick={saveGrades}>{t('admin.grades.btn_save', 'Sauvegarder les notes')}</button>
               </div>
