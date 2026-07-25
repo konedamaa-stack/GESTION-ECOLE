@@ -246,11 +246,18 @@ function App() {
   const [absencesData, setAbsencesData] = useState<any[]>([]);
   const [schedulesData, setSchedulesData] = useState<any[]>([]);
   const [settingsData, setSettingsData] = useState<any | null>(null);
+  const [selectedScheduleTeacherId, setSelectedScheduleTeacherId] = useState<string>('');
 
   useEffect(() => {
     applyThemeSettings(settingsData);
   }, [settingsData]);
   const [editEntity, setEditEntity] = useState<any>(null);
+
+  useEffect(() => {
+    if (activeModal === 'schedule') {
+      setSelectedScheduleTeacherId(editEntity?.teacher_id || '');
+    }
+  }, [activeModal, editEntity]);
 
   useEffect(() => {
     const fetchReinscriptionAverage = async () => {
@@ -6593,62 +6600,107 @@ function App() {
           </div>
         )}
 
-        {activeModal === 'schedule' && (
-                <form onSubmit={handleFormSubmit}>
-                  <div className="form-group">
-                    <label>{t('admin.modals.class_assign', 'Classe')}</label>
-                    <select name="class_id" className="form-select" required>
-                      <option value="">Choisir une classe...</option>
-                      {classesData.map(cls => (
-                        <option key={cls.id} value={cls.id}>{cls.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>{t('admin.modals.taught_subject', 'Matière')}</label>
-                    <select name="subject" className="form-input" required defaultValue={editEntity?.subject || ""}>
-                        <option value="">Sélectionnez une matière</option>
-                        {allSubjects.map(subj => (
-                          <option key={subj} value={subj}>{subj}</option>
-                        ))}
-                      </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Professeur (Optionnel)</label>
-                    <select name="teacher_id" className="form-select">
-                      <option value="">Non assigné</option>
-                      {teachersData.map(t => (
-                        <option key={t.id} value={t.id}>{t.first_name} {t.last_name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>{t('admin.modals.day', 'Jour')}</label>
-                    <select name="day_of_week" className="form-select" required>
-                      <option value="Lundi">Lundi</option>
-                      <option value="Mardi">Mardi</option>
-                      <option value="Mercredi">Mercredi</option>
-                      <option value="Jeudi">Jeudi</option>
-                      <option value="Vendredi">Vendredi</option>
-                      <option value="Samedi">Samedi</option>
-                    </select>
-                  </div>
-                  <div className="form-grid">
-                    <div className="form-group">
-                      <label>{t('admin.modals.start_time', 'Heure de début')}</label>
-                      <input type="time" name="start_time" className="form-input" required defaultValue="08:00" />
-                    </div>
-                    <div className="form-group">
-                      <label>{t('admin.modals.end_time', 'Heure de fin')}</label>
-                      <input type="time" name="end_time" className="form-input" required defaultValue="10:00" />
-                    </div>
-                  </div>
-                  <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
-                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
-                    <button type="submit" className="btn btn-primary">{t('admin.modals.save_course', 'Enregistrer le cours')}</button>
-                  </div>
-                </form>
-              )}
+        {activeModal === 'schedule' && (() => {
+          const selectedTeacher = teachersData.find(t => t.id === selectedScheduleTeacherId);
+
+          let availableSubjects: string[] = [];
+          if (selectedTeacher) {
+            if (Array.isArray(selectedTeacher.subject)) {
+              availableSubjects = selectedTeacher.subject;
+            } else if (typeof selectedTeacher.subject === 'string' && selectedTeacher.subject.trim()) {
+              availableSubjects = selectedTeacher.subject.split(',').map((s: string) => s.trim()).filter(Boolean);
+            }
+          } else {
+            availableSubjects = allSubjects;
+          }
+
+          return (
+            <form onSubmit={handleFormSubmit}>
+              {/* 1. Professeur (Enseignant) EN PREMIER LIEU */}
+              <div className="form-group">
+                <label style={{ fontWeight: 600, color: 'var(--primary-color)' }}>
+                  👨‍🏫 Professeur / Enseignant (Sélectionnez en premier lieu)
+                </label>
+                <select 
+                  name="teacher_id" 
+                  className="form-select"
+                  value={selectedScheduleTeacherId}
+                  onChange={(e) => setSelectedScheduleTeacherId(e.target.value)}
+                >
+                  <option value="">Non assigné / Tous les enseignants</option>
+                  {teachersData.map(t => (
+                    <option key={t.id} value={t.id}>
+                      {t.first_name} {t.last_name} {t.subject ? `(${t.subject})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 2. Matière (Filtrée aussitôt selon l'enseignant sélectionné) */}
+              <div className="form-group">
+                <label style={{ fontWeight: 600 }}>
+                  📚 Matière {selectedTeacher ? `(Matières de ${selectedTeacher.first_name} ${selectedTeacher.last_name})` : ''}
+                </label>
+                <select name="subject" className="form-select" required defaultValue={editEntity?.subject || ""}>
+                  <option value="">
+                    {selectedTeacher 
+                      ? (availableSubjects.length > 0 ? "Sélectionnez une matière de cet enseignant" : "Aucune matière assignée à cet enseignant")
+                      : "Sélectionnez une matière"}
+                  </option>
+                  {availableSubjects.map(subj => (
+                    <option key={subj} value={subj}>{subj}</option>
+                  ))}
+                </select>
+                {selectedTeacher && availableSubjects.length === 0 && (
+                  <small style={{ color: '#ef4444', marginTop: '4px', display: 'block' }}>
+                    ⚠️ Cet enseignant n'a pas encore de matières renseignées dans son profil.
+                  </small>
+                )}
+              </div>
+
+              {/* 3. Classe */}
+              <div className="form-group">
+                <label>{t('admin.modals.class_assign', 'Classe')}</label>
+                <select name="class_id" className="form-select" required defaultValue={editEntity?.class_id || ""}>
+                  <option value="">Choisir une classe...</option>
+                  {classesData.map(cls => (
+                    <option key={cls.id} value={cls.id}>{cls.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 4. Jour */}
+              <div className="form-group">
+                <label>{t('admin.modals.day', 'Jour')}</label>
+                <select name="day_of_week" className="form-select" required defaultValue={editEntity?.day_of_week || "Lundi"}>
+                  <option value="Lundi">Lundi</option>
+                  <option value="Mardi">Mardi</option>
+                  <option value="Mercredi">Mercredi</option>
+                  <option value="Jeudi">Jeudi</option>
+                  <option value="Vendredi">Vendredi</option>
+                  <option value="Samedi">Samedi</option>
+                </select>
+              </div>
+
+              {/* 5. Heure de début et Heure de fin */}
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>{t('admin.modals.start_time', 'Heure de début')}</label>
+                  <input type="time" name="start_time" className="form-input" required defaultValue={editEntity?.start_time || "08:00"} />
+                </div>
+                <div className="form-group">
+                  <label>{t('admin.modals.end_time', 'Heure de fin')}</label>
+                  <input type="time" name="end_time" className="form-input" required defaultValue={editEntity?.end_time || "10:00"} />
+                </div>
+              </div>
+
+              <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
+                <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
+                <button type="submit" className="btn btn-primary">{t('admin.modals.save_course', 'Enregistrer le cours')}</button>
+              </div>
+            </form>
+          );
+        })()}
             </div>
           </div>
         </div>
