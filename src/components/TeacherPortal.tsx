@@ -67,7 +67,10 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
       .select('*, classes(name)')
       .eq('school_id', session.school_id)
       .order('date', { ascending: false });
-    if (evaluations) setEvaluationsData(evaluations);
+    if (evaluations) {
+      const uniqueEvals = Array.from(new Map(evaluations.map(ev => [ev.id, ev])).values());
+      setEvaluationsData(uniqueEvals);
+    }
 
     // Fetch students
     const { data: students } = await supabase.from('students').select('*').eq('school_id', session.school_id);
@@ -443,27 +446,30 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                 >
                   <option value="" disabled>{t('teacher.choose_eval', "-- Choisir une évaluation --")}</option>
                   {(() => {
-                    const pendingEvals = evaluationsData.filter(ev => {
+                    const uniqueEvals = Array.from(new Map(evaluationsData.map(ev => [ev.id, ev])).values());
+                    const pendingEvals = uniqueEvals.filter(ev => {
                       const classStudents = studentsData.filter(s => s.class_id === ev.class_id);
                       const gradesForEv = gradesData.filter(g => g.evaluation_id === ev.id);
                       return classStudents.length === 0 || gradesForEv.length < classStudents.length;
                     });
-                    const completedEvals = evaluationsData.filter(ev => !pendingEvals.includes(ev));
+                    const completedEvals = uniqueEvals.filter(ev => !pendingEvals.some(p => p.id === ev.id));
                     
                     return (
                       <>
-                        <optgroup label={t('teacher.pending_evals', "À noter")}>
-                          {pendingEvals.map(ev => (
-                            <option key={ev.id} value={ev.id}>
-                              {ev.name} ({ev.classes?.name}) - {ev.validation_status === 'pending' ? '⏳ En attente' : '✅'} {ev.locked ? '🔒' : ''}
-                            </option>
-                          ))}
-                        </optgroup>
+                        {pendingEvals.length > 0 && (
+                          <optgroup label={t('teacher.pending_evals', "À noter")}>
+                            {pendingEvals.map(ev => (
+                              <option key={ev.id} value={ev.id}>
+                                {ev.name} ({ev.classes?.name || '---'}) - {ev.validation_status === 'pending' ? '⏳ En attente' : '✅'} {ev.locked ? '🔒' : ''}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
                         {completedEvals.length > 0 && (
                           <optgroup label={t('teacher.completed_evals', "Déjà notés")}>
                             {completedEvals.map(ev => (
                               <option key={ev.id} value={ev.id}>
-                                {ev.name} ({ev.classes?.name}) - {ev.validation_status === 'pending' ? '⏳ En attente' : '✅'} {ev.locked ? '🔒' : ''}
+                                {ev.name} ({ev.classes?.name || '---'}) - {ev.validation_status === 'pending' ? '⏳ En attente' : '✅'} {ev.locked ? '🔒' : ''}
                               </option>
                             ))}
                           </optgroup>
