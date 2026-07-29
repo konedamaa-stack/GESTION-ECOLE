@@ -264,7 +264,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
             .from('employees')
             .select('*, schools(name)')
             .eq('role', selectedRole)
-            .or(`email.eq.${identifier},phone.eq.${identifier},first_name.eq.${identifier}`)
+            .or(`email.ilike.${identifier},phone.eq.${identifier},first_name.ilike.${identifier}`)
             .eq('password', password);
 
           if (!empError && employees && employees.length > 0) {
@@ -622,13 +622,13 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
                   </div>
                 ) : (
                   <div className="blue-input-group">
-                    <label>mail</label>
+                    <label>identifiant / login ou mail</label>
                     <input
-                      type="email"
+                      type="text"
                       className="blue-input"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="admin@gmail.com"
+                      placeholder="ex: login_secretaire ou admin@gmail.com"
                       disabled={mode === 'accept_invite'}
                       style={mode === 'accept_invite' ? { background: '#e2e8f0', cursor: 'not-allowed' } : {}}
                       required
