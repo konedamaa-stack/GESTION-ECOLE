@@ -258,13 +258,13 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
       } else if (mode === 'login') {
         const identifier = email.trim();
 
-        // Try direct Employee login first if role is Secretary, Accountant, or Supervisor
-        if (['Secretary', 'Accountant', 'Supervisor'].includes(selectedRole)) {
+        // Try direct Employee login first for all collaborator roles (Director, Secretary, Accountant, Supervisor)
+        if (['Director', 'Secretary', 'Accountant', 'Supervisor'].includes(selectedRole)) {
           const { data: employees, error: empError } = await supabase
             .from('employees')
             .select('*, schools(name)')
             .eq('role', selectedRole)
-            .or(`email.eq.${identifier},phone.eq.${identifier}`)
+            .or(`email.eq.${identifier},phone.eq.${identifier},first_name.eq.${identifier}`)
             .eq('password', password);
 
           if (!empError && employees && employees.length > 0) {

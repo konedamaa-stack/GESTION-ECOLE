@@ -145,6 +145,10 @@ function App() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('Secretary');
   const [invitedAdmins, setInvitedAdmins] = useState<any[]>([]);
+  const [collabCreationMode, setCollabCreationMode] = useState<'direct' | 'invite'>('direct');
+  const [collabName, setCollabName] = useState('');
+  const [collabLogin, setCollabLogin] = useState('');
+  const [collabPassword, setCollabPassword] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClassFilter, setSelectedClassFilter] = useState('all');
@@ -635,8 +639,23 @@ function App() {
 
   const loadAdminInvites = async () => {
     if (!currentSchoolId) return;
-    const { data } = await supabase.from('admin_invitations').select('*').eq('school_id', currentSchoolId);
-    if (data) setInvitedAdmins(data);
+    const { data: invites } = await supabase.from('admin_invitations').select('*').eq('school_id', currentSchoolId);
+    const { data: emps } = await supabase
+      .from('employees')
+      .select('*')
+      .eq('school_id', currentSchoolId)
+      .in('role', ['Director', 'Secretary', 'Accountant', 'Supervisor']);
+
+    const allCollabs = [
+      ...(invites || []).map((i: any) => ({ ...i, isInvite: true, login: i.email })),
+      ...(emps || []).map((e: any) => ({
+        ...e,
+        isDirect: true,
+        login: e.email || e.phone || e.first_name,
+        name: `${e.first_name || ''} ${e.last_name || ''}`.trim()
+      }))
+    ];
+    setInvitedAdmins(allCollabs);
   };
 
   useEffect(() => {
@@ -662,6 +681,51 @@ function App() {
       loadAdminInvites();
     } else {
       alert("Erreur lors de l'invitation");
+    }
+  };
+
+  const handleCreateCollaboratorDirect = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!collabLogin || !collabPassword || !currentSchoolId) return;
+
+    const parts = (collabName || collabLogin).trim().split(' ');
+    const firstName = parts[0];
+    const lastName = parts.slice(1).join(' ') || 'Collaborateur';
+
+    try {
+      const { error } = await supabase.from('employees').insert([{
+        school_id: currentSchoolId,
+        first_name: firstName,
+        last_name: lastName,
+        email: collabLogin.trim().toLowerCase(),
+        password: collabPassword,
+        role: inviteRole,
+        status: 'Actif'
+      }]);
+
+      if (error) throw error;
+
+      alert(`Collaborateur créé avec succès !\n\nIdentifiant (Login) : ${collabLogin}\nMot de passe : ${collabPassword}\nRôle : ${inviteRole}`);
+      setCollabName('');
+      setCollabLogin('');
+      setCollabPassword('');
+      loadAdminInvites();
+    } catch (err: any) {
+      alert("Erreur lors de la création du collaborateur : " + (err.message || 'Erreur inconnue'));
+    }
+  };
+
+  const handleDeleteCollaborator = async (collab: any) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce collaborateur ?")) return;
+    try {
+      if (collab.isInvite) {
+        await supabase.from('admin_invitations').delete().eq('id', collab.id);
+      } else {
+        await supabase.from('employees').delete().eq('id', collab.id);
+      }
+      loadAdminInvites();
+    } catch (err: any) {
+      alert("Erreur lors de la suppression : " + err.message);
     }
   };
 
@@ -4372,65 +4436,156 @@ function App() {
                 </div>
                 
                 <div>
-                  <h4 style={{marginBottom: '12px'}}>Inviter un collaborateur</h4>
-                  <form onSubmit={handleInviteAdmin} style={{display: 'flex', gap: '12px', marginBottom: '16px'}}>
-                    <input 
-                      type="email" 
-                      placeholder="Email du collaborateur" 
-                      className="form-control" 
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      required 
-                      style={{flex: 1}}
-                    />
-                    <select 
-                      className="form-control" 
-                      value={inviteRole}
-                      onChange={(e) => setInviteRole(e.target.value)}
-                      style={{width: '200px'}}
-                    >
-                      <option value="Director">Directeur (Accès Total)</option>
-                      <option value="Secretary">Secrétaire (Pas d'accès Finances)</option>
-                      <option value="Accountant">Comptable (Finances Uniquement)</option>
-                      <option value="Supervisor">Superviseur (Lecture & Impression uniquement)</option>
-                    </select>
-                    <button type="submit" className="btn btn-primary">Inviter</button>
-                  </form>
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
+                    <h4 style={{margin: 0}}>Gestion des Collaborateurs</h4>
+                    <div style={{display: 'flex', background: 'var(--surface-color-hover)', padding: '4px', borderRadius: '8px', gap: '4px'}}>
+                      <button 
+                        type="button" 
+                        onClick={() => setCollabCreationMode('direct')}
+                        style={{
+                          padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
+                          background: collabCreationMode === 'direct' ? 'var(--primary-color)' : 'transparent',
+                          color: collabCreationMode === 'direct' ? '#FFF' : 'var(--text-secondary)'
+                        }}
+                      >
+                        🔑 Création Directe (Login/Mdp)
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => setCollabCreationMode('invite')}
+                        style={{
+                          padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
+                          background: collabCreationMode === 'invite' ? 'var(--primary-color)' : 'transparent',
+                          color: collabCreationMode === 'invite' ? '#FFF' : 'var(--text-secondary)'
+                        }}
+                      >
+                        ✉️ Invitation par Email
+                      </button>
+                    </div>
+                  </div>
+
+                  {collabCreationMode === 'direct' ? (
+                    <form onSubmit={handleCreateCollaboratorDirect} style={{background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '20px'}}>
+                      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px'}}>
+                        <div>
+                          <label style={{fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '4px'}}>Nom & Prénom (Optionnel)</label>
+                          <input 
+                            type="text" 
+                            placeholder="ex: Koffi Kouassi" 
+                            className="form-control" 
+                            value={collabName} 
+                            onChange={(e) => setCollabName(e.target.value)} 
+                          />
+                        </div>
+                        <div>
+                          <label style={{fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '4px'}}>Identifiant / Login *</label>
+                          <input 
+                            type="text" 
+                            placeholder="ex: koffi_secretaire" 
+                            className="form-control" 
+                            value={collabLogin} 
+                            onChange={(e) => setCollabLogin(e.target.value)} 
+                            required 
+                          />
+                        </div>
+                        <div>
+                          <label style={{fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '4px'}}>Mot de passe *</label>
+                          <input 
+                            type="password" 
+                            placeholder="ex: Pass1234!" 
+                            className="form-control" 
+                            value={collabPassword} 
+                            onChange={(e) => setCollabPassword(e.target.value)} 
+                            required 
+                          />
+                        </div>
+                        <div>
+                          <label style={{fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '4px'}}>Rôle de l'accès *</label>
+                          <select 
+                            className="form-control" 
+                            value={inviteRole}
+                            onChange={(e) => setInviteRole(e.target.value)}
+                          >
+                            <option value="Director">Directeur (Accès Total)</option>
+                            <option value="Secretary">Secrétaire (Pas d'accès Finances)</option>
+                            <option value="Accountant">Comptable (Finances Uniquement)</option>
+                            <option value="Supervisor">Superviseur (Lecture & Impression uniquement)</option>
+                          </select>
+                        </div>
+                      </div>
+                      <button type="submit" className="btn btn-primary" style={{width: '100%'}}>+ Créer le Collaborateur Directement</button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleInviteAdmin} style={{display: 'flex', gap: '12px', marginBottom: '16px'}}>
+                      <input 
+                        type="email" 
+                        placeholder="Email du collaborateur" 
+                        className="form-control" 
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        required 
+                        style={{flex: 1}}
+                      />
+                      <select 
+                        className="form-control" 
+                        value={inviteRole}
+                        onChange={(e) => setInviteRole(e.target.value)}
+                        style={{width: '200px'}}
+                      >
+                        <option value="Director">Directeur (Accès Total)</option>
+                        <option value="Secretary">Secrétaire (Pas d'accès Finances)</option>
+                        <option value="Accountant">Comptable (Finances Uniquement)</option>
+                        <option value="Supervisor">Superviseur (Lecture & Impression uniquement)</option>
+                      </select>
+                      <button type="submit" className="btn btn-primary">Inviter par Email</button>
+                    </form>
+                  )}
 
                   {invitedAdmins.length > 0 && (
                     <div style={{background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden'}}>
                       <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem'}}>
                         <thead>
                           <tr style={{background: 'var(--surface-color-hover)', borderBottom: '1px solid var(--border-color)', textAlign: 'left'}}>
-                            <th style={{padding: '12px'}}>Email</th>
+                            <th style={{padding: '12px'}}>Identifiant / Email</th>
+                            <th style={{padding: '12px'}}>Nom & Prénom</th>
                             <th style={{padding: '12px'}}>Rôle</th>
-                            <th style={{padding: '12px'}}>Date d'invitation</th>
+                            <th style={{padding: '12px'}}>Type d'accès</th>
                             <th style={{padding: '12px', textAlign: 'right'}}>Action</th>
                           </tr>
                         </thead>
                         <tbody>
                           {invitedAdmins.map(admin => (
                             <tr key={admin.id} style={{borderBottom: '1px solid var(--border-color)'}}>
-                              <td style={{padding: '12px'}}>{admin.email}</td>
+                              <td style={{padding: '12px', fontWeight: 600}}>{admin.login || admin.email}</td>
+                              <td style={{padding: '12px'}}>{admin.name || admin.first_name || '-'}</td>
                               <td style={{padding: '12px'}}>
                                 <span className={`badge ${admin.role === 'Director' ? 'badge-primary' : admin.role === 'Accountant' ? 'badge-success' : admin.role === 'Secretary' ? 'badge-warning' : 'badge-info'}`}>
                                   {admin.role === 'Director' ? 'Directeur' : admin.role === 'Secretary' ? 'Secrétaire' : admin.role === 'Accountant' ? 'Comptable' : 'Superviseur'}
                                 </span>
                               </td>
-                              <td style={{padding: '12px', color: 'var(--text-secondary)'}}>
-                                {new Date(admin.created_at).toLocaleDateString()}
+                              <td style={{padding: '12px', fontSize: '0.85rem', color: 'var(--text-secondary)'}}>
+                                {admin.isDirect ? '🔑 Accès Direct (Login/Mdp)' : '✉️ Invitation Email'}
                               </td>
-                              <td style={{padding: '12px', textAlign: 'right'}}>
+                              <td style={{padding: '12px', textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end'}}>
+                                {admin.isInvite && (
+                                  <button 
+                                    onClick={() => {
+                                      const inviteLink = `${window.location.origin}?invite=${admin.id}`;
+                                      navigator.clipboard.writeText(inviteLink);
+                                      alert('Lien copié dans le presse-papiers ! Envoyez-le par WhatsApp.');
+                                    }}
+                                    className="btn btn-outline"
+                                    style={{padding: '4px 8px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '4px'}}
+                                  >
+                                    🔗 Copier le lien
+                                  </button>
+                                )}
                                 <button 
-                                  onClick={() => {
-                                    const inviteLink = `${window.location.origin}?invite=${admin.id}`;
-                                    navigator.clipboard.writeText(inviteLink);
-                                    alert('Lien copié dans le presse-papiers ! Envoyez-le par WhatsApp.');
-                                  }}
+                                  onClick={() => handleDeleteCollaborator(admin)}
                                   className="btn btn-outline"
-                                  style={{padding: '4px 8px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '4px'}}
+                                  style={{padding: '4px 8px', fontSize: '0.8rem', color: 'var(--danger-color, #ef4444)', borderColor: 'var(--danger-color, #ef4444)'}}
                                 >
-                                  🔗 Copier le lien
+                                  🗑️ Supprimer
                                 </button>
                               </td>
                             </tr>
