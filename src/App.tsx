@@ -23,6 +23,7 @@ import 'jspdf-autotable';
 import { applyThemeSettings } from './lib/theme';
 import { QuickStartGuideModal } from './components/QuickStartGuideModal';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { getSubdomain, slugifySubdomain, getSchoolUrl } from './utils/subdomain';
 import './App.css';
 
 // Custom SVG Icons
@@ -96,8 +97,25 @@ function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [currentSchoolPlan, setCurrentSchoolPlan] = useState<string>('Standard');
-  // unused currentSchoolEndDate
   const [currentAdminRole, setCurrentAdminRole] = useState<string>('Director');
+  const [detectedSubdomain, setDetectedSubdomain] = useState<string | null>(null);
+  const [subdomainSchool, setSubdomainSchool] = useState<any | null>(null);
+  const [subdomainNotFound, setSubdomainNotFound] = useState<boolean>(false);
+
+  useEffect(() => {
+    const sub = getSubdomain();
+    if (sub) {
+      setDetectedSubdomain(sub);
+      supabase.from('schools').select('*').eq('subdomain', sub).single().then(({ data }) => {
+        if (data) {
+          setSubdomainSchool(data);
+          setCurrentSchoolId(data.id);
+        } else {
+          setSubdomainNotFound(true);
+        }
+      });
+    }
+  }, []);
 
   const activeModal = activeModalState;
   const setActiveModal = (modal: string | null) => {
@@ -498,7 +516,7 @@ function App() {
       const { data: allSchools } = await supabase.from('schools').select('*').order('created_at', { ascending: false });
       if (allSchools && allSchools.length > 0) {
         setAdminSchools(allSchools);
-        const activeSchoolId = currentSchoolId || allSchools[0].id;
+        const activeSchoolId = (subdomainSchool && subdomainSchool.id) || currentSchoolId || allSchools[0].id;
         setCurrentSchoolId(activeSchoolId);
         updateSchoolPlanState(allSchools.find(s => s.id === activeSchoolId) || allSchools[0]);
         const loginRole = localStorage.getItem('sges_login_role');
@@ -513,7 +531,7 @@ function App() {
       if (adminLinks && adminLinks.length > 0) {
         const schools = adminLinks.map((link: any) => link.schools);
         setAdminSchools(schools);
-        const activeSchoolId = currentSchoolId || schools[0].id;
+        const activeSchoolId = (subdomainSchool && subdomainSchool.id) || currentSchoolId || schools[0].id;
         setCurrentSchoolId(activeSchoolId);
         updateSchoolPlanState(schools.find((s: any) => s.id === activeSchoolId) || schools[0]);
         
@@ -917,9 +935,13 @@ function App() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const schoolName = formData.get('name') as string;
+    const schoolSubdomain = slugifySubdomain(schoolName);
     
     try {
-      const { data: newSchool, error: schoolError } = await supabase.from('schools').insert([{ name: schoolName }]).select();
+      const { data: newSchool, error: schoolError } = await supabase
+        .from('schools')
+        .insert([{ name: schoolName, subdomain: schoolSubdomain }])
+        .select();
       if (schoolError) throw schoolError;
       
       const newSchoolId = newSchool[0].id;
@@ -4530,6 +4552,25 @@ function App() {
       </div>
     </div>
   );
+
+  if (subdomainNotFound) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontFamily: 'Inter, sans-serif', padding: '20px', background: '#F9FAFB' }}>
+        <div style={{ background: '#FFF', padding: '40px', borderRadius: '16px', border: '1px solid #E5E7EB', maxWidth: '480px', textAlign: 'center', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
+          <h1 style={{ fontSize: '1.8rem', margin: '0 0 12px 0', color: '#EF4444' }}>Établissement Introuvable</h1>
+          <p style={{ color: '#4B5563', lineHeight: '1.6', marginBottom: '24px' }}>
+            Le sous-domaine <strong>{detectedSubdomain}</strong> ne correspond à aucun établissement actif dans notre système.
+          </p>
+          <a 
+            href={getSchoolUrl(null)} 
+            style={{ display: 'inline-block', background: '#2563EB', color: '#FFF', padding: '12px 24px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600 }}
+          >
+            Retourner au site principal
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   if (recoveryMode) {
     return <PasswordRecovery onComplete={() => {

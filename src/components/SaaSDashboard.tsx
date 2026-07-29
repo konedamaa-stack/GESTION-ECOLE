@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { getSchoolUrl, slugifySubdomain } from '../utils/subdomain';
 
 interface SaaSDashboardProps {
   session: any;
@@ -17,6 +18,7 @@ export function SaaSDashboard({ session, onSwitchToSchool }: SaaSDashboardProps)
   const [activeSubModal, setActiveSubModal] = useState<any>(null);
   const [selectedPlan, setSelectedPlan] = useState('Pro');
   const [selectedEndDate, setSelectedEndDate] = useState('');
+  const [selectedSubdomain, setSelectedSubdomain] = useState('');
 
   useEffect(() => {
     fetchSaaSData();
@@ -85,25 +87,25 @@ export function SaaSDashboard({ session, onSwitchToSchool }: SaaSDashboardProps)
     e.preventDefault();
     if (!activeSubModal) return;
     try {
+      const cleanSubdomain = slugifySubdomain(selectedSubdomain || activeSubModal.name);
       const { error } = await supabase.from('schools').update({
         subscription_plan: selectedPlan,
-        subscription_end_date: selectedEndDate ? new Date(selectedEndDate).toISOString() : null
+        subscription_end_date: selectedEndDate ? new Date(selectedEndDate).toISOString() : null,
+        subdomain: cleanSubdomain
       }).eq('id', activeSubModal.id);
       
       if (error) throw error;
-      alert('Abonnement mis à jour avec succès !');
+      alert('Établissement et abonnement mis à jour avec succès !');
       setActiveSubModal(null);
       fetchSaaSData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Erreur lors de la mise à jour.');
+      alert('Erreur lors de la mise à jour : ' + (err.message || 'Erreur inconnue'));
     }
   };
 
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'Inter, sans-serif' }}>
-      {/* Header removed for portal */}
-
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '32px' }}>
         <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
           <div style={{ color: '#6B7280', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase' }}>Établissements</div>
@@ -125,70 +127,102 @@ export function SaaSDashboard({ session, onSwitchToSchool }: SaaSDashboardProps)
         <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>Chargement des données globales...</div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
-          {schools.map(school => (
-            <div key={school.id} style={{ background: '#fff', borderRadius: '16px', border: '1px solid #E5E7EB', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ padding: '20px', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                {school.logo_url ? (
-                  <img src={school.logo_url} alt="Logo" style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }} />
-                ) : (
-                  <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 'bold', color: '#9CA3AF' }}>
-                    {(school.name || 'E').charAt(0).toUpperCase()}
+          {schools.map(school => {
+            const schoolUrl = getSchoolUrl(school.subdomain || slugifySubdomain(school.name));
+            return (
+              <div key={school.id} style={{ background: '#fff', borderRadius: '16px', border: '1px solid #E5E7EB', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ padding: '20px', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  {school.logo_url ? (
+                    <img src={school.logo_url} alt="Logo" style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 'bold', color: '#9CA3AF' }}>
+                      {(school.name || 'E').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{school.name}</h3>
+                    <div style={{ fontSize: '0.85rem', color: '#6B7280' }}>ID: {school.id.split('-')[0]}</div>
+                    {school.subdomain && (
+                      <a 
+                        href={schoolUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ fontSize: '0.8rem', color: '#2563EB', textDecoration: 'none', fontWeight: 600, display: 'inline-block', marginTop: '2px' }}
+                      >
+                        🌐 {school.subdomain}
+                      </a>
+                    )}
                   </div>
-                )}
-                <div>
-                  <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', color: '#111827' }}>{school.name}</h3>
-                  <div style={{ fontSize: '0.85rem', color: '#6B7280' }}>ID: {school.id.split('-')[0]}</div>
+                </div>
+                <div style={{ padding: '20px', flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <span style={{ color: '#6B7280' }}>Sous-domaine :</span>
+                    <span style={{ fontWeight: 600, color: '#1D4ED8' }}>{school.subdomain || slugifySubdomain(school.name)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <span style={{ color: '#6B7280' }}>Plan actuel :</span>
+                    <span style={{ fontWeight: 600, color: school.subscription_plan === 'Pro' ? '#8B5CF6' : '#3B82F6' }}>{school.subscription_plan || 'Standard'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <span style={{ color: '#6B7280' }}>Élèves inscrits :</span>
+                    <span style={{ fontWeight: 600 }}>{formatNum(school.studentCount)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <span style={{ color: '#6B7280' }}>Expiration Pro :</span>
+                    <span style={{ fontWeight: 600, color: (school.subscription_plan === 'Pro' && school.subscription_end_date && new Date(school.subscription_end_date) < new Date()) ? 'red' : '#111827' }}>
+                      {school.subscription_end_date ? new Date(school.subscription_end_date).toLocaleDateString('fr-FR') : 'Illimité'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#6B7280' }}>Professeurs :</span>
+                    <span style={{ fontWeight: 600 }}>{formatNum(school.teacherCount)}</span>
+                  </div>
+                </div>
+                <div style={{ padding: '16px 20px', background: '#F9FAFB', borderTop: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between' }}>
+                  <button 
+                    onClick={() => {
+                      setActiveSubModal(school);
+                      setSelectedPlan(school.subscription_plan || 'Standard');
+                      setSelectedEndDate(school.subscription_end_date ? new Date(school.subscription_end_date).toISOString().split('T')[0] : '');
+                      setSelectedSubdomain(school.subdomain || slugifySubdomain(school.name));
+                    }}
+                    style={{ padding: '8px 12px', background: '#10B981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}
+                  >
+                    Gérer Établissement
+                  </button>
+                  <button 
+                    onClick={() => onSwitchToSchool(school.id)}
+                    style={{ padding: '8px 12px', background: '#3B82F6', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}
+                  >
+                    Ouvrir
+                  </button>
                 </div>
               </div>
-              <div style={{ padding: '20px', flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                  <span style={{ color: '#6B7280' }}>Plan actuel :</span>
-                  <span style={{ fontWeight: 600, color: school.subscription_plan === 'Pro' ? '#8B5CF6' : '#3B82F6' }}>{school.subscription_plan || 'Standard'}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                  <span style={{ color: '#6B7280' }}>Élèves inscrits :</span>
-                  <span style={{ fontWeight: 600 }}>{formatNum(school.studentCount)}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                  <span style={{ color: '#6B7280' }}>Expiration Pro :</span>
-                  <span style={{ fontWeight: 600, color: (school.subscription_plan === 'Pro' && school.subscription_end_date && new Date(school.subscription_end_date) < new Date()) ? 'red' : '#111827' }}>
-                    {school.subscription_end_date ? new Date(school.subscription_end_date).toLocaleDateString('fr-FR') : 'Illimité'}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#6B7280' }}>Professeurs :</span>
-                  <span style={{ fontWeight: 600 }}>{formatNum(school.teacherCount)}</span>
-                </div>
-              </div>
-              <div style={{ padding: '16px 20px', background: '#F9FAFB', borderTop: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between' }}>
-                <button 
-                  onClick={() => {
-                    setActiveSubModal(school);
-                    setSelectedPlan(school.subscription_plan || 'Standard');
-                    setSelectedEndDate(school.subscription_end_date ? new Date(school.subscription_end_date).toISOString().split('T')[0] : '');
-                  }}
-                  style={{ padding: '8px 12px', background: '#10B981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}
-                >
-                  Gérer Abo.
-                </button>
-                <button 
-                  onClick={() => onSwitchToSchool(school.id)}
-                  style={{ padding: '8px 12px', background: '#3B82F6', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}
-                >
-                  Ouvrir
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
       {/* Sub Modal */}
       {activeSubModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: 'white', padding: '24px', borderRadius: '12px', width: '400px', maxWidth: '90%' }}>
-            <h3 style={{ marginTop: 0 }}>Gérer l'Abonnement</h3>
+          <div style={{ background: 'white', padding: '24px', borderRadius: '12px', width: '420px', maxWidth: '90%' }}>
+            <h3 style={{ marginTop: 0 }}>Gérer l'Établissement</h3>
             <p style={{ color: '#6B7280', marginBottom: '20px' }}>École: <strong>{activeSubModal.name}</strong></p>
             <form onSubmit={handleUpdateSubscription}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Sous-domaine personnalisé</label>
+                <input 
+                  type="text" 
+                  value={selectedSubdomain} 
+                  onChange={(e) => setSelectedSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} 
+                  placeholder="ex: saint-joseph" 
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB' }} 
+                  required
+                />
+                <small style={{ color: '#6B7280', display: 'block', marginTop: '4px' }}>
+                  Aperçu: {getSchoolUrl(selectedSubdomain || 'sous-domaine')}
+                </small>
+              </div>
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Plan</label>
                 <select value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB' }}>
