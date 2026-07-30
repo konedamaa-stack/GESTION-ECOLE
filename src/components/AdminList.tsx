@@ -20,6 +20,18 @@ export function AdminList({ onSwitchToSchool }: { onSwitchToSchool?: (schoolId: 
   const [newSubdomainInput, setNewSubdomainInput] = useState('');
   const [newNameInput, setNewNameInput] = useState('');
 
+  // Create School Modal state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createSchoolName, setCreateSchoolName] = useState('');
+  const [createSubdomain, setCreateSubdomain] = useState('');
+  const [createPlan, setCreatePlan] = useState('Pro');
+  const [createAdminFirstName, setCreateAdminFirstName] = useState('');
+  const [createAdminLastName, setCreateAdminLastName] = useState('');
+  const [createAdminEmail, setCreateAdminEmail] = useState('');
+  const [createAdminPhone, setCreateAdminPhone] = useState('');
+  const [createAdminPassword, setCreateAdminPassword] = useState('passer123');
+  const [isCreatingSchool, setIsCreatingSchool] = useState(false);
+
   const sqlScript = `alter table public.schools add column if not exists subscription_plan varchar(50) default 'Standard';
 
 create or replace function public.get_all_admins()
@@ -177,6 +189,78 @@ $$;`;
     }
   };
 
+  const handleCreateSchoolNameChange = (val: string) => {
+    setCreateSchoolName(val);
+    const slug = val.toLowerCase().replace(/[^a-z0-9-]/g, '').trim();
+    setCreateSubdomain(slug);
+  };
+
+  const handleCreateSchoolSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanSub = createSubdomain.toLowerCase().replace(/[^a-z0-9-]/g, '').trim();
+    if (!createSchoolName.trim() || !cleanSub) {
+      alert("Veuillez remplir le nom de l'établissement et le sous-domaine.");
+      return;
+    }
+
+    setIsCreatingSchool(true);
+    try {
+      // 1. Check if subdomain exists
+      const { data: existing } = await supabase.from('schools').select('id').eq('subdomain', cleanSub).maybeSingle();
+      if (existing) {
+        alert(`Le sous-domaine "${cleanSub}" est déjà utilisé. Veuillez en choisir un autre.`);
+        setIsCreatingSchool(false);
+        return;
+      }
+
+      // 2. Insert school
+      const { data: school, error: schoolErr } = await supabase
+        .from('schools')
+        .insert([{
+          name: createSchoolName.trim(),
+          subdomain: cleanSub,
+          subscription_plan: createPlan
+        }])
+        .select()
+        .single();
+
+      if (schoolErr) throw schoolErr;
+
+      // 3. Insert Director Employee if name/email is provided
+      if (createAdminFirstName || createAdminEmail) {
+        const { error: empErr } = await supabase.from('employees').insert([{
+          school_id: school.id,
+          first_name: createAdminFirstName.trim() || 'Directeur',
+          last_name: createAdminLastName.trim() || createSchoolName.trim(),
+          email: createAdminEmail.trim() || cleanSub,
+          phone: createAdminPhone.trim() || null,
+          role: 'Director',
+          password: createAdminPassword.trim() || 'passer123'
+        }]);
+        if (empErr) console.warn("Note creation employé:", empErr.message);
+      }
+
+      alert(`🎉 Établissement "${createSchoolName}" créé avec succès !\n\n` +
+            `🌐 URL unique : https://${cleanSub}.solutionecoles.com\n` +
+            `👤 Administrateur : ${createAdminFirstName} ${createAdminLastName} (${createAdminEmail || cleanSub})\n` +
+            `🔑 Mot de passe : ${createAdminPassword}`);
+
+      setIsCreateModalOpen(false);
+      setCreateSchoolName('');
+      setCreateSubdomain('');
+      setCreateAdminFirstName('');
+      setCreateAdminLastName('');
+      setCreateAdminEmail('');
+      setCreateAdminPhone('');
+      setCreateAdminPassword('passer123');
+      fetchAdmins();
+    } catch (err: any) {
+      alert("Erreur lors de la création : " + (err.message || err));
+    } finally {
+      setIsCreatingSchool(false);
+    }
+  };
+
   const copyToClipboard = () => {
     navigator.clipboard.writeText(sqlScript);
     alert("Script SQL copié dans le presse-papier !");
@@ -302,8 +386,16 @@ $$;`;
       {/* Title & Counter */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
         <h1 className="page-title" style={{ margin: 0 }}>Administrateurs Inscrits</h1>
-        <div style={{ background: 'var(--surface-color)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', fontWeight: 600 }}>
-          Total : {filteredAndSortedAdmins.length} comptes {filteredAndSortedAdmins.length !== admins.length && `(sur ${admins.length})`}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button 
+            onClick={() => setIsCreateModalOpen(true)}
+            style={{ padding: '8px 16px', background: '#10B981', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)' }}
+          >
+            ➕ Créer un Établissement
+          </button>
+          <div style={{ background: 'var(--surface-color)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', fontWeight: 600 }}>
+            Total : {filteredAndSortedAdmins.length} comptes {filteredAndSortedAdmins.length !== admins.length && `(sur ${admins.length})`}
+          </div>
         </div>
       </div>
 
@@ -534,6 +626,122 @@ $$;`;
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
                 <button type="button" onClick={() => setEditingSchool(null)} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #D1D5DB', borderRadius: '6px', cursor: 'pointer' }}>Annuler</button>
                 <button type="submit" style={{ padding: '8px 16px', background: '#2563EB', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>Sauvegarder</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Modal Créer Établissement */}
+      {isCreateModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', padding: '28px', borderRadius: '16px', width: '520px', maxWidth: '92%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', color: '#111827' }}>
+            <h3 style={{ marginTop: 0, fontSize: '1.3rem', borderBottom: '1px solid #E5E7EB', paddingBottom: '12px', color: '#111827' }}>➕ Créer un Nouvel Établissement</h3>
+            <form onSubmit={handleCreateSchoolSubmit}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600 }}>Nom de l'Établissement *</label>
+                <input 
+                  type="text" 
+                  value={createSchoolName} 
+                  onChange={(e) => handleCreateSchoolNameChange(e.target.value)} 
+                  placeholder="ex: Lycée Excellence de Dakar" 
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '0.95rem' }} 
+                  required
+                />
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600 }}>Sous-domaine Unique *</label>
+                <input 
+                  type="text" 
+                  value={createSubdomain} 
+                  onChange={(e) => setCreateSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} 
+                  placeholder="ex: lycee-excellence" 
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '0.95rem' }} 
+                  required
+                />
+                <small style={{ color: '#2563EB', display: 'block', marginTop: '4px', fontWeight: 500 }}>
+                  🌐 URL finale : <strong>https://{createSubdomain || 'sous-domaine'}.solutionecoles.com</strong>
+                </small>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600 }}>Plan d'abonnement</label>
+                <select 
+                  value={createPlan} 
+                  onChange={(e) => setCreatePlan(e.target.value)} 
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '0.95rem' }}
+                >
+                  <option value="Pro">Pro (Illimité)</option>
+                  <option value="Standard">Standard (Limité à 20 élèves)</option>
+                </select>
+              </div>
+
+              <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: '16px', marginTop: '16px' }}>
+                <h4 style={{ margin: '0 0 12px 0', color: '#374151', fontSize: '1rem' }}>👤 Compte Administrateur / Directeur Principal</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.85rem', fontWeight: 600 }}>Prénom</label>
+                    <input 
+                      type="text" 
+                      value={createAdminFirstName} 
+                      onChange={(e) => setCreateAdminFirstName(e.target.value)} 
+                      placeholder="Mamadou" 
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #D1D5DB' }} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.85rem', fontWeight: 600 }}>Nom</label>
+                    <input 
+                      type="text" 
+                      value={createAdminLastName} 
+                      onChange={(e) => setCreateAdminLastName(e.target.value)} 
+                      placeholder="KONE" 
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #D1D5DB' }} 
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.85rem', fontWeight: 600 }}>Email ou Identifiant</label>
+                    <input 
+                      type="text" 
+                      value={createAdminEmail} 
+                      onChange={(e) => setCreateAdminEmail(e.target.value)} 
+                      placeholder="directeur@ecole.com ou KONE" 
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #D1D5DB' }} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.85rem', fontWeight: 600 }}>Téléphone</label>
+                    <input 
+                      type="tel" 
+                      value={createAdminPhone} 
+                      onChange={(e) => setCreateAdminPhone(e.target.value)} 
+                      placeholder="+221 77 000 00 00" 
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #D1D5DB' }} 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.85rem', fontWeight: 600 }}>Mot de passe *</label>
+                  <input 
+                    type="text" 
+                    value={createAdminPassword} 
+                    onChange={(e) => setCreateAdminPassword(e.target.value)} 
+                    placeholder="passer123" 
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #D1D5DB' }} 
+                    required
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                <button type="button" onClick={() => setIsCreateModalOpen(false)} style={{ padding: '10px 18px', background: 'transparent', border: '1px solid #D1D5DB', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 }}>Annuler</button>
+                <button type="submit" disabled={isCreatingSchool} style={{ padding: '10px 20px', background: '#10B981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
+                  {isCreatingSchool ? 'Création...' : 'Créer l\'Établissement'}
+                </button>
               </div>
             </form>
           </div>
