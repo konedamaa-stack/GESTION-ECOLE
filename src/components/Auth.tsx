@@ -239,7 +239,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
             .from('employees')
             .select('*, schools(name)')
             .eq('role', selectedRole)
-            .or(`email.ilike.${identifier},phone.eq.${identifier},first_name.ilike.${identifier}`)
+            .or(`email.ilike.${identifier},phone.eq.${identifier},first_name.ilike.${identifier},last_name.ilike.${identifier}`)
             .eq('password', password);
 
           if (!empError && employees && employees.length > 0) {
