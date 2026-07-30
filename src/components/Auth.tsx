@@ -194,7 +194,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
         const { data: parents, error } = await supabase
           .from('parents')
           .select('*')
-          .or(`email.eq.${identifier},phone.eq.${identifier}`)
+          .or(`email.ilike.${identifier},phone.eq.${identifier},phone.ilike.%${identifier}%,first_name.ilike.${identifier},last_name.ilike.${identifier}`)
           .eq('password', password);
         
         if (error) throw error;

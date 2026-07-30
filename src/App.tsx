@@ -5891,8 +5891,8 @@ function App() {
                   </div>
                   <div className="form-grid">
                     <div className="form-group">
-                      <label>{t('admin.modals.email', 'Email')}</label>
-                      <input type="email" name="email" className="form-input" required={activeModal === 'teacher'} defaultValue={editEntity?.email || ""} />
+                      <label>{t('admin.modals.email', 'Email / Identifiant')}</label>
+                      <input type="text" name="email" className="form-input" placeholder="ex: daouda@gmail.com ou daouda" required={activeModal === 'teacher'} defaultValue={editEntity?.email || ""} />
                     </div>
                     {['teacher', 'employee', 'parent'].includes(activeModal) && (
                       <div className="form-group">
