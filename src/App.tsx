@@ -4447,81 +4447,89 @@ function App() {
                     </div>
                   </div>
 
-                  {collabCreationMode === 'direct' ? (
-                    <form onSubmit={handleCreateCollaboratorDirect} style={{background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '20px'}}>
-                      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px'}}>
-                        <div>
-                          <label style={{fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '4px'}}>Nom & Prénom (Optionnel)</label>
+                  {currentAdminRole === 'Director' ? (
+                    <>
+                      {collabCreationMode === 'direct' ? (
+                        <form onSubmit={handleCreateCollaboratorDirect} style={{background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '20px'}}>
+                          <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px'}}>
+                            <div>
+                              <label style={{fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '4px'}}>Nom & Prénom (Optionnel)</label>
+                              <input 
+                                type="text" 
+                                placeholder="ex: Koffi Kouassi" 
+                                className="form-control" 
+                                value={collabName} 
+                                onChange={(e) => setCollabName(e.target.value)} 
+                              />
+                            </div>
+                            <div>
+                              <label style={{fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '4px'}}>Identifiant / Login *</label>
+                              <input 
+                                type="text" 
+                                placeholder="ex: koffi_secretaire" 
+                                className="form-control" 
+                                value={collabLogin} 
+                                onChange={(e) => setCollabLogin(e.target.value)} 
+                                required 
+                              />
+                            </div>
+                            <div>
+                              <label style={{fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '4px'}}>Mot de passe *</label>
+                              <input 
+                                type="password" 
+                                placeholder="ex: Pass1234!" 
+                                className="form-control" 
+                                value={collabPassword} 
+                                onChange={(e) => setCollabPassword(e.target.value)} 
+                                required 
+                              />
+                            </div>
+                            <div>
+                              <label style={{fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '4px'}}>Rôle de l'accès *</label>
+                              <select 
+                                className="form-control" 
+                                value={inviteRole}
+                                onChange={(e) => setInviteRole(e.target.value)}
+                              >
+                                <option value="Director">Directeur (Accès Total)</option>
+                                <option value="Secretary">Secrétaire (Pas d'accès Finances)</option>
+                                <option value="Accountant">Comptable (Finances Uniquement)</option>
+                                <option value="Supervisor">Superviseur (Lecture & Impression uniquement)</option>
+                              </select>
+                            </div>
+                          </div>
+                          <button type="submit" className="btn btn-primary" style={{width: '100%'}}>+ Créer le Collaborateur Directement</button>
+                        </form>
+                      ) : (
+                        <form onSubmit={handleInviteAdmin} style={{display: 'flex', gap: '12px', marginBottom: '16px'}}>
                           <input 
-                            type="text" 
-                            placeholder="ex: Koffi Kouassi" 
+                            type="email" 
+                            placeholder="Email du collaborateur" 
                             className="form-control" 
-                            value={collabName} 
-                            onChange={(e) => setCollabName(e.target.value)} 
-                          />
-                        </div>
-                        <div>
-                          <label style={{fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '4px'}}>Identifiant / Login *</label>
-                          <input 
-                            type="text" 
-                            placeholder="ex: koffi_secretaire" 
-                            className="form-control" 
-                            value={collabLogin} 
-                            onChange={(e) => setCollabLogin(e.target.value)} 
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
                             required 
+                            style={{flex: 1}}
                           />
-                        </div>
-                        <div>
-                          <label style={{fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '4px'}}>Mot de passe *</label>
-                          <input 
-                            type="password" 
-                            placeholder="ex: Pass1234!" 
-                            className="form-control" 
-                            value={collabPassword} 
-                            onChange={(e) => setCollabPassword(e.target.value)} 
-                            required 
-                          />
-                        </div>
-                        <div>
-                          <label style={{fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '4px'}}>Rôle de l'accès *</label>
                           <select 
                             className="form-control" 
                             value={inviteRole}
                             onChange={(e) => setInviteRole(e.target.value)}
+                            style={{width: '200px'}}
                           >
                             <option value="Director">Directeur (Accès Total)</option>
                             <option value="Secretary">Secrétaire (Pas d'accès Finances)</option>
                             <option value="Accountant">Comptable (Finances Uniquement)</option>
                             <option value="Supervisor">Superviseur (Lecture & Impression uniquement)</option>
                           </select>
-                        </div>
-                      </div>
-                      <button type="submit" className="btn btn-primary" style={{width: '100%'}}>+ Créer le Collaborateur Directement</button>
-                    </form>
+                          <button type="submit" className="btn btn-primary">Inviter par Email</button>
+                        </form>
+                      )}
+                    </>
                   ) : (
-                    <form onSubmit={handleInviteAdmin} style={{display: 'flex', gap: '12px', marginBottom: '16px'}}>
-                      <input 
-                        type="email" 
-                        placeholder="Email du collaborateur" 
-                        className="form-control" 
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        required 
-                        style={{flex: 1}}
-                      />
-                      <select 
-                        className="form-control" 
-                        value={inviteRole}
-                        onChange={(e) => setInviteRole(e.target.value)}
-                        style={{width: '200px'}}
-                      >
-                        <option value="Director">Directeur (Accès Total)</option>
-                        <option value="Secretary">Secrétaire (Pas d'accès Finances)</option>
-                        <option value="Accountant">Comptable (Finances Uniquement)</option>
-                        <option value="Supervisor">Superviseur (Lecture & Impression uniquement)</option>
-                      </select>
-                      <button type="submit" className="btn btn-primary">Inviter par Email</button>
-                    </form>
+                    <div style={{padding: '12px 16px', background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', borderRadius: '8px', marginBottom: '16px', fontSize: '0.9rem', fontWeight: 500}}>
+                      🔒 Seul le Directeur de l'établissement est autorisé à ajouter ou modifier les comptes de collaborateurs.
+                    </div>
                   )}
 
                   {invitedAdmins.length > 0 && (
@@ -4563,13 +4571,15 @@ function App() {
                                     🔗 Copier le lien
                                   </button>
                                 )}
-                                <button 
-                                  onClick={() => handleDeleteCollaborator(admin)}
-                                  className="btn btn-outline"
-                                  style={{padding: '4px 8px', fontSize: '0.8rem', color: 'var(--danger-color, #ef4444)', borderColor: 'var(--danger-color, #ef4444)'}}
-                                >
-                                  🗑️ Supprimer
-                                </button>
+                                {currentAdminRole === 'Director' && (
+                                  <button 
+                                    onClick={() => handleDeleteCollaborator(admin)}
+                                    className="btn btn-outline"
+                                    style={{padding: '4px 8px', fontSize: '0.8rem', color: 'var(--danger-color, #ef4444)', borderColor: 'var(--danger-color, #ef4444)'}}
+                                  >
+                                    🗑️ Supprimer
+                                  </button>
+                                )}
                               </td>
                             </tr>
                           ))}
