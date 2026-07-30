@@ -93,6 +93,21 @@ function App() {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [currentSchoolPlan, setCurrentSchoolPlan] = useState<string>('Standard');
   const [currentAdminRole, setCurrentAdminRole] = useState<string>('Director');
+
+  const displayedUserName = (() => {
+    if (employeeSession) {
+      if (employeeSession.first_name || employeeSession.last_name) {
+        return `${employeeSession.first_name || ''} ${employeeSession.last_name || ''}`.trim();
+      }
+      return employeeSession.login || employeeSession.email || 'Personnel';
+    }
+    if (session?.user?.email) {
+      return session.user.email;
+    }
+    return 'Administrateur';
+  })();
+
+  const displayedAvatar = (displayedUserName.charAt(0) || 'A').toUpperCase();
   const [detectedSubdomain, setDetectedSubdomain] = useState<string | null>(null);
   const [subdomainSchool, setSubdomainSchool] = useState<any | null>(null);
   const [subdomainNotFound, setSubdomainNotFound] = useState<boolean>(false);
@@ -5021,9 +5036,9 @@ function App() {
               <span className="action-badge"></span>
             </button>
             <div className="user-profile" onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)} style={{position: 'relative', cursor: 'pointer'}}>
-              <div className="avatar">A</div>
+              <div className="avatar">{displayedAvatar}</div>
               <div className="user-info">
-                <span className="user-name">{session?.user?.email || 'Adama Traoré'}</span>
+                <span className="user-name">{displayedUserName}</span>
                 <span className="user-role">
                   {currentAdminRole === 'Director' ? 'Directeur' : 
                    currentAdminRole === 'Secretary' ? 'Secrétaire' : 
