@@ -1841,6 +1841,67 @@ function App() {
     }
   };
 
+  const handleExportAdminPDF = () => {
+    if (!activeEvaluation) return;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+
+    const clsObj = classesData.find(c => c.id === activeEvaluation.class_id) || activeEvaluation.classes;
+    const className = clsObj?.name || '---';
+    const schoolName = settingsData?.school_name || "ÉTABLISSEMENT SCOLAIRE";
+
+    // Header
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text(schoolName.toUpperCase(), pageWidth / 2, 16, { align: "center" });
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(71, 85, 105);
+    doc.text("FICHE DE NOTES & PROCÈS-VERBAL D'ÉVALUATION", pageWidth / 2, 23, { align: "center" });
+
+    // Divider
+    doc.setDrawColor(37, 99, 235);
+    doc.setLineWidth(0.8);
+    doc.line(14, 31, pageWidth - 14, 31);
+
+    // Metadata
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 41, 59);
+    doc.text(`Évaluation : ${activeEvaluation.name || '---'}`, 14, 39);
+    doc.text(`Matière : ${activeEvaluation.subject || '---'}`, 14, 45);
+    doc.text(`Classe : ${className}`, pageWidth - 14, 39, { align: "right" });
+    doc.text(`Bareme : /${activeEvaluation.max_score || 20}`, pageWidth - 14, 45, { align: "right" });
+
+    // Table
+    const classStudents = studentsData.filter(s => s.class_id === activeEvaluation.class_id);
+    const tableRows = classStudents.map((st, index) => {
+      const g = gradesInput[st.id] || { score: '', comment: '' };
+      return [
+        index + 1,
+        st.matricule || '-',
+        `${st.last_name || ''} ${st.first_name || ''}`.trim(),
+        g.score ? `${g.score} / ${activeEvaluation.max_score || 20}` : 'N.C',
+        g.comment || '-'
+      ];
+    });
+
+    (doc as any).autoTable({
+      startY: 52,
+      head: [['#', 'Matricule', 'Nom & Prénom', 'Note', 'Appréciation']],
+      body: tableRows,
+      theme: 'grid',
+      headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 9, cellPadding: 3 },
+      alternateRowStyles: { fillColor: [248, 250, 252] }
+    });
+
+    doc.save(`Fiche_Notes_${activeEvaluation.name}_${className}.pdf`);
+  };
+
   const startGrading = async (evaluation: any) => {
     setActiveEvaluation(evaluation);
     // Fetch existing grades for this evaluation

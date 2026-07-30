@@ -535,7 +535,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                   </div>
                 </div>
                 <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end'}}>
-                  <button type="submit" className="btn btn-primary" style={{padding: '12px 24px', fontSize: '1rem'}}><Icons.CheckCircle /> {t('teacher.btn_create', "Créer l'évaluation")}</button>
+                  <button type="submit" className="btn btn-primary" disabled={isCreatingEval} style={{padding: '12px 24px', fontSize: '1rem'}}><Icons.CheckCircle /> {isCreatingEval ? 'Création...' : t('teacher.btn_create', "Créer l'évaluation")}</button>
                 </div>
               </form>
             </div>
