@@ -3,21 +3,20 @@ import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import './Auth.css';
 
-type AuthMode = 'login' | 'register' | 'forgot_password' | 'student_login' | 'teacher_login' | 'committee_login' | 'accept_invite' | 'parent_login';
-type AuthRole = 'Supervisor' | 'Director' | 'Secretary' | 'Accountant' | 'Teacher' | 'Committee' | 'Student' | 'Parent';
+type AuthMode = 'login' | 'register' | 'forgot_password' | 'student_login' | 'teacher_login' | 'accept_invite' | 'parent_login';
+type AuthRole = 'Supervisor' | 'Director' | 'Secretary' | 'Accountant' | 'Teacher' | 'Student' | 'Parent';
 
 const ROLES_CONFIG: { role: AuthRole; label: string; icon: string; color: string; bg: string; glow: string; desc: string }[] = [
   { role: 'Director', label: 'Administrateur', icon: '👑', color: '#A855F7', bg: 'rgba(168, 85, 247, 0.15)', glow: 'rgba(168, 85, 247, 0.4)', desc: 'Accès Total' },
   { role: 'Secretary', label: 'Secrétaire', icon: '📑', color: '#06B6D4', bg: 'rgba(6, 182, 212, 0.15)', glow: 'rgba(6, 182, 212, 0.4)', desc: 'Inscriptions & Admin' },
   { role: 'Accountant', label: 'Comptable', icon: '💳', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)', glow: 'rgba(245, 158, 11, 0.4)', desc: 'Finances & Caisse' },
   { role: 'Teacher', label: 'Enseignant', icon: '🧑‍🏫', color: '#10B981', bg: 'rgba(16, 185, 129, 0.15)', glow: 'rgba(16, 185, 129, 0.4)', desc: 'Notes & Évaluations' },
-  { role: 'Committee', label: 'Comité Examen', icon: '🏆', color: '#6366F1', bg: 'rgba(99, 102, 241, 0.15)', glow: 'rgba(99, 102, 241, 0.4)', desc: 'Bulletins & Relevés' },
   { role: 'Student', label: 'Élève', icon: '🎓', color: '#0D9488', bg: 'rgba(13, 148, 136, 0.15)', glow: 'rgba(13, 148, 136, 0.4)', desc: 'Espace Élève' },
   { role: 'Parent', label: 'Parent d\'élève', icon: '👨‍👩‍👧‍👦', color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.15)', glow: 'rgba(59, 130, 246, 0.4)', desc: 'Suivi Enfant' },
   { role: 'Supervisor', label: 'Superviseur', icon: '👁️', color: '#F43F5E', bg: 'rgba(244, 63, 94, 0.15)', glow: 'rgba(244, 63, 94, 0.4)', desc: 'Lecture & Rapports' },
 ];
 
-export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin, onEmployeeLogin, onBack }: { onStudentLogin?: (student: any) => void, onTeacherLogin?: (teacher: any) => void, onCommitteeLogin?: (committee: any) => void, onEmployeeLogin?: (employee: any) => void, onBack?: () => void }) {
+export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, onBack }: { onStudentLogin?: (student: any) => void, onTeacherLogin?: (teacher: any) => void, onEmployeeLogin?: (employee: any) => void, onBack?: () => void }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<AuthMode>('login');
   const [selectedRole, setSelectedRole] = useState<AuthRole>('Director');
@@ -63,8 +62,6 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
       setSelectedRole('Teacher');
     } else if (newMode === 'student_login') {
       setSelectedRole('Student');
-    } else if (newMode === 'committee_login') {
-      setSelectedRole('Committee');
     } else if (newMode === 'parent_login') {
       setSelectedRole('Parent');
     }
@@ -83,8 +80,6 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
       setMode('teacher_login');
     } else if (role === 'Student') {
       setMode('student_login');
-    } else if (role === 'Committee') {
-      setMode('committee_login');
     } else if (role === 'Parent') {
       setMode('parent_login');
     }
@@ -196,26 +191,6 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
           } else {
             setMessage(t('auth.register_success', 'Inscription réussie ! Veuillez vérifier votre boîte mail pour confirmer votre compte.'));
           }
-        }
-      } else if (mode === 'committee_login') {
-        const { data: committee, error } = await supabase
-          .from('committee_members')
-          .select('*')
-          .eq('email', email)
-          .eq('password', password);
-        
-        if (error) throw error;
-        if (!committee || committee.length === 0) {
-          throw new Error(t('auth.invalid_credentials', "Email ou mot de passe incorrect."));
-        }
-        if (committee.length > 1) {
-          setPendingProfiles(committee);
-          setPendingMode(mode);
-          setLoading(false);
-          return;
-        }
-        if (onCommitteeLogin) {
-          onCommitteeLogin(committee[0]);
         }
       } else if (mode === 'parent_login') {
         const identifier = email.trim();
@@ -394,13 +369,6 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
             <p className="auth-subtitle">{t('auth.teacher_subtitle', "Saisissez vos notes et gérez vos classes.")}</p>
           </>
         );
-      case 'Committee':
-        return (
-          <>
-            <h1 className="auth-title">Comité d'examen</h1>
-            <p className="auth-subtitle">Espace réservé au comité d'examen</p>
-          </>
-        );
       case 'Student':
         return (
           <>
@@ -432,7 +400,6 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
                 style={{ textAlign: 'left', padding: '16px', justifyContent: 'flex-start' }}
                 onClick={() => {
                   if (pendingMode === 'teacher_login' && onTeacherLogin) onTeacherLogin(profile);
-                  if (pendingMode === 'committee_login' && onCommitteeLogin) onCommitteeLogin(profile);
                   if (pendingMode === 'student_login' && onStudentLogin) onStudentLogin(profile);
                   setPendingProfiles(null);
                 }}
@@ -480,11 +447,6 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
         return {
           title: 'Gestion Financière !',
           desc: 'Suivez la caisse, les dépenses, factures et règlements d\'écolage.'
-        };
-      case 'Committee':
-        return {
-          title: 'Comité d\'Examen !',
-          desc: 'Accédez aux délibérations, validation des bulletins et synthèses.'
         };
       case 'Supervisor':
         return {
@@ -687,7 +649,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onCommitteeLogin,
           </form>
 
           <div style={{ marginTop: '12px' }}>
-            {mode === 'login' || mode === 'parent_login' || mode === 'student_login' || mode === 'teacher_login' || mode === 'committee_login' ? (
+            {mode === 'login' || mode === 'parent_login' || mode === 'student_login' || mode === 'teacher_login' ? (
               <button type="button" className="auth-forgot-link" onClick={() => handleModeSwitch('forgot_password')}>
                 Mot de passe oublié
               </button>

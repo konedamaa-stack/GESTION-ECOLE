@@ -15,6 +15,11 @@ export function AdminList({ onSwitchToSchool }: { onSwitchToSchool?: (schoolId: 
   const [sortBy, setSortBy] = useState<'date' | 'school' | 'email'>('date');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
+  // Edit Modal state
+  const [editingSchool, setEditingSchool] = useState<{ id: string; name: string; subdomain: string } | null>(null);
+  const [newSubdomainInput, setNewSubdomainInput] = useState('');
+  const [newNameInput, setNewNameInput] = useState('');
+
   const sqlScript = `alter table public.schools add column if not exists subscription_plan varchar(50) default 'Standard';
 
 create or replace function public.get_all_admins()
@@ -131,6 +136,44 @@ $$;`;
       } catch (err: any) {
         alert("Erreur: " + err.message);
       }
+    }
+  };
+
+  const handleOpenEditSubdomain = async (schoolId: string, currentName: string) => {
+    try {
+      const { data } = await supabase.from('schools').select('name, subdomain').eq('id', schoolId).single();
+      const currentSub = data?.subdomain || (currentName ? currentName.toLowerCase().replace(/[^a-z0-9-]/g, '') : '');
+      setEditingSchool({ id: schoolId, name: data?.name || currentName, subdomain: currentSub });
+      setNewNameInput(data?.name || currentName || '');
+      setNewSubdomainInput(currentSub);
+    } catch (err: any) {
+      alert("Erreur lors de la récupération : " + err.message);
+    }
+  };
+
+  const handleSaveSubdomain = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSchool) return;
+    const cleanSub = newSubdomainInput.toLowerCase().replace(/[^a-z0-9-]/g, '').trim();
+    if (!cleanSub) {
+      alert("Veuillez saisir un sous-domaine valide.");
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('schools')
+        .update({ name: newNameInput.trim(), subdomain: cleanSub })
+        .eq('id', editingSchool.id);
+      
+      if (error) {
+        alert("Erreur lors de la mise à jour : " + error.message);
+      } else {
+        alert(`Établissement mis à jour avec succès !\n\nNouvelle URL : https://${cleanSub}.solutionecoles.com`);
+        setEditingSchool(null);
+        fetchAdmins();
+      }
+    } catch (err: any) {
+      alert("Erreur: " + err.message);
     }
   };
 
@@ -422,6 +465,13 @@ $$;`;
                           </button>
                         )}
                         <button 
+                          onClick={() => handleOpenEditSubdomain(admin.school_id, admin.school_name)}
+                          style={{ padding: '6px 12px', fontSize: '0.85rem', background: '#2563EB', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                          title="Modifier le sous-domaine unique"
+                        >
+                          ✏️ Éditer
+                        </button>
+                        <button 
                           onClick={() => handleUpgradePro(admin.school_id, admin.subscription_plan)}
                           style={{ padding: '6px 12px', fontSize: '0.85rem', background: admin.subscription_plan === 'Pro' ? '#F59E0B' : '#10B981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                         >
@@ -451,6 +501,44 @@ $$;`;
           </tbody>
         </table>
       </div>
+
+      {editingSchool && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '420px', maxWidth: '90%', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', color: '#111827' }}>
+            <h3 style={{ marginTop: 0, fontSize: '1.25rem' }}>Gérer l'Établissement & Sous-domaine</h3>
+            <form onSubmit={handleSaveSubdomain}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600 }}>Nom de l'établissement</label>
+                <input 
+                  type="text" 
+                  value={newNameInput} 
+                  onChange={(e) => setNewNameInput(e.target.value)} 
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB' }} 
+                  required
+                />
+              </div>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600 }}>Sous-domaine unique</label>
+                <input 
+                  type="text" 
+                  value={newSubdomainInput} 
+                  onChange={(e) => setNewSubdomainInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} 
+                  placeholder="ex: saint-joseph" 
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB' }} 
+                  required
+                />
+                <small style={{ color: '#6B7280', display: 'block', marginTop: '6px' }}>
+                  URL finale : <strong>https://{newSubdomainInput || 'sous-domaine'}.solutionecoles.com</strong>
+                </small>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+                <button type="button" onClick={() => setEditingSchool(null)} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #D1D5DB', borderRadius: '6px', cursor: 'pointer' }}>Annuler</button>
+                <button type="submit" style={{ padding: '8px 16px', background: '#2563EB', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>Sauvegarder</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
