@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 
 export function SuperAdminAuth({ onBack }: { onBack: () => void }) {
   const [authMode, setAuthMode] = useState<'login' | 'forgot_password'>('login');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState('konedamaa@gmail.com');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,7 +134,7 @@ export function SuperAdminAuth({ onBack }: { onBack: () => void }) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@saas.com"
+              placeholder="konedamaa@gmail.com"
               required
               style={{
                 width: '100%',
