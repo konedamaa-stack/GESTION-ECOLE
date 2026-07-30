@@ -93,6 +93,7 @@ function App() {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [currentSchoolPlan, setCurrentSchoolPlan] = useState<string>('Standard');
   const [currentAdminRole, setCurrentAdminRole] = useState<string>('Director');
+  const [notesSubTab, setNotesSubTab] = useState<'grades' | 'bulletins'>('grades');
 
   const displayedUserName = (() => {
     if (employeeSession) {
@@ -4955,11 +4956,8 @@ function App() {
               <li className={`nav-item ${activeTab === 'schedules' ? 'active' : ''}`} onClick={() => { setActiveTab('schedules'); setIsMobileMenuOpen(false); }}>
                 <Icons.Calendar /> {t('admin.sidebar.schedules', 'Emplois du Temps')}
               </li>
-              <li className={`nav-item ${activeTab === 'grades' ? 'active' : ''}`} onClick={() => { setActiveTab('grades'); setIsMobileMenuOpen(false); }}>
-                <Icons.FileText /> {t('admin.sidebar.grades', 'Évaluations & Notes')}
-              </li>
-              <li className={`nav-item ${activeTab === 'bulletins' ? 'active' : ''}`} onClick={() => { setActiveTab('bulletins'); setIsMobileMenuOpen(false); }}>
-                <Icons.FileText /> {t('admin.sidebar.bulletins', 'Bulletins')}
+              <li className={`nav-item ${['grades', 'bulletins', 'notes_bulletins'].includes(activeTab) ? 'active' : ''}`} onClick={() => { setActiveTab('notes_bulletins'); setIsMobileMenuOpen(false); }}>
+                <Icons.FileText /> Notes & Bulletins
               </li>
               <li className={`nav-item ${activeTab === 'communication' ? 'active' : ''}`} onClick={() => { setActiveTab('communication'); setIsMobileMenuOpen(false); }}>
                 <Icons.MessageSquare /> {t('admin.sidebar.communication', 'Communication')}
@@ -5118,13 +5116,40 @@ function App() {
           {activeTab === 'pedagogy' && renderPedagogy()}
           {activeTab === 'schedules' && renderSchedules()}
           {activeTab === 'communication' && renderCommunication()}
-          {activeTab === 'bulletins' && renderBulletins()}
+          {['notes_bulletins', 'grades', 'bulletins'].includes(activeTab) && (
+            <div className="animate-fade-in">
+              <div className="panel" style={{ marginBottom: '20px', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+                <h2 style={{ margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Icons.FileText /> Notes & Bulletins Scolaires
+                </h2>
+                <div style={{ display: 'flex', background: 'var(--surface-color-hover, #f1f5f9)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-color)', gap: '4px' }}>
+                  <button
+                    type="button"
+                    className={`btn ${notesSubTab === 'grades' ? 'btn-primary' : 'btn-outline'}`}
+                    style={{ padding: '8px 20px', fontSize: '0.9rem', fontWeight: 600, borderRadius: '8px' }}
+                    onClick={() => setNotesSubTab('grades')}
+                  >
+                    📝 Évaluations & Notes
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn ${notesSubTab === 'bulletins' ? 'btn-primary' : 'btn-outline'}`}
+                    style={{ padding: '8px 20px', fontSize: '0.9rem', fontWeight: 600, borderRadius: '8px' }}
+                    onClick={() => setNotesSubTab('bulletins')}
+                  >
+                    📜 Bulletins Scolaires
+                  </button>
+                </div>
+              </div>
+
+              {notesSubTab === 'grades' ? renderGrades() : renderBulletins()}
+            </div>
+          )}
           {activeTab === 'rh' && renderRH()}
           {activeTab === 'depenses' && renderDepenses()}
           {activeTab === 'teachers' && renderTeachers()}
           {activeTab === 'parents' && renderParents()}
           {activeTab === 'scolarite' && renderScolarite()}
-          {activeTab === 'grades' && renderGrades()}
           {activeTab === 'settings' && renderSettings()}
         </div>
       </main>
