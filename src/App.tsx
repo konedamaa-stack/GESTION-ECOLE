@@ -4857,11 +4857,6 @@ function App() {
                 ))}
               </select>
             )}
-            {adminSchools && adminSchools.length < 1 && (
-              <button className="btn btn-outline hide-on-mobile" style={{padding: '6px 12px', fontSize: '0.9rem', marginLeft: '8px'}} onClick={() => setShowSchoolModal(true)}>
-                + Établissement
-              </button>
-            )}
           </div>
           
           
