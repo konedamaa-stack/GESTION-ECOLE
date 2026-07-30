@@ -98,6 +98,16 @@ function App() {
   const [subdomainNotFound, setSubdomainNotFound] = useState<boolean>(false);
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const isAdminParam = urlParams.get('admin') === 'true' || urlParams.get('superadmin') === 'true';
+    const isSuperAdminHost = window.location.hostname.startsWith('admin.') || window.location.hostname.startsWith('superadmin.');
+
+    if (isAdminParam || isSuperAdminHost) {
+      setIsSuperAdminFlow(true);
+      setCurrentView('app');
+      return;
+    }
+
     const sub = getSubdomain();
     if (sub) {
       setDetectedSubdomain(sub);
