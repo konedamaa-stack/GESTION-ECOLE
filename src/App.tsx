@@ -403,6 +403,101 @@ function App() {
     localStorage.removeItem('sges_login_role');
   };
 
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const [oldPasswordInput, setOldPasswordInput] = useState('');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  const handleChangeMyPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPasswordInput || newPasswordInput !== confirmPasswordInput) {
+      alert("Les deux nouveaux mots de passe ne correspondent pas.");
+      return;
+    }
+    if (newPasswordInput.length < 4) {
+      alert("Le mot de passe doit contenir au moins 4 caractères.");
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const storedEmpRaw = localStorage.getItem('sges_employee');
+      const storedEmp = storedEmpRaw ? JSON.parse(storedEmpRaw) : employeeSession;
+
+      if (storedEmp && storedEmp.id) {
+        if (storedEmp.password && oldPasswordInput && storedEmp.password !== oldPasswordInput) {
+          alert("L'ancien mot de passe est incorrect.");
+          setIsChangingPassword(false);
+          return;
+        }
+
+        const { error } = await supabase
+          .from('employees')
+          .update({ password: newPasswordInput })
+          .eq('id', storedEmp.id);
+
+        if (error) throw error;
+
+        storedEmp.password = newPasswordInput;
+        setEmployeeSession(storedEmp);
+        localStorage.setItem('sges_employee', JSON.stringify(storedEmp));
+
+        alert("🎉 Votre mot de passe a été modifié avec succès !");
+        setIsChangePasswordModalOpen(false);
+        setOldPasswordInput('');
+        setNewPasswordInput('');
+        setConfirmPasswordInput('');
+        return;
+      }
+
+      const storedTeacherRaw = localStorage.getItem('sges_teacher');
+      const storedTeacher = storedTeacherRaw ? JSON.parse(storedTeacherRaw) : teacherSession;
+      if (storedTeacher && storedTeacher.id) {
+        if (storedTeacher.password && oldPasswordInput && storedTeacher.password !== oldPasswordInput) {
+          alert("L'ancien mot de passe est incorrect.");
+          setIsChangingPassword(false);
+          return;
+        }
+
+        const { error } = await supabase
+          .from('teachers')
+          .update({ password: newPasswordInput })
+          .eq('id', storedTeacher.id);
+
+        if (error) throw error;
+
+        storedTeacher.password = newPasswordInput;
+        setTeacherSession(storedTeacher);
+        localStorage.setItem('sges_teacher', JSON.stringify(storedTeacher));
+
+        alert("🎉 Votre mot de passe a été modifié avec succès !");
+        setIsChangePasswordModalOpen(false);
+        setOldPasswordInput('');
+        setNewPasswordInput('');
+        setConfirmPasswordInput('');
+        return;
+      }
+
+      if (session?.user) {
+        const { error } = await supabase.auth.updateUser({ password: newPasswordInput });
+        if (error) throw error;
+        alert("🎉 Votre mot de passe a été modifié avec succès !");
+        setIsChangePasswordModalOpen(false);
+        setOldPasswordInput('');
+        setNewPasswordInput('');
+        setConfirmPasswordInput('');
+        return;
+      }
+
+      alert("Erreur : Compte utilisateur non identifié.");
+    } catch (err: any) {
+      alert("Erreur lors du changement de mot de passe : " + (err.message || err));
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   const handleRemoveChild = async (studentId: string, parentId: string) => {
     if (window.confirm("Voulez-vous vraiment retirer cet enfant de ce parent ?")) {
       try {
@@ -4408,6 +4503,48 @@ function App() {
             <div>
               <h3 className="panel-title" style={{marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>{t('admin.settings.sec_title', 'Sécurité & Accès')}</h3>
               <div style={{display: 'flex', flexDirection: 'column', gap: '24px'}}>
+                {/* Personnel Password Change Section */}
+                <div style={{background: 'var(--surface-color)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)'}}>
+                  <h4 style={{margin: '0 0 16px 0', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '8px'}}>🔑 Modifier mon mot de passe personnel</h4>
+                  <form onSubmit={handleChangeMyPassword} style={{maxWidth: '450px'}}>
+                    <div style={{marginBottom: '12px'}}>
+                      <label style={{display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px'}}>Ancien mot de passe</label>
+                      <input 
+                        type="password" 
+                        value={oldPasswordInput} 
+                        onChange={(e) => setOldPasswordInput(e.target.value)} 
+                        placeholder="Votre mot de passe actuel"
+                        className="form-control"
+                      />
+                    </div>
+                    <div style={{marginBottom: '12px'}}>
+                      <label style={{display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px'}}>Nouveau mot de passe *</label>
+                      <input 
+                        type="password" 
+                        value={newPasswordInput} 
+                        onChange={(e) => setNewPasswordInput(e.target.value)} 
+                        placeholder="Nouveau mot de passe"
+                        className="form-control"
+                        required
+                      />
+                    </div>
+                    <div style={{marginBottom: '16px'}}>
+                      <label style={{display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px'}}>Confirmer le nouveau mot de passe *</label>
+                      <input 
+                        type="password" 
+                        value={confirmPasswordInput} 
+                        onChange={(e) => setConfirmPasswordInput(e.target.value)} 
+                        placeholder="Répétez le nouveau mot de passe"
+                        className="form-control"
+                        required
+                      />
+                    </div>
+                    <button type="submit" disabled={isChangingPassword} className="btn btn-primary" style={{padding: '8px 16px', fontWeight: 600}}>
+                      {isChangingPassword ? 'Mise à jour...' : 'Mettre à jour mon mot de passe'}
+                    </button>
+                  </form>
+                </div>
+
                 <div>
                   <h4 style={{marginBottom: '12px'}}>{t('admin.settings.sec_2fa', 'Authentification à deux facteurs (2FA)')}</h4>
                   <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
@@ -4909,6 +5046,19 @@ function App() {
                   boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
                   zIndex: 100
                 }}>
+                  <div className="dropdown-item" onClick={() => setIsChangePasswordModalOpen(true)} style={{
+                    padding: '10px 16px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '12px', 
+                    cursor: 'pointer', 
+                    color: 'var(--text-color)',
+                    borderRadius: '8px',
+                    fontWeight: 500,
+                    marginBottom: '4px'
+                  }} onMouseOver={(e) => e.currentTarget.style.background = 'var(--surface-color-hover)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
+                    <span>🔑 Changer mon mot de passe</span>
+                  </div>
                   <div className="dropdown-item" onClick={handleLogout} style={{
                     padding: '10px 16px', 
                     display: 'flex', 
@@ -7201,6 +7351,61 @@ function App() {
         </tbody>
       </table>
     </div>
+    {/* Modal Changer mon mot de passe */}
+    {isChangePasswordModalOpen && (
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: 'var(--surface-color, #fff)', padding: '28px', borderRadius: '16px', width: '440px', maxWidth: '92%', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', color: 'var(--text-color, #111827)' }}>
+          <h3 style={{ marginTop: 0, fontSize: '1.25rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-color)' }}>
+            🔑 Changer mon Mot de Passe
+          </h3>
+          <form onSubmit={handleChangeMyPassword}>
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.88rem', fontWeight: 600 }}>Ancien mot de passe</label>
+              <input 
+                type="password" 
+                value={oldPasswordInput} 
+                onChange={(e) => setOldPasswordInput(e.target.value)} 
+                placeholder="Votre mot de passe actuel"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--background-color)', color: 'var(--text-color)', fontSize: '0.95rem' }} 
+              />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.88rem', fontWeight: 600 }}>Nouveau mot de passe *</label>
+              <input 
+                type="password" 
+                value={newPasswordInput} 
+                onChange={(e) => setNewPasswordInput(e.target.value)} 
+                placeholder="Entrez le nouveau mot de passe"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--background-color)', color: 'var(--text-color)', fontSize: '0.95rem' }} 
+                required
+              />
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.88rem', fontWeight: 600 }}>Confirmer le nouveau mot de passe *</label>
+              <input 
+                type="password" 
+                value={confirmPasswordInput} 
+                onChange={(e) => setConfirmPasswordInput(e.target.value)} 
+                placeholder="Répétez le nouveau mot de passe"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--background-color)', color: 'var(--text-color)', fontSize: '0.95rem' }} 
+                required
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button type="button" onClick={() => setIsChangePasswordModalOpen(false)} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '8px', cursor: 'pointer', fontWeight: 500, color: 'var(--text-color)' }}>
+                Annuler
+              </button>
+              <button type="submit" disabled={isChangingPassword} style={{ padding: '8px 18px', background: 'var(--primary-color, #2563eb)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
+                {isChangingPassword ? 'Enregistrement...' : 'Mettre à jour'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
   </>
 );
 }
