@@ -101,6 +101,7 @@ function App() {
     const sub = getSubdomain();
     if (sub) {
       setDetectedSubdomain(sub);
+      setCurrentView('app'); // Automatically bypass landing page on school subdomains
       supabase.from('schools').select('*').eq('subdomain', sub).single().then(({ data }) => {
         if (data) {
           setSubdomainSchool(data);
@@ -4646,7 +4647,7 @@ function App() {
     }} />;
   }
 
-    if (currentView === 'landing' && !session && !studentSession && !teacherSession && !employeeSession) {
+    if (currentView === 'landing' && !detectedSubdomain && !session && !studentSession && !teacherSession && !employeeSession) {
     return <LandingPage onLoginClick={() => setCurrentView('app')} onSuperAdminClick={() => { setIsSuperAdminFlow(true); setCurrentView('app'); }} />;
   }
 
