@@ -527,37 +527,37 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
               <>
                 {selectedRole === 'Parent' ? (
                   <div className="blue-input-group">
-                    <label>mail</label>
+                    <label>numéro de téléphone ou email</label>
                     <input
                       type="text"
                       className="blue-input"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="parent@gmail.com"
+                      placeholder="ex: 0707070707 ou parent@gmail.com"
                       required
                     />
                   </div>
                 ) : selectedRole === 'Student' ? (
                   <div className="blue-input-group">
-                    <label>matricule</label>
+                    <label>matricule de l'élève</label>
                     <input
                       type="text"
                       className="blue-input"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Ex: ELV-2024-1234"
+                      placeholder="ex: MAT-2024-001"
                       required
                     />
                   </div>
                 ) : selectedRole === 'Teacher' ? (
                   <div className="blue-input-group">
-                    <label>mail ou matricule</label>
+                    <label>identifiant, login ou email</label>
                     <input
                       type="text"
                       className="blue-input"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="prof@ecole.com"
+                      placeholder="ex: prof_maths ou prof@ecole.com"
                       required
                     />
                   </div>
@@ -569,7 +569,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
                       className="blue-input"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="ex: login_secretaire ou admin@gmail.com"
+                      placeholder="ex: KONE ou admin@gmail.com"
                       disabled={mode === 'accept_invite'}
                       style={mode === 'accept_invite' ? { background: '#e2e8f0', cursor: 'not-allowed' } : {}}
                       required
