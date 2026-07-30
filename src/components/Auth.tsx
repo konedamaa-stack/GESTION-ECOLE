@@ -7,13 +7,10 @@ type AuthMode = 'login' | 'register' | 'forgot_password' | 'student_login' | 'te
 type AuthRole = 'Supervisor' | 'Director' | 'Secretary' | 'Accountant' | 'Teacher' | 'Student' | 'Parent';
 
 const ROLES_CONFIG: { role: AuthRole; label: string; icon: string; color: string; bg: string; glow: string; desc: string }[] = [
-  { role: 'Director', label: 'Administrateur', icon: '👑', color: '#A855F7', bg: 'rgba(168, 85, 247, 0.15)', glow: 'rgba(168, 85, 247, 0.4)', desc: 'Accès Total' },
-  { role: 'Secretary', label: 'Secrétaire', icon: '📑', color: '#06B6D4', bg: 'rgba(6, 182, 212, 0.15)', glow: 'rgba(6, 182, 212, 0.4)', desc: 'Inscriptions & Admin' },
-  { role: 'Accountant', label: 'Comptable', icon: '💳', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)', glow: 'rgba(245, 158, 11, 0.4)', desc: 'Finances & Caisse' },
+  { role: 'Director', label: 'Administration', icon: '👑', color: '#A855F7', bg: 'rgba(168, 85, 247, 0.15)', glow: 'rgba(168, 85, 247, 0.4)', desc: 'Directeur, Secrétaire, Comptable, Superviseur' },
   { role: 'Teacher', label: 'Enseignant', icon: '🧑‍🏫', color: '#10B981', bg: 'rgba(16, 185, 129, 0.15)', glow: 'rgba(16, 185, 129, 0.4)', desc: 'Notes & Évaluations' },
   { role: 'Student', label: 'Élève', icon: '🎓', color: '#0D9488', bg: 'rgba(13, 148, 136, 0.15)', glow: 'rgba(13, 148, 136, 0.4)', desc: 'Espace Élève' },
   { role: 'Parent', label: 'Parent d\'élève', icon: '👨‍👩‍👧‍👦', color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.15)', glow: 'rgba(59, 130, 246, 0.4)', desc: 'Suivi Enfant' },
-  { role: 'Supervisor', label: 'Superviseur', icon: '👁️', color: '#F43F5E', bg: 'rgba(244, 63, 94, 0.15)', glow: 'rgba(244, 63, 94, 0.4)', desc: 'Lecture & Rapports' },
 ];
 
 export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, onBack }: { onStudentLogin?: (student: any) => void, onTeacherLogin?: (teacher: any) => void, onEmployeeLogin?: (employee: any) => void, onBack?: () => void }) {
@@ -233,17 +230,17 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
       } else if (mode === 'login') {
         const identifier = email.trim();
 
-        // Try direct Employee login first for all collaborator roles (Director, Secretary, Accountant, Supervisor)
+        // Try direct Employee login for all collaborator roles (Director, Secretary, Accountant, Supervisor)
         if (['Director', 'Secretary', 'Accountant', 'Supervisor'].includes(selectedRole)) {
           const { data: employees, error: empError } = await supabase
             .from('employees')
             .select('*, schools(name)')
-            .eq('role', selectedRole)
             .or(`email.ilike.${identifier},phone.eq.${identifier},first_name.ilike.${identifier},last_name.ilike.${identifier}`)
             .eq('password', password);
 
           if (!empError && employees && employees.length > 0) {
-            localStorage.setItem('sges_login_role', selectedRole);
+            const userRole = employees[0].role || 'Director';
+            localStorage.setItem('sges_login_role', userRole);
             if (onEmployeeLogin) {
               onEmployeeLogin(employees[0]);
             }
@@ -335,31 +332,13 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
     // Default roles login headers
     switch (selectedRole) {
       case 'Supervisor':
-        return (
-          <>
-            <h1 className="auth-title">Espace Superviseur</h1>
-            <p className="auth-subtitle">Lecture seule et impression des données scolaires</p>
-          </>
-        );
       case 'Director':
-        return (
-          <>
-            <h1 className="auth-title">Espace Administrateur</h1>
-            <p className="auth-subtitle">Accès complet de gestion de l'établissement</p>
-          </>
-        );
       case 'Secretary':
-        return (
-          <>
-            <h1 className="auth-title">Espace Secrétaire</h1>
-            <p className="auth-subtitle">Gestion des élèves, professeurs et inscriptions</p>
-          </>
-        );
       case 'Accountant':
         return (
           <>
-            <h1 className="auth-title">Espace Comptable</h1>
-            <p className="auth-subtitle">Gestion des frais de scolarité et comptabilité</p>
+            <h1 className="auth-title">Espace Administration</h1>
+            <p className="auth-subtitle">Accès Direction, Secrétariat, Comptabilité et Supervision</p>
           </>
         );
       case 'Teacher':
