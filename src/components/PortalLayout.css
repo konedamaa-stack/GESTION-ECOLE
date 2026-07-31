@@ -378,3 +378,23 @@
   font-weight: 400;
   margin-top: 16px;
 }
+
+@media print {
+  .portal-sidebar, .print-pill-btn, .pill-tabs-row, .portal-mobile-bar {
+    display: none !important;
+  }
+  .portal-wrapper {
+    background: white !important;
+    min-height: auto !important;
+    display: block !important;
+  }
+  .portal-content-area {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+  .panel {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+}

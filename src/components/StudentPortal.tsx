@@ -110,6 +110,11 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
   };
 
   const generatePDF = (period: string, mode: 'download' | 'print' | 'preview' = 'download') => {
+    if (mode === 'print') {
+      window.print();
+      return;
+    }
+
     try {
       const target = selectedStudent || student;
       if (!target) {
@@ -123,7 +128,13 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(15, 23, 42);
-      doc.text((settings?.school_name || "ÉTABLISSEMENT SCOLAIRE").toUpperCase(), pageWidth / 2, 16, { align: "center" });
+      
+      const safeStr = (str: string) => {
+        if (!str) return '';
+        return str.replace(/[^\x00-\x7F\u00C0-\u00FF]/g, '');
+      };
+
+      doc.text(safeStr((settings?.school_name || "ÉTABLISSEMENT SCOLAIRE").toUpperCase()) || "ETABLISSEMENT SCOLAIRE", pageWidth / 2, 16, { align: "center" });
       
       doc.setFontSize(11);
       doc.setFont("helvetica", "normal");
@@ -140,9 +151,9 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(15, 23, 42);
-      doc.text(`Élève : ${target.first_name || ''} ${target.last_name || ''}`, 14, 42);
+      doc.text(`Élève : ${safeStr(target.first_name || '')} ${safeStr(target.last_name || '')}`, 14, 42);
       doc.text(`Matricule : ${target.matricule || '---'}`, 14, 48);
-      doc.text(`Classe : ${target.classes?.name || '---'}`, pageWidth - 60, 42);
+      doc.text(`Classe : ${safeStr(target.classes?.name || '---')}`, pageWidth - 60, 42);
 
       // Filter evaluations matching period
       const isPeriodMatch = (evPeriod: string, selPeriod: string) => {
@@ -209,33 +220,15 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
       doc.setFont("helvetica", "normal");
       doc.text(t('student.director', "Le Directeur / La Direction"), pageWidth - 65, finalY + 15);
       if (settings?.director_name) {
-        doc.text(settings.director_name, pageWidth - 65, finalY + 22);
+        doc.text(safeStr(settings.director_name), pageWidth - 65, finalY + 22);
       }
 
       const fileName = `Bulletin_${(target.last_name || 'Eleve').replace(/\s+/g, '_')}_${(target.first_name || '').replace(/\s+/g, '_')}_${period.replace(/\s+/g, '_')}.pdf`;
 
-      if (mode === 'download') {
-        doc.save(fileName);
-      } else if (mode === 'print') {
-        try {
-          doc.autoPrint();
-          const pdfBlob = doc.output('blob');
-          const blobUrl = URL.createObjectURL(pdfBlob);
-          const printWin = window.open(blobUrl, '_blank');
-          if (printWin) {
-            printWin.focus();
-          } else {
-            doc.save(fileName);
-          }
-        } catch {
-          window.print();
-        }
-      } else {
-        const pdfBlob = doc.output('blob');
-        setPdfPreviewUrl(URL.createObjectURL(pdfBlob));
-      }
-    } catch (err: any) {
-      alert("Erreur lors de la génération du bulletin : " + (err.message || err));
+      doc.save(fileName);
+    } catch (err) {
+      console.warn("PDF export error fallback to window.print()", err);
+      window.print();
     }
   };
 
