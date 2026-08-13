@@ -442,21 +442,33 @@ html {
 
 .bulletin-classic-student {
   display: flex;
+  flex-direction: column;
   border: 2px solid black;
   margin-bottom: 5px;
+  font-size: 0.8rem;
 }
 
-.bulletin-classic-student > div {
-  padding: 5px 10px;
+.student-profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 10px;
+  border-bottom: 1px solid black;
+  background-color: #f8fafc;
 }
 
-.bulletin-classic-student p {
-  margin: 2px 0;
+.student-fullname {
+  font-size: 1rem;
+  font-weight: bold;
+  letter-spacing: 0.5px;
 }
 
-.bulletin-classic-student .col1 { width: 40%; }
-.bulletin-classic-student .col2 { width: 35%; }
-.bulletin-classic-student .col3 { width: 25%; }
+.student-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px 15px;
+  padding: 6px 10px;
+}
 
 .bulletin-classic-table {
   width: 100%;
@@ -472,18 +484,20 @@ html {
 }
 
 .bulletin-classic-table th {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   background-color: #f8f9fa;
+  font-weight: bold;
 }
 
 .bulletin-group-header td {
-  background-color: #e9ecef;
+  background-color: #dcfce7 !important;
   font-weight: bold;
   text-align: center;
 }
 
 .bulletin-classic-totaux td {
   font-weight: bold;
+  background-color: #f1f5f9;
 }
 
 .bulletin-classic-bottom-table {
