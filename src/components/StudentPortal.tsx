@@ -4,6 +4,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useTranslation } from 'react-i18next';
 import { applyThemeSettings } from '../lib/theme';
+import { BulletinPreview } from './BulletinPreview';
 import './PortalLayout.css';
 
 export default function StudentPortal({ student, onLogout }: { student: any; onLogout: () => void }) {
@@ -19,9 +20,11 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
 
   const [activeTab, setActiveTab] = useState<'children' | 'grades' | 'schedule' | 'scolarite'>(isParent ? 'children' : 'grades');
   const [selectedPeriod, setSelectedPeriod] = useState<string>('Trimestre 1');
+  const [bulletinViewType, setBulletinViewType] = useState<'official' | 'detail'>('official');
   const [schedules, setSchedules] = useState<any[]>([]);
   const [evaluations, setEvaluations] = useState<any[]>([]);
   const [grades, setGrades] = useState<any[]>([]);
+  const [classSubjects, setClassSubjects] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [parentChildren, setParentChildren] = useState<any[]>(defaultChildren);
@@ -107,6 +110,12 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
     // Settings (for PDF header)
     const { data: set } = await supabase.from('school_settings').select('*').eq('school_id', targetStudent.school_id).single();
     if (set) setSettings(set);
+
+    // Class Subjects Coefficients
+    if (targetStudent.class_id) {
+      const { data: cs } = await supabase.from('class_subjects').select('*').eq('class_id', targetStudent.class_id);
+      if (cs) setClassSubjects(cs);
+    }
   };
 
   const generatePDF = (period: string, mode: 'download' | 'print' | 'preview' = 'download') => {
@@ -431,20 +440,46 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
               </div>
             )}
 
-            {/* Row 2: Trimestre Selection Pill Tabs */}
-            <div className="pill-tabs-row">
-              {['Trimestre 1', 'Trimestre 2', 'Trimestre 3'].map((period) => {
-                const isActive = selectedPeriod === period;
-                return (
-                  <button
-                    key={period}
-                    className={`pill-tab-btn ${isActive ? 'active' : 'inactive'}`}
-                    onClick={() => setSelectedPeriod(period)}
-                  >
-                    {period}
-                  </button>
-                );
-              })}
+            {/* Row 2: Trimestre Selection Pill Tabs & View Toggle */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', margin: '15px 0' }}>
+              <div className="pill-tabs-row" style={{ margin: 0 }}>
+                {['Trimestre 1', 'Trimestre 2', 'Trimestre 3'].map((period) => {
+                  const isActive = selectedPeriod === period;
+                  return (
+                    <button
+                      key={period}
+                      className={`pill-tab-btn ${isActive ? 'active' : 'inactive'}`}
+                      onClick={() => setSelectedPeriod(period)}
+                    >
+                      {period}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <button
+                  className={`pill-tab-btn ${bulletinViewType === 'official' ? 'active' : 'inactive'}`}
+                  onClick={() => setBulletinViewType('official')}
+                  style={{ fontSize: '0.85rem' }}
+                >
+                  📋 Bulletin Officiel
+                </button>
+                <button
+                  className={`pill-tab-btn ${bulletinViewType === 'detail' ? 'active' : 'inactive'}`}
+                  onClick={() => setBulletinViewType('detail')}
+                  style={{ fontSize: '0.85rem' }}
+                >
+                  📝 Détail des devoirs
+                </button>
+                <button
+                  className="print-pill-btn"
+                  onClick={() => window.print()}
+                  style={{ padding: '8px 16px', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  🖨️ Imprimer / PDF
+                </button>
+              </div>
             </div>
 
             {/* Content Area */}
@@ -452,15 +487,26 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
               <div className="empty-bulletin-card">
                 Aucune note enregistrée pour ce trimestre.
               </div>
+            ) : bulletinViewType === 'official' ? (
+              <div style={{ marginTop: '16px', overflowX: 'auto' }}>
+                <BulletinPreview
+                  classData={selectedStudent?.classes || { name: '6ème A' }}
+                  students={[selectedStudent]}
+                  evaluations={evaluations}
+                  grades={grades}
+                  period={selectedPeriod}
+                  schoolInfo={settings}
+                  classSubjects={classSubjects}
+                  schedules={schedules}
+                  targetStudentId={selectedStudent?.id}
+                />
+              </div>
             ) : (
               <div className="panel" style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', marginTop: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                   <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>
                     Détail des notes ({selectedPeriod})
                   </h3>
-                  <button className="print-pill-btn" onClick={() => generatePDF(selectedPeriod, 'download')}>
-                    📄 Télécharger le Bulletin PDF
-                  </button>
                 </div>
                 <div className="table-responsive">
                   <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
