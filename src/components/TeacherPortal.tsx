@@ -835,9 +835,22 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
       {previewClassId && (
         <div className="modal-overlay" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999}}>
           <div className="modal-content" style={{maxWidth: '1600px', width: '98%', height: '90vh', padding: '20px', background: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
-            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px'}}>
-              <h3 style={{margin: 0}}>Aperçu des Bulletins</h3>
-              <button className="close-btn" style={{background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem'}} onClick={() => setPreviewClassId(null)}>✕</button>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px'}}>
+              <h3 style={{margin: 0}}>Aperçu des Bulletins ({previewPeriod})</h3>
+              <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+                <button 
+                  className="btn btn-primary"
+                  style={{padding: '6px 14px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px'}}
+                  onClick={() => {
+                    document.body.classList.add('print-bulletin');
+                    window.print();
+                    setTimeout(() => document.body.classList.remove('print-bulletin'), 500);
+                  }}
+                >
+                  🖨️ Imprimer {previewStudentId ? 'ce Bulletin' : 'toute la Classe (1 clic)'}
+                </button>
+                <button className="close-btn" style={{background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem'}} onClick={() => setPreviewClassId(null)}>✕</button>
+              </div>
             </div>
             <div style={{flex: 1, overflowY: 'auto'}}>
               <BulletinPreview 

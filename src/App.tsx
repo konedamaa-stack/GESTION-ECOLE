@@ -6248,8 +6248,8 @@ function App() {
 
                 return (
                   <div style={{width: '100%'}}>
-                    <div className="print-controls" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
-                      <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
+                    <div className="print-controls" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px'}}>
+                      <div style={{display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap'}}>
                         <div className="form-group" style={{marginBottom: 0}}>
                           <label>Période</label>
                           <select className="form-select" value={bulletinPeriod} onChange={(e) => loadBulletinData(bulletinClassId!, e.target.value)}>
@@ -6260,8 +6260,18 @@ function App() {
                             <option value="2ème Semestre">2ème Semestre</option>
                           </select>
                         </div>
+
+                        <div className="form-group" style={{marginBottom: 0}}>
+                          <label>Élève affiché</label>
+                          <select className="form-select" value={bulletinTargetStudentId || ''} onChange={(e) => setBulletinTargetStudentId(e.target.value || null)}>
+                            <option value="">Tous les élèves ({classStudents.length} - Classe complète)</option>
+                            {classStudents.map(s => (
+                              <option key={s.id} value={s.id}>{s.first_name} {s.last_name} ({s.matricule || 'Sans Mat'})</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
-                      <div style={{display: 'flex', gap: '12px'}}>
+                      <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
                         <button className="btn btn-outline" style={{borderColor: '#d4af37', color: '#d4af37', display: 'flex', alignItems: 'center', gap: '8px'}} onClick={() => setShowHonorRollPanel(!showHonorRollPanel)}>
                           🏆 {showHonorRollPanel ? 'Masquer' : 'Afficher'} Tableau d'Honneur
                         </button>
@@ -6269,7 +6279,9 @@ function App() {
                           document.body.classList.add('print-bulletin');
                           window.print();
                           setTimeout(() => document.body.classList.remove('print-bulletin'), 500);
-                        }}><Icons.Download /> Imprimer / PDF Bulletins</button>
+                        }}>
+                          <Icons.Download /> Imprimer {bulletinTargetStudentId ? 'ce Bulletin' : `les ${classStudents.length} Bulletins (1 clic)`}
+                        </button>
                       </div>
                     </div>
 
