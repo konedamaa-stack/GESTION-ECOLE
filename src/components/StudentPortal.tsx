@@ -20,7 +20,6 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
 
   const [activeTab, setActiveTab] = useState<'children' | 'grades' | 'schedule' | 'scolarite'>(isParent ? 'children' : 'grades');
   const [selectedPeriod, setSelectedPeriod] = useState<string>('Trimestre 1');
-  const [bulletinViewType, setBulletinViewType] = useState<'official' | 'detail'>('official');
   const [schedules, setSchedules] = useState<any[]>([]);
   const [evaluations, setEvaluations] = useState<any[]>([]);
   const [grades, setGrades] = useState<any[]>([]);
@@ -440,7 +439,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
               </div>
             )}
 
-            {/* Row 2: Trimestre Selection Pill Tabs & View Toggle */}
+            {/* Row 2: Trimestre Selection Pill Tabs & Print Button */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', margin: '15px 0' }}>
               <div className="pill-tabs-row" style={{ margin: 0 }}>
                 {['Trimestre 1', 'Trimestre 2', 'Trimestre 3'].map((period) => {
@@ -457,21 +456,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
                 })}
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <button
-                  className={`pill-tab-btn ${bulletinViewType === 'official' ? 'active' : 'inactive'}`}
-                  onClick={() => setBulletinViewType('official')}
-                  style={{ fontSize: '0.85rem' }}
-                >
-                  📋 Bulletin Officiel
-                </button>
-                <button
-                  className={`pill-tab-btn ${bulletinViewType === 'detail' ? 'active' : 'inactive'}`}
-                  onClick={() => setBulletinViewType('detail')}
-                  style={{ fontSize: '0.85rem' }}
-                >
-                  📝 Détail des devoirs
-                </button>
+              <div>
                 <button
                   className="print-pill-btn"
                   onClick={() => window.print()}
@@ -487,7 +472,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
               <div className="empty-bulletin-card">
                 Aucune note enregistrée pour ce trimestre.
               </div>
-            ) : bulletinViewType === 'official' ? (
+            ) : (
               <div style={{ marginTop: '16px', overflowX: 'auto' }}>
                 <BulletinPreview
                   classData={selectedStudent?.classes || { name: '6ème A' }}
@@ -500,46 +485,6 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
                   schedules={schedules}
                   targetStudentId={selectedStudent?.id}
                 />
-              </div>
-            ) : (
-              <div className="panel" style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', marginTop: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>
-                    Détail des notes ({selectedPeriod})
-                  </h3>
-                </div>
-                <div className="table-responsive">
-                  <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
-                        <th style={{ padding: '12px' }}>{t('student.date', 'Date')}</th>
-                        <th style={{ padding: '12px' }}>{t('student.subject', 'Matière')}</th>
-                        <th style={{ padding: '12px' }}>{t('student.evaluation', 'Évaluation')}</th>
-                        <th style={{ padding: '12px' }}>{t('student.score', 'Note')}</th>
-                        <th style={{ padding: '12px' }}>{t('student.appreciation', 'Appréciation')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {periodGrades.map(g => {
-                        const ev = evaluations.find(e => e.id === g.evaluation_id);
-                        if (!ev) return null;
-                        return (
-                          <tr key={g.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '12px', color: '#64748b' }}>{new Date(ev.date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR')}</td>
-                            <td style={{ padding: '12px', fontWeight: 700, color: '#1e293b' }}>{ev.subject}</td>
-                            <td style={{ padding: '12px' }}>{ev.name}</td>
-                            <td style={{ padding: '12px' }}>
-                              <span className="badge" style={{ background: '#ebf5ff', color: '#2563eb', padding: '4px 10px', borderRadius: '10px', fontWeight: 600 }}>
-                                {g.score !== null ? `${formatNum(g.score)} / ${formatNum(ev.max_score)}` : t('student.absent', 'Absent')}
-                              </span>
-                            </td>
-                            <td style={{ padding: '12px', color: '#475569' }}>{g.comment}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
               </div>
             )}
           </div>
