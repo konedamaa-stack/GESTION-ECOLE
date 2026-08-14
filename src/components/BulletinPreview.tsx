@@ -243,7 +243,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
 
         const renderGroup = (title: string, group: string[]) => {
           if (group.length === 0) return null;
-          const { tMoy, tCoef } = calculateGroupTotal(group);
+          const { tMoy } = calculateGroupTotal(group);
           return (
             <React.Fragment key={title}>
               {group.map(renderSubjectRow)}
