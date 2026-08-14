@@ -38,9 +38,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSuperA
             <button onClick={onLoginClick} className="lp-btn lp-btn-primary" style={{ padding: '0.5rem 1rem' }}>
               Espace Privé
             </button>
-            <button onClick={onSuperAdminClick} className="lp-btn" style={{ padding: '0.5rem 1rem', background: '#1e293b', color: '#f8fafc', border: '1px solid #334155', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
-              👑 Super Admin
-            </button>
           </div>
         </div>
       </header>

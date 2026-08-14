@@ -4882,7 +4882,7 @@ function App() {
   }
 
     if (currentView === 'landing' && !detectedSubdomain && !session && !studentSession && !teacherSession && !employeeSession) {
-    return <LandingPage onLoginClick={() => setCurrentView('app')} onSuperAdminClick={() => { setIsSuperAdminFlow(true); setCurrentView('app'); }} />;
+    return <LandingPage onLoginClick={() => setCurrentView('app')} onSuperAdminClick={() => { setShowSuperAdmin(true); localStorage.setItem('sges_super_admin_mode', 'true'); }} />;
   }
 
   if (!session && !studentSession && !teacherSession && !employeeSession) {
