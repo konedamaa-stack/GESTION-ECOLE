@@ -4893,7 +4893,8 @@ function App() {
       onStudentLogin={(s) => setStudentSession(s)} 
       onTeacherLogin={(t) => setTeacherSession(t)} 
       onEmployeeLogin={(emp) => setEmployeeSession(emp)}
-      onBack={() => setCurrentView('landing')} 
+      onBack={() => setCurrentView('landing')}
+      schoolId={subdomainSchool?.id || currentSchoolId}
     />;
   }
 

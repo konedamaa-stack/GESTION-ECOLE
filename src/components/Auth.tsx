@@ -13,7 +13,7 @@ const ROLES_CONFIG: { role: AuthRole; label: string; icon: string; color: string
   { role: 'Parent', label: 'Parent d\'élève', icon: '👨‍👩‍👧‍👦', color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.15)', glow: 'rgba(59, 130, 246, 0.4)', desc: 'Suivi Enfant' },
 ];
 
-export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, onBack }: { onStudentLogin?: (student: any) => void, onTeacherLogin?: (teacher: any) => void, onEmployeeLogin?: (employee: any) => void, onBack?: () => void }) {
+export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, onBack, schoolId }: { onStudentLogin?: (student: any) => void, onTeacherLogin?: (teacher: any) => void, onEmployeeLogin?: (employee: any) => void, onBack?: () => void, schoolId?: string | null }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<AuthMode>('login');
   const [selectedRole, setSelectedRole] = useState<AuthRole>('Director');
@@ -91,11 +91,14 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
     try {
       if (mode === 'student_login') {
         const identifier = email.trim();
-        const { data: students, error } = await supabase
+        let studentQuery = supabase
           .from('students')
           .select('*, schools(name)')
           .eq('matricule', identifier.toUpperCase())
           .eq('password', password);
+        if (schoolId) studentQuery = studentQuery.eq('school_id', schoolId);
+        
+        const { data: students, error } = await studentQuery;
         
         if (error) throw error;
         if (!students || students.length === 0) {
@@ -112,11 +115,14 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
         }
       } else if (mode === 'teacher_login') {
         const identifier = email.trim();
-        const { data: teachers, error } = await supabase
+        let teacherQuery = supabase
           .from('teachers')
           .select('*, schools(name)')
           .or(`email.eq.${identifier},matricule.eq.${identifier.toUpperCase()}`)
           .eq('password', password);
+        if (schoolId) teacherQuery = teacherQuery.eq('school_id', schoolId);
+        
+        const { data: teachers, error } = await teacherQuery;
         
         if (error) throw error;
         if (!teachers || teachers.length === 0) {
@@ -191,11 +197,14 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
         }
       } else if (mode === 'parent_login') {
         const identifier = email.trim();
-        const { data: parents, error } = await supabase
+        let parentQuery = supabase
           .from('parents')
           .select('*')
           .or(`email.ilike.${identifier},phone.eq.${identifier},phone.ilike.%${identifier}%,first_name.ilike.${identifier},last_name.ilike.${identifier}`)
           .eq('password', password);
+        if (schoolId) parentQuery = parentQuery.eq('school_id', schoolId);
+        
+        const { data: parents, error } = await parentQuery;
         
         if (error) throw error;
         if (!parents || parents.length === 0) {
@@ -239,9 +248,15 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
 
         // Try direct Employee login for all collaborator roles (Director, Secretary, Accountant, Supervisor)
         if (['Director', 'Secretary', 'Accountant', 'Supervisor'].includes(selectedRole)) {
+          // SECURITY: require school_id (from subdomain) to restrict login to current school only
+          if (!schoolId) {
+            throw new Error("Connexion impossible : vous devez accéder via l'URL de votre établissement.");
+          }
+
           const { data: employees, error: empError } = await supabase
             .from('employees')
             .select('*, schools(name)')
+            .eq('school_id', schoolId)
             .or(`email.ilike.${identifier},phone.eq.${identifier},first_name.ilike.${identifier},last_name.ilike.${identifier}`)
             .eq('password', password);
 
