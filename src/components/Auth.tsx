@@ -452,7 +452,14 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
           <span className="auth-header-logo-badge">S</span>
           <span style={{ color: '#3b82f6', fontWeight: 800 }}>GESTION ETABLISSEMENT SCOLAIRE</span>
         </a>
-        <div className="auth-header-nav">
+        <div className="auth-header-nav" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button 
+            type="button" 
+            onClick={() => { window.location.href = window.location.pathname + '?admin=true'; }} 
+            style={{ padding: '6px 12px', background: '#1e293b', color: '#f8fafc', border: '1px solid #334155', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
+          >
+            👑 Super Admin
+          </button>
           {onBack && (
             <a href="#" className="auth-header-link" onClick={(e) => { e.preventDefault(); onBack(); }}>Accueil</a>
           )}
