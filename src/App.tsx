@@ -62,6 +62,14 @@ const Icons = {
   Trash2: ({ size = 20 }: { size?: number }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
 };
 
+// Generates an 8-digit + 1-letter student matricule (e.g. 84920153K)
+const generateStudentMatricule = (): string => {
+  const digits = Math.floor(10000000 + Math.random() * 90000000).toString();
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const letter = letters.charAt(Math.floor(Math.random() * letters.length));
+  return `${digits}${letter}`;
+};
+
 function App() {
   const [currentView, setCurrentView] = useState<'landing' | 'app'>('landing');
   const { t, i18n } = useTranslation();
@@ -1483,7 +1491,9 @@ function App() {
             gender: formData.get('gender') || 'Masculin',
             location: formData.get('location')
           };
-          if (formData.get('matricule')) studentUpdate.matricule = formData.get('matricule');
+          if (formData.get('matricule') && (formData.get('matricule') as string).trim()) {
+            studentUpdate.matricule = (formData.get('matricule') as string).trim().toUpperCase();
+          }
           if (formData.get('password')) studentUpdate.password = formData.get('password');
           const { error } = await supabase.from('students').update(studentUpdate).eq('id', editEntity.id);
           if (error) throw error;
@@ -1492,7 +1502,8 @@ function App() {
           closeModal();
           return;
         }
-        const matricule = formData.get('matricule') || 'ELV' + new Date().getFullYear() + Math.floor(Math.random() * 10000);
+        const rawMatricule = formData.get('matricule') ? (formData.get('matricule') as string).trim().toUpperCase() : '';
+        const matricule = rawMatricule || generateStudentMatricule();
         const password = formData.get('password') || 'passer123';
         const student = {
           first_name: formData.get('first_name'),
@@ -5602,7 +5613,7 @@ function App() {
                   <div className="form-grid">
                     <div className="form-group">
                       <label>Matricule (optionnel)</label>
-                      <input type="text" name="matricule" className="form-input" placeholder="Généré auto si vide" defaultValue={editEntity?.matricule || ""} />
+                      <input type="text" name="matricule" className="form-input" placeholder="Ex: 84920153K (8 chiffres + 1 lettre si vide)" defaultValue={editEntity?.matricule || ""} />
                     </div>
                     <div className="form-group">
                       <label>{t('admin.modals.birth_date', 'Date de Naissance')}</label>
@@ -5772,7 +5783,7 @@ function App() {
                           }
                         }
 
-                        const matricule = (idxMatricule !== -1 && cols[idxMatricule]) ? cols[idxMatricule] : `STU-${Date.now().toString().slice(-4)}${i}${Math.floor(Math.random()*10000)}`;
+                        const matricule = (idxMatricule !== -1 && cols[idxMatricule] && cols[idxMatricule].trim()) ? cols[idxMatricule].trim().toUpperCase() : generateStudentMatricule();
                         const parentNom = (idxParentNom !== -1 && cols[idxParentNom]) ? cols[idxParentNom] : null;
                         const parentPrenom = (idxParentPrenom !== -1 && cols[idxParentPrenom]) ? cols[idxParentPrenom] : null;
                         const parentPhone = (idxParentPhone !== -1 && cols[idxParentPhone]) ? cols[idxParentPhone] : null;
