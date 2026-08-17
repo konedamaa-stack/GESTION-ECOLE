@@ -192,9 +192,9 @@ export function SaaSDashboard({ session, onSwitchToSchool }: SaaSDashboardProps)
                   </button>
                   <button 
                     onClick={() => onSwitchToSchool(school.id)}
-                    style={{ padding: '8px 12px', background: '#3B82F6', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}
+                    style={{ padding: '8px 14px', background: '#2563EB', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
                   >
-                    Ouvrir
+                    🚀 Accéder
                   </button>
                 </div>
               </div>

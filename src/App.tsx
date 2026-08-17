@@ -452,11 +452,56 @@ function App() {
     }
   }, [session, isSuperAdminFlow]);
 
+  const handleSuperAdminSwitchToSchool = async (schoolId: string) => {
+    try {
+      let targetSchool = adminSchools?.find((s: any) => s.id === schoolId);
+      if (!targetSchool) {
+        const { data } = await supabase.from('schools').select('*').eq('id', schoolId).single();
+        if (data) {
+          targetSchool = data;
+          setAdminSchools((prev: any[]) => [...prev, data]);
+        }
+      }
+
+      if (targetSchool) {
+        let plan = targetSchool?.subscription_plan || 'Standard';
+        let endDate = targetSchool?.subscription_end_date || null;
+        if (plan === 'Pro' && endDate && new Date(endDate) < new Date()) {
+          plan = 'Standard';
+        }
+        setCurrentSchoolPlan(plan);
+      }
+
+      setCurrentSchoolId(schoolId);
+      setCurrentAdminRole('Director');
+
+      const superAdminSession = {
+        id: 'super-admin-' + schoolId,
+        first_name: 'Super',
+        last_name: 'Admin',
+        login: 'Super Admin',
+        role: 'Director',
+        school_id: schoolId,
+        is_super_admin: true
+      };
+      setEmployeeSession(superAdminSession);
+      localStorage.setItem('sges_employee', JSON.stringify(superAdminSession));
+      localStorage.setItem('sges_is_super_admin_impersonating', 'true');
+      localStorage.removeItem('sges_super_admin_mode');
+      setShowSuperAdmin(false);
+      setCurrentView('app');
+    } catch (e) {
+      console.error('Error switching to school:', e);
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setEmployeeSession(null);
     localStorage.removeItem('sges_employee');
     localStorage.removeItem('sges_login_role');
+    localStorage.removeItem('sges_is_super_admin_impersonating');
+    localStorage.removeItem('sges_super_admin_mode');
   };
 
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
@@ -4951,7 +4996,16 @@ function App() {
   }
 
   if (showSuperAdmin) {
-    return <SuperAdminPortal session={session} onExit={() => { setShowSuperAdmin(false); localStorage.removeItem('sges_super_admin_mode'); }} onSwitchToSchool={(id) => { setCurrentSchoolId(id); setShowSuperAdmin(false); localStorage.removeItem('sges_super_admin_mode'); }} />;
+    return <SuperAdminPortal 
+      session={session} 
+      onExit={() => { 
+        setShowSuperAdmin(false); 
+        localStorage.removeItem('sges_super_admin_mode'); 
+      }} 
+      onSwitchToSchool={(id) => { 
+        handleSuperAdminSwitchToSchool(id); 
+      }} 
+    />;
   }
 
   return (
@@ -5032,6 +5086,21 @@ function App() {
               </li>
             </>
           )}
+          {localStorage.getItem('sges_is_super_admin_impersonating') === 'true' && (
+            <li 
+              className="nav-item" 
+              onClick={() => {
+                localStorage.removeItem('sges_employee');
+                localStorage.removeItem('sges_is_super_admin_impersonating');
+                setEmployeeSession(null);
+                localStorage.setItem('sges_super_admin_mode', 'true');
+                setShowSuperAdmin(true);
+              }}
+              style={{ background: 'rgba(139, 92, 246, 0.15)', color: '#8B5CF6', fontWeight: 600, cursor: 'pointer' }}
+            >
+              <span>👑</span> Retour Portail SaaS
+            </li>
+          )}
           <li className="nav-item" onClick={handleLogout} style={{color: 'var(--danger-color, #ef4444)', marginTop: 'auto'}}>
             <Icons.LogOut /> {t('admin.header.logout', 'Se déconnecter')}
           </li>
@@ -5066,6 +5135,35 @@ function App() {
           
           
           <div className="header-actions">
+            {localStorage.getItem('sges_is_super_admin_impersonating') === 'true' && (
+              <button 
+                className="btn" 
+                onClick={() => {
+                  localStorage.removeItem('sges_employee');
+                  localStorage.removeItem('sges_is_super_admin_impersonating');
+                  setEmployeeSession(null);
+                  localStorage.setItem('sges_super_admin_mode', 'true');
+                  setShowSuperAdmin(true);
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '8px 14px',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 2px 8px rgba(139, 92, 246, 0.3)',
+                  cursor: 'pointer'
+                }}
+                title="Revenir au tableau de bord Super Admin SaaS"
+              >
+                👑 Retour Portail SaaS
+              </button>
+            )}
             <button className="btn btn-outline" style={{padding: '4px 8px'}} onClick={toggleLanguage}>
               {i18n.language.startsWith('ar') ? 'Français' : 'العربية'}
             </button>
