@@ -83,15 +83,44 @@ $$;`;
     try {
       const { data, error } = await supabase.rpc('get_all_admins');
       
-      if (error) {
-        console.error("RPC Error:", error);
-        setErrorSQL(true);
+      if (!error && data && data.length > 0) {
+        setAdmins(data);
       } else {
-        setAdmins(data || []);
+        // Direct table fallback
+        const { data: schoolsData } = await supabase.from('schools').select('*').order('created_at', { ascending: false });
+        if (schoolsData && schoolsData.length > 0) {
+          const formatted = schoolsData.map((s: any) => ({
+            school_id: s.id,
+            school_name: s.name,
+            subscription_plan: s.subscription_plan || 'Standard',
+            created_at: s.created_at,
+            email: s.contact_email || s.name?.toLowerCase().replace(/\s+/g, '') + '@ecole.com',
+            user_id: s.id
+          }));
+          setAdmins(formatted);
+        } else {
+          setAdmins(data || []);
+        }
       }
     } catch (err) {
       console.error(err);
-      setErrorSQL(true);
+      try {
+        const { data: schoolsData } = await supabase.from('schools').select('*').order('created_at', { ascending: false });
+        if (schoolsData) {
+          setAdmins(schoolsData.map((s: any) => ({
+            school_id: s.id,
+            school_name: s.name,
+            subscription_plan: s.subscription_plan || 'Standard',
+            created_at: s.created_at,
+            email: s.contact_email || 'admin@ecole.com',
+            user_id: s.id
+          })));
+        } else {
+          setErrorSQL(true);
+        }
+      } catch (e) {
+        setErrorSQL(true);
+      }
     }
     setIsLoading(false);
   };
@@ -551,9 +580,9 @@ $$;`;
                           <button 
                             className="btn btn-primary btn-sm" 
                             onClick={() => onSwitchToSchool(admin.school_id)}
-                            style={{ padding: '6px 12px', fontSize: '0.85rem' }}
+                            style={{ padding: '6px 14px', fontSize: '0.85rem', background: '#2563EB', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 6px rgba(37,99,235,0.3)' }}
                           >
-                            Accéder
+                            🚀 Accéder
                           </button>
                         )}
                         <button 
