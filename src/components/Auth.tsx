@@ -49,6 +49,12 @@ export default function Auth({
       supabase.from('schools').select('*').eq('id', schoolId).single().then(({ data }) => {
         if (data) setCurrentSchool(data);
       });
+    } else {
+      supabase.from('schools').select('*').limit(1).then(({ data }) => {
+        if (data && data.length > 0) {
+          setCurrentSchool(data[0]);
+        }
+      });
     }
   }, [schoolId, schoolInfo]);
 
@@ -750,6 +756,40 @@ export default function Auth({
         {/* Right Form Panel */}
         <div className="auth-split-right">
           <div className="auth-split-form-header">
+            {currentSchool?.name && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                background: 'rgba(37, 99, 235, 0.08)',
+                border: '1px solid rgba(37, 99, 235, 0.2)',
+                padding: '6px 16px',
+                borderRadius: '24px',
+                marginBottom: '14px',
+                maxWidth: '100%'
+              }}>
+                {currentSchool.logo_url ? (
+                  <img 
+                    src={currentSchool.logo_url} 
+                    alt="Logo" 
+                    style={{ width: '22px', height: '22px', borderRadius: '6px', objectFit: 'cover' }} 
+                  />
+                ) : (
+                  <span style={{ fontSize: '1rem' }}>🏫</span>
+                )}
+                <span style={{ 
+                  color: '#1e40af', 
+                  fontWeight: 800, 
+                  fontSize: '0.92rem',
+                  letterSpacing: '0.02em',
+                  textTransform: 'uppercase',
+                  textAlign: 'center'
+                }}>
+                  {currentSchool.name}
+                </span>
+              </div>
+            )}
             <h2 className="auth-split-form-title">Se connecter</h2>
             <p className="auth-split-form-subtitle">
               connexion en tant que {currentRoleCfg.label.toLowerCase()}
