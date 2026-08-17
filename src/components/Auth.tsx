@@ -43,19 +43,21 @@ export default function Auth({
   const [inviteDetails, setInviteDetails] = useState<any>(null);
 
   useEffect(() => {
+    let isMounted = true;
     if (schoolInfo) {
       setCurrentSchool(schoolInfo);
     } else if (schoolId) {
       supabase.from('schools').select('*').eq('id', schoolId).single().then(({ data }) => {
-        if (data) setCurrentSchool(data);
-      });
-    } else {
-      supabase.from('schools').select('*').limit(1).then(({ data }) => {
-        if (data && data.length > 0) {
-          setCurrentSchool(data[0]);
+        if (isMounted && data) {
+          setCurrentSchool(data);
         }
       });
+    } else {
+      setCurrentSchool(null);
     }
+    return () => {
+      isMounted = false;
+    };
   }, [schoolId, schoolInfo]);
 
   // Security: Rate limiting (3 failed attempts -> 2 minutes lockout)

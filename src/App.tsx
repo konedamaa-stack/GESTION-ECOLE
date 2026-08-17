@@ -4961,6 +4961,24 @@ function App() {
     );
   }
 
+  if (detectedSubdomain && !subdomainSchool && !subdomainNotFound) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#f8fafc',
+        fontFamily: 'Inter, sans-serif'
+      }}>
+        <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🏫</div>
+        <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1e293b' }}>Chargement de votre établissement...</div>
+        <div style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '6px' }}>{detectedSubdomain}.solutionecoles.com</div>
+      </div>
+    );
+  }
+
   if (recoveryMode) {
     return <PasswordRecovery onComplete={() => {
       setRecoveryMode(false);
