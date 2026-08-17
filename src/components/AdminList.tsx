@@ -40,6 +40,7 @@ returns table (
   email varchar,
   school_id uuid,
   school_name varchar,
+  subdomain varchar,
   subscription_plan varchar,
   created_at timestamptz
 )
@@ -47,15 +48,24 @@ security definer
 language sql
 as $$
   select 
-    u.id as user_id,
-    u.email::varchar,
+    coalesce(sa.user_id, s.id) as user_id,
+    coalesce(u.email::varchar, emp.email::varchar, 'direction@' || coalesce(s.subdomain, 'ecole') || '.com')::varchar as email,
     s.id as school_id,
     s.name::varchar as school_name,
+    s.subdomain::varchar as subdomain,
     s.subscription_plan::varchar as subscription_plan,
-    u.created_at
-  from auth.users u
-  left join public.school_admins sa on sa.user_id = u.id
-  left join public.schools s on s.id = sa.school_id;
+    s.created_at
+  from public.schools s
+  left join public.school_admins sa on sa.school_id = s.id
+  left join auth.users u on u.id = sa.user_id
+  left join lateral (
+    select email 
+    from public.employees e 
+    where e.school_id = s.id and (e.role = 'Director' or e.role = 'Directeur')
+    order by e.created_at asc 
+    limit 1
+  ) emp on true
+  order by s.created_at desc;
 $$;
 
 create or replace function public.delete_admin_account(target_user_id uuid)
