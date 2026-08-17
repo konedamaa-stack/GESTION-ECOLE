@@ -141,6 +141,13 @@ function App() {
           setSubdomainSchool(data);
           setCurrentSchoolId(data.id);
 
+          let plan = data.subscription_plan || 'Standard';
+          let endDate = data.subscription_end_date || null;
+          if (plan === 'Pro' && endDate && new Date(endDate) < new Date()) {
+            plan = 'Standard';
+          }
+          setCurrentSchoolPlan(plan);
+
           // Purge any stored local session that belongs to a different school
           try {
             const storedEmp = localStorage.getItem('sges_employee');
@@ -879,6 +886,17 @@ function App() {
 
   useEffect(() => {
     if (currentSchoolId) {
+      supabase.from('schools').select('*').eq('id', currentSchoolId).single().then(({ data }) => {
+        if (data) {
+          let plan = data.subscription_plan || 'Standard';
+          let endDate = data.subscription_end_date || null;
+          if (plan === 'Pro' && endDate && new Date(endDate) < new Date()) {
+            plan = 'Standard';
+          }
+          setCurrentSchoolPlan(plan);
+        }
+      });
+
       fetchStudents();
       fetchClasses();
       fetchTeachers();
@@ -889,7 +907,7 @@ function App() {
       fetchSchedules();
       fetchEvaluations();
       fetchSettings();
-    fetchExpenses();
+      fetchExpenses();
       fetchLoans();
       fetchTeacherPayments();
       fetchEmployeePayments();
