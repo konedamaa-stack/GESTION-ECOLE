@@ -27,6 +27,50 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
   const [pendingMode, setPendingMode] = useState<AuthMode | null>(null);
   const [inviteDetails, setInviteDetails] = useState<any>(null);
 
+  // Security: Rate limiting (3 failed attempts -> 2 minutes lockout)
+  const MAX_ATTEMPTS = 3;
+  const LOCKOUT_DURATION_MS = 2 * 60 * 1000; // 2 minutes
+
+  const [failedAttempts, setFailedAttempts] = useState<number>(() => {
+    return parseInt(localStorage.getItem('sges_auth_failed_attempts') || '0', 10);
+  });
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(() => {
+    const stored = localStorage.getItem('sges_auth_lockout_until');
+    if (stored) {
+      const time = parseInt(stored, 10);
+      if (time > Date.now()) return time;
+    }
+    return null;
+  });
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(0);
+
+  useEffect(() => {
+    if (!lockoutUntil) {
+      setRemainingSeconds(0);
+      return;
+    }
+    const updateCountdown = () => {
+      const diff = Math.max(0, Math.ceil((lockoutUntil - Date.now()) / 1000));
+      setRemainingSeconds(diff);
+      if (diff <= 0) {
+        setLockoutUntil(null);
+        setFailedAttempts(0);
+        localStorage.removeItem('sges_auth_lockout_until');
+        localStorage.removeItem('sges_auth_failed_attempts');
+        setError(null);
+      }
+    };
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [lockoutUntil]);
+
+  const formatRemainingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
   useEffect(() => {
     const checkInvite = async () => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -84,6 +128,13 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (lockoutUntil && Date.now() < lockoutUntil) {
+      const diff = Math.max(0, Math.ceil((lockoutUntil - Date.now()) / 1000));
+      setError(`⚠️ Accès temporairement bloqué suite à 3 tentatives erronées. Veuillez patienter encore ${formatRemainingTime(diff)}.`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setMessage(null);
@@ -114,6 +165,13 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
           }
           throw new Error(t('auth.invalid_credentials', "Matricule ou mot de passe incorrect."));
         }
+
+        // Reset failed attempts on success
+        localStorage.removeItem('sges_auth_failed_attempts');
+        localStorage.removeItem('sges_auth_lockout_until');
+        setFailedAttempts(0);
+        setLockoutUntil(null);
+
         if (students.length > 1) {
           setPendingProfiles(students);
           setPendingMode(mode);
@@ -148,6 +206,13 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
           }
           throw new Error(t('auth.invalid_credentials', "Identifiant ou mot de passe incorrect."));
         }
+
+        // Reset failed attempts on success
+        localStorage.removeItem('sges_auth_failed_attempts');
+        localStorage.removeItem('sges_auth_lockout_until');
+        setFailedAttempts(0);
+        setLockoutUntil(null);
+
         if (teachers.length > 1) {
           setPendingProfiles(teachers);
           setPendingMode(mode);
@@ -254,9 +319,6 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
           throw new Error("Aucun élève n'est associé à ce compte parent.");
         }
         
-        localStorage.setItem('sges_is_parent', 'true');
-        localStorage.setItem('sges_parent_data', JSON.stringify(parents[0]));
-        
         // Filter children by school if on school subdomain
         let children = spRelations.map((sp: any) => sp.students).filter(Boolean);
         if (schoolId) {
@@ -265,6 +327,16 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
             throw new Error("Aucun élève inscrit dans cet établissement n'est lié à ce parent.");
           }
         }
+
+        // Reset failed attempts on success
+        localStorage.removeItem('sges_auth_failed_attempts');
+        localStorage.removeItem('sges_auth_lockout_until');
+        setFailedAttempts(0);
+        setLockoutUntil(null);
+
+        localStorage.setItem('sges_is_parent', 'true');
+        localStorage.setItem('sges_parent_data', JSON.stringify(parents[0]));
+        
         if (children.length > 1) {
           setPendingProfiles(children);
           setPendingMode('student_login');
@@ -289,6 +361,9 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
             } catch (e) {
               // Fallback if supabase user password differs
             }
+            // Reset failed attempts on success
+            localStorage.removeItem('sges_auth_failed_attempts');
+            localStorage.removeItem('sges_auth_lockout_until');
             localStorage.setItem('sges_super_admin_mode', 'true');
             window.location.reload();
             return;
@@ -301,6 +376,9 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
           if (authErr) {
             throw new Error('Mot de passe incorrect pour le compte Super Admin.');
           }
+          // Reset failed attempts on success
+          localStorage.removeItem('sges_auth_failed_attempts');
+          localStorage.removeItem('sges_auth_lockout_until');
           localStorage.setItem('sges_super_admin_mode', 'true');
           window.location.reload();
           return;
@@ -323,6 +401,13 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
           if (!empError && employees && employees.length > 0) {
             const userRole = employees[0].role || 'Director';
             localStorage.setItem('sges_login_role', userRole);
+
+            // Reset failed attempts on success
+            localStorage.removeItem('sges_auth_failed_attempts');
+            localStorage.removeItem('sges_auth_lockout_until');
+            setFailedAttempts(0);
+            setLockoutUntil(null);
+
             if (onEmployeeLogin) {
               onEmployeeLogin(employees[0]);
             }
@@ -389,6 +474,12 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
           }
         }
         
+        // Reset failed attempts on success
+        localStorage.removeItem('sges_auth_failed_attempts');
+        localStorage.removeItem('sges_auth_lockout_until');
+        setFailedAttempts(0);
+        setLockoutUntil(null);
+
         // Save the chosen role to localStorage so App.tsx can use it
         localStorage.setItem('sges_login_role', selectedRole);
       } else if (mode === 'forgot_password') {
@@ -399,7 +490,23 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
         setMessage(t('auth.reset_link_sent', 'Un lien de réinitialisation a été envoyé à votre adresse email.'));
       }
     } catch (err: any) {
-      setError(err.message || t('auth.generic_error', 'Une erreur est survenue.'));
+      if (mode === 'login' || mode === 'student_login' || mode === 'teacher_login' || mode === 'parent_login') {
+        const nextAttempts = failedAttempts + 1;
+        setFailedAttempts(nextAttempts);
+        localStorage.setItem('sges_auth_failed_attempts', nextAttempts.toString());
+
+        if (nextAttempts >= MAX_ATTEMPTS) {
+          const lockUntil = Date.now() + LOCKOUT_DURATION_MS;
+          setLockoutUntil(lockUntil);
+          localStorage.setItem('sges_auth_lockout_until', lockUntil.toString());
+          setError(`⛔ 3 tentatives incorrectes consécutives. Par mesure de sécurité, l'accès est bloqué pendant 2 minutes. Veuillez patienter 2:00.`);
+        } else {
+          const remaining = MAX_ATTEMPTS - nextAttempts;
+          setError(`${err.message || t('auth.generic_error', 'Une erreur est survenue.')} (${remaining} tentative${remaining > 1 ? 's' : ''} restante${remaining > 1 ? 's' : ''} avant blocage de 2 min)`);
+        }
+      } else {
+        setError(err.message || t('auth.generic_error', 'Une erreur est survenue.'));
+      }
     } finally {
       setLoading(false);
     }
@@ -621,7 +728,29 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
 
           {renderContent()}
 
-          {error && <div className="auth-error">{error}</div>}
+          {remainingSeconds > 0 && (
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1.5px solid #EF4444',
+              borderRadius: '12px',
+              padding: '14px 16px',
+              marginBottom: '18px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              color: '#991B1B'
+            }}>
+              <span style={{ fontSize: '1.8rem' }}>⏳</span>
+              <div>
+                <div style={{ fontWeight: 700, color: '#DC2626', fontSize: '0.95rem' }}>Accès temporairement suspendu (3 échecs)</div>
+                <div style={{ fontSize: '0.85rem', marginTop: '2px', color: '#4B5563' }}>
+                  Par mesure de sécurité, vous pourrez réessayer dans : <strong style={{ color: '#DC2626', fontSize: '1.05rem', marginLeft: '4px' }}>{formatRemainingTime(remainingSeconds)}</strong>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {error && remainingSeconds === 0 && <div className="auth-error">{error}</div>}
           {message && <div className="auth-success">{message}</div>}
 
           <form onSubmit={handleAuth} className="auth-form">
@@ -636,6 +765,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="ex: 0707070707 ou parent@gmail.com"
+                      disabled={remainingSeconds > 0}
                       required
                     />
                   </div>
@@ -648,6 +778,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="ex: MAT-2024-001"
+                      disabled={remainingSeconds > 0}
                       required
                     />
                   </div>
@@ -660,6 +791,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="ex: prof_maths ou prof@ecole.com"
+                      disabled={remainingSeconds > 0}
                       required
                     />
                   </div>
@@ -672,7 +804,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="ex: KONE ou admin@gmail.com"
-                      disabled={mode === 'accept_invite'}
+                      disabled={mode === 'accept_invite' || remainingSeconds > 0}
                       style={mode === 'accept_invite' ? { background: '#e2e8f0', cursor: 'not-allowed' } : {}}
                       required
                     />
@@ -688,6 +820,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
+                      disabled={remainingSeconds > 0}
                       required
                     />
                     <button 
@@ -712,14 +845,20 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@ecole.com"
+                  disabled={remainingSeconds > 0}
                   required
                 />
               </div>
             )}
 
             <div className="auth-split-actions">
-              <button type="submit" className="auth-pill-primary-btn" disabled={loading}>
-                {loading ? 'Chargement...' : 'connexion'}
+              <button 
+                type="submit" 
+                className="auth-pill-primary-btn" 
+                disabled={loading || remainingSeconds > 0}
+                style={remainingSeconds > 0 ? { background: '#9CA3AF', cursor: 'not-allowed', opacity: 0.7 } : {}}
+              >
+                {remainingSeconds > 0 ? `Bloqué (${formatRemainingTime(remainingSeconds)})` : (loading ? 'Chargement...' : 'connexion')}
               </button>
               {onBack && (
                 <button type="button" className="auth-retour-link" onClick={onBack}>

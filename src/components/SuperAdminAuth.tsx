@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 export function SuperAdminAuth({ onBack }: { onBack: () => void }) {
@@ -9,8 +9,59 @@ export function SuperAdminAuth({ onBack }: { onBack: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  // Security: Rate limiting (3 failed attempts -> 2 minutes lockout)
+  const MAX_ATTEMPTS = 3;
+  const LOCKOUT_DURATION_MS = 2 * 60 * 1000; // 2 minutes
+
+  const [failedAttempts, setFailedAttempts] = useState<number>(() => {
+    return parseInt(localStorage.getItem('sges_superadmin_failed_attempts') || '0', 10);
+  });
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(() => {
+    const stored = localStorage.getItem('sges_superadmin_lockout_until');
+    if (stored) {
+      const time = parseInt(stored, 10);
+      if (time > Date.now()) return time;
+    }
+    return null;
+  });
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(0);
+
+  useEffect(() => {
+    if (!lockoutUntil) {
+      setRemainingSeconds(0);
+      return;
+    }
+    const updateCountdown = () => {
+      const diff = Math.max(0, Math.ceil((lockoutUntil - Date.now()) / 1000));
+      setRemainingSeconds(diff);
+      if (diff <= 0) {
+        setLockoutUntil(null);
+        setFailedAttempts(0);
+        localStorage.removeItem('sges_superadmin_lockout_until');
+        localStorage.removeItem('sges_superadmin_failed_attempts');
+        setError(null);
+      }
+    };
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [lockoutUntil]);
+
+  const formatRemainingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (lockoutUntil && Date.now() < lockoutUntil) {
+      const diff = Math.max(0, Math.ceil((lockoutUntil - Date.now()) / 1000));
+      setError(`⚠️ Accès temporairement suspendu suite à 3 tentatives erronées. Veuillez patienter encore ${formatRemainingTime(diff)}.`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -26,6 +77,8 @@ export function SuperAdminAuth({ onBack }: { onBack: () => void }) {
         } catch (e) {
           // Fallback if supabase auth is separate
         }
+        localStorage.removeItem('sges_superadmin_failed_attempts');
+        localStorage.removeItem('sges_superadmin_lockout_until');
         localStorage.setItem('sges_super_admin_mode', 'true');
         window.location.reload();
         return;
@@ -39,12 +92,26 @@ export function SuperAdminAuth({ onBack }: { onBack: () => void }) {
       if (error) throw error;
 
       if (data?.session) {
+        localStorage.removeItem('sges_superadmin_failed_attempts');
+        localStorage.removeItem('sges_superadmin_lockout_until');
         localStorage.setItem('sges_super_admin_mode', 'true');
         window.location.reload();
         return;
       }
     } catch (err: any) {
-      setError(err.message || 'Identifiants incorrects.');
+      const nextAttempts = failedAttempts + 1;
+      setFailedAttempts(nextAttempts);
+      localStorage.setItem('sges_superadmin_failed_attempts', nextAttempts.toString());
+
+      if (nextAttempts >= MAX_ATTEMPTS) {
+        const lockUntil = Date.now() + LOCKOUT_DURATION_MS;
+        setLockoutUntil(lockUntil);
+        localStorage.setItem('sges_superadmin_lockout_until', lockUntil.toString());
+        setError(`⛔ 3 tentatives incorrectes consécutives. Par mesure de sécurité, l'accès est bloqué pendant 2 minutes. Veuillez patienter 2:00.`);
+      } else {
+        const remaining = MAX_ATTEMPTS - nextAttempts;
+        setError(`${err.message || 'Identifiants incorrects.'} (${remaining} tentative${remaining > 1 ? 's' : ''} restante${remaining > 1 ? 's' : ''} avant blocage de 2 min)`);
+      }
     } finally {
       setLoading(false);
     }
@@ -136,7 +203,29 @@ export function SuperAdminAuth({ onBack }: { onBack: () => void }) {
           </p>
         </div>
 
-        {error && (
+        {remainingSeconds > 0 && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.15)',
+            border: '1.5px solid #EF4444',
+            borderRadius: '12px',
+            padding: '14px 16px',
+            marginBottom: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            color: '#FCA5A5'
+          }}>
+            <span style={{ fontSize: '1.8rem' }}>⏳</span>
+            <div>
+              <div style={{ fontWeight: 700, color: '#EF4444', fontSize: '0.95rem' }}>Accès suspendu (3 échecs)</div>
+              <div style={{ fontSize: '0.85rem', marginTop: '2px', color: '#CBD5E1' }}>
+                Par sécurité, réessayez dans : <strong style={{ color: '#F87171', fontSize: '1.05rem', marginLeft: '4px' }}>{formatRemainingTime(remainingSeconds)}</strong>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {error && remainingSeconds === 0 && (
           <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#FCA5A5', padding: '12px', borderRadius: '8px', marginBottom: '24px', fontSize: '0.9rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
             {error}
           </div>
@@ -158,6 +247,7 @@ export function SuperAdminAuth({ onBack }: { onBack: () => void }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="konedamaa@gmail.com"
+              disabled={remainingSeconds > 0}
               required
               style={{
                 width: '100%',
@@ -184,6 +274,7 @@ export function SuperAdminAuth({ onBack }: { onBack: () => void }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
+                disabled={remainingSeconds > 0}
                 required
                 style={{
                   width: '100%',
@@ -203,22 +294,22 @@ export function SuperAdminAuth({ onBack }: { onBack: () => void }) {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || remainingSeconds > 0}
             style={{
               width: '100%',
               padding: '14px',
-              background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+              background: remainingSeconds > 0 ? '#475569' : 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
               color: 'white',
               border: 'none',
               borderRadius: '12px',
               fontSize: '1rem',
               fontWeight: 600,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.7 : 1,
+              cursor: (loading || remainingSeconds > 0) ? 'not-allowed' : 'pointer',
+              opacity: (loading || remainingSeconds > 0) ? 0.7 : 1,
               transition: 'transform 0.1s, opacity 0.2s'
             }}
           >
-            {loading ? 'En cours...' : (authMode === 'login' ? 'Accéder au Portail SaaS' : 'Réinitialiser mon mot de passe')}
+            {remainingSeconds > 0 ? `Bloqué (${formatRemainingTime(remainingSeconds)})` : (loading ? 'En cours...' : (authMode === 'login' ? 'Accéder au Portail SaaS' : 'Réinitialiser mon mot de passe'))}
           </button>
 
 
