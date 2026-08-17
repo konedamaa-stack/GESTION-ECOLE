@@ -13,8 +13,23 @@ const ROLES_CONFIG: { role: AuthRole; label: string; icon: string; color: string
   { role: 'Parent', label: 'Parent d\'élève', icon: '👨‍👩‍👧‍👦', color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.15)', glow: 'rgba(59, 130, 246, 0.4)', desc: 'Suivi Enfant' },
 ];
 
-export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, onBack, schoolId }: { onStudentLogin?: (student: any) => void, onTeacherLogin?: (teacher: any) => void, onEmployeeLogin?: (employee: any) => void, onBack?: () => void, schoolId?: string | null }) {
+export default function Auth({ 
+  onStudentLogin, 
+  onTeacherLogin, 
+  onEmployeeLogin, 
+  onBack, 
+  schoolId,
+  schoolInfo 
+}: { 
+  onStudentLogin?: (student: any) => void, 
+  onTeacherLogin?: (teacher: any) => void, 
+  onEmployeeLogin?: (employee: any) => void, 
+  onBack?: () => void, 
+  schoolId?: string | null,
+  schoolInfo?: any 
+}) {
   const { t } = useTranslation();
+  const [currentSchool, setCurrentSchool] = useState<any>(schoolInfo || null);
   const [mode, setMode] = useState<AuthMode>('login');
   const [selectedRole, setSelectedRole] = useState<AuthRole>('Director');
   const [email, setEmail] = useState('');
@@ -26,6 +41,16 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
   const [pendingProfiles, setPendingProfiles] = useState<any[] | null>(null);
   const [pendingMode, setPendingMode] = useState<AuthMode | null>(null);
   const [inviteDetails, setInviteDetails] = useState<any>(null);
+
+  useEffect(() => {
+    if (schoolInfo) {
+      setCurrentSchool(schoolInfo);
+    } else if (schoolId) {
+      supabase.from('schools').select('*').eq('id', schoolId).single().then(({ data }) => {
+        if (data) setCurrentSchool(data);
+      });
+    }
+  }, [schoolId, schoolInfo]);
 
   // Security: Rate limiting (3 failed attempts -> 2 minutes lockout)
   const MAX_ATTEMPTS = 3;
@@ -658,11 +683,23 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
       {/* Top Header Bar Matching Landing Page */}
       <header className="auth-top-header">
         <a href="#" className="auth-header-logo" onClick={(e) => { e.preventDefault(); if (onBack) onBack(); }}>
-          <span className="auth-header-logo-badge">S</span>
-          <span style={{ color: '#3b82f6', fontWeight: 800 }}>GESTION ETABLISSEMENT SCOLAIRE</span>
+          {currentSchool?.logo_url ? (
+            <img 
+              src={currentSchool.logo_url} 
+              alt="Logo" 
+              style={{ width: '38px', height: '38px', borderRadius: '10px', objectFit: 'cover', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} 
+            />
+          ) : (
+            <span className="auth-header-logo-badge">
+              {(currentSchool?.name || 'S').charAt(0).toUpperCase()}
+            </span>
+          )}
+          <span style={{ color: '#2563eb', fontWeight: 800, fontSize: '1.15rem', letterSpacing: '0.01em', textTransform: 'uppercase' }}>
+            {currentSchool?.name || 'GESTION ETABLISSEMENT SCOLAIRE'}
+          </span>
         </a>
         <div className="auth-header-nav">
-          {onBack && (
+          {onBack && !currentSchool && (
             <a href="#" className="auth-header-link" onClick={(e) => { e.preventDefault(); onBack(); }}>Accueil</a>
           )}
           {onBack && (
@@ -676,6 +713,24 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
         {/* Left Blue Wave Panel */}
         <div className="auth-split-left">
           <div>
+            {currentSchool?.name && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'rgba(255, 255, 255, 0.22)',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                marginBottom: '16px',
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                color: 'white',
+                backdropFilter: 'blur(8px)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+              }}>
+                🏫 {currentSchool.name}
+              </div>
+            )}
             <h2 className="auth-split-welcome-title">{welcomeInfo.title}</h2>
             <p className="auth-split-welcome-desc">{welcomeInfo.desc}</p>
           </div>

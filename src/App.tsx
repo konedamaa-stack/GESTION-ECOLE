@@ -4938,6 +4938,7 @@ function App() {
       onEmployeeLogin={(emp) => setEmployeeSession(emp)}
       onBack={() => setCurrentView('landing')}
       schoolId={subdomainSchool?.id || currentSchoolId}
+      schoolInfo={subdomainSchool || adminSchools?.find((s: any) => s.id === currentSchoolId)}
     />;
   }
 
