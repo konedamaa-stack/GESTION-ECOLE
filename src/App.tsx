@@ -225,6 +225,7 @@ function App() {
   const [financeClassFilter, setFinanceClassFilter] = useState('all');
   const [selectedClassForSchedule, setSelectedClassForSchedule] = useState<string>('');
   
+  const [employeeSearchQuery, setEmployeeSearchQuery] = useState('');
   const [activeDossierTab, setActiveDossierTab] = useState<'infos' | 'documents' | 'finances'>('infos');
   const [studentDocumentsData, setStudentDocumentsData] = useState<any[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -1538,6 +1539,19 @@ function App() {
     }
   };
 
+  const handleDeleteEmployee = async (id: string, name: string) => {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer l'employé "${name}" ?`)) return;
+    try {
+      const { error } = await supabase.from('employees').delete().eq('id', id).eq('school_id', currentSchoolId);
+      if (error) throw error;
+      alert("Employé supprimé avec succès !");
+      fetchEmployees();
+    } catch (err: any) {
+      console.error('Error deleting employee:', err);
+      alert('Erreur: ' + err.message);
+    }
+  };
+
   const handleFormSubmit = async (e: any) => {
     e.preventDefault();
     const submitBtn = e.nativeEvent?.submitter;
@@ -1785,12 +1799,14 @@ function App() {
             last_name: formData.get('last_name'),
             role: formData.get('role'),
             phone: formData.get('phone'),
-            email: formData.get('email')
+            email: formData.get('email'),
+            status: formData.get('status') || 'Actif',
+            hire_date: formData.get('hire_date') || null
           };
           if (formData.get('password')) employeeUpdate.password = formData.get('password');
           const { error } = await supabase.from('employees').update(employeeUpdate).eq('id', editEntity.id).eq('school_id', currentSchoolId);
           if (error) throw error;
-          alert("Employé mis à jour avec succès !");
+          alert("Coordonnées de l'employé mises à jour avec succès !");
         } else {
           const employee = {
             first_name: formData.get('first_name'),
@@ -1798,6 +1814,8 @@ function App() {
             role: formData.get('role'),
             phone: formData.get('phone'),
             email: formData.get('email'),
+            status: formData.get('status') || 'Actif',
+            hire_date: formData.get('hire_date') || null,
             password: formData.get('password') || 'passer123'
           };
           const { error } = await supabase.from('employees').insert([{...employee, school_id: currentSchoolId}]);
@@ -1805,6 +1823,8 @@ function App() {
           alert("L'employé a été ajouté avec succès !");
         }
         fetchEmployees();
+        closeModal();
+        return;
       }
       else if (activeModal === 'absence') {
         const absence = {
@@ -3401,27 +3421,107 @@ function App() {
 
       <div className="panel delay-300">
         <div className="panel-header">
-          <h3 className="panel-title">{t('admin.rh.panel_title', 'Personnel Administratif')}</h3>
-          <div className="header-search" style={{width: 250}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+            <h3 className="panel-title" style={{margin: 0}}>{t('admin.rh.panel_title', 'Personnel Administratif')}</h3>
+            <span style={{
+              backgroundColor: 'rgba(59, 130, 246, 0.12)',
+              color: 'var(--primary-color)',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              fontSize: '0.95rem',
+              fontWeight: 700
+            }}>
+              {employeesData.length} {employeesData.length > 1 ? 'employés' : 'employé'}
+            </span>
+          </div>
+          <div className="header-search" style={{width: 280}}>
             <Icons.Search />
-            <input type="text" placeholder={t('admin.rh.search_ph', 'Rechercher...')} />
+            <input 
+              type="text" 
+              placeholder="Rechercher par nom, rôle ou tél..." 
+              value={employeeSearchQuery}
+              onChange={(e) => setEmployeeSearchQuery(e.target.value)}
+            />
           </div>
         </div>
-        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px', marginTop: '20px'}}>
-          {employeesData.length > 0 ? employeesData.map((staff, i) => (
-            <div key={i} style={{border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', background: 'var(--surface-color-hover)'}}>
-              <div className="avatar" style={{width: 64, height: 64, fontSize: '1.5rem', marginBottom: 12}}>{staff.first_name.charAt(0)}{staff.last_name.charAt(0)}</div>
-              <h4 style={{marginBottom: 4}}>{staff.first_name} {staff.last_name}</h4>
-              <span style={{fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 12}}>{staff.role}</span>
-              <span className={`badge ${staff.status === 'Actif' ? 'badge-success' : 'badge-warning'}`} style={{marginBottom: 12}}>{staff.status}</span>
-              <div style={{display: 'flex', gap: '8px'}}>
-                <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => { setEditEntity(staff); setActiveModal('employee'); }}>✏️</button>
-                <button className="btn btn-primary" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => { setEditEntity(staff); setActiveModal('employee_payment'); }}>💵 Payer</button>
+        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px', marginTop: '20px'}}>
+          {(() => {
+            const filteredEmployees = (employeesData || []).filter((emp: any) => {
+              if (!employeeSearchQuery.trim()) return true;
+              const q = employeeSearchQuery.toLowerCase();
+              return (
+                (emp.first_name || '').toLowerCase().includes(q) ||
+                (emp.last_name || '').toLowerCase().includes(q) ||
+                (emp.role || '').toLowerCase().includes(q) ||
+                (emp.phone || '').toLowerCase().includes(q) ||
+                (emp.email || '').toLowerCase().includes(q)
+              );
+            });
+
+            return filteredEmployees.length > 0 ? filteredEmployees.map((staff, i) => (
+              <div key={staff.id || i} style={{border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', background: 'var(--surface-color-hover)', boxShadow: '0 2px 4px rgba(0,0,0,0.03)'}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px'}}>
+                  <div className="avatar" style={{width: 52, height: 52, fontSize: '1.3rem', flexShrink: 0}}>{(staff.first_name || 'E').charAt(0)}{(staff.last_name || '').charAt(0)}</div>
+                  <div>
+                    <h4 style={{margin: 0, fontSize: '1.05rem', fontWeight: 700}}>{staff.first_name} {staff.last_name}</h4>
+                    <span style={{fontSize: '0.85rem', color: 'var(--primary-color)', fontWeight: 600}}>{staff.role || 'Personnel'}</span>
+                  </div>
+                  <span className={`badge ${staff.status === 'Actif' ? 'badge-success' : 'badge-warning'}`} style={{marginLeft: 'auto', fontSize: '0.75rem'}}>
+                    {staff.status || 'Actif'}
+                  </span>
+                </div>
+
+                {/* Coordonnées & Détails */}
+                <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)', background: 'white', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '6px'}}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                    <span>📞</span>
+                    <span style={{fontWeight: 600, color: 'var(--text-primary)'}}>{staff.phone || 'Aucun numéro'}</span>
+                  </div>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                    <span>✉️</span>
+                    <span style={{color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{staff.email || 'Aucun email'}</span>
+                  </div>
+                  {staff.hire_date && (
+                    <div style={{display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: '#64748b'}}>
+                      <span>📅 Embauche :</span>
+                      <span>{new Date(staff.hire_date).toLocaleDateString('fr-FR')}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div style={{display: 'flex', gap: '8px', marginTop: 'auto', paddingTop: '8px', borderTop: '1px solid var(--border-color)'}}>
+                  <button 
+                    className="btn btn-outline" 
+                    style={{padding: '6px 12px', fontSize: '0.82rem', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'}} 
+                    onClick={() => { setEditEntity(staff); setActiveModal('employee'); }}
+                    title="Modifier les coordonnées et informations de cet employé"
+                  >
+                    ✏️ Modifier
+                  </button>
+                  <button 
+                    className="btn btn-primary" 
+                    style={{padding: '6px 12px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '4px'}} 
+                    onClick={() => { setEditEntity(staff); setActiveModal('employee_payment'); }}
+                  >
+                    💵 Payer
+                  </button>
+                  <button 
+                    className="btn btn-outline" 
+                    style={{padding: '6px 8px', fontSize: '0.82rem', color: '#ef4444', borderColor: '#fca5a5'}} 
+                    onClick={() => handleDeleteEmployee(staff.id, `${staff.first_name} ${staff.last_name}`)}
+                    title="Supprimer cet employé"
+                  >
+                    🗑️
+                  </button>
+                </div>
               </div>
-            </div>
-          )) : (
-            <div style={{gridColumn: '1 / -1', textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.rh.empty_state', 'Aucun employé trouvé. Cliquez sur Ajouter.')}</div>
-          )}
+            )) : (
+              <div style={{gridColumn: '1 / -1', textAlign: 'center', padding: '32px 0', color: 'var(--text-secondary)'}}>
+                {employeeSearchQuery ? `Aucun employé ne correspond à "${employeeSearchQuery}".` : t('admin.rh.empty_state', 'Aucun employé trouvé. Cliquez sur Ajouter.')}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>
@@ -5467,8 +5567,8 @@ function App() {
                 {activeModal === 'absence' && t('admin.modals.absence', "Signaler une Absence")}
                 {activeModal === 'student' && (editEntity ? "Modifier l'Élève" : t('admin.modals.student', "Nouvelle Inscription"))}
                 {activeModal === 'reinscription' && "Réinscription de l'élève"}
-                {activeModal === 'teacher' && t('admin.modals.teacher', "Ajouter un Enseignant")}
-                {activeModal === 'employee' && t('admin.modals.employee', "Ajouter un Employé")}
+                {activeModal === 'teacher' && (editEntity ? "Modifier l'Enseignant" : t('admin.modals.teacher', "Ajouter un Enseignant"))}
+                {activeModal === 'employee' && (editEntity ? `Modifier les coordonnées (${editEntity.first_name} ${editEntity.last_name})` : t('admin.modals.employee', "Ajouter un Employé"))}
                 {activeModal === 'parent' && t('admin.modals.parent', "Ajouter un Parent")}
                 {activeModal === 'parent_children' && (editEntity ? `Gestion des enfants (${editEntity.first_name} ${editEntity.last_name})` : "Gestion des enfants")}
                 {activeModal === 'parent_invoices' && "Factures du Parent"}
@@ -6473,16 +6573,40 @@ function App() {
                     </div>
                   )}
                   {activeModal === 'employee' && (
-                    <div className="form-group">
-                      <label>{t('admin.modals.role', 'Poste / Rôle')}</label>
-                      <select name="role" className="form-select" required defaultValue={editEntity?.role || "Secretary"}>
-                        <option value="Secretary">Secrétaire</option>
-                        <option value="Accountant">Comptable</option>
-                        <option value="Supervisor">Superviseur</option>
-                        <option value="Administratif">Administratif</option>
-                        <option value="Autre">Autre</option>
-                      </select>
-                    </div>
+                    <>
+                      <div className="form-grid">
+                        <div className="form-group">
+                          <label>{t('admin.modals.role', 'Poste / Rôle')}</label>
+                          <select name="role" className="form-select" required defaultValue={editEntity?.role || "Secretary"}>
+                            <option value="Director">Directeur / Direction</option>
+                            <option value="Secretary">Secrétaire</option>
+                            <option value="Accountant">Comptable</option>
+                            <option value="Supervisor">Superviseur</option>
+                            <option value="Éducateur">Éducateur</option>
+                            <option value="Administratif">Administratif</option>
+                            <option value="Surveillant">Surveillant</option>
+                            <option value="Autre">Autre</option>
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label>Statut</label>
+                          <select name="status" className="form-select" defaultValue={editEntity?.status || "Actif"}>
+                            <option value="Actif">Actif</option>
+                            <option value="En congé">En congé</option>
+                            <option value="Inactif">Inactif</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label>Date d'embauche</label>
+                        <input 
+                          type="date" 
+                          name="hire_date" 
+                          className="form-input" 
+                          defaultValue={editEntity?.hire_date ? editEntity.hire_date.split('T')[0] : ''} 
+                        />
+                      </div>
+                    </>
                   )}
                   
                   {activeModal === 'parent' && (
