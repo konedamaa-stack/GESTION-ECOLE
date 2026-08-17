@@ -261,6 +261,131 @@ function App() {
 
 
   
+  const [prelistSelection, setPrelistSelection] = useState<{ [key: string]: boolean }>({});
+  const [prelistDefaultFee, setPrelistDefaultFee] = useState<number>(0);
+  const [prelistDefaultFeeAffecte, setPrelistDefaultFeeAffecte] = useState<number>(0);
+  const [prelistActivePack, setPrelistActivePack] = useState<'primaire' | 'college' | 'lycee' | 'maternelle' | 'arabe'>('primaire');
+  const [isBatchCreating, setIsBatchCreating] = useState(false);
+
+  const CLASS_PRELIST_PACKS: { [key: string]: { id: string; label: string; level: string; description: string; classes: { name: string; level: string }[] } } = {
+    primaire: {
+      id: 'primaire',
+      label: '🎒 Pack Primaire (6 Classes)',
+      level: 'Primaire',
+      description: 'CP1, CP2, CE1, CE2, CM1, CM2',
+      classes: [
+        { name: 'CP1', level: 'Primaire' },
+        { name: 'CP2', level: 'Primaire' },
+        { name: 'CE1', level: 'Primaire' },
+        { name: 'CE2', level: 'Primaire' },
+        { name: 'CM1', level: 'Primaire' },
+        { name: 'CM2', level: 'Primaire' }
+      ]
+    },
+    college: {
+      id: 'college',
+      label: '🏫 Pack Collège (4 Classes)',
+      level: 'Collège',
+      description: '6ème, 5ème, 4ème, 3ème',
+      classes: [
+        { name: '6ème', level: 'Collège' },
+        { name: '5ème', level: 'Collège' },
+        { name: '4ème', level: 'Collège' },
+        { name: '3ème', level: 'Collège' }
+      ]
+    },
+    lycee: {
+      id: 'lycee',
+      label: '🎓 Pack Lycée (8 Classes)',
+      level: 'Lycée',
+      description: '2nde A, 2nde C, 1ère A, 1ère D, 1ère C, Tle A, Tle D, Tle C',
+      classes: [
+        { name: '2nde A', level: 'Lycée' },
+        { name: '2nde C', level: 'Lycée' },
+        { name: '1ère A', level: 'Lycée' },
+        { name: '1ère D', level: 'Lycée' },
+        { name: '1ère C', level: 'Lycée' },
+        { name: 'Tle A', level: 'Lycée' },
+        { name: 'Tle D', level: 'Lycée' },
+        { name: 'Tle C', level: 'Lycée' }
+      ]
+    },
+    maternelle: {
+      id: 'maternelle',
+      label: '🧸 Pack Maternelle (3 Classes)',
+      level: 'Maternelle',
+      description: 'Petite Section, Moyenne Section, Grande Section',
+      classes: [
+        { name: 'Petite Section', level: 'Maternelle' },
+        { name: 'Moyenne Section', level: 'Maternelle' },
+        { name: 'Grande Section', level: 'Maternelle' }
+      ]
+    },
+    arabe: {
+      id: 'arabe',
+      label: '🕌 Pack Franco-Arabe / Medersa (7 Niveaux)',
+      level: 'Primaire',
+      description: 'Tahdiri à Sadis (1ère à 6ème Année Arabe)',
+      classes: [
+        { name: 'Préparatoire (التحضيري)', level: 'Primaire' },
+        { name: '1ère Année (الأول)', level: 'Primaire' },
+        { name: '2ème Année (الثاني)', level: 'Primaire' },
+        { name: '3ème Année (الثالث)', level: 'Primaire' },
+        { name: '4ème Année (الرابع)', level: 'Primaire' },
+        { name: '5ème Année (الخامس)', level: 'Primaire' },
+        { name: '6ème Année (السادس)', level: 'Primaire' }
+      ]
+    }
+  };
+
+  const handleBatchCreateClasses = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentSchoolId) {
+      alert("Erreur: aucun établissement sélectionné.");
+      return;
+    }
+
+    const pack = CLASS_PRELIST_PACKS[prelistActivePack];
+    if (!pack) return;
+
+    const classesToCreate = pack.classes.filter(c => prelistSelection[c.name]);
+    if (classesToCreate.length === 0) {
+      alert("Veuillez sélectionner au moins une classe à créer.");
+      return;
+    }
+
+    setIsBatchCreating(true);
+    try {
+      const existingNames = new Set((classesData || []).map((c: any) => c.name?.toLowerCase().trim()));
+      const payload = classesToCreate.map(c => ({
+        school_id: currentSchoolId,
+        name: c.name,
+        level: c.level,
+        tuition_fee: Number(prelistDefaultFee) || 0,
+        tuition_fee_affecte: Number(prelistDefaultFeeAffecte) || 0
+      }));
+
+      const newOnly = payload.filter(p => !existingNames.has(p.name.toLowerCase().trim()));
+      if (newOnly.length === 0) {
+        alert("Toutes les classes sélectionnées existent déjà dans votre établissement.");
+        setIsBatchCreating(false);
+        return;
+      }
+
+      const { error } = await supabase.from('classes').insert(newOnly);
+      if (error) throw error;
+
+      alert(`🎉 ${newOnly.length} classe(s) créée(s) avec succès !`);
+      fetchClasses();
+      closeModal();
+    } catch (err: any) {
+      console.error(err);
+      alert("Erreur lors de la création groupée : " + (err.message || ""));
+    } finally {
+      setIsBatchCreating(false);
+    }
+  };
+
   const handleSaveCoefficients = async (e: any) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -2726,9 +2851,25 @@ function App() {
               {classesData.length} {classesData.length > 1 ? 'classes' : 'classe'}
             </span>
           </div>
-          <button className="btn btn-primary" onClick={() => { setEditEntity(null); setActiveModal('class'); }}>
-            <Icons.Plus /> {t('admin.pedagogy.btn_new_class', 'Nouvelle Classe')}
-          </button>
+          <div style={{display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap'}}>
+            <button 
+              className="btn btn-outline" 
+              style={{borderColor: '#2563eb', color: '#2563eb', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(37, 99, 235, 0.05)'}}
+              onClick={() => {
+                const initial: { [k: string]: boolean } = {};
+                CLASS_PRELIST_PACKS.primaire.classes.forEach(c => { initial[c.name] = true; });
+                setPrelistSelection(initial);
+                setPrelistActivePack('primaire');
+                setActiveModal('preliste_classes');
+              }}
+              title="Générer automatiquement des classes types pré-définies"
+            >
+              ⚡ Pré-liste (Packs de Classes)
+            </button>
+            <button className="btn btn-primary" onClick={() => { setEditEntity(null); setActiveModal('class'); }}>
+              <Icons.Plus /> {t('admin.pedagogy.btn_new_class', 'Nouvelle Classe')}
+            </button>
+          </div>
         </div>
         <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
           <thead>
@@ -5336,6 +5477,7 @@ function App() {
                 {activeModal === 'schedule' && t('admin.modals.course', "Planifier un cours")}
 
                 {activeModal === 'class' && t('admin.modals.class', "Créer une Classe")}
+                {activeModal === 'preliste_classes' && "⚡ Pré-liste : Générateur de Classes Types par Pack"}
                 {activeModal === 'global_grades' && "Saisie Globale des Notes"}
    {activeModal === 'bulletin_preview' && "Aperçu des Bulletins"}
    {activeModal === 'receipt_preview' && "Reçu de Paiement"}
@@ -5464,6 +5606,76 @@ function App() {
               {/* Class Form */}
               {activeModal === 'class' && (
                 <form onSubmit={handleFormSubmit}>
+                  {/* Quick Preset Chips */}
+                  <div style={{ marginBottom: '16px', background: 'var(--surface-color-hover, #f8fafc)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color, #e2e8f0)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--primary-color, #2563eb)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        ⚡ Suggestions de classes rapides (Cliquez pour insérer) :
+                      </span>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          const initial: { [k: string]: boolean } = {};
+                          CLASS_PRELIST_PACKS.primaire.classes.forEach(c => { initial[c.name] = true; });
+                          setPrelistSelection(initial);
+                          setPrelistActivePack('primaire');
+                          setActiveModal('preliste_classes');
+                        }}
+                        style={{ background: 'transparent', border: 'none', color: '#2563eb', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        Générer tout un pack &gt;
+                      </button>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {[
+                        { name: 'CP1', lvl: 'Primaire' },
+                        { name: 'CP2', lvl: 'Primaire' },
+                        { name: 'CE1', lvl: 'Primaire' },
+                        { name: 'CE2', lvl: 'Primaire' },
+                        { name: 'CM1', lvl: 'Primaire' },
+                        { name: 'CM2', lvl: 'Primaire' },
+                        { name: '6ème', lvl: 'Collège' },
+                        { name: '5ème', lvl: 'Collège' },
+                        { name: '4ème', lvl: 'Collège' },
+                        { name: '3ème', lvl: 'Collège' },
+                        { name: '2nde A', lvl: 'Lycée' },
+                        { name: '2nde C', lvl: 'Lycée' },
+                        { name: '1ère D', lvl: 'Lycée' },
+                        { name: 'Tle D', lvl: 'Lycée' },
+                        { name: 'Petite Section', lvl: 'Maternelle' },
+                        { name: 'Moyenne Section', lvl: 'Maternelle' },
+                        { name: 'Grande Section', lvl: 'Maternelle' },
+                        { name: '1ère Année Arabe', lvl: 'Primaire' }
+                      ].map(item => (
+                        <button
+                          key={item.name}
+                          type="button"
+                          style={{
+                            background: 'white',
+                            color: '#1e293b',
+                            border: '1px solid #cbd5e1',
+                            padding: '4px 10px',
+                            borderRadius: '14px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.78rem',
+                            transition: 'all 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2563eb'; e.currentTarget.style.color = '#2563eb'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = '#1e293b'; }}
+                          onClick={() => {
+                            const nameInput = document.querySelector('input[name="name"]') as HTMLInputElement;
+                            const levelSelect = document.querySelector('select[name="level"]') as HTMLSelectElement;
+                            if (nameInput) nameInput.value = item.name;
+                            if (levelSelect) levelSelect.value = item.lvl;
+                          }}
+                        >
+                          + {item.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="form-group">
                     <label>{t('admin.modals.class_name', 'Nom de la classe')}</label>
                     <input type="text" name="name" className="form-input" placeholder="Ex: 6ème A, Terminale S1" required defaultValue={editEntity?.name || ''} />
@@ -5509,6 +5721,169 @@ function App() {
                   <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
                     <button type="submit" className="btn btn-primary">{editEntity ? t('admin.modals.save', 'Sauvegarder') : t('admin.modals.create', 'Créer la classe')}</button>
+                  </div>
+                </form>
+              )}
+
+              {/* Pre-list Batch Classes Modal */}
+              {activeModal === 'preliste_classes' && (
+                <form onSubmit={handleBatchCreateClasses}>
+                  <div style={{ marginBottom: '20px' }}>
+                    <p style={{ color: 'var(--text-secondary, #64748b)', margin: '0 0 16px 0', fontSize: '0.92rem' }}>
+                      Choisissez un pack pré-configuré pour initialiser ou compléter les classes de votre établissement en un seul clic :
+                    </p>
+
+                    {/* Pack Tabs */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px', marginBottom: '20px' }}>
+                      {Object.values(CLASS_PRELIST_PACKS).map(pack => {
+                        const isSelected = prelistActivePack === pack.id;
+                        return (
+                          <button
+                            key={pack.id}
+                            type="button"
+                            onClick={() => {
+                              setPrelistActivePack(pack.id as any);
+                              const newSel: { [k: string]: boolean } = {};
+                              pack.classes.forEach(c => { newSel[c.name] = true; });
+                              setPrelistSelection(newSel);
+                            }}
+                            style={{
+                              padding: '10px 8px',
+                              borderRadius: '8px',
+                              border: isSelected ? '2px solid #2563EB' : '1px solid #e2e8f0',
+                              background: isSelected ? 'rgba(37, 99, 235, 0.08)' : '#ffffff',
+                              color: isSelected ? '#2563EB' : '#334155',
+                              fontWeight: isSelected ? 700 : 500,
+                              cursor: 'pointer',
+                              textAlign: 'center',
+                              fontSize: '0.85rem'
+                            }}
+                          >
+                            {pack.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Active Pack Classes Checklist */}
+                    {(() => {
+                      const pack = CLASS_PRELIST_PACKS[prelistActivePack];
+                      const existingNames = new Set((classesData || []).map((c: any) => c.name?.toLowerCase().trim()));
+                      const selectedCount = pack.classes.filter(c => prelistSelection[c.name]).length;
+
+                      return (
+                        <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '20px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                            <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1e293b' }}>
+                              Classes incluses dans ce pack ({selectedCount}/{pack.classes.length}) :
+                            </span>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const selAll: { [k: string]: boolean } = {};
+                                  pack.classes.forEach(c => { selAll[c.name] = true; });
+                                  setPrelistSelection(selAll);
+                                }}
+                                style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}
+                              >
+                                Tout cocher
+                              </button>
+                              <span style={{ color: '#cbd5e1' }}>|</span>
+                              <button
+                                type="button"
+                                onClick={() => setPrelistSelection({})}
+                                style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}
+                              >
+                                Tout décocher
+                              </button>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
+                            {pack.classes.map(c => {
+                              const alreadyExists = existingNames.has(c.name.toLowerCase().trim());
+                              const isChecked = Boolean(prelistSelection[c.name]);
+
+                              return (
+                                <label
+                                  key={c.name}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    padding: '8px 12px',
+                                    borderRadius: '6px',
+                                    background: alreadyExists ? '#f1f5f9' : isChecked ? 'white' : '#ffffff',
+                                    border: isChecked ? '1.5px solid #2563eb' : '1px solid #e2e8f0',
+                                    cursor: alreadyExists ? 'not-allowed' : 'pointer',
+                                    opacity: alreadyExists ? 0.6 : 1
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    disabled={alreadyExists}
+                                    checked={alreadyExists ? false : isChecked}
+                                    onChange={(e) => {
+                                      setPrelistSelection(prev => ({
+                                        ...prev,
+                                        [c.name]: e.target.checked
+                                      }));
+                                    }}
+                                  />
+                                  <span style={{ fontWeight: 600, fontSize: '0.9rem', color: alreadyExists ? '#94a3b8' : '#1e293b' }}>
+                                    {c.name}
+                                  </span>
+                                  {alreadyExists && (
+                                    <span style={{ fontSize: '0.72rem', background: '#e2e8f0', color: '#64748b', padding: '2px 6px', borderRadius: '4px', marginLeft: 'auto' }}>
+                                      Existe déjà
+                                    </span>
+                                  )}
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Default Tuition Fees */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
+                      <div className="form-group">
+                        <label style={{ fontSize: '0.88rem', fontWeight: 600 }}>Scolarité annuelle par défaut (Non affecté) (F)</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          placeholder="Ex: 500000"
+                          value={prelistDefaultFee || ''}
+                          onChange={(e) => setPrelistDefaultFee(parseInt(e.target.value) || 0)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label style={{ fontSize: '0.88rem', fontWeight: 600 }}>Scolarité annuelle par défaut (Affecté) (F)</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          placeholder="Ex: 12000"
+                          value={prelistDefaultFeeAffecte || ''}
+                          onChange={(e) => setPrelistDefaultFeeAffecte(parseInt(e.target.value) || 0)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>
+                      {t('admin.modals.cancel', 'Annuler')}
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={isBatchCreating}
+                      style={{ background: '#2563EB', display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      {isBatchCreating ? "Création en cours..." : "🚀 Créer les classes sélectionnées"}
+                    </button>
                   </div>
                 </form>
               )}
