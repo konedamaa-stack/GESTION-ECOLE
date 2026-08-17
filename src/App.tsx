@@ -132,6 +132,38 @@ function App() {
         if (data) {
           setSubdomainSchool(data);
           setCurrentSchoolId(data.id);
+
+          // Purge any stored local session that belongs to a different school
+          try {
+            const storedEmp = localStorage.getItem('sges_employee');
+            if (storedEmp) {
+              const parsed = JSON.parse(storedEmp);
+              if (parsed.school_id && parsed.school_id !== data.id) {
+                localStorage.removeItem('sges_employee');
+                setEmployeeSession(null);
+              }
+            }
+            const storedTeach = localStorage.getItem('sges_teacher');
+            if (storedTeach) {
+              const parsed = JSON.parse(storedTeach);
+              if (parsed.school_id && parsed.school_id !== data.id) {
+                localStorage.removeItem('sges_teacher');
+                setTeacherSession(null);
+              }
+            }
+            const storedStu = localStorage.getItem('sges_student');
+            if (storedStu) {
+              const parsed = JSON.parse(storedStu);
+              if (parsed.school_id && parsed.school_id !== data.id) {
+                localStorage.removeItem('sges_student');
+                localStorage.removeItem('sges_is_parent');
+                localStorage.removeItem('sges_parent_data');
+                setStudentSession(null);
+              }
+            }
+          } catch (e) {
+            console.error('Error validating local session with school subdomain:', e);
+          }
         } else {
           setSubdomainNotFound(true);
         }
@@ -827,9 +859,9 @@ function App() {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce collaborateur ?")) return;
     try {
       if (collab.isInvite) {
-        await supabase.from('admin_invitations').delete().eq('id', collab.id);
+        await supabase.from('admin_invitations').delete().eq('id', collab.id).eq('school_id', currentSchoolId);
       } else {
-        await supabase.from('employees').delete().eq('id', collab.id);
+        await supabase.from('employees').delete().eq('id', collab.id).eq('school_id', currentSchoolId);
       }
       loadAdminInvites();
     } catch (err: any) {
@@ -1541,7 +1573,7 @@ function App() {
             email: formData.get('email')
           };
           if (formData.get('password')) teacherUpdate.password = formData.get('password');
-          const { error } = await supabase.from('teachers').update(teacherUpdate).eq('id', editEntity.id);
+          const { error } = await supabase.from('teachers').update(teacherUpdate).eq('id', editEntity.id).eq('school_id', currentSchoolId);
           if (error) throw error;
           alert("Professeur mis à jour !");
           fetchTeachers();
@@ -1575,7 +1607,7 @@ function App() {
             email: formData.get('email')
           };
           if (formData.get('password')) employeeUpdate.password = formData.get('password');
-          const { error } = await supabase.from('employees').update(employeeUpdate).eq('id', editEntity.id);
+          const { error } = await supabase.from('employees').update(employeeUpdate).eq('id', editEntity.id).eq('school_id', currentSchoolId);
           if (error) throw error;
           alert("Employé mis à jour avec succès !");
         } else {
@@ -4881,11 +4913,11 @@ function App() {
     }} />;
   }
 
-    if (currentView === 'landing' && !detectedSubdomain && !session && !studentSession && !teacherSession && !employeeSession) {
-    return <LandingPage onLoginClick={() => setCurrentView('app')} onSuperAdminClick={() => { setShowSuperAdmin(true); localStorage.setItem('sges_super_admin_mode', 'true'); }} />;
+    if (currentView === 'landing' && !detectedSubdomain && !session && !studentSession && !teacherSession && !employeeSession && !showSuperAdmin) {
+    return <LandingPage onLoginClick={() => setCurrentView('app')} onSuperAdminClick={() => { setIsSuperAdminFlow(true); setCurrentView('app'); }} />;
   }
 
-  if (!session && !studentSession && !teacherSession && !employeeSession) {
+  if (!session && !studentSession && !teacherSession && !employeeSession && !showSuperAdmin) {
     if (isSuperAdminFlow) {
       return <SuperAdminAuth onBack={() => { setIsSuperAdminFlow(false); setCurrentView('landing'); }} />;
     }
@@ -5006,7 +5038,7 @@ function App() {
               <Icons.Search />
               <input type="text" placeholder={t('admin.header.search', 'Rechercher...')} />
             </div>
-            {adminSchools && adminSchools.length > 1 && (
+            {adminSchools && adminSchools.length > 1 && !employeeSession && !detectedSubdomain && ['konedamaa@gmail.com'].includes(session?.user?.email || '') && (
               <select 
                 className="form-select hide-on-mobile" 
                 style={{marginLeft: 16, maxWidth: 200, padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: '6px', background: 'var(--surface-color)', color: 'var(--text-color)'}}

@@ -27,13 +27,13 @@ export function SaaSDashboard({ session, onSwitchToSchool }: SaaSDashboardProps)
   const fetchSaaSData = async () => {
     setIsLoading(true);
     try {
-      const isSuperAdmin = session.user.email === 'konedamaa@gmail.com';
+      const isSuperAdmin = session?.user?.email === 'konedamaa@gmail.com' || localStorage.getItem('sges_super_admin_mode') === 'true';
       let userSchools = [];
 
       if (isSuperAdmin) {
         const { data: allSchools } = await supabase.from('schools').select('*');
         userSchools = allSchools || [];
-      } else {
+      } else if (session?.user?.id) {
         const { data: adminLinks } = await supabase
           .from('school_admins')
           .select('school_id, schools(*)')

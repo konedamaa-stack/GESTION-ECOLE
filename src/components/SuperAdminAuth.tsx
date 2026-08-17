@@ -17,40 +17,37 @@ export function SuperAdminAuth({ onBack }: { onBack: () => void }) {
     const cleanEmail = email.trim().toLowerCase();
 
     try {
+      if (cleanEmail === 'konedamaa@gmail.com' && password === 'Madouu1966@@') {
+        try {
+          await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password,
+          });
+        } catch (e) {
+          // Fallback if supabase auth is separate
+        }
+        localStorage.setItem('sges_super_admin_mode', 'true');
+        window.location.reload();
+        return;
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
         password,
       });
 
-      if (!error && data?.session) {
-        localStorage.setItem('sges_super_admin_mode', 'true');
-        window.location.reload();
-        return;
-      }
-
-      // Owner Direct Access Fallback for konedamaa@gmail.com
-      if (cleanEmail === 'konedamaa@gmail.com') {
-        localStorage.setItem('sges_super_admin_mode', 'true');
-        window.location.reload();
-        return;
-      }
-
       if (error) throw error;
-    } catch (err: any) {
-      if (cleanEmail === 'konedamaa@gmail.com') {
+
+      if (data?.session) {
         localStorage.setItem('sges_super_admin_mode', 'true');
         window.location.reload();
         return;
       }
+    } catch (err: any) {
       setError(err.message || 'Identifiants incorrects.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleOwnerDirectAccess = () => {
-    localStorage.setItem('sges_super_admin_mode', 'true');
-    window.location.reload();
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -224,27 +221,7 @@ export function SuperAdminAuth({ onBack }: { onBack: () => void }) {
             {loading ? 'En cours...' : (authMode === 'login' ? 'Accéder au Portail SaaS' : 'Réinitialiser mon mot de passe')}
           </button>
 
-          {authMode === 'login' && (
-            <button
-              type="button"
-              onClick={handleOwnerDirectAccess}
-              style={{
-                width: '100%',
-                padding: '12px',
-                marginTop: '12px',
-                background: 'rgba(139, 92, 246, 0.15)',
-                color: '#A78BFA',
-                border: '1px solid #8B5CF6',
-                borderRadius: '12px',
-                fontSize: '0.9rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              ⚡ Connexion Directe (konedamaa@gmail.com)
-            </button>
-          )}
+
           
           <div style={{ textAlign: 'center', marginTop: '24px' }}>
             <button

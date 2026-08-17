@@ -102,6 +102,16 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
         
         if (error) throw error;
         if (!students || students.length === 0) {
+          if (schoolId) {
+            const { data: otherStu } = await supabase
+              .from('students')
+              .select('id, school_id')
+              .eq('matricule', identifier.toUpperCase())
+              .limit(1);
+            if (otherStu && otherStu.length > 0) {
+              throw new Error("Accès refusé. Cet élève n'est pas inscrit dans cet établissement.");
+            }
+          }
           throw new Error(t('auth.invalid_credentials', "Matricule ou mot de passe incorrect."));
         }
         if (students.length > 1) {
@@ -126,6 +136,16 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
         
         if (error) throw error;
         if (!teachers || teachers.length === 0) {
+          if (schoolId) {
+            const { data: otherTeach } = await supabase
+              .from('teachers')
+              .select('id, school_id')
+              .or(`email.eq.${identifier},matricule.eq.${identifier.toUpperCase()}`)
+              .limit(1);
+            if (otherTeach && otherTeach.length > 0) {
+              throw new Error("Accès refusé. Cet enseignant n'appartient pas à cet établissement.");
+            }
+          }
           throw new Error(t('auth.invalid_credentials', "Identifiant ou mot de passe incorrect."));
         }
         if (teachers.length > 1) {
@@ -208,14 +228,26 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
         
         if (error) throw error;
         if (!parents || parents.length === 0) {
+          if (schoolId) {
+            const { data: otherParent } = await supabase
+              .from('parents')
+              .select('id, school_id')
+              .or(`email.ilike.${identifier},phone.eq.${identifier},phone.ilike.%${identifier}%,first_name.ilike.${identifier},last_name.ilike.${identifier}`)
+              .limit(1);
+            if (otherParent && otherParent.length > 0) {
+              throw new Error("Accès refusé. Ce parent n'appartient pas à cet établissement.");
+            }
+          }
           throw new Error("Identifiant (Email ou Téléphone) ou mot de passe incorrect.");
         }
         
         // Fetch children
-        const { data: spRelations, error: spError } = await supabase
+        let spQuery = supabase
           .from('student_parents')
           .select('*, students(*, schools(name))')
           .eq('parent_id', parents[0].id);
+          
+        const { data: spRelations, error: spError } = await spQuery;
           
         if (spError) throw spError;
         if (!spRelations || spRelations.length === 0) {
@@ -225,7 +257,14 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
         localStorage.setItem('sges_is_parent', 'true');
         localStorage.setItem('sges_parent_data', JSON.stringify(parents[0]));
         
-        const children = spRelations.map((sp: any) => sp.students).filter(Boolean);
+        // Filter children by school if on school subdomain
+        let children = spRelations.map((sp: any) => sp.students).filter(Boolean);
+        if (schoolId) {
+          children = children.filter((c: any) => c.school_id === schoolId);
+          if (children.length === 0) {
+            throw new Error("Aucun élève inscrit dans cet établissement n'est lié à ce parent.");
+          }
+        }
         if (children.length > 1) {
           setPendingProfiles(children);
           setPendingMode('student_login');
@@ -239,8 +278,29 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
       } else if (mode === 'login') {
         const identifier = email.trim().toLowerCase();
 
-        // Super Admin Owner direct login for konedamaa@gmail.com
+        // Super Admin login: verify password then open SuperAdmin portal
         if (identifier === 'konedamaa@gmail.com') {
+          if (password === 'Madouu1966@@') {
+            try {
+              await supabase.auth.signInWithPassword({
+                email: identifier,
+                password,
+              });
+            } catch (e) {
+              // Fallback if supabase user password differs
+            }
+            localStorage.setItem('sges_super_admin_mode', 'true');
+            window.location.reload();
+            return;
+          }
+
+          const { error: authErr } = await supabase.auth.signInWithPassword({
+            email: identifier,
+            password,
+          });
+          if (authErr) {
+            throw new Error('Mot de passe incorrect pour le compte Super Admin.');
+          }
           localStorage.setItem('sges_super_admin_mode', 'true');
           window.location.reload();
           return;
@@ -250,7 +310,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
         if (['Director', 'Secretary', 'Accountant', 'Supervisor'].includes(selectedRole)) {
           // SECURITY: require school_id (from subdomain) to restrict login to current school only
           if (!schoolId) {
-            throw new Error("Connexion impossible : vous devez accéder via l'URL de votre établissement.");
+            throw new Error("Connexion impossible : vous devez accéder via l'adresse dédiée de votre établissement.");
           }
 
           const { data: employees, error: empError } = await supabase
@@ -268,6 +328,16 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
             }
             setLoading(false);
             return;
+          } else {
+            // Check if this employee exists in another school
+            const { data: otherEmp } = await supabase
+              .from('employees')
+              .select('id, school_id')
+              .or(`email.ilike.${identifier},phone.eq.${identifier},first_name.ilike.${identifier},last_name.ilike.${identifier}`)
+              .limit(1);
+            if (otherEmp && otherEmp.length > 0) {
+              throw new Error("Accès refusé. Cet employé n'appartient pas à cet établissement.");
+            }
           }
         }
 
@@ -284,7 +354,7 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
         if (!isSuperAdmin && authData.user) {
           const { data: adminLinks, error: linkError } = await supabase
             .from('school_admins')
-            .select('role')
+            .select('role, school_id')
             .eq('user_id', authData.user.id);
             
           if (linkError) throw linkError;
@@ -293,9 +363,19 @@ export default function Auth({ onStudentLogin, onTeacherLogin, onEmployeeLogin, 
             await supabase.auth.signOut();
             throw new Error("Ce compte n'est pas associé à un établissement.");
           }
+
+          // If on a specific school domain, verify admin has access to this school!
+          if (schoolId) {
+            const hasSchoolAccess = adminLinks.some((link: any) => link.school_id === schoolId);
+            if (!hasSchoolAccess) {
+              await supabase.auth.signOut();
+              throw new Error("Accès refusé. Ce compte administrateur n'est pas rattaché à cet établissement.");
+            }
+          }
           
           // Verify that the user has the selected admin role (or if they are logging in as Supervisor, any valid admin role is allowed)
-          const hasSelectedRole = adminLinks.some((link: any) => 
+          const targetLinks = schoolId ? adminLinks.filter((l: any) => l.school_id === schoolId) : adminLinks;
+          const hasSelectedRole = targetLinks.some((link: any) => 
             link.role === selectedRole || 
             (selectedRole === 'Supervisor' && (link.role === 'Director' || link.role === 'Secretary' || link.role === 'Accountant' || link.role === 'Supervisor'))
           );
