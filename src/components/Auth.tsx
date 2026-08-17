@@ -693,14 +693,14 @@ export default function Auth({
             <img 
               src={currentSchool.logo_url} 
               alt="Logo" 
-              style={{ width: '38px', height: '38px', borderRadius: '10px', objectFit: 'cover', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} 
+              style={{ width: '44px', height: '44px', borderRadius: '10px', objectFit: 'cover', boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }} 
             />
           ) : (
-            <span className="auth-header-logo-badge">
+            <span className="auth-header-logo-badge" style={{ width: '42px', height: '42px', fontSize: '1.25rem' }}>
               {(currentSchool?.name || 'S').charAt(0).toUpperCase()}
             </span>
           )}
-          <span style={{ color: '#2563eb', fontWeight: 800, fontSize: '1.15rem', letterSpacing: '0.01em', textTransform: 'uppercase' }}>
+          <span style={{ color: '#2563eb', fontWeight: 800, fontSize: '1.35rem', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
             {currentSchool?.name || 'GESTION ETABLISSEMENT SCOLAIRE'}
           </span>
         </a>
@@ -723,16 +723,16 @@ export default function Auth({
               <div style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '8px',
-                background: 'rgba(255, 255, 255, 0.22)',
-                padding: '6px 14px',
-                borderRadius: '20px',
-                marginBottom: '16px',
-                fontSize: '0.9rem',
+                gap: '10px',
+                background: 'rgba(255, 255, 255, 0.25)',
+                padding: '8px 18px',
+                borderRadius: '24px',
+                marginBottom: '18px',
+                fontSize: '1.05rem',
                 fontWeight: 700,
                 color: 'white',
-                backdropFilter: 'blur(8px)',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+                backdropFilter: 'blur(10px)',
+                boxShadow: '0 4px 14px rgba(0,0,0,0.1)'
               }}>
                 🏫 {currentSchool.name}
               </div>
@@ -761,27 +761,28 @@ export default function Auth({
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px',
-                background: 'rgba(37, 99, 235, 0.08)',
-                border: '1px solid rgba(37, 99, 235, 0.2)',
-                padding: '6px 16px',
-                borderRadius: '24px',
-                marginBottom: '14px',
+                gap: '10px',
+                background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(59, 130, 246, 0.15) 100%)',
+                border: '1.5px solid rgba(37, 99, 235, 0.25)',
+                padding: '10px 22px',
+                borderRadius: '30px',
+                marginBottom: '16px',
+                boxShadow: '0 2px 10px rgba(37, 99, 235, 0.08)',
                 maxWidth: '100%'
               }}>
                 {currentSchool.logo_url ? (
                   <img 
                     src={currentSchool.logo_url} 
                     alt="Logo" 
-                    style={{ width: '22px', height: '22px', borderRadius: '6px', objectFit: 'cover' }} 
+                    style={{ width: '28px', height: '28px', borderRadius: '8px', objectFit: 'cover' }} 
                   />
                 ) : (
-                  <span style={{ fontSize: '1rem' }}>🏫</span>
+                  <span style={{ fontSize: '1.25rem' }}>🏫</span>
                 )}
                 <span style={{ 
                   color: '#1e40af', 
                   fontWeight: 800, 
-                  fontSize: '0.92rem',
+                  fontSize: '1.18rem',
                   letterSpacing: '0.02em',
                   textTransform: 'uppercase',
                   textAlign: 'center'
