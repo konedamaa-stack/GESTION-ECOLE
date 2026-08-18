@@ -5,6 +5,8 @@ import 'jspdf-autotable';
 import { useTranslation } from 'react-i18next';
 import { applyThemeSettings } from '../lib/theme';
 import { BulletinPreview } from './BulletinPreview';
+import { ReceiptPreview } from './ReceiptPreview';
+import { SmallReceiptPreview } from './SmallReceiptPreview';
 import './PortalLayout.css';
 
 export default function StudentPortal({ student, onLogout }: { student: any; onLogout: () => void }) {
@@ -23,6 +25,8 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
   const [parentChildren, setParentChildren] = useState<any[]>(student ? [student] : []);
   const [selectedStudent, setSelectedStudent] = useState<any>(student || null);
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [receiptModalInvoice, setReceiptModalInvoice] = useState<any>(null);
+  const [receiptModalType, setReceiptModalType] = useState<'a4' | 'ticket' | null>(null);
 
   const formatNum = (num: number | string | undefined) => {
     if (num === undefined || num === null) return '';
@@ -51,7 +55,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
       if (parentData?.id) {
         const { data: links } = await supabase
           .from('student_parents')
-          .select('students(*, classes(name))')
+          .select('students(*, classes(name, tuition_fee, tuition_fee_affecte), student_parents(parents(first_name, last_name)))')
           .eq('parent_id', parentData.id);
         
         if (links && links.length > 0) {
@@ -78,6 +82,14 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
 
   const fetchData = async (targetStudent: any) => {
     if (!targetStudent) return;
+    
+    // Ensure class tuition fees are available
+    if (targetStudent.class_id && (!targetStudent.classes || targetStudent.classes.tuition_fee === undefined)) {
+      const { data: cls } = await supabase.from('classes').select('name, tuition_fee, tuition_fee_affecte').eq('id', targetStudent.class_id).maybeSingle();
+      if (cls) {
+        targetStudent.classes = cls;
+      }
+    }
     
     // Schedules
     if (targetStudent.class_id) {
@@ -487,7 +499,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
             <div className="portal-header-block">
               <h1 className="portal-page-title">Scolarité & Paiements</h1>
               <p className="portal-page-subtitle">
-                Suivi des frais de scolarité pour {activeStudent?.first_name} {activeStudent?.last_name}
+                Suivi détaillé des frais de scolarité pour {activeStudent?.first_name} {activeStudent?.last_name}
               </p>
             </div>
 
@@ -502,42 +514,148 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
                       className={`pill-tab-btn ${isActive ? 'active' : 'inactive'}`}
                       onClick={() => setSelectedStudent(child)}
                     >
-                      {child.first_name} {child.last_name} · {child.classes?.name || '6ème A'}
+                      {child.first_name} {child.last_name} · {child.classes?.name || 'Classe'}
                     </button>
                   );
                 })}
               </div>
             )}
 
+            {/* Financial KPI Summary Cards */}
+            {(() => {
+              const studentTuition = Number(activeStudent?.tuition_fee) || (activeStudent?.affecte === 'Affecté' ? Number(activeStudent?.classes?.tuition_fee_affecte) : Number(activeStudent?.classes?.tuition_fee)) || 0;
+              const totalPaid = invoices.filter((inv: any) => inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.paid_amount) || Number(inv.amount) || 0), 0);
+              const resteToPay = Math.max(0, studentTuition - totalPaid);
+              const isSolde = resteToPay <= 0 && studentTuition > 0;
+              const progress = studentTuition > 0 ? Math.min(100, Math.round((totalPaid / studentTuition) * 100)) : 0;
+
+              return (
+                <div style={{ marginBottom: '24px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                    {/* Total Scolarité */}
+                    <div style={{ background: 'white', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                      <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                        📚 Total Scolarité
+                      </div>
+                      <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#1e293b' }}>
+                        {formatNum(studentTuition)} <span style={{ fontSize: '1rem', fontWeight: 600, color: '#64748b' }}>F CFA</span>
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '4px' }}>
+                        {activeStudent?.affecte === 'Affecté' ? 'Tarif Élève Affecté' : 'Tarif Standard'} ({activeStudent?.classes?.name || 'Classe'})
+                      </div>
+                    </div>
+
+                    {/* Montant Déjà Payé */}
+                    <div style={{ background: 'white', padding: '20px', borderRadius: '16px', border: '1px solid #d1fae5', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                      <div style={{ fontSize: '0.85rem', color: '#059669', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                        ✅ Montant Déjà Payé
+                      </div>
+                      <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#10b981' }}>
+                        {formatNum(totalPaid)} <span style={{ fontSize: '1rem', fontWeight: 600, color: '#059669' }}>F CFA</span>
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#059669', marginTop: '4px', fontWeight: 600 }}>
+                        {progress}% de la scolarité réglé
+                      </div>
+                    </div>
+
+                    {/* Reste à Payer */}
+                    <div style={{ background: 'white', padding: '20px', borderRadius: '16px', border: isSolde ? '1px solid #d1fae5' : '1px solid #fed7aa', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                      <div style={{ fontSize: '0.85rem', color: isSolde ? '#059669' : '#ea580c', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                        ⏳ Reste à Payer
+                      </div>
+                      <div style={{ fontSize: '1.6rem', fontWeight: 800, color: isSolde ? '#10b981' : '#f97316' }}>
+                        {formatNum(resteToPay)} <span style={{ fontSize: '1rem', fontWeight: 600, color: isSolde ? '#059669' : '#ea580c' }}>F CFA</span>
+                      </div>
+                      <div style={{ marginTop: '6px' }}>
+                        {isSolde ? (
+                          <span style={{ background: '#d1fae5', color: '#047857', padding: '3px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700 }}>
+                            🎉 SCOLARITÉ SOLDÉE
+                          </span>
+                        ) : (
+                          <span style={{ background: '#ffedd5', color: '#c2410c', padding: '3px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700 }}>
+                            Paiement en cours
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div style={{ background: 'white', padding: '16px 20px', borderRadius: '14px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>
+                      <span>Progression du règlement</span>
+                      <span>{formatNum(totalPaid)} F / {formatNum(studentTuition)} F ({progress}%)</span>
+                    </div>
+                    <div style={{ width: '100%', height: '10px', background: '#f1f5f9', borderRadius: '999px', overflow: 'hidden' }}>
+                      <div style={{ width: `${progress}%`, height: '100%', background: isSolde ? '#10b981' : 'linear-gradient(90deg, #3b82f6, #10b981)', borderRadius: '999px', transition: 'width 0.4s ease' }}></div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="panel" style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-              <h3>Historique des Factures et Reçus</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0 }}>Historique des Versements et Reçus</h3>
+              </div>
               <div className="table-responsive">
                 <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                      <th style={{ padding: '12px' }}>Date</th>
                       <th style={{ padding: '12px' }}>Description</th>
-                      <th style={{ padding: '12px' }}>Montant</th>
-                      <th style={{ padding: '12px' }}>Montant Payé</th>
+                      <th style={{ padding: '12px' }}>Montant Facturé</th>
+                      <th style={{ padding: '12px' }}>Montant Versé</th>
                       <th style={{ padding: '12px' }}>Statut</th>
+                      <th style={{ padding: '12px', textAlign: 'center' }}>Reçu Officiel</th>
                     </tr>
                   </thead>
                   <tbody>
                     {invoices.length > 0 ? (
                       invoices.map((inv: any) => (
                         <tr key={inv.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>
+                            {inv.paid_at || inv.issue_date ? new Date(inv.paid_at || inv.issue_date).toLocaleDateString('fr-FR') : '-'}
+                          </td>
                           <td style={{ padding: '12px', fontWeight: 600 }}>{inv.description || 'Frais de Scolarité'}</td>
                           <td style={{ padding: '12px' }}>{formatNum(inv.amount)} F</td>
                           <td style={{ padding: '12px', color: '#10b981', fontWeight: 'bold' }}>{formatNum(inv.paid_amount || inv.amount)} F</td>
                           <td style={{ padding: '12px' }}>
-                            <span className="badge" style={{ background: inv.status === 'Payée' ? '#d1fae5' : '#fef3c7', color: inv.status === 'Payée' ? '#047857' : '#b45309', padding: '4px 10px', borderRadius: '12px', fontSize: '0.82rem' }}>
+                            <span className="badge" style={{ background: inv.status === 'Payée' ? '#d1fae5' : '#fef3c7', color: inv.status === 'Payée' ? '#047857' : '#b45309', padding: '4px 10px', borderRadius: '12px', fontSize: '0.82rem', fontWeight: 600 }}>
                               {inv.status}
                             </span>
+                          </td>
+                          <td style={{ padding: '12px', textAlign: 'center' }}>
+                            <div style={{ display: 'inline-flex', gap: '6px' }}>
+                              <button
+                                className="pill-tab-btn active"
+                                style={{ fontSize: '0.78rem', padding: '4px 10px' }}
+                                onClick={() => {
+                                  setSelectedInvoice(inv);
+                                  setReceiptModalInvoice(inv);
+                                  setReceiptModalType('a4');
+                                }}
+                              >
+                                📄 Reçu A4
+                              </button>
+                              <button
+                                className="pill-tab-btn inactive"
+                                style={{ fontSize: '0.78rem', padding: '4px 10px' }}
+                                onClick={() => {
+                                  setSelectedInvoice(inv);
+                                  setReceiptModalInvoice(inv);
+                                  setReceiptModalType('ticket');
+                                }}
+                              >
+                                🧾 Ticket
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={4} style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
+                        <td colSpan={6} style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
                           Aucune facture ou reçu disponible pour le moment.
                         </td>
                       </tr>
@@ -545,6 +663,54 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Reçu A4 */}
+        {receiptModalInvoice && receiptModalType === 'a4' && (
+          <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+            <div style={{ background: 'white', borderRadius: '12px', padding: '20px', maxWidth: '850px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <button className="pill-tab-btn active" onClick={() => window.print()}>🖨️ Imprimer</button>
+                <button className="pill-tab-btn inactive" onClick={() => { setReceiptModalInvoice(null); setReceiptModalType(null); }}>✕ Fermer</button>
+              </div>
+              <ReceiptPreview 
+                invoice={receiptModalInvoice}
+                student={activeStudent}
+                invoicesData={invoices}
+                schoolInfo={settings}
+                studentReste={(() => {
+                  const total = Number(activeStudent?.tuition_fee) || (activeStudent?.affecte === 'Affecté' ? Number(activeStudent?.classes?.tuition_fee_affecte) : Number(activeStudent?.classes?.tuition_fee)) || 0;
+                  const paye = invoices.filter((inv: any) => inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.paid_amount) || Number(inv.amount) || 0), 0);
+                  return Math.max(0, total - paye);
+                })()}
+                onClose={() => { setReceiptModalInvoice(null); setReceiptModalType(null); }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Modal Reçu Ticket */}
+        {receiptModalInvoice && receiptModalType === 'ticket' && (
+          <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+            <div style={{ background: 'white', borderRadius: '12px', padding: '20px', maxWidth: '400px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <button className="pill-tab-btn active" onClick={() => window.print()}>🖨️ Imprimer</button>
+                <button className="pill-tab-btn inactive" onClick={() => { setReceiptModalInvoice(null); setReceiptModalType(null); }}>✕ Fermer</button>
+              </div>
+              <SmallReceiptPreview 
+                invoice={receiptModalInvoice}
+                student={activeStudent}
+                invoicesData={invoices}
+                schoolInfo={settings}
+                studentReste={(() => {
+                  const total = Number(activeStudent?.tuition_fee) || (activeStudent?.affecte === 'Affecté' ? Number(activeStudent?.classes?.tuition_fee_affecte) : Number(activeStudent?.classes?.tuition_fee)) || 0;
+                  const paye = invoices.filter((inv: any) => inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.paid_amount) || Number(inv.amount) || 0), 0);
+                  return Math.max(0, total - paye);
+                })()}
+                onClose={() => { setReceiptModalInvoice(null); setReceiptModalType(null); }}
+              />
             </div>
           </div>
         )}
