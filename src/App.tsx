@@ -5319,6 +5319,20 @@ function App() {
     );
   }
 
+  const currentSchoolObj = adminSchools?.find((s: any) => s.id === currentSchoolId) || subdomainSchool;
+  const effectiveSchoolInfo = {
+    ...currentSchoolObj,
+    ...settingsData,
+    school_name: settingsData?.school_name || currentSchoolObj?.name || "COLLEGE CONFESSIONNELLE CHERIFLA DIVO",
+    name: settingsData?.school_name || currentSchoolObj?.name || "COLLEGE CONFESSIONNELLE CHERIFLA DIVO",
+    logo_url: settingsData?.logo_url || currentSchoolObj?.logo_url || '/logo-coran.jpg',
+    phone: settingsData?.phone || currentSchoolObj?.phone || "00 00 00 00 00",
+    address: settingsData?.address || currentSchoolObj?.address || "Divo",
+    academic_year: settingsData?.academic_year || `${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`,
+    director_name: settingsData?.director_name || "La Direction",
+    cashier_name: settingsData?.cashier_name || "La Caissière"
+  };
+
   return (
     <>
       <div className="app-container">
@@ -5328,12 +5342,12 @@ function App() {
       {/* Sidebar */}
       <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-logo">
-          {(adminSchools?.find((s: any) => s.id === currentSchoolId) as any)?.logo_url ? (
-            <img src={(adminSchools?.find((s: any) => s.id === currentSchoolId) as any).logo_url} alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '8px', objectFit: 'cover' }} />
+          {effectiveSchoolInfo.logo_url ? (
+            <img src={effectiveSchoolInfo.logo_url} alt="Logo" style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'contain' }} />
           ) : (
-            <div className="logo-icon">{(settingsData?.school_name || adminSchools?.find((s: any) => s.id === currentSchoolId)?.name || 'É').charAt(0).toUpperCase()}</div>
+            <div className="logo-icon">{(effectiveSchoolInfo.school_name || 'É').charAt(0).toUpperCase()}</div>
           )}
-          <span className="logo-text" style={{ fontSize: '1.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{settingsData?.school_name || adminSchools?.find((s: any) => s.id === currentSchoolId)?.name || 'Établissement'}</span>
+          <span className="logo-text" style={{ fontSize: '1.05rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{effectiveSchoolInfo.school_name}</span>
         </div>
         
         <ul className="nav-menu">
@@ -7061,7 +7075,7 @@ function App() {
                       evaluations={evaluationsData}
                       grades={bulletinGrades}
                       period={bulletinPeriod}
-                      schoolInfo={{ ...settingsData, ...adminSchools.find(s => s.id === currentSchoolId) }}
+                      schoolInfo={effectiveSchoolInfo}
                       classSubjects={classSubjectsData}
                       targetStudentId={bulletinTargetStudentId}
                       schedules={schedulesData}
@@ -7085,7 +7099,7 @@ function App() {
             <div className="modal-body print-area">
               <ExpenseReceiptPreview 
                 expense={editEntity} 
-                schoolInfo={settingsData} 
+                schoolInfo={effectiveSchoolInfo} 
               />
             </div>
           </div>
@@ -7107,7 +7121,7 @@ function App() {
                 <SalaryReceiptPreview 
                   payment={employeePaymentsData.filter(p => p.employee_id === editEntity.id)[0]} 
                   employee={editEntity} 
-                  schoolInfo={settingsData} 
+                  schoolInfo={effectiveSchoolInfo} 
                 />
               )}
             </div>
@@ -7130,7 +7144,7 @@ function App() {
                 <TeacherReceiptPreview 
                   payment={selectedTeacherPayment || teacherPaymentsData.filter(p => p.teacher_id === editEntity.id)[0]} 
                   teacher={editEntity} 
-                  schoolInfo={settingsData} 
+                  schoolInfo={effectiveSchoolInfo} 
                 />
               )}
             </div>
@@ -7150,8 +7164,8 @@ function App() {
                       <span>Petit Format (Ticket)</span>
                     </button>
                   </div>
-                  <div style={{marginTop: '32px'}}>
-                    <button type="button" className="btn btn-primary" onClick={closeModal}>Terminer</button>
+                  <div style={{marginTop: '30px'}}>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>Annuler</button>
                   </div>
                 </div>
         )}
@@ -7180,7 +7194,7 @@ function App() {
                             invoice={selectedInvoice}
                             student={selectedStudent}
                             invoicesData={invoicesData}
-                            schoolInfo={{ ...settingsData, ...adminSchools.find(s => s.id === currentSchoolId) }}
+                            schoolInfo={effectiveSchoolInfo}
                                                           studentReste={
                                 (() => {
                                   const total = Number(selectedStudent.tuition_fee) || (selectedStudent.affecte === 'Affecté' ? Number(selectedStudent.classes?.tuition_fee_affecte) : Number(selectedStudent.classes?.tuition_fee)) || 0;
@@ -7224,7 +7238,7 @@ function App() {
                           <SmallReceiptPreview 
                             invoice={selectedInvoice}
                             student={selectedStudent}
-                            schoolInfo={{ ...settingsData, ...adminSchools.find(s => s.id === currentSchoolId) }}
+                            schoolInfo={effectiveSchoolInfo}
                             studentReste={
                                 (() => {
                                   const total = Number(selectedStudent.tuition_fee) || Number(selectedStudent.classes?.tuition_fee) || 0;
@@ -8056,7 +8070,7 @@ function App() {
     {selectedHonorStudent && (
       <HonorCertificate 
         student={selectedHonorStudent.student}
-        schoolInfo={{ ...settingsData, ...adminSchools.find((s: any) => s.id === currentSchoolId) }}
+        schoolInfo={effectiveSchoolInfo}
         period={bulletinPeriod}
         average={selectedHonorStudent.average}
         mention={selectedHonorStudent.mention === 'Tableau d\'Honneur' ? '' : selectedHonorStudent.mention}

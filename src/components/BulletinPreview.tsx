@@ -285,14 +285,17 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
             {/* 2. School Info */}
             <div className="bulletin-classic-school">
               <div className="school-logo">
-                {schoolInfo?.logo_url ? (
-                  <img src={schoolInfo.logo_url} alt="Logo" style={{width: '75px', height: '75px', borderRadius: '50%', objectFit: 'contain'}} />
-                ) : (
-                  <div style={{width: '70px', height: '70px', borderRadius: '50%', background: '#f1f5f9', border: '2px solid #22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#15803d', fontSize: '0.75rem', textAlign: 'center', padding: '2px'}}>DAR-TAWHID</div>
-                )}
+                <img 
+                  src={schoolInfo?.logo_url || '/logo-coran.jpg'} 
+                  alt="Logo" 
+                  style={{width: '75px', height: '75px', borderRadius: '50%', objectFit: 'contain'}} 
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = '/logo-coran.jpg';
+                  }}
+                />
               </div>
               <div className="school-details">
-                <p>{translateBulletinWord("Etablissement")}: <strong>{schoolInfo?.name?.toUpperCase() || "COLLEGE PRIVE DAR-TAWHID DIVO"}</strong></p>
+                <p>{translateBulletinWord("Etablissement")}: <strong>{(schoolInfo?.school_name || schoolInfo?.name || "COLLEGE CONFESSIONNELLE CHERIFLA DIVO").toUpperCase()}</strong></p>
                 <div style={{display: 'flex', gap: '30px', marginTop: '6px', fontSize: '0.8rem'}}>
                   <p>{translateBulletinWord("Adresse Postale")}: <strong>{schoolInfo?.address || 'DIVO'}</strong></p>
                   <p>{translateBulletinWord("Telephone")}: <strong>{schoolInfo?.phone || '01 03 41 17 43 / 05 44 09 47 37'}</strong></p>

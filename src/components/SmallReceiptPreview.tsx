@@ -81,7 +81,10 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
     }} dir={isAr ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-        <h3 style={{ margin: '0 0 5px 0', fontSize: '16px', textTransform: 'uppercase' }}>{schoolName}</h3>
+        <div style={{ width: '55px', height: '55px', margin: '0 auto 6px' }}>
+          <img src={schoolInfo?.logo_url || '/logo-coran.jpg'} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        </div>
+        <h3 style={{ margin: '0 0 5px 0', fontSize: '15px', textTransform: 'uppercase', fontWeight: 'bold' }}>{schoolName}</h3>
         <div style={{ fontSize: '11px' }}>{isAr ? 'الهاتف:' : 'CEL:'} {schoolPhone}</div>
         <div style={{ fontSize: '11px' }}>{isAr ? 'السنة الدراسية:' : 'Année Scolaire:'} {academicYear}</div>
       </div>
@@ -153,7 +156,8 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
 
       {/* Footer */}
       <div style={{ textAlign: 'center', marginTop: '15px', fontSize: '11px' }}>
-        <div style={{ marginBottom: '30px' }}>{isAr ? 'التوقيع' : 'Signature'}</div>
+        <div style={{ marginBottom: '4px', textDecoration: 'underline', fontWeight: 'bold' }}>{isAr ? 'أمينة الصندوق' : 'La Caissière'}</div>
+        <div style={{ marginBottom: '25px', fontSize: '10px' }}>{schoolInfo?.cashier_name || (isAr ? 'الإدارة / الصندوق' : 'La Caisse')}</div>
         <div style={{ fontWeight: 'bold' }}>{isAr ? 'شكراً لثقتكم!' : 'Merci de Votre confiance!'}</div>
         <div style={{ marginTop: '4px' }}>{isAr ? ('موعدنا القادم يوم: ' + nextAppt) : ('Rendez-vous le: ' + nextAppt)}</div>
       </div>

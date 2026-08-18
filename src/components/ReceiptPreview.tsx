@@ -180,8 +180,8 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
               <td style={{ textAlign: isAr ? 'right' : 'left', paddingBottom: '2px' }}>{formatCurrency(reste)}</td>
               <td style={{ textAlign: 'center', paddingBottom: '2px' }}></td>
               <td colSpan={2} style={{ textAlign: 'center', paddingTop: '8px' }}>
-                <div style={{ textDecoration: 'underline' }}>{isAr ? 'المدير' : 'Le Directeur'}</div>
-                <div style={{ marginTop: '20px', fontWeight: 'bold' }}>{schoolInfo?.director_name || (isAr ? 'الإدارة' : "La Direction")}</div>
+                <div style={{ textDecoration: 'underline' }}>{isAr ? 'أمينة الصندوق' : 'La Caissière'}</div>
+                <div style={{ marginTop: '20px', fontWeight: 'bold' }}>{schoolInfo?.cashier_name || (isAr ? 'الإدارة / الصندوق' : "La Caisse")}</div>
               </td>
             </tr>
           </tbody>
