@@ -1312,6 +1312,7 @@ function App() {
       phone: formData.get('phone'),
       email: formData.get('email'),
       director_name: formData.get('director_name'),
+      cashier_name: formData.get('cashier_name'),
       city: formData.get('city'),
       principal_name: formData.get('principal_name'),
       studies_director_name: formData.get('studies_director_name'),
@@ -4810,6 +4811,10 @@ function App() {
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
                   <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Nom du Directeur des Etudes</label>
                   <input type="text" name="studies_director_name" defaultValue={settingsData?.studies_director_name || ''} className="form-input" placeholder="Signature droite bulletin" />
+                </div>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Nom de la Caissière / Caissier (Reçus de paiement)</label>
+                  <input type="text" name="cashier_name" defaultValue={settingsData?.cashier_name || ''} className="form-input" placeholder="ex: Mme Traoré ou La Caisse" />
                 </div>
                 
                 <div style={{marginTop: '24px', borderTop: '1px solid var(--border-color)', paddingTop: '24px'}}>
