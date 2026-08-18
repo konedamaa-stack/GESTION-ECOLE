@@ -631,7 +631,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
                               {inv.paid_at || inv.issue_date ? new Date(inv.paid_at || inv.issue_date).toLocaleDateString('fr-FR') : '-'}
                             </td>
                             <td style={{ padding: '12px', fontWeight: 600 }}>{inv.description || 'Frais de Scolarité'}</td>
-                            <td style={{ padding: '12px', fontWeight: 'bold' }}>{formatNum(studentTuition || inv.amount)} F</td>
+                            <td style={{ padding: '12px', fontWeight: 'bold' }}>{formatNum(inv.amount)} F</td>
                             <td style={{ padding: '12px', color: '#10b981', fontWeight: 'bold' }}>{formatNum(inv.paid_amount || inv.amount)} F</td>
                             <td style={{ padding: '12px' }}>
                               <span className="badge" style={{ background: inv.status === 'Payée' ? '#d1fae5' : '#fef3c7', color: inv.status === 'Payée' ? '#047857' : '#b45309', padding: '4px 10px', borderRadius: '12px', fontSize: '0.82rem', fontWeight: 600 }}>
