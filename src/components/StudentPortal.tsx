@@ -46,6 +46,22 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
   }, [isParent]);
 
   useEffect(() => {
+    const loadInitialSettings = async () => {
+      const schoolId = student?.school_id || parentData?.school_id || (parentChildren.length > 0 ? parentChildren[0].school_id : null);
+      if (schoolId) {
+        const { data: set } = await supabase.from('school_settings').select('*').eq('school_id', schoolId).maybeSingle();
+        if (set) {
+          setSettings(set);
+        } else {
+          const { data: sch } = await supabase.from('schools').select('*').eq('id', schoolId).maybeSingle();
+          if (sch) setSettings({ school_name: sch.name, logo_url: sch.logo_url });
+        }
+      }
+    };
+    loadInitialSettings();
+  }, [student, parentData, parentChildren]);
+
+  useEffect(() => {
     applyThemeSettings(settings);
   }, [settings]);
 
@@ -267,18 +283,18 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
       <aside className="portal-sidebar">
         <div>
           {/* Brand Logo */}
-          <div className="portal-brand">
-            <div className="portal-brand-logo">
-              <div className="stripe-orange"></div>
-              <div className="stripe-white">
-                <svg className="cap-icon" viewBox="0 0 24 24" fill="none" stroke="#1E293B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                  <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-                </svg>
-              </div>
-              <div className="stripe-green"></div>
-            </div>
-            <span className="portal-brand-title">GestionEcole</span>
+          <div className="portal-brand" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 20px' }}>
+            <img 
+              src={settings?.logo_url || '/logo-coran.jpg'} 
+              alt="Logo" 
+              style={{ width: '42px', height: '42px', borderRadius: '8px', objectFit: 'contain' }} 
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/logo-coran.jpg';
+              }}
+            />
+            <span className="portal-brand-title" style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '165px' }}>
+              {settings?.school_name || "Établissement"}
+            </span>
           </div>
 
           {/* Navigation Menu */}
