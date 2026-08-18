@@ -683,11 +683,11 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
 
         {/* Modal Reçu A4 */}
         {receiptModalInvoice && receiptModalType === 'a4' && (
-          <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
-            <div style={{ background: 'white', borderRadius: '12px', padding: '20px', maxWidth: '850px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <button className="pill-tab-btn active" onClick={() => window.print()}>🖨️ Imprimer</button>
-                <button className="pill-tab-btn inactive" onClick={() => { setReceiptModalInvoice(null); setReceiptModalType(null); }}>✕ Fermer</button>
+          <div className="receipt-modal-wrapper" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+            <div className="receipt-modal-card" style={{ background: 'white', borderRadius: '12px', padding: '20px', maxWidth: '850px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+              <div className="hide-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <button className="pill-tab-btn active hide-print" onClick={() => window.print()}>🖨️ Imprimer</button>
+                <button className="pill-tab-btn inactive hide-print" onClick={() => { setReceiptModalInvoice(null); setReceiptModalType(null); }}>✕ Fermer</button>
               </div>
               <ReceiptPreview 
                 invoice={receiptModalInvoice}
@@ -696,7 +696,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
                 schoolInfo={settings}
                 studentReste={(() => {
                   const total = Number(activeStudent?.tuition_fee) || (activeStudent?.affecte === 'Affecté' ? Number(activeStudent?.classes?.tuition_fee_affecte) : Number(activeStudent?.classes?.tuition_fee)) || 0;
-                  const paye = invoices.filter((inv: any) => inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.paid_amount) || Number(inv.amount) || 0), 0);
+                  const paye = invoices.filter((inv: any) => inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
                   return Math.max(0, total - paye);
                 })()}
                 onClose={() => { setReceiptModalInvoice(null); setReceiptModalType(null); }}
@@ -707,11 +707,11 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
 
         {/* Modal Reçu Ticket */}
         {receiptModalInvoice && receiptModalType === 'ticket' && (
-          <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
-            <div style={{ background: 'white', borderRadius: '12px', padding: '20px', maxWidth: '400px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <button className="pill-tab-btn active" onClick={() => window.print()}>🖨️ Imprimer</button>
-                <button className="pill-tab-btn inactive" onClick={() => { setReceiptModalInvoice(null); setReceiptModalType(null); }}>✕ Fermer</button>
+          <div className="receipt-modal-wrapper" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+            <div className="receipt-modal-card" style={{ background: 'white', borderRadius: '12px', padding: '20px', maxWidth: '400px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+              <div className="hide-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <button className="pill-tab-btn active hide-print" onClick={() => window.print()}>🖨️ Imprimer</button>
+                <button className="pill-tab-btn inactive hide-print" onClick={() => { setReceiptModalInvoice(null); setReceiptModalType(null); }}>✕ Fermer</button>
               </div>
               <SmallReceiptPreview 
                 invoice={receiptModalInvoice}
@@ -720,7 +720,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
                 schoolInfo={settings}
                 studentReste={(() => {
                   const total = Number(activeStudent?.tuition_fee) || (activeStudent?.affecte === 'Affecté' ? Number(activeStudent?.classes?.tuition_fee_affecte) : Number(activeStudent?.classes?.tuition_fee)) || 0;
-                  const paye = invoices.filter((inv: any) => inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.paid_amount) || Number(inv.amount) || 0), 0);
+                  const paye = invoices.filter((inv: any) => inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
                   return Math.max(0, total - paye);
                 })()}
                 onClose={() => { setReceiptModalInvoice(null); setReceiptModalType(null); }}
@@ -728,6 +728,33 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
             </div>
           </div>
         )}
+
+        <style dangerouslySetInnerHTML={{__html: `
+          @media print {
+            .portal-sidebar, .portal-brand, .portal-menu, .portal-user-footer, .portal-header-block, .pill-tabs-row, .hide-print, .pill-tab-btn {
+              display: none !important;
+            }
+            .portal-wrapper, .portal-content {
+              padding: 0 !important;
+              margin: 0 !important;
+              background: white !important;
+            }
+            .receipt-modal-wrapper {
+              position: static !important;
+              width: 100% !important;
+              height: auto !important;
+              background: transparent !important;
+              padding: 0 !important;
+            }
+            .receipt-modal-card {
+              max-width: 100% !important;
+              max-height: none !important;
+              box-shadow: none !important;
+              padding: 0 !important;
+              border: none !important;
+            }
+          }
+        `}} />
 
         {/* EMPLOI DU TEMPS VIEW */}
         {activeTab === 'schedule' && (
