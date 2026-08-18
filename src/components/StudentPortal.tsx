@@ -50,12 +50,12 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
       const schoolId = student?.school_id || parentData?.school_id || (parentChildren.length > 0 ? parentChildren[0].school_id : null);
       if (schoolId) {
         const { data: set } = await supabase.from('school_settings').select('*').eq('school_id', schoolId).maybeSingle();
-        if (set) {
-          setSettings(set);
-        } else {
-          const { data: sch } = await supabase.from('schools').select('*').eq('id', schoolId).maybeSingle();
-          if (sch) setSettings({ school_name: sch.name, logo_url: sch.logo_url });
-        }
+        const { data: sch } = await supabase.from('schools').select('*').eq('id', schoolId).maybeSingle();
+        setSettings({
+          ...set,
+          school_name: sch?.name || set?.school_name || "COLLEGE CONFESSIONNELLE CHERIFLA DIVO",
+          logo_url: sch?.logo_url || null
+        });
       }
     };
     loadInitialSettings();
@@ -125,9 +125,16 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
     const { data: inv } = await supabase.from('invoices').select('*').eq('student_id', targetStudent.id);
     if (inv) setInvoices(inv || []);
 
-    // Settings (for PDF header)
-    const { data: set } = await supabase.from('school_settings').select('*').eq('school_id', targetStudent.school_id).single();
-    if (set) setSettings(set);
+    // Settings & Logo (from schools & school_settings)
+    if (targetStudent.school_id) {
+      const { data: set } = await supabase.from('school_settings').select('*').eq('school_id', targetStudent.school_id).maybeSingle();
+      const { data: sch } = await supabase.from('schools').select('*').eq('id', targetStudent.school_id).maybeSingle();
+      setSettings({
+        ...set,
+        school_name: sch?.name || set?.school_name || "COLLEGE CONFESSIONNELLE CHERIFLA DIVO",
+        logo_url: sch?.logo_url || null
+      });
+    }
 
     // Class Subjects Coefficients
     if (targetStudent.class_id) {
@@ -284,16 +291,19 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
         <div>
           {/* Brand Logo */}
           <div className="portal-brand" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 20px' }}>
-            <img 
-              src={settings?.logo_url || '/logo-coran.jpg'} 
-              alt="Logo" 
-              style={{ width: '42px', height: '42px', borderRadius: '8px', objectFit: 'contain' }} 
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/logo-coran.jpg';
-              }}
-            />
-            <span className="portal-brand-title" style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '165px' }}>
-              {settings?.school_name || "Établissement"}
+            {settings?.logo_url ? (
+              <img 
+                src={settings.logo_url} 
+                alt="Logo" 
+                style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'contain', background: 'white', flexShrink: 0 }} 
+              />
+            ) : (
+              <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: '#2563eb', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1.3rem', flexShrink: 0 }}>
+                {(settings?.school_name || 'C').charAt(0)}
+              </div>
+            )}
+            <span className="portal-brand-title" style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b', lineHeight: 1.25 }}>
+              {settings?.school_name || "COLLEGE CONFESSIONNELLE CHERIFLA DIVO"}
             </span>
           </div>
 
