@@ -2768,6 +2768,17 @@ function App() {
                   </span>
                 </td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
+                  <button 
+                    className="btn btn-primary" 
+                    title="Encaisser les frais de scolarité" 
+                    style={{padding: '6px 12px', marginRight: '8px', background: '#10b981', borderColor: '#10b981', color: 'white', fontWeight: 600}} 
+                    onClick={() => { 
+                      setPreselectedStudentId(row.id); 
+                      setActiveModal('payment'); 
+                    }}
+                  >
+                    💳 Encaisser
+                  </button>
                   <button className="btn btn-outline" title="Réinscrire" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--accent-color)', borderColor: 'var(--accent-color)'}} onClick={() => { 
                     const studentInvoices = invoicesData.filter(inv => inv.student_id === row.id);
                     const studentPaye = studentInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
@@ -5365,16 +5376,21 @@ function App() {
             <Icons.Home /> {t('admin.sidebar.dashboard', 'Tableau de bord')}
           </li>
           
-          {(currentAdminRole === 'Director' || currentAdminRole === 'Secretary' || currentAdminRole === 'Supervisor') && (
+          {(currentAdminRole === 'Director' || currentAdminRole === 'Secretary' || currentAdminRole === 'Supervisor' || currentAdminRole === 'Accountant') && (
             <>
               <li className={`nav-item ${activeTab === 'students' ? 'active' : ''}`} onClick={() => { setActiveTab('students'); setIsMobileMenuOpen(false); }}>
                 <Icons.Users /> {t('admin.sidebar.students', 'Gestion Élèves')}
               </li>
-              <li className={`nav-item ${activeTab === 'absences' ? 'active' : ''}`} onClick={() => { setActiveTab('absences'); setIsMobileMenuOpen(false); }}>
-                <Icons.Activity /> {t('admin.sidebar.absences', 'Gestion Absences')}
-              </li>
               <li className={`nav-item ${activeTab === 'parents' ? 'active' : ''}`} onClick={() => { setActiveTab('parents'); setIsMobileMenuOpen(false); }}>
                 <Icons.Heart /> {t('admin.sidebar.parents', "Parents d'Élèves")}
+              </li>
+            </>
+          )}
+
+          {(currentAdminRole === 'Director' || currentAdminRole === 'Secretary' || currentAdminRole === 'Supervisor') && (
+            <>
+              <li className={`nav-item ${activeTab === 'absences' ? 'active' : ''}`} onClick={() => { setActiveTab('absences'); setIsMobileMenuOpen(false); }}>
+                <Icons.Activity /> {t('admin.sidebar.absences', 'Gestion Absences')}
               </li>
               <li className={`nav-item ${activeTab === 'teachers' ? 'active' : ''}`} onClick={() => { setActiveTab('teachers'); setIsMobileMenuOpen(false); }}>
                 <Icons.GraduationCap /> {t('admin.sidebar.teachers', 'Enseignants')}
