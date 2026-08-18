@@ -631,7 +631,6 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
                                 className="pill-tab-btn active"
                                 style={{ fontSize: '0.78rem', padding: '4px 10px' }}
                                 onClick={() => {
-                                  setSelectedInvoice(inv);
                                   setReceiptModalInvoice(inv);
                                   setReceiptModalType('a4');
                                 }}
@@ -642,7 +641,6 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
                                 className="pill-tab-btn inactive"
                                 style={{ fontSize: '0.78rem', padding: '4px 10px' }}
                                 onClick={() => {
-                                  setSelectedInvoice(inv);
                                   setReceiptModalInvoice(inv);
                                   setReceiptModalType('ticket');
                                 }}
