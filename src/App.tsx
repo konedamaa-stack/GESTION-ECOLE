@@ -7238,10 +7238,11 @@ function App() {
                           <SmallReceiptPreview 
                             invoice={selectedInvoice}
                             student={selectedStudent}
+                            invoicesData={invoicesData}
                             schoolInfo={effectiveSchoolInfo}
                             studentReste={
                                 (() => {
-                                  const total = Number(selectedStudent.tuition_fee) || Number(selectedStudent.classes?.tuition_fee) || 0;
+                                  const total = Number(selectedStudent.tuition_fee) || (selectedStudent.affecte === 'Affecté' ? Number(selectedStudent.classes?.tuition_fee_affecte) : Number(selectedStudent.classes?.tuition_fee)) || 0;
                                   let paye = invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
                                   if (selectedInvoice && selectedInvoice.status === 'Payée' && !invoicesData.some((i: any) => i.id === selectedInvoice.id)) {
                                     paye += Number(selectedInvoice.amount) || 0;

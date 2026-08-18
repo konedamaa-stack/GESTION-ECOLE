@@ -6,6 +6,7 @@ interface SmallReceiptPreviewProps {
   student?: any;
   schoolInfo?: any;
   studentReste?: number;
+  invoicesData?: any[];
   onClose?: () => void;
 }
 
@@ -14,10 +15,18 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
   student, 
   schoolInfo, 
   studentReste = 0,
+  invoicesData = [],
   onClose
 }) => {
   const { i18n } = useTranslation();
   const isAr = i18n.language.startsWith('ar');
+
+  const getArabicOrdinal = (n: number) => {
+    if (n === 1) return 'الدفعة الأولى';
+    if (n === 2) return 'الدفعة الثانية';
+    if (n === 3) return 'الدفعة الثالثة';
+    return `الدفعة ${n}`;
+  };
 
   useEffect(() => {
     const handleAfterPrint = () => {
@@ -47,25 +56,52 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
     return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
   };
 
-  // Extracting data or falling back to mock data similar to the image
-  const schoolName = (schoolInfo?.school_name || schoolInfo?.name) || "GROUPE SCOLAIRE RAYATIL ISLAM";
+  // Calcul du numéro de versement identique au grand format
+  let installmentNum = 1;
+  if (invoicesData.length > 0 && invoice && student) {
+    const studentInvoices = invoicesData
+      .filter((inv: any) => inv.student_id === student.id && (inv.status === 'Payée' || inv.id === invoice.id))
+      .sort((a: any, b: any) => new Date(a.issue_date || a.paid_at || 0).getTime() - new Date(b.issue_date || b.paid_at || 0).getTime());
+    
+    const index = studentInvoices.findIndex((inv: any) => inv.id === invoice.id);
+    if (index !== -1) {
+      installmentNum = index + 1;
+    } else {
+      installmentNum = studentInvoices.length + 1;
+    }
+  }
+
+  const getOrdinal = (n: number) => {
+    if (n === 1) return '1er';
+    return `${n}ème`;
+  };
+  
+  const versementText = `${getOrdinal(installmentNum)} Versement`;
+  const versementLabel = `${versementText}:`;
+
+  const schoolName = schoolInfo?.school_name || schoolInfo?.name || "ÉTABLISSEMENT SCOLAIRE";
   let schoolPhone = schoolInfo?.phone || "00 00 00 00 00";
   schoolPhone = schoolPhone.replace(/^(cel|tel|tél|téléphone|phone)[:.\s]+/i, '');
-  const academicYear = schoolInfo?.academic_year || "2025-2026";
+  const academicYear = schoolInfo?.academic_year || new Date().getFullYear() + " / " + (new Date().getFullYear() + 1);
  
-  const classNameFr = student?.class?.name || "Mat A";
-  const receiptNo = invoice?.id ? invoice.id.split('-')[0].toUpperCase() : "6949";
-  const matricule = student?.matricule || "2067";
-  const tuition = invoice?.amount || 33000;
-  const payment = invoice?.paid_amount || 11000;
-  const totalPaid = invoice?.total_paid || 33000; // Or calculate
+  const classNameFr = student?.class?.name || student?.classes?.name || "-";
+  const receiptNo = invoice?.id ? invoice.id.split('-')[0].toUpperCase() : "-";
+  const matricule = student?.matricule || "-";
+  
+  // Calculs financiers rigoureusement identiques au Grand Format A4
+  const scolarite = Number(student?.tuition_fee) || (student?.affecte === 'Affecté' ? Number(student?.classes?.tuition_fee_affecte) : Number(student?.classes?.tuition_fee)) || Number(invoice?.amount) || 0;
+  const versement = invoice?.paid_amount !== undefined ? Number(invoice.paid_amount) : (Number(invoice?.amount) || 0);
+  const reste = studentReste !== undefined ? Number(studentReste) : 0;
+  const totalPaid = Math.max(0, scolarite - reste);
+
   const paymentDate = formatDate(invoice?.paid_at || new Date().toISOString());
-  const studentName = student ? `${student.first_name} ${student.last_name}` : "سونغالو تراوري";
+  const studentName = student ? `${student.first_name} ${student.last_name}` : "Nom de l'élève";
   const parentObj = student?.student_parents && student.student_parents.length > 0 ? student.student_parents[0].parents : null;
   const parentName = parentObj ? `${parentObj.first_name} ${parentObj.last_name}` : (student?.parent_name || "-");
-  const reste = studentReste !== undefined ? studentReste : 0;
   const isSoldé = reste <= 0;
-  const nextAppt = formatDate(invoice?.next_appointment || new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString());
+  let defaultApptDate = new Date(invoice?.paid_at || new Date());
+  defaultApptDate.setMonth(defaultApptDate.getMonth() + 2);
+  const nextAppt = formatDate(invoice?.next_appointment || defaultApptDate.toISOString());
 
   return (
     <div className="small-receipt-container" style={{
@@ -85,6 +121,9 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
           <img src={schoolInfo?.logo_url || '/logo-coran.jpg'} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
         <h3 style={{ margin: '0 0 5px 0', fontSize: '15px', textTransform: 'uppercase', fontWeight: 'bold' }}>{schoolName}</h3>
+        <div style={{ fontSize: '12px', fontWeight: 'bold', textDecoration: 'underline', margin: '3px 0' }}>
+          {isAr ? `وصل تسديد ${getArabicOrdinal(installmentNum)} للمصاريف` : `Reçu de ${versementText}`}
+        </div>
         <div style={{ fontSize: '11px' }}>{isAr ? 'الهاتف:' : 'CEL:'} {schoolPhone}</div>
         <div style={{ fontSize: '11px' }}>{isAr ? 'السنة الدراسية:' : 'Année Scolaire:'} {academicYear}</div>
       </div>
@@ -131,11 +170,11 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
       <div style={{ fontSize: '12px', marginBottom: '8px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', flexDirection: isAr ? 'row-reverse' : 'row' }}>
           <span>{isAr ? 'المصاريف:' : 'Scolarité:'}</span>
-          <span>{formatCurrency(tuition)}</span>
+          <span>{formatCurrency(scolarite)}</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', fontWeight: 'bold', fontSize: isAr ? '16px' : '13px', flexDirection: isAr ? 'row-reverse' : 'row' }}>
-          <span>{isAr ? 'الدفعة:' : 'Versement:'}</span>
-          <span>{formatCurrency(payment)}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', fontWeight: 'bold', fontSize: isAr ? '14px' : '12px', flexDirection: isAr ? 'row-reverse' : 'row' }}>
+          <span>{isAr ? `${getArabicOrdinal(installmentNum)}:` : versementLabel}</span>
+          <span>{formatCurrency(versement)}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', flexDirection: isAr ? 'row-reverse' : 'row' }}>
           <span>{isAr ? 'إجمالي المدفوع:' : 'Total versé:'}</span>
