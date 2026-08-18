@@ -4036,6 +4036,9 @@ function App() {
           const sPaye = sInvoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
           const sTotal = Number(s.tuition_fee) || (s.affecte === 'Affecté' ? Number(cls.tuition_fee_affecte) : Number(cls.tuition_fee)) || 0;
           const sNonPaye = Math.max(0, sTotal - sPaye);
+          const sortedInvs = [...sInvoices].sort((a, b) => new Date(b.paid_at || b.issue_date || 0).getTime() - new Date(a.paid_at || a.issue_date || 0).getTime());
+          const lastPaymentDate = sortedInvs.length > 0 ? (sortedInvs[0].paid_at || sortedInvs[0].issue_date) : null;
+
           return {
             id: s.id,
             matricule: s.matricule,
@@ -4043,7 +4046,8 @@ function App() {
             paye: sPaye,
             total: sTotal,
             nonPaye: sNonPaye,
-            status: sNonPaye <= 0 ? 'Soldé' : 'Non soldé'
+            status: sNonPaye <= 0 ? 'Soldé' : 'Non soldé',
+            lastPaymentDate: lastPaymentDate
           };
         }).sort((a, b) => a.name.localeCompare(b.name))
       };
@@ -4316,6 +4320,7 @@ function App() {
               <th style={{padding: '12px 0', fontWeight: 500}}>Matricule</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>Élève</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>Classe</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Date Dernier Paiement</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>Attendu</th>
               <th style={{padding: '12px 0', fontWeight: 500, color: 'var(--success-color)'}}>Payé</th>
               <th style={{padding: '12px 0', fontWeight: 500, color: 'var(--danger-color)'}}>Reste à Payer</th>
@@ -4330,6 +4335,13 @@ function App() {
                  const matchClass = financeClassFilter === 'all' || s.classId === financeClassFilter;
                  const matchStatus = financeStatusFilter === 'all' || s.status === financeStatusFilter;
                  return matchClass && matchStatus;
+              }).sort((a, b) => {
+                if (a.lastPaymentDate && b.lastPaymentDate) {
+                  return new Date(b.lastPaymentDate).getTime() - new Date(a.lastPaymentDate).getTime();
+                }
+                if (a.lastPaymentDate) return -1;
+                if (b.lastPaymentDate) return 1;
+                return a.name.localeCompare(b.name);
               });
               
               const totalAttendu = filteredStudents.reduce((sum, st) => sum + (st.total || 0), 0);
@@ -4343,6 +4355,9 @@ function App() {
                       <td style={{padding: '16px 0', fontFamily: 'monospace', color: 'var(--primary-color)'}}>{st.matricule}</td>
                       <td style={{padding: '16px 0', fontWeight: 600}}>{st.name}</td>
                       <td style={{padding: '16px 0'}}>{st.className}</td>
+                      <td style={{padding: '16px 0', color: st.lastPaymentDate ? 'var(--success-color)' : 'var(--text-secondary)', fontWeight: st.lastPaymentDate ? 600 : 400, fontSize: '0.9rem'}}>
+                        {st.lastPaymentDate ? new Date(st.lastPaymentDate).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR') : '-'}
+                      </td>
                       <td style={{padding: '16px 0'}}>{formatNum(st.total)} F</td>
                       <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--success-color)'}}>{formatNum(st.paye)} F</td>
                       <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--danger-color)'}}>{formatNum(st.nonPaye)} F</td>
@@ -4353,7 +4368,7 @@ function App() {
                   ))}
                   {filteredStudents.length > 0 && (
                     <tr className="finance-totals-row" style={{fontWeight: 'bold', borderTop: '2px solid var(--border-color)'}}>
-                      <td colSpan={3} style={{padding: '16px 0', textAlign: 'right', paddingRight: '24px'}}>TOTAL :</td>
+                      <td colSpan={4} style={{padding: '16px 0', textAlign: 'right', paddingRight: '24px'}}>TOTAL :</td>
                       <td style={{padding: '16px 0'}}>{formatNum(totalAttendu)} F</td>
                       <td style={{padding: '16px 0', color: 'var(--success-color)'}}>{formatNum(totalPaye)} F</td>
                       <td style={{padding: '16px 0', color: 'var(--danger-color)'}}>{formatNum(totalReste)} F</td>
