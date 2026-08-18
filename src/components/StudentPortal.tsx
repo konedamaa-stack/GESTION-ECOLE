@@ -12,12 +12,6 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
   const isParent = localStorage.getItem('sges_is_parent') === 'true';
   const parentData = isParent ? JSON.parse(localStorage.getItem('sges_parent_data') || '{}') : null;
 
-  // Sample default children matching the screenshot if no DB links found
-  const defaultChildren = [
-    { id: student?.id || 'seed-1', first_name: student?.first_name || 'Test', last_name: student?.last_name || 'Eleve', matricule: student?.matricule || 'ELV-SEED0001', classes: { name: '6ème A' }, academic_year: '2025-2026' },
-    { id: 'seed-2', first_name: "n'golo", last_name: 'Kone', matricule: 'ELV-26815244Y', classes: { name: '6ème A' }, academic_year: '2025' }
-  ];
-
   const [activeTab, setActiveTab] = useState<'children' | 'grades' | 'schedule' | 'scolarite'>(isParent ? 'children' : 'grades');
   const [selectedPeriod, setSelectedPeriod] = useState<string>('Trimestre 1');
   const [schedules, setSchedules] = useState<any[]>([]);
@@ -26,8 +20,8 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
   const [classSubjects, setClassSubjects] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
-  const [parentChildren, setParentChildren] = useState<any[]>(defaultChildren);
-  const [selectedStudent, setSelectedStudent] = useState<any>(defaultChildren[0]);
+  const [parentChildren, setParentChildren] = useState<any[]>(student ? [student] : []);
+  const [selectedStudent, setSelectedStudent] = useState<any>(student || null);
   const [invoices, setInvoices] = useState<any[]>([]);
 
   const formatNum = (num: number | string | undefined) => {
@@ -65,14 +59,8 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
         }
       }
 
-      if (children.length === 0) {
-        children = defaultChildren;
-      } else if (children.length === 1 && children[0].id === student?.id) {
-        // Complement with n'golo Kone if only 1 student present to match multi-child screenshot
-        children = [
-          children[0],
-          { id: 'seed-2', first_name: "n'golo", last_name: 'Kone', matricule: 'ELV-26815244Y', classes: { name: '6ème A' }, academic_year: '2025' }
-        ];
+      if (children.length === 0 && student) {
+        children = [student];
       }
 
       setParentChildren(children);
@@ -81,7 +69,10 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
       }
     } catch (err) {
       console.error('Error fetching parent children:', err);
-      setParentChildren(defaultChildren);
+      if (student) {
+        setParentChildren([student]);
+        setSelectedStudent(student);
+      }
     }
   };
 
