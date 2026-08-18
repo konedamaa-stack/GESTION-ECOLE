@@ -21,6 +21,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { applyThemeSettings } from './lib/theme';
 import { QuickStartGuideModal } from './components/QuickStartGuideModal';
+import { IdleTimeoutManager } from './components/IdleTimeoutManager';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { getSubdomain, slugifySubdomain, getSchoolUrl } from './utils/subdomain';
 import './App.css';
@@ -628,13 +629,31 @@ function App() {
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = async (reason?: any) => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error(e);
+    }
+    setSession(null);
     setEmployeeSession(null);
+    setTeacherSession(null);
+    setStudentSession(null);
     localStorage.removeItem('sges_employee');
+    localStorage.removeItem('sges_teacher');
+    localStorage.removeItem('sges_student');
+    localStorage.removeItem('sges_is_parent');
+    localStorage.removeItem('sges_parent_data');
     localStorage.removeItem('sges_login_role');
     localStorage.removeItem('sges_is_super_admin_impersonating');
     localStorage.removeItem('sges_super_admin_mode');
+    setShowSuperAdmin(false);
+    if (!detectedSubdomain) {
+      setCurrentView('landing');
+    }
+    if (typeof reason === 'string' && reason === 'idle') {
+      alert("🔒 Par mesure de sécurité, votre session a été automatiquement fermée suite à une période d'inactivité prolongée.");
+    }
   };
 
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
@@ -5265,24 +5284,39 @@ function App() {
   }
 
   if (studentSession) {
-    return <StudentPortal student={studentSession} onLogout={() => setStudentSession(null)} />;
+    return (
+      <>
+        <IdleTimeoutManager isLoggedIn={true} onLogout={handleLogout} timeoutMinutes={15} warningSeconds={60} />
+        <StudentPortal student={studentSession} onLogout={handleLogout} />
+      </>
+    );
   }
 
   if (teacherSession) {
-    return <TeacherPortal session={teacherSession} onLogout={() => setTeacherSession(null)} onOpenBulletin={(studentId, period, classId) => loadBulletinData(classId, period, studentId)} />;
+    return (
+      <>
+        <IdleTimeoutManager isLoggedIn={true} onLogout={handleLogout} timeoutMinutes={15} warningSeconds={60} />
+        <TeacherPortal session={teacherSession} onLogout={handleLogout} onOpenBulletin={(studentId, period, classId) => loadBulletinData(classId, period, studentId)} />
+      </>
+    );
   }
 
   if (showSuperAdmin) {
-    return <SuperAdminPortal 
-      session={session} 
-      onExit={() => { 
-        setShowSuperAdmin(false); 
-        localStorage.removeItem('sges_super_admin_mode'); 
-      }} 
-      onSwitchToSchool={(id) => { 
-        handleSuperAdminSwitchToSchool(id); 
-      }} 
-    />;
+    return (
+      <>
+        <IdleTimeoutManager isLoggedIn={true} onLogout={handleLogout} timeoutMinutes={15} warningSeconds={60} />
+        <SuperAdminPortal 
+          session={session} 
+          onExit={() => { 
+            setShowSuperAdmin(false); 
+            localStorage.removeItem('sges_super_admin_mode'); 
+          }} 
+          onSwitchToSchool={(id) => { 
+            handleSuperAdminSwitchToSchool(id); 
+          }} 
+        />
+      </>
+    );
   }
 
   return (
@@ -8136,6 +8170,13 @@ function App() {
         </div>
       </div>
     )}
+
+    <IdleTimeoutManager 
+      isLoggedIn={Boolean(session || employeeSession)} 
+      onLogout={handleLogout} 
+      timeoutMinutes={15} 
+      warningSeconds={60} 
+    />
   </>
 );
 }
