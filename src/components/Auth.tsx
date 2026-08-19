@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
+import { sanitizeText, sanitizeMatricule, sanitizeSearchQuery } from '../lib/security';
 import './Auth.css';
 
 type AuthMode = 'login' | 'register' | 'forgot_password' | 'student_login' | 'teacher_login' | 'accept_invite' | 'parent_login';
@@ -174,11 +175,11 @@ export default function Auth({
 
     try {
       if (mode === 'student_login') {
-        const identifier = email.trim();
+        const identifier = sanitizeMatricule(email);
         let studentQuery = supabase
           .from('students')
           .select('*, schools(name)')
-          .eq('matricule', identifier.toUpperCase())
+          .eq('matricule', identifier)
           .eq('password', password);
         if (schoolId) studentQuery = studentQuery.eq('school_id', schoolId);
         
@@ -190,7 +191,7 @@ export default function Auth({
             const { data: otherStu } = await supabase
               .from('students')
               .select('id, school_id')
-              .eq('matricule', identifier.toUpperCase())
+              .eq('matricule', identifier)
               .limit(1);
             if (otherStu && otherStu.length > 0) {
               throw new Error("Accès refusé. Cet élève n'est pas inscrit dans cet établissement.");
@@ -215,11 +216,12 @@ export default function Auth({
           onStudentLogin(students[0]);
         }
       } else if (mode === 'teacher_login') {
-        const identifier = email.trim();
+        const rawIdentifier = sanitizeText(email);
+        const cleanIdent = rawIdentifier.replace(/[^a-zA-Z0-9@._\-]/g, '');
         let teacherQuery = supabase
           .from('teachers')
           .select('*, schools(name)')
-          .or(`email.eq.${identifier},matricule.eq.${identifier.toUpperCase()}`)
+          .or(`email.eq.${cleanIdent},matricule.eq.${cleanIdent.toUpperCase()}`)
           .eq('password', password);
         if (schoolId) teacherQuery = teacherQuery.eq('school_id', schoolId);
         
@@ -231,7 +233,7 @@ export default function Auth({
             const { data: otherTeach } = await supabase
               .from('teachers')
               .select('id, school_id')
-              .or(`email.eq.${identifier},matricule.eq.${identifier.toUpperCase()}`)
+              .or(`email.eq.${cleanIdent},matricule.eq.${cleanIdent.toUpperCase()}`)
               .limit(1);
             if (otherTeach && otherTeach.length > 0) {
               throw new Error("Accès refusé. Cet enseignant n'appartient pas à cet établissement.");
@@ -258,7 +260,7 @@ export default function Auth({
       } else if (mode === 'register') {
         // 1. Sign up user
         const { error: authError } = await supabase.auth.signUp({
-          email,
+          email: sanitizeText(email).toLowerCase(),
           password,
         });
         if (authError) throw authError;
@@ -269,14 +271,14 @@ export default function Auth({
         
         // Register the user
         const { data: authData, error: authError } = await supabase.auth.signUp({
-          email,
+          email: sanitizeText(email).toLowerCase(),
           password,
         });
         
         if (authError) {
           // If user already exists, they might just need to sign in
           if (authError.message.includes('User already registered') || authError.message.includes('already exists')) {
-            const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+            const { error: signInError } = await supabase.auth.signInWithPassword({ email: sanitizeText(email).toLowerCase(), password });
             if (signInError) throw new Error("Ce compte existe déjà. Veuillez utiliser le bon mot de passe, ou réinitialisez-le d'abord.");
             
             // Re-fetch user to get their ID since signUp failed
@@ -314,11 +316,12 @@ export default function Auth({
           }
         }
       } else if (mode === 'parent_login') {
-        const identifier = email.trim();
+        const rawIdentifier = sanitizeText(email);
+        const cleanIdent = rawIdentifier.replace(/[^a-zA-Z0-9@._\-\s]/g, '');
         let parentQuery = supabase
           .from('parents')
           .select('*')
-          .or(`email.ilike.${identifier},phone.eq.${identifier},phone.ilike.%${identifier}%,first_name.ilike.${identifier},last_name.ilike.${identifier}`)
+          .or(`email.ilike.${cleanIdent},phone.eq.${cleanIdent},phone.ilike.%${cleanIdent}%,first_name.ilike.${cleanIdent},last_name.ilike.${cleanIdent}`)
           .eq('password', password);
         if (schoolId) parentQuery = parentQuery.eq('school_id', schoolId);
         
@@ -330,7 +333,7 @@ export default function Auth({
             const { data: otherParent } = await supabase
               .from('parents')
               .select('id, school_id')
-              .or(`email.ilike.${identifier},phone.eq.${identifier},phone.ilike.%${identifier}%,first_name.ilike.${identifier},last_name.ilike.${identifier}`)
+              .or(`email.ilike.${cleanIdent},phone.eq.${cleanIdent},phone.ilike.%${cleanIdent}%,first_name.ilike.${cleanIdent},last_name.ilike.${cleanIdent}`)
               .limit(1);
             if (otherParent && otherParent.length > 0) {
               throw new Error("Accès refusé. Ce parent n'appartient pas à cet établissement.");

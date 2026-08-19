@@ -3,6 +3,7 @@ import { BulletinPreview } from './BulletinPreview';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { applyThemeSettings } from '../lib/theme';
+import { sanitizeText, sanitizeAmount, sanitizeObject } from '../lib/security';
 
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -99,16 +100,16 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     const chosenSubject = formData.get('subject') || (teacherSubjects.length > 0 ? teacherSubjects[0] : '');
     const classId = formData.get('class_id') as string;
     
-    const newEval = {
-      name: formData.get('name'),
-      subject: chosenSubject,
+    const newEval = sanitizeObject({
+      name: sanitizeText(formData.get('name')),
+      subject: sanitizeText(chosenSubject),
       class_id: classId,
       date: formData.get('date'),
-      period: formData.get('period'),
-      type: formData.get('type'),
-      max_score: Number(formData.get('max_score')) || 20,
+      period: sanitizeText(formData.get('period')),
+      type: sanitizeText(formData.get('type')),
+      max_score: sanitizeAmount(formData.get('max_score'), 1, 100) || 20,
       school_id: session.school_id,
-    };
+    });
 
     // Prevent duplicate evaluations for same class, date, name and period
     const isDuplicate = evaluationsData.some(ev => 
@@ -351,13 +352,13 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     const gradesToUpsert = classStudents.map(student => {
       const input = gradesInput[student.id];
       
-      const record: any = {
+      const record: any = sanitizeObject({
         student_id: student.id,
         evaluation_id: selectedEvaluation.id,
-        score: input?.score ? parseFloat(input.score) : null,
-        comment: input?.comment || null,
+        score: input?.score ? sanitizeAmount(input.score, 0, selectedEvaluation.max_score || 20) : null,
+        comment: input?.comment ? sanitizeText(input.comment) : null,
         school_id: session.school_id
-      };
+      });
       
       return record;
     }).filter(g => g.score !== null); // Only save where a score was entered
