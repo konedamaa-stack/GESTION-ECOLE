@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
-import { sanitizeText, sanitizeMatricule, sanitizeSearchQuery } from '../lib/security';
+import { sanitizeText, sanitizeMatricule } from '../lib/security';
 import './Auth.css';
 
 type AuthMode = 'login' | 'register' | 'forgot_password' | 'student_login' | 'teacher_login' | 'accept_invite' | 'parent_login';

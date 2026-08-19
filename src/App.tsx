@@ -1600,25 +1600,26 @@ function App() {
       submitBtn.innerHTML = 'Patientez...';
     }
     const formData = new FormData(e.target);
+    const safeData = sanitizeFormData(formData);
     
     try {
       if (activeModal === 'class') {
-        const className = formData.get('name') as string;
-        const classLevel = formData.get('level') as string;
+        const className = sanitizeText(safeData.name);
+        const classLevel = sanitizeText(safeData.level);
         if (!className) return;
         
         let error;
-        const nextClassIdStr = formData.get('next_class_id') as string;
-        const principalTeacherIdStr = formData.get('principal_teacher_id') as string;
+        const nextClassIdStr = safeData.next_class_id as string;
+        const principalTeacherIdStr = safeData.principal_teacher_id as string;
         
-        const payload = {
+        const payload = sanitizeObject({
           name: className, 
           level: classLevel || 'Non défini', 
-          tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : 0,
-          tuition_fee_affecte: formData.get('tuition_fee_affecte') ? parseInt(formData.get('tuition_fee_affecte') as string) : 0,
+          tuition_fee: sanitizeAmount(safeData.tuition_fee, 0),
+          tuition_fee_affecte: sanitizeAmount(safeData.tuition_fee_affecte, 0),
           next_class_id: nextClassIdStr ? nextClassIdStr : null,
           principal_teacher_id: principalTeacherIdStr ? principalTeacherIdStr : null
-        };
+        });
 
         if (editEntity) {
           const { error: updateError } = await supabase.from('classes').update(payload).eq('id', editEntity.id);
