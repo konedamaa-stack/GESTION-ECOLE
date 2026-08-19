@@ -2763,11 +2763,13 @@ function App() {
                   </div>
                 </td>
                 <td style={{padding: '16px 0'}}>{row.classes?.name || t('admin.students.unassigned', 'Non assigné')}</td>
-                <td style={{padding: '16px 0'}}>
-                  <span className={`badge ${row.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`}>{row.status}</span>
-                  <span className="badge badge-info" style={{marginLeft: '6px', background: row.affecte === 'Affecté' ? '#3B82F6' : '#6B7280', color: 'white'}}>
-                    {row.affecte || 'Non affecté'}
-                  </span>
+                <td style={{padding: '16px 0', whiteSpace: 'nowrap'}}>
+                  <div style={{display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', flexWrap: 'nowrap'}}>
+                    <span className={`badge ${row.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`} style={{whiteSpace: 'nowrap'}}>{row.status}</span>
+                    <span className="badge badge-info" style={{background: row.affecte === 'Affecté' ? '#3B82F6' : '#6B7280', color: 'white', whiteSpace: 'nowrap'}}>
+                      {row.affecte || 'Non affecté'}
+                    </span>
+                  </div>
                 </td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
                   <button 
@@ -7487,12 +7489,14 @@ function App() {
                     <div>
                       <h2 style={{margin: 0, fontSize: '1.5rem'}}>{selectedStudent.first_name} {selectedStudent.last_name}</h2>
                       <p style={{margin: '4px 0 0', color: 'var(--text-secondary)'}}>Matricule: {selectedStudent.matricule}</p>
-                      <span className={`badge ${selectedStudent.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`} style={{marginTop: '8px', display: 'inline-block'}}>
-                        {selectedStudent.status}
-                      </span>
-                      <span className="badge badge-info" style={{marginTop: '8px', marginLeft: '8px', display: 'inline-block', background: selectedStudent.affecte === 'Affecté' ? '#3B82F6' : '#6B7280', color: 'white'}}>
-                        {selectedStudent.affecte || 'Non affecté'}
-                      </span>
+                      <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', flexWrap: 'nowrap'}}>
+                        <span className={`badge ${selectedStudent.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`} style={{whiteSpace: 'nowrap'}}>
+                          {selectedStudent.status}
+                        </span>
+                        <span className="badge badge-info" style={{background: selectedStudent.affecte === 'Affecté' ? '#3B82F6' : '#6B7280', color: 'white', whiteSpace: 'nowrap'}}>
+                          {selectedStudent.affecte || 'Non affecté'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   
