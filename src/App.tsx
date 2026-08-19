@@ -24,7 +24,7 @@ import { QuickStartGuideModal } from './components/QuickStartGuideModal';
 import { IdleTimeoutManager } from './components/IdleTimeoutManager';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { getSubdomain, slugifySubdomain, getSchoolUrl } from './utils/subdomain';
-import { sanitizeText, sanitizeSearchQuery, sanitizeAmount, sanitizeMatricule, sanitizeFormData, sanitizeObject } from './lib/security';
+import { sanitizeText, sanitizeAmount, sanitizeFormData, sanitizeObject } from './lib/security';
 import './App.css';
 
 // Custom SVG Icons
