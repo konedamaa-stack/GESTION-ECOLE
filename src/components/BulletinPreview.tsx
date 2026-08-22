@@ -630,6 +630,16 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
     return 'GENERAL';
   };
 
+  const toArDigits = (val: any): string => {
+    if (val === null || val === undefined || val === '') return '-';
+    const str = String(val);
+    const arMap: Record<string, string> = {
+      '0': '٠', '1': '١', '2': '٢', '3': '٣', '4': '٤',
+      '5': '٥', '6': '٦', '7': '٧', '8': '٨', '9': '٩'
+    };
+    return str.replace(/[0-9]/g, d => arMap[d] || d);
+  };
+
   const renderModern = (st: any) => {
     const stats = studentStats[st.id];
     const studentSubjs = subjects.filter(s => stats.subjects[s] !== undefined);
@@ -681,7 +691,11 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
           </td>
           {showRank && (
             <td style={{textAlign: 'center', fontSize: '0.82rem'}}>
-              {sRank ? getRankStr(sRank) : '-'}
+              {sRank ? (
+                <span style={{unicodeBidi: 'isolate', direction: 'ltr', display: 'inline-block'}}>
+                  {sRank}<sup>{sRank === 1 ? 'er' : 'e'}</sup>
+                </span>
+              ) : '-'}
             </td>
           )}
           <td style={{padding: '4px 6px', fontSize: '0.78rem'}}>
@@ -753,7 +767,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
             <div style={{fontWeight: 'bold', fontSize: '0.82rem', fontFamily: '"Cairo", serif'}}>جمهورية كوت ديفوار</div>
             <div style={{fontSize: '0.72rem', margin: '2px 0'}}>وزارة التربية الوطنية</div>
             <div style={{fontSize: '0.75rem', fontWeight: 'bold'}}>
-              العام الدراسي : {schoolInfo?.academic_year || `${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`}
+              العام الدراسي : {toArDigits(schoolInfo?.academic_year || `${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`)}
             </div>
           </div>
         </div>
@@ -779,7 +793,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
             </div>
             <div style={{display: 'flex', gap: '30px', marginTop: '6px', fontSize: '0.8rem'}}>
               <p style={{margin: 0}}>Adresse / العنوان : <strong>{schoolInfo?.address || drenText}</strong></p>
-              <p style={{margin: 0}}>Téléphone / الهاتف : <strong>{schoolInfo?.phone || '-'}</strong></p>
+              <p style={{margin: 0}}>Téléphone / الهاتف : <strong>{toArDigits(schoolInfo?.phone || '-')}</strong></p>
             </div>
           </div>
           <div className="school-statut">
@@ -805,11 +819,17 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
             <span>Affecté(e) : <strong>{st.is_assigned !== undefined ? (st.is_assigned ? 'Oui' : 'Non') : '-'}</strong></span>
           </div>
           <div className="student-profile-grid">
-            <div>Matricule / الرقم : <strong>{st.matricule || st.id.substring(0,8).toUpperCase()}</strong></div>
-            <div>Né(e) le / تاريخ الميلاد : <strong>{st.birth_date ? new Date(st.birth_date).toLocaleDateString('fr-FR') : '-'}</strong></div>
+            <div>
+              Matricule : <strong>{st.matricule || st.id.substring(0,8).toUpperCase()}</strong> <span style={{fontFamily: '"Cairo", serif', fontSize: '0.78rem'}}>({toArDigits(st.matricule || '')})</span>
+            </div>
+            <div>
+              Né(e) le : <strong>{st.birth_date ? new Date(st.birth_date).toLocaleDateString('fr-FR') : '-'}</strong> <span style={{fontFamily: '"Cairo", serif', fontSize: '0.78rem'}}>({st.birth_date ? toArDigits(new Date(st.birth_date).toLocaleDateString('fr-FR')) : '-'})</span>
+            </div>
             <div>Lieu / مكان الميلاد : <strong>{st.birth_place || '-'}</strong></div>
             <div>Classe / القسم : <strong>{classData?.name || '-'}</strong></div>
-            <div>Effectif / عدد الطلاب : <strong>{formatNum(students.length, 0)}</strong></div>
+            <div>
+              Effectif : <strong>{formatNum(students.length, 0)}</strong> <span style={{fontFamily: '"Cairo", serif', fontSize: '0.78rem'}}>(عدد الطلاب : {toArDigits(students.length)})</span>
+            </div>
             <div>Nationalité / الجنسية : <strong>{st.nationality || 'Ivoirienne'}</strong></div>
           </div>
         </div>
@@ -835,9 +855,9 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
             
             <tr className="bulletin-classic-totaux">
               <td colSpan={2} style={{fontWeight: 'bold', textTransform: 'uppercase', padding: '6px 8px'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                   <span>TOTAUX GÉNÉRAUX</span>
-                  <span style={{fontFamily: '"Cairo", serif'}}>المجموع العام</span>
+                  <span style={{fontFamily: '"Cairo", serif'}}>المجموع العام : {toArDigits(formatNum(stats.totalWeightedScore, 1))}</span>
                 </div>
               </td>
               <td style={{fontWeight: 'bold', textAlign: 'center'}}>{formatNum(stats.totalSubjectCoefs, 0)}</td>
@@ -856,9 +876,9 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
                 <table style={{width: '100%', borderCollapse: 'collapse', border: 'none', fontSize: '0.78rem'}}>
                   <thead>
                     <tr>
-                      <th style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', width: '33%', textAlign: 'center', padding: '3px'}}>Trim 1 / ف 1</th>
-                      <th style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', width: '33%', textAlign: 'center', padding: '3px'}}>Trim 2 / ف 2</th>
-                      <th style={{border: 'none', borderBottom: '1px solid black', width: '34%', textAlign: 'center', padding: '3px'}}>Trim 3 / ف 3</th>
+                      <th style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', width: '33%', textAlign: 'center', padding: '3px'}}>Trim 1 / ف ١</th>
+                      <th style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', width: '33%', textAlign: 'center', padding: '3px'}}>Trim 2 / ف ٢</th>
+                      <th style={{border: 'none', borderBottom: '1px solid black', width: '34%', textAlign: 'center', padding: '3px'}}>Trim 3 / ف ٣</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -905,7 +925,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
                       {stats.rank}<sup>{stats.rank === 1 ? 'er' : 'e'}</sup>
                     </strong>
                     <span style={{fontFamily: '"Cairo", serif', direction: 'rtl', marginRight: '4px'}}>
-                      (الترتيب : {formatNum(stats.rank, 0)})
+                      (الترتيب : {toArDigits(stats.rank)})
                     </span>
                   </p>
                 )}
@@ -927,15 +947,30 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
                     </thead>
                     <tbody>
                       <tr>
-                        <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', padding: '2px 6px'}}>Moyenne / المعدل</td>
+                        <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', padding: '2px 6px'}}>
+                          <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                            <span>Moyenne</span>
+                            <span style={{fontFamily: '"Cairo", serif'}}>المعدل : {toArDigits(formatNum(classAvg, 2))}</span>
+                          </div>
+                        </td>
                         <td style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center', fontWeight: 'bold'}}>{formatNum(classAvg, 2)}</td>
                       </tr>
                       <tr>
-                        <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', padding: '2px 6px'}}>Min / أدنى</td>
+                        <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', padding: '2px 6px'}}>
+                          <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                            <span>Min</span>
+                            <span style={{fontFamily: '"Cairo", serif'}}>أدنى : {toArDigits(formatNum(classMin, 2))}</span>
+                          </div>
+                        </td>
                         <td style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center'}}>{formatNum(classMin, 2)}</td>
                       </tr>
                       <tr>
-                        <td style={{border: 'none', borderRight: '1px solid black', padding: '2px 6px'}}>Max / أعلى</td>
+                        <td style={{border: 'none', borderRight: '1px solid black', padding: '2px 6px'}}>
+                          <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                            <span>Max</span>
+                            <span style={{fontFamily: '"Cairo", serif'}}>أعلى : {toArDigits(formatNum(classMax, 2))}</span>
+                          </div>
+                        </td>
                         <td style={{border: 'none', textAlign: 'center'}}>{formatNum(classMax, 2)}</td>
                       </tr>
                     </tbody>
@@ -1011,7 +1046,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
                     <div style={{margin: '6px 0', fontSize: '0.75rem'}}>
                       <p style={{margin: 0}}>Fait à {schoolInfo?.city || drenText || 'Divo'}, le : <strong>{new Date().toLocaleDateString('fr-FR')}</strong></p>
                       <p style={{margin: '2px 0 0 0', direction: 'rtl', fontFamily: '"Cairo", serif', fontWeight: 'bold'}}>
-                        حرر في {schoolInfo?.city || 'ديفو'} : {getHijriDate()}
+                        حرر في {schoolInfo?.city || 'ديفو'} : {toArDigits(getHijriDate())}
                       </p>
                     </div>
 
