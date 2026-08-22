@@ -505,18 +505,18 @@ html {
   border-top: none;
 }
 
-/* 2. MODERN / PREMIUM TEMPLATE */
-.bulletin-modern-page {
+/* 2. BILINGUAL / FRANCO-ARABE & MODERN TEMPLATE */
+.bulletin-bilingual-page, .bulletin-modern-page {
   background: white;
   width: 210mm;
   min-height: 297mm;
   margin: 0 auto;
-  padding: 12mm 14mm;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+  padding: 8mm 10mm;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
-  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
-  color: #1e293b;
-  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  border: 1px solid #ccc;
   position: relative;
 }
 
@@ -652,6 +652,7 @@ html {
   }
   .bulletin-classic-page,
   .bulletin-modern-page,
+  .bulletin-bilingual-page,
   .bulletin-primary-page {
     box-shadow: none !important;
     border: none !important;

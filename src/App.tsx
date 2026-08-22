@@ -5028,7 +5028,7 @@ function App() {
                     </div>
                   </div>
 
-                  {/* Template 2: Modern */}
+                  {/* Template 2: Franco-Arabe / Bilingue */}
                   <div 
                     onClick={() => setSelectedBulletinTemplate('modern')}
                     style={{
@@ -5045,10 +5045,10 @@ function App() {
                     {selectedBulletinTemplate === 'modern' && (
                       <span style={{position: 'absolute', top: '10px', right: '10px', fontSize: '1.1rem'}}>✅</span>
                     )}
-                    <div style={{fontSize: '1.8rem', marginBottom: '8px'}}>💎</div>
-                    <div style={{fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px'}}>Moderne & Épuré</div>
+                    <div style={{fontSize: '1.8rem', marginBottom: '8px'}}>📜</div>
+                    <div style={{fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px'}}>Franco-Arabe / Bilingue (كشف الدرجات)</div>
                     <div style={{fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: '1.3'}}>
-                      Design graphique soigné aux couleurs de l'école. Badges arrondis, cartes KPIs et mise en page contemporaine.
+                      Format officiel bilingue côte-à-côte (Français & Arabe), double tableau de matières (coraniques & générales) et 3 visas officiels.
                     </div>
                   </div>
 
