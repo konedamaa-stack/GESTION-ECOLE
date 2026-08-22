@@ -853,6 +853,9 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
           </div>
         </div>
       </div>
+    );
+  };
+
   // ----------------------------------------------------
   // TEMPLATE 3: MODÈLE COMPACT (2 PAR PAGE A4)
   // ----------------------------------------------------
