@@ -5072,9 +5072,9 @@ function App() {
                       <span style={{position: 'absolute', top: '10px', right: '10px', fontSize: '1.1rem'}}>✅</span>
                     )}
                     <div style={{fontSize: '1.8rem', marginBottom: '8px'}}>📄</div>
-                    <div style={{fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px'}}>Compact (2 / page A4)</div>
+                    <div style={{fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px'}}>Arabe Compact (2 / صفحة A4)</div>
                     <div style={{fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: '1.3'}}>
-                      2 bulletins par feuille A4 avec trait de découpe. Idéal pour économiser le papier et l'encre d'impression.
+                      كشف درجات باللغة العربية بالكامل (2 في الصفحة A4 مع خط القص). مخصص للمدارس العربية والإسلامية واقتصاد الورق.
                     </div>
                   </div>
 

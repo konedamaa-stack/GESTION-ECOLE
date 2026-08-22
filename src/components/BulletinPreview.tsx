@@ -1079,50 +1079,85 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
     );
   };
 
+  const getArabicPeriodName = (p: string) => {
+    if (!p) return "الفترة الأولى";
+    if (p.includes("1er Trimestre") || p.includes("1")) return "الفترة الأولى (الفصل الأول)";
+    if (p.includes("2ème Trimestre") || p.includes("2")) return "الفترة الثانية (الفصل الثاني)";
+    if (p.includes("3ème Trimestre") || p.includes("3")) return "الفترة الثالثة (الفصل الثالث)";
+    if (p.includes("1er Semestre")) return "السداسي الأول";
+    if (p.includes("2ème Semestre")) return "السداسي الثاني";
+    return p;
+  };
+
   // ----------------------------------------------------
-  // TEMPLATE 3: MODÈLE COMPACT (2 PAR PAGE A4)
+  // TEMPLATE 3: MODÈLE COMPACT (2 PAR PAGE A4) - ARABE UNIQUEMENT
   // ----------------------------------------------------
   const renderCompact = (st: any, index: number) => {
     const stats = studentStats[st.id];
 
+    const studentFullNameAr = (st.first_name_ar || st.last_name_ar) 
+      ? `${st.first_name_ar || ''} ${st.last_name_ar || ''}`.trim() 
+      : `${st.first_name || ''} ${st.last_name || ''}`.trim();
+
     return (
-      <div key={st.id} className="bulletin-compact-half" dir={isAr ? "rtl" : "ltr"}>
-        {/* Compact Header */}
-        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `2px solid ${brandColor}`, paddingBottom: '4px', marginBottom: '4px'}}>
-          <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+      <div key={st.id} className="bulletin-compact-half" dir="rtl" style={{fontFamily: '"Cairo", "Traditional Arabic", "Segoe UI", serif', textAlign: 'right'}}>
+        {/* Compact Arabic Header */}
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `2px solid ${brandColor}`, paddingBottom: '4px', marginBottom: '5px'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
             <img 
               src={schoolInfo?.logo_url || '/logo-coran.jpg'} 
               alt="Logo" 
-              style={{width: '32px', height: '32px', borderRadius: '4px', objectFit: 'contain'}} 
+              style={{width: '36px', height: '36px', borderRadius: '50%', objectFit: 'contain', border: `1px solid ${brandColor}`}} 
               onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo-coran.jpg'; }}
             />
             <div>
-              <div style={{fontWeight: 800, fontSize: '0.82rem', color: brandColor}}>{(schoolInfo?.school_name || "ÉCOLE").toUpperCase()}</div>
-              <div style={{fontSize: '0.65rem', color: '#64748b'}}>{customTitle} - {period}</div>
+              <div style={{fontWeight: 900, fontSize: '0.88rem', color: brandColor}}>
+                {schoolInfo?.school_name_ar || schoolInfo?.school_name || "المؤسسة التعليمية"}
+              </div>
+              <div style={{fontSize: '0.72rem', color: '#334155', fontWeight: 700}}>
+                كشف درجات الطلاب • {getArabicPeriodName(period)}
+              </div>
             </div>
           </div>
-          <div style={{textAlign: 'right', fontSize: '0.7rem'}}>
-            <div>Année: <strong>{schoolInfo?.academic_year || '2025-2026'}</strong></div>
-            <div>Classe: <strong>{classData?.name || '-'}</strong></div>
+          <div style={{textAlign: 'left', fontSize: '0.72rem', lineHeight: 1.3}}>
+            <div>العام الدراسي : <strong>{toArDigits(schoolInfo?.academic_year || '2025-2026')}</strong></div>
+            <div>القسم : <strong>{classData?.name || '-'}</strong></div>
           </div>
         </div>
 
-        {/* Student Bar */}
-        <div style={{display: 'flex', justifyContent: 'space-between', backgroundColor: '#f1f5f9', padding: '3px 6px', borderRadius: '4px', fontSize: '0.72rem', marginBottom: '4px'}}>
-          <div>Élève: <strong>{st.first_name?.toUpperCase()} {st.last_name?.toUpperCase()}</strong> ({st.matricule || st.id.substring(0,6)})</div>
-          <div>Moy: <strong style={{color: brandColor, fontSize: '0.8rem'}}>{formatNum(stats.generalAverage, 2)}/20</strong> {showRank && <>| Rang: <strong>{getRankStr(stats.rank)}</strong></>}</div>
+        {/* Student Bar (Arabic) */}
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f1f5f9', padding: '4px 8px', borderRadius: '5px', fontSize: '0.75rem', marginBottom: '5px', border: '1px solid #e2e8f0'}}>
+          <div>
+            اسم الطالب(ة) : <strong style={{color: '#0f172a', fontSize: '0.82rem'}}>{studentFullNameAr}</strong>
+            <span style={{marginRight: '8px', color: '#64748b', fontSize: '0.7rem'}}>
+              (الرقم : {toArDigits(st.matricule || st.id.substring(0,6))})
+            </span>
+          </div>
+          <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+            <div>
+              المعدل : <strong style={{color: brandColor, fontSize: '0.85rem'}}>{toArDigits(formatNum(stats.generalAverage, 2))} / ٢٠</strong>
+            </div>
+            {showRank && (
+              <div>
+                الترتيب : <strong style={{color: '#0f172a'}}>{toArDigits(stats.rank)}</strong>
+              </div>
+            )}
+            <span style={{backgroundColor: stats.generalAverage >= 12 ? '#dcfce7' : '#fef3c7', color: stats.generalAverage >= 12 ? '#166534' : '#92400e', padding: '1px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: 700}}>
+              {getArabicAppreciation(stats.generalAverage).split(' ')[0]}
+            </span>
+          </div>
         </div>
 
-        {/* Compact Table */}
-        <table className="compact-table" style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.68rem', marginBottom: '4px'}}>
+        {/* Compact Table (100% Arabic) */}
+        <table className="compact-table" style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.7rem', marginBottom: '5px'}}>
           <thead>
-            <tr style={{backgroundColor: '#e2e8f0'}}>
-              <th style={{textAlign: 'left', padding: '2px 4px', border: '1px solid #cbd5e1'}}>Matière</th>
-              <th style={{width: '40px', textAlign: 'center', border: '1px solid #cbd5e1'}}>Moy</th>
-              <th style={{width: '35px', textAlign: 'center', border: '1px solid #cbd5e1'}}>Coef</th>
-              <th style={{width: '45px', textAlign: 'center', border: '1px solid #cbd5e1'}}>Total</th>
-              {showRank && <th style={{width: '40px', textAlign: 'center', border: '1px solid #cbd5e1'}}>Rang</th>}
-              <th style={{textAlign: 'left', padding: '2px 4px', border: '1px solid #cbd5e1'}}>Appréciation</th>
+            <tr style={{backgroundColor: '#f8fafc'}}>
+              <th style={{textAlign: 'right', padding: '3px 6px', border: '1px solid #cbd5e1', width: '34%'}}>المادة الدراسية</th>
+              <th style={{width: '12%', textAlign: 'center', border: '1px solid #cbd5e1'}}>المعدل / ٢٠</th>
+              <th style={{width: '10%', textAlign: 'center', border: '1px solid #cbd5e1'}}>المعامل</th>
+              <th style={{width: '12%', textAlign: 'center', border: '1px solid #cbd5e1'}}>المجموع</th>
+              {showRank && <th style={{width: '10%', textAlign: 'center', border: '1px solid #cbd5e1'}}>الترتيب</th>}
+              <th style={{textAlign: 'right', padding: '3px 6px', border: '1px solid #cbd5e1', width: '22%'}}>التقدير والملاحظات</th>
             </tr>
           </thead>
           <tbody>
@@ -1131,44 +1166,62 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
               const coef = getSubjectCoef(s);
               const total = val * coef;
               const sRank = subjectRanks[s]?.[st.id];
+              const maxScore = subjectMaxScores[s] || 20;
+              const val20 = (val / maxScore) * 20;
 
               return (
                 <tr key={s}>
-                  <td style={{padding: '2px 4px', border: '1px solid #cbd5e1', fontWeight: 600}}>{translateBulletinWord(s)}</td>
-                  <td style={{textAlign: 'center', border: '1px solid #cbd5e1', fontWeight: 700}}>{formatNum(val, 1)}</td>
-                  <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>{coef}</td>
-                  <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>{formatNum(total, 1)}</td>
-                  {showRank && <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>{sRank ? getRankStr(sRank) : '-'}</td>}
-                  <td style={{padding: '2px 4px', border: '1px solid #cbd5e1'}}>{getAppreciation(val, 20)}</td>
+                  <td style={{padding: '3px 6px', border: '1px solid #cbd5e1', fontWeight: 700}}>
+                    {getSubjectArabicName(s)}
+                  </td>
+                  <td style={{textAlign: 'center', border: '1px solid #cbd5e1', fontWeight: 800}}>
+                    {toArDigits(formatNum(val20, 1))}
+                  </td>
+                  <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>
+                    {toArDigits(coef)}
+                  </td>
+                  <td style={{textAlign: 'center', border: '1px solid #cbd5e1', fontWeight: 700}}>
+                    {toArDigits(formatNum(total, 1))}
+                  </td>
+                  {showRank && (
+                    <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>
+                      {sRank ? toArDigits(sRank) : '-'}
+                    </td>
+                  )}
+                  <td style={{padding: '3px 6px', border: '1px solid #cbd5e1', fontSize: '0.68rem', fontWeight: 600}}>
+                    {getArabicAppreciation(val20).split(' ')[0]}
+                  </td>
                 </tr>
               );
             })}
-            <tr style={{backgroundColor: '#f8fafc', fontWeight: 'bold'}}>
-              <td style={{padding: '2px 4px', border: '1px solid #cbd5e1'}}>TOTAUX</td>
+            <tr style={{backgroundColor: '#f1f5f9', fontWeight: 'bold'}}>
+              <td style={{padding: '3px 6px', border: '1px solid #cbd5e1'}}>المجموع العام</td>
               <td style={{border: '1px solid #cbd5e1'}}></td>
-              <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>{stats.totalSubjectCoefs}</td>
-              <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>{formatNum(stats.totalWeightedScore, 1)}</td>
+              <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>{toArDigits(stats.totalSubjectCoefs)}</td>
+              <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>{toArDigits(formatNum(stats.totalWeightedScore, 1))}</td>
               <td colSpan={(showRank ? 1 : 0) + 1} style={{border: '1px solid #cbd5e1'}}></td>
             </tr>
           </tbody>
         </table>
 
-        {/* Compact Footer */}
-        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.68rem', marginTop: '2px'}}>
-          <div>Moyenne Classe: <strong>{formatNum(classAvg, 2)}</strong> | Min: <strong>{formatNum(classMin, 2)}</strong> | Max: <strong>{formatNum(classMax, 2)}</strong></div>
-          <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
-            <span>Cachet & Signature :</span>
+        {/* Compact Arabic Footer */}
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem', marginTop: '3px'}}>
+          <div style={{color: '#334155'}}>
+            معدل القسم : <strong>{toArDigits(formatNum(classAvg, 2))}</strong> | أدنى درجة : <strong>{toArDigits(formatNum(classMin, 2))}</strong> | أعلى درجة : <strong>{toArDigits(formatNum(classMax, 2))}</strong>
+          </div>
+          <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+            <span>تأشير وختم الإدارة :</span>
             {stampUrl ? (
-              <img src={stampUrl} alt="Cachet" style={{maxHeight: '22px', maxWidth: '50px', objectFit: 'contain'}} />
+              <img src={stampUrl} alt="Cachet" style={{maxHeight: '26px', maxWidth: '60px', objectFit: 'contain'}} />
             ) : (
-              <span style={{fontStyle: 'italic'}}>La Direction</span>
+              <span style={{fontWeight: 700, color: '#475569'}}>الإدارة</span>
             )}
           </div>
         </div>
 
         {/* Dotted Cut Line if first item of pair */}
         {index % 2 === 0 && (
-          <div className="compact-cut-line">
+          <div className="compact-cut-line" style={{marginTop: '4px'}}>
             <span>✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ✂</span>
           </div>
         )}
