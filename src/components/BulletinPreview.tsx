@@ -13,12 +13,37 @@ interface BulletinPreviewProps {
   targetStudentId?: string | null;
 }
 
-export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, students, evaluations, grades, period, schoolInfo, classSubjects, schedules, targetStudentId }) => {
+export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ 
+  classData, 
+  students, 
+  evaluations, 
+  grades, 
+  period, 
+  schoolInfo, 
+  classSubjects, 
+  schedules, 
+  targetStudentId 
+}) => {
   const { i18n } = useTranslation();
   const isAr = i18n.language.startsWith('ar');
 
+  // School configuration & preferences
+  const template = schoolInfo?.bulletin_template || 'classic'; // 'classic' | 'modern' | 'compact' | 'primary'
+  const brandColor = schoolInfo?.bulletin_color || schoolInfo?.primary_color || '#1e3a8a';
+  const showPhoto = schoolInfo?.show_student_photo !== false;
+  const showRank = schoolInfo?.show_rank !== false;
+  const showClassStats = schoolInfo?.show_class_stats !== false;
+  const showTeacherNames = schoolInfo?.show_teacher_names !== false;
+  const showHonorRoll = schoolInfo?.show_honor_roll !== false;
+  const showSignatures = schoolInfo?.show_signatures !== false;
+  const customTitle = schoolInfo?.bulletin_title || "BULLETIN TRIMESTRIEL DE NOTES";
+  const ministryText = schoolInfo?.ministry_header || "MINISTERE DE L'EDUCATION NATIONALE ET DE L'ALPHABETISATION";
+  const drenText = schoolInfo?.dren_name || schoolInfo?.address || 'DIVO';
+  const schoolStatut = schoolInfo?.school_statut || 'Privé';
+  const stampUrl = schoolInfo?.stamp_url || null;
+
   const translateBulletinWord = (word: string) => {
-    if (!i18n.language.startsWith('ar')) return word.toUpperCase();
+    if (!i18n.language.startsWith('ar')) return word;
     const map: Record<string, string> = {
       "Mathématiques": "الرياضيات",
       "Français": "الفرنسية",
@@ -34,26 +59,46 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
       "Arts Plastiques": "الفنون التشكيلية",
       "Éducation Musicale": "التربية الموسيقية",
       "DISCIPLINES": "المواد",
+      "Disciplines": "المواد",
+      "Matière": "المادة",
       "MOY": "المعدل",
+      "Moyenne": "المعدل",
       "COEF": "المعامل",
+      "Coef": "المعامل",
       "Total": "المجموع",
       "RANG": "الرتبة",
-      "Appréciations": "ملاحظات",
+      "Rang": "الرتبة",
+      "Appréciations": "ملاحظات الأستاذ",
+      "Appréciation": "ملاحظات",
       "PROFESSEUR": "الأستاذ",
+      "Professeur": "الأستاذ",
       "SIGNATURE": "التوقيع",
       "BILANS LETTRES": "حصيلة الآداب",
       "BILANS SCIENCES": "حصيلة العلوم",
       "BILANS AUTRES": "حصيلة أخرى",
       "LETTRES": "الآداب",
       "SCIENCES": "العلوم",
-      "AUTRES": "أخرى"
+      "AUTRES": "أخرى",
+      "Moyenne Générale": "المعدل العام",
+      "Résultat de la Classe": "نتائج القسم",
+      "Statut": "الوضعية",
+      "Matricule": "رقم التسجيل",
+      "Né(e) le": "تاريخ الازدياد",
+      "Lieu de Naissance": "مكان الازدياد",
+      "Classe": "القسم",
+      "Effectif": "عدد التلاميذ",
+      "Nationalité": "الجنسية",
+      "Etablissement": "المؤسسة",
+      "Année Scolaire": "السنة الدراسية",
+      "Chef d'établissement": "مدير المؤسسة",
+      "Le Directeur des Etudes": "مدير الدروس",
+      "Professeur principal": "الأستاذ الرئيسي"
     };
-    // Match exact or uppercase
-    return map[word] || map[word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()] || word.toUpperCase();
+    return map[word] || map[word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()] || word;
   };
 
-  const formatNum = (num: number, decimals: number = 2) => {
-    if (num === null || num === undefined) return "-";
+  const formatNum = (num: number | null | undefined, decimals: number = 2) => {
+    if (num === null || num === undefined || isNaN(num)) return "-";
     return new Intl.NumberFormat(i18n.language.startsWith("ar") ? "ar-EG" : "fr-FR", {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals
@@ -70,7 +115,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
     return subj ? subj.coefficient : 1;
   };
 
-  const studentStats: any = {};
+  const studentStats: Record<string, any> = {};
   
   students.forEach(st => {
     studentStats[st.id] = {
@@ -115,16 +160,15 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
   const subjectRanks: Record<string, Record<string, number>> = {};
   subjects.forEach(subject => {
     subjectRanks[subject] = {};
-    const rankingsForSubj: { id: string, avg: number }[] = [];
+    const rankingsForSubj: { id: string; avg: number }[] = [];
     students.forEach(st => {
-      const avg = studentStats[st.id].subjects[subject];
+      const avg = studentStats[st.id]?.subjects[subject];
       if (avg !== undefined) {
         rankingsForSubj.push({ id: st.id, avg });
       }
     });
     rankingsForSubj.sort((a, b) => b.avg - a.avg);
     rankingsForSubj.forEach((r, index) => {
-      // Handle ties (same average = same rank)
       if (index > 0 && r.avg === rankingsForSubj[index - 1].avg) {
         subjectRanks[subject][r.id] = subjectRanks[subject][rankingsForSubj[index - 1].id];
       } else {
@@ -133,8 +177,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
     });
   });
 
-  const rankings: { id: string, avg: number }[] = [];
-  
+  const rankings: { id: string; avg: number }[] = [];
   students.forEach(st => {
     const stats = studentStats[st.id];
     if (stats.totalSubjectCoefs > 0) {
@@ -144,9 +187,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
   });
 
   rankings.sort((a, b) => b.avg - a.avg);
-  
   rankings.forEach((r, index) => {
-    // Basic ranking logic (does not handle ties perfectly, but good enough)
     studentStats[r.id].rank = index + 1;
   });
 
@@ -155,9 +196,8 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
   const classMin = rankings.length > 0 ? rankings[rankings.length - 1].avg : 0;
 
   const getAppreciation = (note: number, subjectMaxScore = 20) => {
-    const isAr = i18n.language.startsWith("ar");
     const note20 = (note / subjectMaxScore) * 20;
-    if (note20 >= 16) return isAr ? "جيد جداً" : "Très Bien";
+    if (note20 >= 16) return isAr ? "ممتاز" : "Très Bien";
     if (note20 >= 14) return isAr ? "جيد" : "Bien";
     if (note20 >= 12) return isAr ? "مستحسن" : "Assez Bien";
     if (note20 >= 10) return isAr ? "مقبول" : "Passable";
@@ -167,11 +207,20 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
   };
 
   const getRankStr = (rank: number) => {
-    if (i18n.language.startsWith("ar")) {
-      return formatNum(rank, 0); // Display numeral
-    }
+    if (isAr) return formatNum(rank, 0);
     return rank === 1 ? "1er" : rank + "e";
   };
+
+  const getTeacherName = (subject: string) => {
+    if (!schedules || schedules.length === 0) return '';
+    const sched = schedules.find(s => s.class_id === classData?.id && s.subject === subject);
+    if (sched && sched.teachers) {
+      return `${sched.teachers.first_name || ''} ${sched.teachers.last_name || ''}`.trim();
+    }
+    return '';
+  };
+
+  const filteredStudents = students.filter(st => !targetStudentId || st.id === targetStudentId);
 
   const lettresSubjects = ["Français", "COMPO_FRANCAIS", "Anglais", "ANGLAIS", "Philosophie", "PHILOSOPHIE", "Histoire-Géographie", "HG", "HISTOIRE-GEOGRAPHIE", "Espagnol", "Allemand", "LV2", "Arabe"];
   const sciencesSubjects = ["Mathématiques", "MATHS", "MATHEMATIQUES", "Physique-Chimie", "PHYSIQUE", "PHYSIQUE-CHIMIE", "SVT", "Informatique", "INFORMATIQUE"];
@@ -183,281 +232,703 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({ classData, stu
     return 'AUTRES';
   };
 
-  return (
-    <div className="bulletin-classic-container">
-      {students.filter(st => !targetStudentId || st.id === targetStudentId).map((st) => {
-        const stats = studentStats[st.id];
-        
-        // Group subjects for this student
-        const studentSubjs = subjects.filter(s => stats.subjects[s] !== undefined);
-        const lettres = studentSubjs.filter(s => categorizeSubject(s) === 'LETTRES');
-        const sciences = studentSubjs.filter(s => categorizeSubject(s) === 'SCIENCES');
-        const autres = studentSubjs.filter(s => categorizeSubject(s) === 'AUTRES');
+  // ----------------------------------------------------
+  // TEMPLATE 1: MODÈLE CLASSIQUE / OFFICIEL
+  // ----------------------------------------------------
+  const renderClassic = (st: any) => {
+    const stats = studentStats[st.id];
+    const studentSubjs = subjects.filter(s => stats.subjects[s] !== undefined);
+    const lettres = studentSubjs.filter(s => categorizeSubject(s) === 'LETTRES');
+    const sciences = studentSubjs.filter(s => categorizeSubject(s) === 'SCIENCES');
+    const autres = studentSubjs.filter(s => categorizeSubject(s) === 'AUTRES');
 
-        const calculateGroupTotal = (group: string[]) => {
-          let tMoy = 0;
-          let tCoef = 0;
-          group.forEach(s => {
-            const val = stats.subjects[s];
-            const coef = getSubjectCoef(s);
-            if (val !== undefined && val !== null) {
-              const maxScore = subjectMaxScores[s] || 20;
-              const val20 = (val / maxScore) * 20;
-              tMoy += val20 * coef;
-              tCoef += coef;
-            }
-          });
-          return { tMoy, tCoef };
-        };
-
-        const getTeacherName = (subject: string) => {
-          if (!schedules || schedules.length === 0) return '';
-          const sched = schedules.find(s => s.class_id === classData?.id && s.subject === subject);
-          if (sched && sched.teachers) {
-            return `${sched.teachers.first_name || ''} ${sched.teachers.last_name || ''}`.trim();
-          }
-          return '';
-        };
-
-        const renderSubjectRow = (s: string) => {
-          const val = stats.subjects[s];
-          const coef = getSubjectCoef(s);
-          const total = val * coef;
-          const sRank = subjectRanks[s]?.[st.id];
-          const teacherName = getTeacherName(s);
+    const calculateGroupTotal = (group: string[]) => {
+      let tMoy = 0;
+      let tCoef = 0;
+      group.forEach(s => {
+        const val = stats.subjects[s];
+        const coef = getSubjectCoef(s);
+        if (val !== undefined && val !== null) {
           const maxScore = subjectMaxScores[s] || 20;
-          
-          return (
-            <tr key={s}>
-              <td style={{textAlign: isAr ? 'right' : 'left', paddingLeft: isAr ? '0' : '8px', paddingRight: isAr ? '8px' : '0', fontWeight: 'bold'}}>{translateBulletinWord(s)}</td>
-              <td>{formatNum(val, 1)}{maxScore !== 20 ? ' /' + maxScore : ''}</td>
-              <td>{formatNum(coef, 0)}</td>
-              <td>{formatNum(total, 1)}{maxScore !== 20 ? ' /' + (maxScore * coef) : ''}</td>
-              <td>{sRank ? getRankStr(sRank) : '-'}</td>
-              <td>{getAppreciation(val, maxScore)}</td>
-              <td style={{fontSize: '0.75rem', color: '#334155'}}>{teacherName}</td>
-              <td></td>
+          const val20 = (val / maxScore) * 20;
+          tMoy += val20 * coef;
+          tCoef += coef;
+        }
+      });
+      return { tMoy, tCoef };
+    };
+
+    const renderSubjectRow = (s: string) => {
+      const val = stats.subjects[s];
+      const coef = getSubjectCoef(s);
+      const total = val * coef;
+      const sRank = subjectRanks[s]?.[st.id];
+      const teacherName = getTeacherName(s);
+      const maxScore = subjectMaxScores[s] || 20;
+      
+      return (
+        <tr key={s}>
+          <td style={{textAlign: isAr ? 'right' : 'left', paddingLeft: isAr ? '0' : '8px', paddingRight: isAr ? '8px' : '0', fontWeight: 'bold'}}>{translateBulletinWord(s)}</td>
+          <td>{formatNum(val, 1)}{maxScore !== 20 ? ' /' + maxScore : ''}</td>
+          <td>{formatNum(coef, 0)}</td>
+          <td>{formatNum(total, 1)}{maxScore !== 20 ? ' /' + (maxScore * coef) : ''}</td>
+          {showRank && <td>{sRank ? getRankStr(sRank) : '-'}</td>}
+          <td>{getAppreciation(val, maxScore)}</td>
+          {showTeacherNames && <td style={{fontSize: '0.75rem', color: '#334155'}}>{teacherName}</td>}
+          <td></td>
+        </tr>
+      );
+    };
+
+    const renderGroup = (title: string, group: string[]) => {
+      if (group.length === 0) return null;
+      const { tMoy } = calculateGroupTotal(group);
+      const colSpanLeft = 3;
+      const colSpanRight = (showRank ? 1 : 0) + 1 + (showTeacherNames ? 1 : 0) + 1;
+
+      return (
+        <React.Fragment key={title}>
+          {group.map(renderSubjectRow)}
+          {title !== 'AUTRES' && (
+            <tr className="bulletin-group-header">
+              <td colSpan={colSpanLeft} style={{fontWeight: 'bold', textAlign: 'center', backgroundColor: '#dcfce7'}}>
+                {isAr ? 'حصيلة ' + translateBulletinWord(title) : 'BILANS ' + title.toUpperCase()}
+              </td>
+              <td style={{fontWeight: 'bold', textAlign: 'center', backgroundColor: '#dcfce7'}}>
+                {formatNum(tMoy, 1)}
+              </td>
+              <td colSpan={colSpanRight} style={{backgroundColor: '#dcfce7'}}></td>
             </tr>
-          );
-        };
+          )}
+        </React.Fragment>
+      );
+    };
 
-        const renderGroup = (title: string, group: string[]) => {
-          if (group.length === 0) return null;
-          const { tMoy } = calculateGroupTotal(group);
-          return (
-            <React.Fragment key={title}>
-              {group.map(renderSubjectRow)}
-              {title !== 'AUTRES' && (
-                <tr className="bulletin-group-header">
-                  <td colSpan={3} style={{fontWeight: 'bold', textAlign: 'center', backgroundColor: '#dcfce7'}}>
-                    {isAr ? 'حصيلة ' + translateBulletinWord(title) : 'BILANS ' + title.toUpperCase()}
-                  </td>
-                  <td style={{fontWeight: 'bold', textAlign: 'center', backgroundColor: '#dcfce7'}}>
-                    {formatNum(tMoy, 1)}
-                  </td>
-                  <td colSpan={4} style={{backgroundColor: '#dcfce7'}}></td>
-                </tr>
-              )}
-            </React.Fragment>
-          );
-        };
+    return (
+      <div key={st.id} className="bulletin-classic-page" dir={isAr ? "rtl" : "ltr"}>
+        {/* 1. Header Row */}
+        <div className="bulletin-classic-header">
+          <div className="header-left">
+            {ministryText}<br/>
+            <strong>{drenText ? `DREN ${drenText.toUpperCase()}` : ''}</strong>
+          </div>
+          <div className="header-center">
+            <h2 style={{color: brandColor}}>{customTitle.toUpperCase()}</h2>
+            <h3>{period || '3ème Trimestre'}</h3>
+          </div>
+          <div className="header-right">
+            {translateBulletinWord("Année Scolaire")}<br/>
+            <strong>{schoolInfo?.academic_year || `${new Date().getFullYear() - 1} - ${new Date().getFullYear()}`}</strong>
+          </div>
+        </div>
 
-        return (
-          <div key={st.id} className="bulletin-classic-page" dir={isAr ? "rtl" : "ltr"}>
+        {/* 2. School Info */}
+        <div className="bulletin-classic-school" style={{borderColor: brandColor}}>
+          <div className="school-logo">
+            <img 
+              src={schoolInfo?.logo_url || '/logo-coran.jpg'} 
+              alt="Logo" 
+              style={{width: '75px', height: '75px', borderRadius: '50%', objectFit: 'contain'}} 
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo-coran.jpg'; }}
+            />
+          </div>
+          <div className="school-details">
+            <p>{translateBulletinWord("Etablissement")}: <strong>{(schoolInfo?.school_name || schoolInfo?.name || "ÉTABLISSEMENT SCOLAIRE").toUpperCase()}</strong></p>
+            <div style={{display: 'flex', gap: '30px', marginTop: '6px', fontSize: '0.8rem'}}>
+              <p>{translateBulletinWord("Adresse Postale")}: <strong>{schoolInfo?.address || drenText}</strong></p>
+              <p>{translateBulletinWord("Telephone")}: <strong>{schoolInfo?.phone || '-'}</strong></p>
+            </div>
+          </div>
+          <div className="school-statut">
+            {showPhoto && st.photo_url ? (
+              <img src={st.photo_url} alt="Élève" style={{width: '55px', height: '65px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #ccc'}} />
+            ) : null}
+            <div>
+              <p>Code: <strong>{schoolInfo?.code || (schoolInfo?.id ? String(schoolInfo.id).substring(0, 6).toUpperCase() : '198192')}</strong></p>
+              <p>Statut: <strong>{schoolStatut}</strong></p>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Student Info */}
+        <div className="bulletin-classic-student" style={{borderColor: brandColor}}>
+          <div className="student-profile-header">
+            <span className="student-fullname">{st.first_name?.toUpperCase()} {st.last_name?.toUpperCase()}</span>
+            <span>Sexe: <strong>{st.gender || 'F'}</strong></span>
+            <span>Redoublant(e): <strong>{st.is_repeater ? 'Oui' : 'Non'}</strong></span>
+            <span>Affecté(e): <strong>{st.is_assigned !== undefined ? (st.is_assigned ? 'Oui' : 'Non') : '-'}</strong></span>
+          </div>
+          <div className="student-profile-grid">
+            <div>{translateBulletinWord("Matricule")}: <strong>{st.matricule || st.id.substring(0,8).toUpperCase()}</strong></div>
+            <div>{translateBulletinWord("Né(e) le")}: <strong>{st.birth_date ? new Date(st.birth_date).toLocaleDateString(isAr ? 'ar-EG' : 'fr-FR') : '-'}</strong></div>
+            <div>{translateBulletinWord("Lieu de Naissance")}: <strong>{st.birth_place || '-'}</strong></div>
+            <div>{translateBulletinWord("Classe")}: <strong>{classData?.name || '-'}</strong></div>
+            <div>{translateBulletinWord("Effectif")}: <strong>{formatNum(students.length, 0)}</strong></div>
+            <div>{translateBulletinWord("Nationalité")}: <strong>{st.nationality || 'Ivoirienne'}</strong></div>
+          </div>
+        </div>
+
+        {/* 4. Grades Table */}
+        <table className="bulletin-classic-table">
+          <thead>
+            <tr style={{backgroundColor: '#f8fafc'}}>
+              <th style={{width: '24%'}}>{translateBulletinWord("DISCIPLINES")}</th>
+              <th style={{width: '8%'}}>{translateBulletinWord("MOY")}</th>
+              <th style={{width: '7%'}}>{translateBulletinWord("COEF")}</th>
+              <th style={{width: '9%'}}>{translateBulletinWord("Total")}</th>
+              {showRank && <th style={{width: '7%'}}>{translateBulletinWord("RANG")}</th>}
+              <th style={{width: '18%'}}>{translateBulletinWord("Appréciations")}</th>
+              {showTeacherNames && <th style={{width: '17%'}}>{translateBulletinWord("PROFESSEUR")}</th>}
+              <th style={{width: '10%'}}>{translateBulletinWord("SIGNATURE")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {renderGroup('LETTRES', lettres)}
+            {renderGroup('SCIENCES', sciences)}
+            {renderGroup('AUTRES', autres)}
             
-            {/* 1. Header Row */}
-            <div className="bulletin-classic-header">
-              <div className="header-left">
-                {translateBulletinWord("MINISTERE DE L'EDUCATION NATIONALE ET DE")}<br/>
-                <u>{translateBulletinWord("L'ALPHABETISATION")}</u><br/>
-                <strong>DREN {schoolInfo?.address?.toUpperCase() || 'DIVO'}</strong>
-              </div>
-              <div className="header-center">
-                <h2>{translateBulletinWord("BULLETIN TRIMESTRIEL DE NOTES")}</h2>
-                <h3>{period || '3ème Trimestre'}</h3>
-              </div>
-              <div className="header-right">
-                {translateBulletinWord("Année Scolaire")}<br/>
-                <strong>{new Date().getFullYear() - 1} - {new Date().getFullYear()}</strong>
-              </div>
-            </div>
+            <tr className="bulletin-classic-totaux">
+              <td colSpan={2} style={{fontWeight: 'bold', textTransform: 'uppercase'}}>TOTAUX</td>
+              <td style={{fontWeight: 'bold'}}>{formatNum(stats.totalSubjectCoefs, 0)}</td>
+              <td style={{fontWeight: 'bold'}}>{formatNum(stats.totalWeightedScore, 1)}</td>
+              <td colSpan={(showRank ? 1 : 0) + 1 + (showTeacherNames ? 1 : 0) + 1}></td>
+            </tr>
+          </tbody>
+        </table>
 
-            {/* 2. School Info */}
-            <div className="bulletin-classic-school">
-              <div className="school-logo">
-                <img 
-                  src={schoolInfo?.logo_url || '/logo-coran.jpg'} 
-                  alt="Logo" 
-                  style={{width: '75px', height: '75px', borderRadius: '50%', objectFit: 'contain'}} 
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = '/logo-coran.jpg';
-                  }}
-                />
-              </div>
-              <div className="school-details">
-                <p>{translateBulletinWord("Etablissement")}: <strong>{(schoolInfo?.school_name || schoolInfo?.name || "COLLEGE CONFESSIONNELLE CHERIFLA DIVO").toUpperCase()}</strong></p>
-                <div style={{display: 'flex', gap: '30px', marginTop: '6px', fontSize: '0.8rem'}}>
-                  <p>{translateBulletinWord("Adresse Postale")}: <strong>{schoolInfo?.address || 'DIVO'}</strong></p>
-                  <p>{translateBulletinWord("Telephone")}: <strong>{schoolInfo?.phone || '01 03 41 17 43 / 05 44 09 47 37'}</strong></p>
-                </div>
-              </div>
-              <div className="school-statut">
-                <div>
-                  <p>Code: <strong>{schoolInfo?.code || (schoolInfo?.id ? String(schoolInfo.id).substring(0, 6).toUpperCase() : '198192')}</strong></p>
-                  <p>Statut: <strong>Privé</strong></p>
-                </div>
-              </div>
-            </div>
+        {/* 5. Averages & Ranks Box */}
+        <table className="bulletin-classic-table bulletin-classic-bottom-table">
+          <tbody>
+            <tr>
+              <td style={{width: '38%', verticalAlign: 'top', padding: 0}}>
+                <table style={{width: '100%', borderCollapse: 'collapse', border: 'none', fontSize: '0.78rem'}}>
+                  <thead>
+                    <tr>
+                      <th style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', width: '33%'}}>Trimestre 1</th>
+                      <th style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', width: '33%'}}>Trimestre 2</th>
+                      <th style={{border: 'none', borderBottom: '1px solid black', width: '34%'}}>Trimestre 3</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', textAlign: 'center'}}>Moy: <strong>{period === '1er Trimestre' ? formatNum(stats.generalAverage, 2) : '-'}</strong></td>
+                      <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', textAlign: 'center'}}>Moy: <strong>{period === '2ème Trimestre' ? formatNum(stats.generalAverage, 2) : '-'}</strong></td>
+                      <td style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center'}}>Moy: <strong>{period === '3ème Trimestre' ? formatNum(stats.generalAverage, 2) : '-'}</strong></td>
+                    </tr>
+                    {showRank && (
+                      <tr>
+                        <td style={{border: 'none', borderRight: '1px solid black', textAlign: 'center'}}>Rang: <strong>{period === '1er Trimestre' ? getRankStr(stats.rank) : '-'}</strong></td>
+                        <td style={{border: 'none', borderRight: '1px solid black', textAlign: 'center'}}>Rang: <strong>{period === '2ème Trimestre' ? getRankStr(stats.rank) : '-'}</strong></td>
+                        <td style={{border: 'none', textAlign: 'center'}}>Rang: <strong>{period === '3ème Trimestre' ? getRankStr(stats.rank) : '-'}</strong></td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </td>
+              <td style={{width: '32%', textAlign: 'center', verticalAlign: 'middle', borderLeft: '2px solid black', borderRight: '2px solid black', padding: '6px', backgroundColor: '#f8fafc'}}>
+                <p style={{fontWeight: 'bold', marginBottom: '4px', fontSize: '0.85rem'}}>Moyenne {period.includes('3ème') ? 'annuelle' : 'trimestrielle'}</p>
+                <p style={{fontSize: '1.5rem', fontWeight: 'bold', margin: '4px 0', color: brandColor}}>{formatNum(stats.generalAverage, 2)} /20</p>
+                {showRank && <p style={{margin: 0}}>Rang: <strong style={{fontSize: '1.1rem'}}>{getRankStr(stats.rank)}</strong></p>}
+              </td>
+              <td style={{width: '30%', verticalAlign: 'top', padding: 0}}>
+                {showClassStats ? (
+                  <table style={{width: '100%', height: '100%', borderCollapse: 'collapse', border: 'none', fontSize: '0.78rem'}}>
+                    <thead>
+                      <tr><th colSpan={2} style={{border: 'none', borderBottom: '1px solid black'}}>Résultat de la Classe</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', padding: '2px 4px'}}>Moyenne</td><td style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center', fontWeight: 'bold'}}>{formatNum(classAvg, 2)}</td></tr>
+                      <tr><td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', padding: '2px 4px'}}>Min</td><td style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center'}}>{formatNum(classMin, 2)}</td></tr>
+                      <tr><td style={{border: 'none', borderRight: '1px solid black', padding: '2px 4px'}}>Max</td><td style={{border: 'none', textAlign: 'center'}}>{formatNum(classMax, 2)}</td></tr>
+                    </tbody>
+                  </table>
+                ) : (
+                  <div style={{padding: '10px', textAlign: 'center', fontSize: '0.8rem', color: '#64748b'}}>Statistiques masquées</div>
+                )}
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-            {/* 3. Student Info */}
-            <div className="bulletin-classic-student">
-              <div className="student-profile-header">
-                <span className="student-fullname">{st.first_name?.toUpperCase()} {st.last_name?.toUpperCase()}</span>
-                <span>Sexe: <strong>{st.gender || 'F'}</strong></span>
-                <span>Redoublant(e): <strong>{st.is_repeater ? 'Oui' : 'Non'}</strong></span>
-                <span>Affecté(e): <strong>{st.is_assigned !== undefined ? (st.is_assigned ? 'Oui' : 'Non') : '-'}</strong></span>
-              </div>
-              <div className="student-profile-grid">
-                <div>{translateBulletinWord("Matricule")}: <strong>{st.matricule || st.id.substring(0,8).toUpperCase()}</strong></div>
-                <div>{translateBulletinWord("Né(e) le")}: <strong>{st.birth_date ? new Date(st.birth_date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR') : '-'}</strong></div>
-                <div>{translateBulletinWord("Lieu de Naissance")}: <strong>{st.birth_place || '-'}</strong></div>
-                <div>{translateBulletinWord("Classe")}: <strong>{classData?.name || '3ème'}</strong></div>
-                <div>{translateBulletinWord("Effectif")}: <strong>{formatNum(students.length, 0)}</strong></div>
-                <div>{translateBulletinWord("Nationalité")}: <strong>{st.nationality || 'Ivoirienne'}</strong></div>
-              </div>
-            </div>
-
-            {/* 4. Grades Table */}
-            <table className="bulletin-classic-table">
-              <thead>
-                <tr>
-                  <th style={{width: '24%'}}>{translateBulletinWord("DISCIPLINES")}</th>
-                  <th style={{width: '8%'}}>{translateBulletinWord("MOY")}</th>
-                  <th style={{width: '7%'}}>{translateBulletinWord("COEF")}</th>
-                  <th style={{width: '9%'}}>{translateBulletinWord("Total")}</th>
-                  <th style={{width: '7%'}}>{translateBulletinWord("RANG")}</th>
-                  <th style={{width: '17%'}}>{translateBulletinWord("Appréciations")}</th>
-                  <th style={{width: '18%'}}>{translateBulletinWord("PROFESSEUR")}</th>
-                  <th style={{width: '10%'}}>{translateBulletinWord("SIGNATURE")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {renderGroup('LETTRES', lettres)}
-                {renderGroup('SCIENCES', sciences)}
-                {renderGroup('AUTRES', autres)}
-                
-                {/* Total Row */}
-                <tr className="bulletin-classic-totaux">
-                  <td colSpan={2} style={{fontWeight: 'bold', textTransform: 'uppercase'}}>TOTAUX</td>
-                  <td style={{fontWeight: 'bold'}}>{formatNum(stats.totalSubjectCoefs, 0)}</td>
-                  <td style={{fontWeight: 'bold'}}>{formatNum(stats.totalWeightedScore, 1)}</td>
-                  <td colSpan={4}></td>
-                </tr>
-              </tbody>
-            </table>
-
-            {/* 5. Averages & Ranks Box */}
-            <table className="bulletin-classic-table bulletin-classic-bottom-table">
-              <tbody>
-                <tr>
-                  <td style={{width: '38%', verticalAlign: 'top', padding: 0}}>
-                    <table style={{width: '100%', borderCollapse: 'collapse', border: 'none', fontSize: '0.78rem'}}>
-                      <thead>
-                        <tr>
-                          <th style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', width: '33%'}}>Trimestre 1</th>
-                          <th style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', width: '33%'}}>Trimestre 2</th>
-                          <th style={{border: 'none', borderBottom: '1px solid black', width: '34%'}}>Trimestre 3</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', textAlign: 'center'}}>Moy: <strong>{period === '1er Trimestre' ? formatNum(stats.generalAverage, 2) : '-'}</strong></td>
-                          <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', textAlign: 'center'}}>Moy: <strong>{period === '2ème Trimestre' ? formatNum(stats.generalAverage, 2) : '-'}</strong></td>
-                          <td style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center'}}>Moy: <strong>{period === '3ème Trimestre' ? formatNum(stats.generalAverage, 2) : '-'}</strong></td>
-                        </tr>
-                        <tr>
-                          <td style={{border: 'none', borderRight: '1px solid black', textAlign: 'center'}}>Rang: <strong>{period === '1er Trimestre' ? getRankStr(stats.rank) : '-'}</strong></td>
-                          <td style={{border: 'none', borderRight: '1px solid black', textAlign: 'center'}}>Rang: <strong>{period === '2ème Trimestre' ? getRankStr(stats.rank) : '-'}</strong></td>
-                          <td style={{border: 'none', textAlign: 'center'}}>Rang: <strong>{period === '3ème Trimestre' ? getRankStr(stats.rank) : '-'}</strong></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </td>
-                  <td style={{width: '32%', textAlign: 'center', verticalAlign: 'middle', borderLeft: '2px solid black', borderRight: '2px solid black', padding: '6px'}}>
-                    <p style={{fontWeight: 'bold', marginBottom: '4px', fontSize: '0.85rem'}}>Moyenne {period.includes('3ème') ? 'annuelle' : 'trimestrielle'}</p>
-                    <p style={{fontSize: '1.4rem', fontWeight: 'bold', margin: '4px 0'}}>{formatNum(stats.generalAverage, 2)} /20</p>
-                    <p style={{margin: 0}}>Rang: <strong style={{fontSize: '1.1rem'}}>{getRankStr(stats.rank)}</strong></p>
-                  </td>
-                  <td style={{width: '30%', verticalAlign: 'top', padding: 0}}>
-                    <table style={{width: '100%', height: '100%', borderCollapse: 'collapse', border: 'none', fontSize: '0.78rem'}}>
-                      <thead>
-                        <tr><th colSpan={2} style={{border: 'none', borderBottom: '1px solid black'}}>Résultat de la Classe</th></tr>
-                      </thead>
-                      <tbody>
-                        <tr><td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', padding: '2px 4px'}}>Moyenne</td><td style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center', fontWeight: 'bold'}}>{formatNum(classAvg, 2)}</td></tr>
-                        <tr><td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', padding: '2px 4px'}}>Min</td><td style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center'}}>{formatNum(classMin, 2)}</td></tr>
-                        <tr><td style={{border: 'none', borderRight: '1px solid black', padding: '2px 4px'}}>Max</td><td style={{border: 'none', textAlign: 'center'}}>{formatNum(classMax, 2)}</td></tr>
-                      </tbody>
-                    </table>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            {/* 6. Signatures Box */}
-            <table className="bulletin-classic-table bulletin-classic-bottom-table" style={{borderTop: 'none'}}>
-              <tbody>
-                <tr>
-                  <td style={{width: '38%', verticalAlign: 'top', padding: 0}}>
+        {/* 6. Signatures & Honor Roll Box */}
+        {showSignatures && (
+          <table className="bulletin-classic-table bulletin-classic-bottom-table" style={{borderTop: 'none'}}>
+            <tbody>
+              <tr>
+                <td style={{width: '38%', verticalAlign: 'top', padding: 0}}>
+                  {showHonorRoll ? (
                     <table style={{width: '100%', borderCollapse: 'collapse', border: 'none', fontSize: '0.72rem'}}>
                       <thead>
                         <tr>
-                          <th style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center', padding: '2px'}}>Mentions du conseil de classe / Distinctions</th>
+                          <th style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center', padding: '2px'}}>Distinctions & Mentions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr><td style={{border: 'none', borderBottom: '1px solid black', padding: '2px 6px'}}>Tableau d'honneur + félicitations</td></tr>
-                        <tr><td style={{border: 'none', borderBottom: '1px solid black', padding: '2px 6px'}}>Tableau d'honneur + Encouragement</td></tr>
-                        <tr><td style={{border: 'none', borderBottom: '1px solid black', padding: '2px 6px'}}>Tableau d'honneur</td></tr>
+                        <tr style={{backgroundColor: stats.generalAverage >= 14 ? '#dcfce7' : 'transparent'}}>
+                          <td style={{border: 'none', borderBottom: '1px solid black', padding: '2px 6px'}}>Tableau d'honneur + félicitations {stats.generalAverage >= 16 ? '⭐' : ''}</td>
+                        </tr>
+                        <tr style={{backgroundColor: stats.generalAverage >= 12 && stats.generalAverage < 14 ? '#dcfce7' : 'transparent'}}>
+                          <td style={{border: 'none', borderBottom: '1px solid black', padding: '2px 6px'}}>Tableau d'honneur + Encouragement</td>
+                        </tr>
+                        <tr style={{backgroundColor: stats.generalAverage >= 10 && stats.generalAverage < 12 ? '#f1f5f9' : 'transparent'}}>
+                          <td style={{border: 'none', borderBottom: '1px solid black', padding: '2px 6px'}}>Tableau d'honneur</td>
+                        </tr>
                         <tr><td style={{border: 'none', borderBottom: '1px solid black', padding: '2px 6px', fontWeight: 'bold', backgroundColor: '#f8fafc'}}>SANCTION</td></tr>
                         <tr><td style={{border: 'none', borderBottom: '1px solid black', padding: '2px 6px'}}>Avertissement travail</td></tr>
-                        <tr><td style={{border: 'none', borderBottom: '1px solid black', padding: '2px 6px'}}>Avertissement conduite</td></tr>
-                        <tr><td style={{border: 'none', borderBottom: '1px solid black', padding: '2px 6px'}}>Blâme travail</td></tr>
                         <tr><td style={{border: 'none', padding: '2px 6px'}}>Blâme conduite</td></tr>
                       </tbody>
                     </table>
-                  </td>
-                  <td style={{width: '32%', textAlign: 'center', verticalAlign: 'top', padding: '6px', borderLeft: '2px solid black', borderRight: '2px solid black'}}>
-                    <p style={{fontWeight: 'bold', textDecoration: 'underline', marginBottom: '8px', fontSize: '0.85rem'}}>Décision de fin d'année</p>
-                    <p style={{marginBottom: '6px', fontSize: '0.8rem'}}>Admis(e) en classe supérieure</p>
-                    <p style={{fontSize: '0.75rem', fontStyle: 'italic', color: '#64748b', marginBottom: '24px'}}>Voir CNO</p>
-                    <p style={{fontWeight: 'bold', fontSize: '0.8rem', margin: 0}}>Professeur principal</p>
-                  </td>
-                  <td style={{width: '30%', textAlign: 'center', verticalAlign: 'top', padding: '6px'}}>
-                    <div style={{display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between'}}>
-                      <div>
-                        <p style={{fontWeight: 'bold', fontSize: '0.82rem', margin: '0 0 2px 0'}}>Chef d'établissement</p>
-                      </div>
-                      
-                      <div style={{margin: '10px 0'}}>
-                        <p style={{fontSize: '0.75rem', margin: 0}}>Fait à {schoolInfo?.city || schoolInfo?.address || 'DIVO'}, le :</p>
-                        <p style={{fontWeight: 'bold', fontSize: '0.8rem', marginTop: '2px'}}>{new Date().toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</p>
-                      </div>
-
-                      <div>
-                        <p style={{fontWeight: 'bold', fontSize: '0.8rem', margin: '0 0 2px 0'}}>Le Directeur des Etudes</p>
-                        <p style={{fontSize: '0.82rem', fontWeight: 'bold', textTransform: 'uppercase', marginTop: '15px'}}>{schoolInfo?.principal_name || 'SANOGO GAOUSSHOU'}</p>
-                      </div>
+                  ) : (
+                    <div style={{padding: '12px', fontSize: '0.75rem', color: '#64748b'}}>Appréciation globale : <strong>{getAppreciation(stats.generalAverage, 20)}</strong></div>
+                  )}
+                </td>
+                <td style={{width: '32%', textAlign: 'center', verticalAlign: 'top', padding: '6px', borderLeft: '2px solid black', borderRight: '2px solid black'}}>
+                  <p style={{fontWeight: 'bold', textDecoration: 'underline', marginBottom: '8px', fontSize: '0.85rem'}}>Décision de fin d'année</p>
+                  <p style={{marginBottom: '6px', fontSize: '0.8rem'}}>Admis(e) en classe supérieure</p>
+                  <p style={{fontSize: '0.75rem', fontStyle: 'italic', color: '#64748b', marginBottom: '24px'}}>Observations</p>
+                  <p style={{fontWeight: 'bold', fontSize: '0.8rem', margin: 0}}>Professeur principal</p>
+                </td>
+                <td style={{width: '30%', textAlign: 'center', verticalAlign: 'top', padding: '6px', position: 'relative'}}>
+                  <div style={{display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between'}}>
+                    <div>
+                      <p style={{fontWeight: 'bold', fontSize: '0.82rem', margin: '0 0 2px 0'}}>Chef d'établissement</p>
                     </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    
+                    <div style={{margin: '10px 0'}}>
+                      <p style={{fontSize: '0.75rem', margin: 0}}>Fait à {schoolInfo?.city || drenText}, le :</p>
+                      <p style={{fontWeight: 'bold', fontSize: '0.8rem', marginTop: '2px'}}>{new Date().toLocaleDateString(isAr ? 'ar-EG' : 'fr-FR')}</p>
+                    </div>
 
+                    {stampUrl && (
+                      <div style={{margin: '4px 0'}}>
+                        <img src={stampUrl} alt="Cachet" style={{maxHeight: '45px', maxWidth: '100px', objectFit: 'contain', opacity: 0.85}} />
+                      </div>
+                    )}
+
+                    <div>
+                      <p style={{fontWeight: 'bold', fontSize: '0.8rem', margin: '0 0 2px 0'}}>Le Directeur des Etudes</p>
+                      <p style={{fontSize: '0.82rem', fontWeight: 'bold', textTransform: 'uppercase', marginTop: '10px'}}>{schoolInfo?.principal_name || schoolInfo?.studies_director_name || 'LA DIRECTION'}</p>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        )}
+      </div>
+    );
+  };
+
+  // ----------------------------------------------------
+  // TEMPLATE 2: MODÈLE MODERNE & ÉLÉGANT
+  // ----------------------------------------------------
+  const renderModern = (st: any) => {
+    const stats = studentStats[st.id];
+
+    return (
+      <div key={st.id} className="bulletin-modern-page" dir={isAr ? "rtl" : "ltr"}>
+        {/* Header Ribbon */}
+        <div className="modern-header" style={{borderColor: brandColor}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
+            <img 
+              src={schoolInfo?.logo_url || '/logo-coran.jpg'} 
+              alt="Logo" 
+              style={{width: '65px', height: '65px', borderRadius: '12px', objectFit: 'contain', boxShadow: '0 2px 8px rgba(0,0,0,0.08)'}}
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo-coran.jpg'; }}
+            />
+            <div>
+              <h1 style={{fontSize: '1.25rem', fontWeight: 800, margin: 0, color: brandColor, letterSpacing: '-0.5px'}}>
+                {(schoolInfo?.school_name || schoolInfo?.name || "ÉTABLISSEMENT SCOLAIRE").toUpperCase()}
+              </h1>
+              <p style={{fontSize: '0.8rem', color: '#64748b', margin: '2px 0 0 0'}}>
+                {schoolInfo?.address || drenText} • Tél: {schoolInfo?.phone || '-'}
+              </p>
+            </div>
           </div>
-        );
-      })}
+          <div style={{textAlign: isAr ? 'left' : 'right'}}>
+            <div style={{display: 'inline-block', backgroundColor: `${brandColor}15`, color: brandColor, padding: '4px 12px', borderRadius: '20px', fontWeight: 700, fontSize: '0.85rem'}}>
+              {period || 'Trimestre'}
+            </div>
+            <div style={{fontSize: '0.78rem', color: '#64748b', marginTop: '4px'}}>
+              Année: <strong>{schoolInfo?.academic_year || `${new Date().getFullYear() - 1} - ${new Date().getFullYear()}`}</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* Student Card */}
+        <div className="modern-student-card" style={{borderLeft: `4px solid ${brandColor}`}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '14px', flex: 1}}>
+            {showPhoto && (
+              <div style={{width: '52px', height: '52px', borderRadius: '10px', overflow: 'hidden', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #cbd5e1'}}>
+                {st.photo_url ? (
+                  <img src={st.photo_url} alt="Photo" style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                ) : (
+                  <span style={{fontSize: '1.4rem'}}>👤</span>
+                )}
+              </div>
+            )}
+            <div>
+              <div style={{fontSize: '1.1rem', fontWeight: 800, color: '#0f172a'}}>
+                {st.first_name?.toUpperCase()} {st.last_name?.toUpperCase()}
+              </div>
+              <div style={{display: 'flex', gap: '10px', fontSize: '0.78rem', color: '#475569', marginTop: '2px'}}>
+                <span>Matricule: <strong>{st.matricule || st.id.substring(0,8).toUpperCase()}</strong></span>
+                <span>•</span>
+                <span>Classe: <strong>{classData?.name || '-'}</strong></span>
+                <span>•</span>
+                <span>Effectif: <strong>{students.length}</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{display: 'flex', gap: '12px'}}>
+            <div style={{textAlign: 'center', padding: '6px 14px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0'}}>
+              <div style={{fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600}}>Moyenne</div>
+              <div style={{fontSize: '1.3rem', fontWeight: 800, color: brandColor}}>{formatNum(stats.generalAverage, 2)}</div>
+            </div>
+            {showRank && (
+              <div style={{textAlign: 'center', padding: '6px 14px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0'}}>
+                <div style={{fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600}}>Rang</div>
+                <div style={{fontSize: '1.3rem', fontWeight: 800, color: '#0f172a'}}>{getRankStr(stats.rank)}</div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Modern Grades Table */}
+        <table className="modern-table">
+          <thead>
+            <tr style={{backgroundColor: brandColor, color: 'white'}}>
+              <th style={{textAlign: isAr ? 'right' : 'left', padding: '8px 12px'}}>{translateBulletinWord("Matière")}</th>
+              <th style={{width: '70px'}}>{translateBulletinWord("Moy")}</th>
+              <th style={{width: '60px'}}>{translateBulletinWord("Coef")}</th>
+              <th style={{width: '75px'}}>{translateBulletinWord("Total")}</th>
+              {showRank && <th style={{width: '65px'}}>{translateBulletinWord("Rang")}</th>}
+              <th>{translateBulletinWord("Appréciations")}</th>
+              {showTeacherNames && <th style={{width: '120px'}}>{translateBulletinWord("Professeur")}</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {subjects.filter(s => stats.subjects[s] !== undefined).map((s, idx) => {
+              const val = stats.subjects[s];
+              const coef = getSubjectCoef(s);
+              const total = val * coef;
+              const sRank = subjectRanks[s]?.[st.id];
+              const teacherName = getTeacherName(s);
+              const maxScore = subjectMaxScores[s] || 20;
+
+              return (
+                <tr key={s} style={{backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc'}}>
+                  <td style={{textAlign: isAr ? 'right' : 'left', fontWeight: 600, padding: '7px 12px'}}>
+                    {translateBulletinWord(s)}
+                  </td>
+                  <td style={{fontWeight: 700, color: val >= 10 ? '#047857' : '#b91c1c', textAlign: 'center'}}>
+                    {formatNum(val, 1)}
+                  </td>
+                  <td style={{textAlign: 'center', color: '#64748b'}}>{formatNum(coef, 0)}</td>
+                  <td style={{textAlign: 'center', fontWeight: 600}}>{formatNum(total, 1)}</td>
+                  {showRank && (
+                    <td style={{textAlign: 'center'}}>
+                      <span style={{padding: '2px 8px', borderRadius: '12px', backgroundColor: '#e2e8f0', fontSize: '0.75rem', fontWeight: 600}}>
+                        {sRank ? getRankStr(sRank) : '-'}
+                      </span>
+                    </td>
+                  )}
+                  <td style={{padding: '4px 8px', fontSize: '0.8rem'}}>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '2px 8px',
+                      borderRadius: '6px',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      backgroundColor: val >= 14 ? '#dcfce7' : val >= 10 ? '#fef3c7' : '#fee2e2',
+                      color: val >= 14 ? '#15803d' : val >= 10 ? '#b45309' : '#b91c1c'
+                    }}>
+                      {getAppreciation(val, maxScore)}
+                    </span>
+                  </td>
+                  {showTeacherNames && <td style={{fontSize: '0.75rem', color: '#475569', padding: '4px 8px'}}>{teacherName}</td>}
+                </tr>
+              );
+            })}
+            
+            {/* Totals footer */}
+            <tr style={{backgroundColor: '#f1f5f9', fontWeight: 800}}>
+              <td style={{padding: '8px 12px'}}>{translateBulletinWord("Total").toUpperCase()}</td>
+              <td></td>
+              <td style={{textAlign: 'center'}}>{formatNum(stats.totalSubjectCoefs, 0)}</td>
+              <td style={{textAlign: 'center'}}>{formatNum(stats.totalWeightedScore, 1)}</td>
+              <td colSpan={(showRank ? 1 : 0) + 1 + (showTeacherNames ? 1 : 0)}></td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Modern Bottom KPI Grid */}
+        <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginTop: '10px'}}>
+          {/* Class statistics */}
+          <div style={{backgroundColor: '#f8fafc', borderRadius: '10px', padding: '10px', border: '1px solid #e2e8f0'}}>
+            <div style={{fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '6px'}}>{translateBulletinWord("Résultat de la Classe")}</div>
+            {showClassStats ? (
+              <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem'}}>
+                <div>Moyenne: <strong>{formatNum(classAvg, 2)}</strong></div>
+                <div>Min: <strong>{formatNum(classMin, 2)}</strong></div>
+                <div>Max: <strong>{formatNum(classMax, 2)}</strong></div>
+              </div>
+            ) : (
+              <div style={{fontSize: '0.78rem', color: '#94a3b8'}}>Non communiqué</div>
+            )}
+          </div>
+
+          {/* Distinction */}
+          <div style={{backgroundColor: '#f8fafc', borderRadius: '10px', padding: '10px', border: '1px solid #e2e8f0', textAlign: 'center'}}>
+            <div style={{fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '4px'}}>Mention globale</div>
+            <div style={{fontSize: '0.95rem', fontWeight: 800, color: brandColor}}>
+              {stats.generalAverage >= 16 ? '🌟 Félicitations du Jury' : stats.generalAverage >= 14 ? '⭐ Tableau d\'honneur' : stats.generalAverage >= 12 ? '👍 Encouragements' : stats.generalAverage >= 10 ? 'Admis' : 'Travail insuffisant'}
+            </div>
+          </div>
+
+          {/* Signature */}
+          <div style={{backgroundColor: '#f8fafc', borderRadius: '10px', padding: '10px', border: '1px solid #e2e8f0', textAlign: 'center', position: 'relative'}}>
+            <div style={{fontSize: '0.75rem', fontWeight: 700, color: '#475569'}}>Chef d'établissement</div>
+            {stampUrl && (
+              <img src={stampUrl} alt="Cachet" style={{maxHeight: '40px', maxWidth: '80px', objectFit: 'contain', margin: '2px 0'}} />
+            )}
+            <div style={{fontSize: '0.75rem', color: '#64748b', marginTop: stampUrl ? '0' : '15px'}}>
+              {schoolInfo?.principal_name || 'La Direction'}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ----------------------------------------------------
+  // TEMPLATE 3: MODÈLE COMPACT (2 PAR PAGE A4)
+  // ----------------------------------------------------
+  const renderCompact = (st: any, index: number) => {
+    const stats = studentStats[st.id];
+
+    return (
+      <div key={st.id} className="bulletin-compact-half" dir={isAr ? "rtl" : "ltr"}>
+        {/* Compact Header */}
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `2px solid ${brandColor}`, paddingBottom: '4px', marginBottom: '4px'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+            <img 
+              src={schoolInfo?.logo_url || '/logo-coran.jpg'} 
+              alt="Logo" 
+              style={{width: '32px', height: '32px', borderRadius: '4px', objectFit: 'contain'}} 
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo-coran.jpg'; }}
+            />
+            <div>
+              <div style={{fontWeight: 800, fontSize: '0.82rem', color: brandColor}}>{(schoolInfo?.school_name || "ÉCOLE").toUpperCase()}</div>
+              <div style={{fontSize: '0.65rem', color: '#64748b'}}>{customTitle} - {period}</div>
+            </div>
+          </div>
+          <div style={{textAlign: 'right', fontSize: '0.7rem'}}>
+            <div>Année: <strong>{schoolInfo?.academic_year || '2025-2026'}</strong></div>
+            <div>Classe: <strong>{classData?.name || '-'}</strong></div>
+          </div>
+        </div>
+
+        {/* Student Bar */}
+        <div style={{display: 'flex', justifyContent: 'space-between', backgroundColor: '#f1f5f9', padding: '3px 6px', borderRadius: '4px', fontSize: '0.72rem', marginBottom: '4px'}}>
+          <div>Élève: <strong>{st.first_name?.toUpperCase()} {st.last_name?.toUpperCase()}</strong> ({st.matricule || st.id.substring(0,6)})</div>
+          <div>Moy: <strong style={{color: brandColor, fontSize: '0.8rem'}}>{formatNum(stats.generalAverage, 2)}/20</strong> {showRank && <>| Rang: <strong>{getRankStr(stats.rank)}</strong></>}</div>
+        </div>
+
+        {/* Compact Table */}
+        <table className="compact-table" style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.68rem', marginBottom: '4px'}}>
+          <thead>
+            <tr style={{backgroundColor: '#e2e8f0'}}>
+              <th style={{textAlign: 'left', padding: '2px 4px', border: '1px solid #cbd5e1'}}>Matière</th>
+              <th style={{width: '40px', textAlign: 'center', border: '1px solid #cbd5e1'}}>Moy</th>
+              <th style={{width: '35px', textAlign: 'center', border: '1px solid #cbd5e1'}}>Coef</th>
+              <th style={{width: '45px', textAlign: 'center', border: '1px solid #cbd5e1'}}>Total</th>
+              {showRank && <th style={{width: '40px', textAlign: 'center', border: '1px solid #cbd5e1'}}>Rang</th>}
+              <th style={{textAlign: 'left', padding: '2px 4px', border: '1px solid #cbd5e1'}}>Appréciation</th>
+            </tr>
+          </thead>
+          <tbody>
+            {subjects.filter(s => stats.subjects[s] !== undefined).map(s => {
+              const val = stats.subjects[s];
+              const coef = getSubjectCoef(s);
+              const total = val * coef;
+              const sRank = subjectRanks[s]?.[st.id];
+
+              return (
+                <tr key={s}>
+                  <td style={{padding: '2px 4px', border: '1px solid #cbd5e1', fontWeight: 600}}>{translateBulletinWord(s)}</td>
+                  <td style={{textAlign: 'center', border: '1px solid #cbd5e1', fontWeight: 700}}>{formatNum(val, 1)}</td>
+                  <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>{coef}</td>
+                  <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>{formatNum(total, 1)}</td>
+                  {showRank && <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>{sRank ? getRankStr(sRank) : '-'}</td>}
+                  <td style={{padding: '2px 4px', border: '1px solid #cbd5e1'}}>{getAppreciation(val, 20)}</td>
+                </tr>
+              );
+            })}
+            <tr style={{backgroundColor: '#f8fafc', fontWeight: 'bold'}}>
+              <td style={{padding: '2px 4px', border: '1px solid #cbd5e1'}}>TOTAUX</td>
+              <td style={{border: '1px solid #cbd5e1'}}></td>
+              <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>{stats.totalSubjectCoefs}</td>
+              <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>{formatNum(stats.totalWeightedScore, 1)}</td>
+              <td colSpan={(showRank ? 1 : 0) + 1} style={{border: '1px solid #cbd5e1'}}></td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Compact Footer */}
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.68rem', marginTop: '2px'}}>
+          <div>Moyenne Classe: <strong>{formatNum(classAvg, 2)}</strong> | Min: <strong>{formatNum(classMin, 2)}</strong> | Max: <strong>{formatNum(classMax, 2)}</strong></div>
+          <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+            <span>Cachet & Signature :</span>
+            {stampUrl ? (
+              <img src={stampUrl} alt="Cachet" style={{maxHeight: '22px', maxWidth: '50px', objectFit: 'contain'}} />
+            ) : (
+              <span style={{fontStyle: 'italic'}}>La Direction</span>
+            )}
+          </div>
+        </div>
+
+        {/* Dotted Cut Line if first item of pair */}
+        {index % 2 === 0 && (
+          <div className="compact-cut-line">
+            <span>✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ✂</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ----------------------------------------------------
+  // TEMPLATE 4: MODÈLE PRIMAIRE & COMPÉTENCES
+  // ----------------------------------------------------
+  const renderPrimary = (st: any) => {
+    const stats = studentStats[st.id];
+
+    return (
+      <div key={st.id} className="bulletin-primary-page" dir={isAr ? "rtl" : "ltr"}>
+        {/* Playful Header */}
+        <div style={{backgroundColor: `${brandColor}12`, border: `2px dashed ${brandColor}`, borderRadius: '16px', padding: '12px 18px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '14px'}}>
+            <img 
+              src={schoolInfo?.logo_url || '/logo-coran.jpg'} 
+              alt="Logo" 
+              style={{width: '60px', height: '60px', borderRadius: '50%', objectFit: 'contain', border: `2px solid ${brandColor}`}} 
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo-coran.jpg'; }}
+            />
+            <div>
+              <h2 style={{margin: 0, fontSize: '1.2rem', color: brandColor, fontWeight: 800}}>
+                {schoolInfo?.school_name || "ÉCOLE PRIMAIRE"}
+              </h2>
+              <p style={{margin: '2px 0 0 0', fontSize: '0.85rem', color: '#475569'}}>
+                🎒 Carnet d'Évaluation & de Réussite • <strong>{period}</strong>
+              </p>
+            </div>
+          </div>
+          <div style={{textAlign: 'center', backgroundColor: 'white', padding: '6px 14px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)'}}>
+            <div style={{fontSize: '0.75rem', color: '#64748b'}}>Année Scolaire</div>
+            <div style={{fontSize: '0.9rem', fontWeight: 800, color: brandColor}}>{schoolInfo?.academic_year || '2025-2026'}</div>
+          </div>
+        </div>
+
+        {/* Student Banner */}
+        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', marginBottom: '12px'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+            {showPhoto && st.photo_url ? (
+              <img src={st.photo_url} alt="Photo" style={{width: '45px', height: '45px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #cbd5e1'}} />
+            ) : (
+              <span style={{fontSize: '2rem'}}>🎓</span>
+            )}
+            <div>
+              <div style={{fontSize: '1.05rem', fontWeight: 800, color: '#1e293b'}}>
+                {st.first_name?.toUpperCase()} {st.last_name?.toUpperCase()}
+              </div>
+              <div style={{fontSize: '0.8rem', color: '#64748b'}}>Classe de : <strong>{classData?.name || 'CP/CE1/CM2'}</strong></div>
+            </div>
+          </div>
+          <div style={{textAlign: 'center', backgroundColor: '#f0fdf4', padding: '6px 16px', borderRadius: '10px', border: '1px solid #bbf7d0'}}>
+            <div style={{fontSize: '0.72rem', color: '#166534', fontWeight: 700}}>BILAN GÉNÉRAL</div>
+            <div style={{fontSize: '1.25rem', fontWeight: 900, color: '#15803d'}}>{formatNum(stats.generalAverage, 2)} /20</div>
+          </div>
+        </div>
+
+        {/* Primary Competencies Grid */}
+        <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '12px'}}>
+          {subjects.filter(s => stats.subjects[s] !== undefined).map(s => {
+            const val = stats.subjects[s];
+            const maxScore = subjectMaxScores[s] || 20;
+            const note20 = (val / maxScore) * 20;
+
+            const isAcquired = note20 >= 12;
+            const isInProgress = note20 >= 8 && note20 < 12;
+
+            return (
+              <div key={s} style={{backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                <div>
+                  <div style={{fontWeight: 700, fontSize: '0.85rem', color: '#1e293b'}}>{translateBulletinWord(s)}</div>
+                  <div style={{fontSize: '0.75rem', color: '#64748b'}}>{getAppreciation(val, maxScore)}</div>
+                </div>
+                <div style={{textAlign: 'right'}}>
+                  <div style={{fontWeight: 800, fontSize: '1rem', color: isAcquired ? '#15803d' : isInProgress ? '#d97706' : '#dc2626'}}>
+                    {formatNum(val, 1)} <span style={{fontSize: '0.75rem', color: '#94a3b8'}}>/ {maxScore}</span>
+                  </div>
+                  <div style={{fontSize: '0.7rem', fontWeight: 700, color: isAcquired ? '#16a34a' : isInProgress ? '#ca8a04' : '#dc2626'}}>
+                    {isAcquired ? '✅ Acquis' : isInProgress ? '🔄 En cours' : '⚠️ À renforcer'}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Teacher Note & Encouragements */}
+        <div style={{backgroundColor: '#fefce8', border: '1px solid #fef08a', borderRadius: '12px', padding: '12px 16px', marginBottom: '12px'}}>
+          <div style={{fontWeight: 700, fontSize: '0.85rem', color: '#854d0e', marginBottom: '4px'}}>
+            🌟 Mot et Conseils de l'Enseignant(e) :
+          </div>
+          <p style={{margin: 0, fontSize: '0.82rem', color: '#713f12', fontStyle: 'italic'}}>
+            {stats.generalAverage >= 14 
+              ? "Excellent trimestre ! Félicitations pour tes efforts réguliers, ton sérieux et ta participation active." 
+              : stats.generalAverage >= 10 
+              ? "Des résultats satisfaisants. Poursuis tes efforts avec confiance et régularité au prochain trimestre !"
+              : "Des difficultés constatées ce trimestre. Un travail plus régulier à la maison et plus d'attention en classe permettront de bien progresser."}
+          </p>
+        </div>
+
+        {/* Primary Signatures */}
+        <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', textAlign: 'center', fontSize: '0.78rem'}}>
+          <div style={{border: '1px solid #e2e8f0', borderRadius: '10px', padding: '8px', backgroundColor: 'white'}}>
+            <div style={{fontWeight: 700, color: '#475569'}}>Signature de l'Enseignant(e)</div>
+            <div style={{marginTop: '20px', fontStyle: 'italic', color: '#64748b'}}>Vu et approuvé</div>
+          </div>
+          <div style={{border: '1px solid #e2e8f0', borderRadius: '10px', padding: '8px', backgroundColor: 'white', position: 'relative'}}>
+            <div style={{fontWeight: 700, color: '#475569'}}>Le Directeur / La Directrice</div>
+            {stampUrl && (
+              <img src={stampUrl} alt="Cachet" style={{maxHeight: '30px', maxWidth: '70px', objectFit: 'contain', margin: '2px 0'}} />
+            )}
+            <div style={{marginTop: stampUrl ? '0' : '20px', fontWeight: 600}}>
+              {schoolInfo?.principal_name || 'La Direction'}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="bulletins-container">
+      {template === 'compact' ? (
+        // For compact, pair up students 2 per page A4
+        <div className="compact-pages-wrapper">
+          {filteredStudents.map((st, idx) => renderCompact(st, idx))}
+        </div>
+      ) : (
+        filteredStudents.map((st) => {
+          if (template === 'modern') return renderModern(st);
+          if (template === 'primary') return renderPrimary(st);
+          return renderClassic(st);
+        })
+      )}
     </div>
   );
 };
-

@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { applyThemeSettings } from '../lib/theme';
 import { sanitizeText, sanitizeAmount, sanitizeObject } from '../lib/security';
+import { SkeletonStatGrid, SkeletonTable } from './SkeletonLoader';
 
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -22,6 +23,7 @@ const Icons = {
 export default function TeacherPortal({ session, onLogout }: { session: any, onLogout: () => void, onOpenBulletin?: (studentId: string, period: string, classId: string) => void }) {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   
   // Parse multiple subjects taught by the teacher
   const teacherSubjects = session.subject ? session.subject.split(',').map((s: any) => s.trim()) : [];
@@ -60,36 +62,43 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
   }, [session]);
 
   async function fetchData() {
-    // Fetch all classes
-    const { data: classes } = await supabase.from('classes').select('*').eq('school_id', session.school_id);
-    if (classes) setClassesData(classes);
+    setIsLoading(true);
+    try {
+      // Fetch all classes
+      const { data: classes } = await supabase.from('classes').select('*').eq('school_id', session.school_id);
+      if (classes) setClassesData(classes);
 
-    // Fetch evaluations for this school
-    const { data: evaluations } = await supabase.from('evaluations')
-      .select('*, classes(name)')
-      .eq('school_id', session.school_id)
-      .order('date', { ascending: false });
-    if (evaluations) {
-      const uniqueEvals = Array.from(new Map(evaluations.map(ev => [ev.id, ev])).values());
-      setEvaluationsData(uniqueEvals);
+      // Fetch evaluations for this school
+      const { data: evaluations } = await supabase.from('evaluations')
+        .select('*, classes(name)')
+        .eq('school_id', session.school_id)
+        .order('date', { ascending: false });
+      if (evaluations) {
+        const uniqueEvals = Array.from(new Map(evaluations.map(ev => [ev.id, ev])).values());
+        setEvaluationsData(uniqueEvals);
+      }
+
+      // Fetch students
+      const { data: students } = await supabase.from('students').select('*').eq('school_id', session.school_id);
+      if (students) setStudentsData(students);
+
+      // Fetch school settings
+      const { data: set } = await supabase.from('school_settings').select('*').eq('school_id', session.school_id).limit(1).single();
+      if (set) setSettings(set);
+      // Fetch grades
+      const { data: grades } = await supabase.from('grades').select('*').eq('school_id', session.school_id);
+      if (grades) setGradesData(grades);
+      // Fetch schedules for this teacher
+      const { data: schedules } = await supabase.from('schedules').select('*').eq('teacher_id', session.id);
+      if (schedules) setTeacherSchedules(schedules);
+
+      const { data: cs } = await supabase.from('class_subjects').select('*').eq('school_id', session.school_id);
+      if (cs) setClassSubjects(cs);
+    } catch (err) {
+      console.error('Error fetching teacher data:', err);
+    } finally {
+      setIsLoading(false);
     }
-
-    // Fetch students
-    const { data: students } = await supabase.from('students').select('*').eq('school_id', session.school_id);
-    if (students) setStudentsData(students);
-
-    // Fetch school settings
-    const { data: set } = await supabase.from('school_settings').select('*').eq('school_id', session.school_id).limit(1).single();
-    if (set) setSettings(set);
-    // Fetch grades
-    const { data: grades } = await supabase.from('grades').select('*').eq('school_id', session.school_id);
-    if (grades) setGradesData(grades);
-    // Fetch schedules for this teacher
-    const { data: schedules } = await supabase.from('schedules').select('*').eq('teacher_id', session.id);
-    if (schedules) setTeacherSchedules(schedules);
-
-    const { data: cs } = await supabase.from('class_subjects').select('*').eq('school_id', session.school_id);
-    if (cs) setClassSubjects(cs);
   };
 
   const handleCreateEvaluation = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -419,31 +428,39 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
 
         {activeTab === 'dashboard' && (
           <div className="animate-fade-in">
-
-            <div className="stats-grid" style={{marginTop: '24px'}}>
-              <div className="stat-card delay-100" style={{background: 'white', border: '1px solid var(--border-color)'}}>
-                <div className="stat-header">
-                  <span className="stat-label">{t('teacher.your_subject', "Votre Matière")}</span>
-                  <Icons.BookOpen />
+            {isLoading ? (
+              <div style={{ marginTop: '24px' }}>
+                <SkeletonStatGrid count={2} />
+                <div style={{ marginTop: '24px' }}>
+                  <SkeletonTable rows={4} columns={4} />
                 </div>
-                <div className="stat-value" style={{fontSize: '1.5rem', color: 'var(--primary-color)', marginTop: '8px'}}>{session.subject}</div>
-                <div className="stat-trend trend-up">Spécialité</div>
               </div>
-              <div className="stat-card delay-200" style={{background: 'white', border: '1px solid var(--border-color)'}}>
-                <div className="stat-header">
-                  <span className="stat-label">{t('teacher.created_evals', "Évaluations Créées")}</span>
-                  <Icons.CheckCircle />
+            ) : (
+              <>
+                <div className="stats-grid" style={{marginTop: '24px'}}>
+                  <div className="stat-card delay-100" style={{background: 'white', border: '1px solid var(--border-color)'}}>
+                    <div className="stat-header">
+                      <span className="stat-label">{t('teacher.your_subject', "Votre Matière")}</span>
+                      <Icons.BookOpen />
+                    </div>
+                    <div className="stat-value" style={{fontSize: '1.5rem', color: 'var(--primary-color)', marginTop: '8px'}}>{session.subject}</div>
+                    <div className="stat-trend trend-up">Spécialité</div>
+                  </div>
+                  <div className="stat-card delay-200" style={{background: 'white', border: '1px solid var(--border-color)'}}>
+                    <div className="stat-header">
+                      <span className="stat-label">{t('teacher.created_evals', "Évaluations Créées")}</span>
+                      <Icons.CheckCircle />
+                    </div>
+                    <div className="stat-value" style={{marginTop: '8px'}}>{formatNum(evaluationsData.length)}</div>
+                    <div className="stat-trend trend-up">Ce trimestre</div>
+                  </div>
                 </div>
-                <div className="stat-value" style={{marginTop: '8px'}}>{formatNum(evaluationsData.length)}</div>
-                <div className="stat-trend trend-up">Ce trimestre</div>
-              </div>
-            </div>
 
-            <div className="panel delay-300" style={{marginTop: '24px', background: 'white', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '24px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}>
-              <div className="panel-header" style={{borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '24px'}}>
-                <h3 className="panel-title" style={{fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px'}}><Icons.Plus /> {t('teacher.create_eval', "Créer une nouvelle évaluation")}</h3>
-              </div>
-              <form onSubmit={handleCreateEvaluation}>
+                <div className="panel delay-300" style={{marginTop: '24px', background: 'white', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '24px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}>
+                  <div className="panel-header" style={{borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '24px'}}>
+                    <h3 className="panel-title" style={{fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px'}}><Icons.Plus /> {t('teacher.create_eval', "Créer une nouvelle évaluation")}</h3>
+                  </div>
+                  <form onSubmit={handleCreateEvaluation}>
                 <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px'}}>
                   
                   {/* 1. Classe (Sélectionnée d'abord) */}
@@ -540,24 +557,33 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                 </div>
               </form>
             </div>
+            </>
+            )}
           </div>
         )}
+
         {activeTab === 'evaluations' && (
           <div className="animate-fade-in">
-            {/* Top Bar for Selection */}
-            <div className="panel" style={{marginBottom: '20px', display: 'flex', gap: '24px', alignItems: 'center', background: '#f8f9fa', border: '1px solid #e0e0e0'}}>
-              <div style={{flex: 1}}>
-                <label style={{display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px'}}>{t('teacher.select_eval', "Sélectionner une évaluation :")}</label>
-                <select 
-                  className="form-input" 
-                  style={{width: '100%', maxWidth: '400px'}}
-                  value={selectedEvaluation?.id || ''}
-                  onChange={(e) => {
-                    const ev = evaluationsData.find(evalData => evalData.id === e.target.value);
-                    if (ev) handleSelectEvaluation(ev);
-                  }}
-                >
-                  <option value="" disabled>{t('teacher.choose_eval', "-- Choisir une évaluation --")}</option>
+            {isLoading ? (
+              <div style={{ marginTop: '20px' }}>
+                <SkeletonTable rows={6} columns={6} />
+              </div>
+            ) : (
+              <>
+                {/* Top Bar for Selection */}
+                <div className="panel" style={{marginBottom: '20px', display: 'flex', gap: '24px', alignItems: 'center', background: '#f8f9fa', border: '1px solid #e0e0e0'}}>
+                  <div style={{flex: 1}}>
+                    <label style={{display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px'}}>{t('teacher.select_eval', "Sélectionner une évaluation :")}</label>
+                    <select 
+                      className="form-input" 
+                      style={{width: '100%', maxWidth: '400px'}}
+                      value={selectedEvaluation?.id || ''}
+                      onChange={(e) => {
+                        const ev = evaluationsData.find(evalData => evalData.id === e.target.value);
+                        if (ev) handleSelectEvaluation(ev);
+                      }}
+                    >
+                      <option value="" disabled>{t('teacher.choose_eval', "-- Choisir une évaluation --")}</option>
                   {(() => {
                     const uniqueEvals = Array.from(new Map(evaluationsData.map(ev => [ev.id, ev])).values());
                     const pendingEvals = uniqueEvals.filter(ev => {
@@ -747,86 +773,96 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                 <p>{t('teacher.select_eval_to_start', "Veuillez choisir une évaluation dans le menu déroulant ci-dessus pour commencer la saisie des notes.")}</p>
               </div>
             )}
+            </>
+            )}
           </div>
         )}
         
         {activeTab === 'students' && (
           <div className="animate-fade-in">
-            <div className="panel" style={{marginBottom: '20px', display: 'flex', gap: '24px', alignItems: 'center', background: '#f8f9fa', border: '1px solid #e0e0e0'}}>
-              <div style={{flex: 1}}>
-                <label style={{display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px'}}>{t('teacher.select_class', "Sélectionner une classe :")}</label>
-                <select 
-                  className="form-input" 
-                  style={{width: '100%', maxWidth: '400px'}}
-                  value={selectedClass || ''}
-                  onChange={(e) => setSelectedClass(e.target.value)}
-                >
-                  <option value="" disabled>{t('teacher.choose_class', "-- Choisir une classe --")}</option>
-                  {classesData.filter(c => teacherSchedules.some(s => s.class_id === c.id) || c.principal_teacher_id === session.id || evaluationsData.some(ev => ev.class_id === c.id)).map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {selectedClass ? (
-              <div style={{background: '#fff', border: '1px solid #d4d4d4', borderRadius: '4px', overflow: 'hidden', fontSize: '13px', fontFamily: 'Arial, sans-serif'}}>
-                <div style={{padding: '16px', borderBottom: '1px solid #eee', background: '#f8f9fa'}}>
-                  <h3 style={{margin: 0, fontSize: '1.1rem'}}>{t('teacher.students_list', "Liste des élèves")} - {classesData.find(c => c.id === selectedClass)?.name}</h3>
-                </div>
-                <div style={{overflowX: 'auto'}}>
-                  <table style={{width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed'}}>
-                    <colgroup>
-                      <col style={{width: '100px'}} />
-                      <col style={{width: '200px'}} />
-                      <col style={{width: '200px'}} />
-                      <col style={{width: '100px'}} />
-                      <col style={{width: '150px'}} />
-                    </colgroup>
-                    <thead>
-                      <tr style={{background: '#f9f9f9', borderBottom: '1px solid #d4d4d4', textAlign: 'left', color: '#333'}}>
-                        <th style={{padding: '12px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.matricule', "Matricule")}</th>
-                        <th style={{padding: '12px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.last_name', "Nom")}</th>
-                        <th style={{padding: '12px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.first_name', "Prénoms")}</th>
-                        <th style={{padding: '12px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.status', "Statut")}</th>
-<th style={{padding: '12px', fontWeight: 'bold'}}>Bulletins</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {studentsData.filter(s => s.class_id === selectedClass).map((student) => (
-                        <tr key={student.id} style={{borderBottom: '1px solid #eee', background: '#fff', color: '#333'}}>
-                          <td style={{padding: '12px', borderRight: '1px solid #eee', fontWeight: 'bold'}}>{student.matricule || `MAT-${student.id.substring(0,4)}`}</td>
-                          <td style={{padding: '12px', borderRight: '1px solid #eee'}}>{student.last_name.toUpperCase()}</td>
-                          <td style={{padding: '12px', borderRight: '1px solid #eee'}}>{student.first_name}</td>
-                          <td style={{padding: '12px', borderRight: '1px solid #eee'}}><span className={`badge ${student.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`}>{student.status || 'Inscrit'}</span></td>
-<td style={{padding: '12px'}}>
-  {classesData.find(c => c.id === selectedClass)?.principal_teacher_id === session.id ? (
-    <div style={{display: 'flex', gap: '4px'}}>
-      <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => { setPreviewClassId(student.class_id); setPreviewPeriod('1er Trimestre'); setPreviewStudentId(student.id); }}>T1</button>
-      <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => { setPreviewClassId(student.class_id); setPreviewPeriod('2ème Trimestre'); setPreviewStudentId(student.id); }}>T2</button>
-      <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => { setPreviewClassId(student.class_id); setPreviewPeriod('3ème Trimestre'); setPreviewStudentId(student.id); }}>T3</button>
-    </div>
-  ) : (
-    <span style={{fontSize: '0.8rem', color: '#888'}}>Réservé au Professeur Principal</span>
-  )}
-</td>
-                        </tr>
-                      ))}
-                      {studentsData.filter(s => s.class_id === selectedClass).length === 0 && (
-                        <tr>
-                          <td colSpan={5} style={{textAlign: 'center', padding: '24px', color: '#777'}}>{t('teacher.no_student_found', "Aucun élève trouvé dans cette classe.")}</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+            {isLoading ? (
+              <div style={{ marginTop: '20px' }}>
+                <SkeletonTable rows={6} columns={5} />
               </div>
             ) : (
-              <div className="panel" style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '64px'}}>
-                <Icons.Users />
-                <h3 style={{marginTop: '16px'}}>{t('teacher.no_class_selected', "Aucune classe sélectionnée")}</h3>
-                <p>{t('teacher.select_class_to_start', "Veuillez choisir une classe dans le menu déroulant ci-dessus pour voir la liste de vos élèves.")}</p>
-              </div>
+              <>
+                <div className="panel" style={{marginBottom: '20px', display: 'flex', gap: '24px', alignItems: 'center', background: '#f8f9fa', border: '1px solid #e0e0e0'}}>
+                  <div style={{flex: 1}}>
+                    <label style={{display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px'}}>{t('teacher.select_class', "Sélectionner une classe :")}</label>
+                    <select 
+                      className="form-input" 
+                      style={{width: '100%', maxWidth: '400px'}}
+                      value={selectedClass || ''}
+                      onChange={(e) => setSelectedClass(e.target.value)}
+                    >
+                      <option value="" disabled>{t('teacher.choose_class', "-- Choisir une classe --")}</option>
+                      {classesData.filter(c => teacherSchedules.some(s => s.class_id === c.id) || c.principal_teacher_id === session.id || evaluationsData.some(ev => ev.class_id === c.id)).map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {selectedClass ? (
+                  <div style={{background: '#fff', border: '1px solid #d4d4d4', borderRadius: '4px', overflow: 'hidden', fontSize: '13px', fontFamily: 'Arial, sans-serif'}}>
+                    <div style={{padding: '16px', borderBottom: '1px solid #eee', background: '#f8f9fa'}}>
+                      <h3 style={{margin: 0, fontSize: '1.1rem'}}>{t('teacher.students_list', "Liste des élèves")} - {classesData.find(c => c.id === selectedClass)?.name}</h3>
+                    </div>
+                    <div style={{overflowX: 'auto'}}>
+                      <table style={{width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed'}}>
+                        <colgroup>
+                          <col style={{width: '100px'}} />
+                          <col style={{width: '200px'}} />
+                          <col style={{width: '200px'}} />
+                          <col style={{width: '100px'}} />
+                          <col style={{width: '150px'}} />
+                        </colgroup>
+                        <thead>
+                          <tr style={{background: '#f9f9f9', borderBottom: '1px solid #d4d4d4', textAlign: 'left', color: '#333'}}>
+                            <th style={{padding: '12px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.matricule', "Matricule")}</th>
+                            <th style={{padding: '12px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.last_name', "Nom")}</th>
+                            <th style={{padding: '12px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.first_name', "Prénoms")}</th>
+                            <th style={{padding: '12px', borderRight: '1px solid #d4d4d4', fontWeight: 'bold'}}>{t('teacher.status', "Statut")}</th>
+                            <th style={{padding: '12px', fontWeight: 'bold'}}>Bulletins</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {studentsData.filter(s => s.class_id === selectedClass).map((student) => (
+                            <tr key={student.id} style={{borderBottom: '1px solid #eee', background: '#fff', color: '#333'}}>
+                              <td style={{padding: '12px', borderRight: '1px solid #eee', fontWeight: 'bold'}}>{student.matricule || `MAT-${student.id.substring(0,4)}`}</td>
+                              <td style={{padding: '12px', borderRight: '1px solid #eee'}}>{student.last_name.toUpperCase()}</td>
+                              <td style={{padding: '12px', borderRight: '1px solid #eee'}}>{student.first_name}</td>
+                              <td style={{padding: '12px', borderRight: '1px solid #eee'}}><span className={`badge ${student.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`}>{student.status || 'Inscrit'}</span></td>
+                              <td style={{padding: '12px'}}>
+                                {classesData.find(c => c.id === selectedClass)?.principal_teacher_id === session.id ? (
+                                  <div style={{display: 'flex', gap: '4px'}}>
+                                    <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => { setPreviewClassId(student.class_id); setPreviewPeriod('1er Trimestre'); setPreviewStudentId(student.id); }}>T1</button>
+                                    <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => { setPreviewClassId(student.class_id); setPreviewPeriod('2ème Trimestre'); setPreviewStudentId(student.id); }}>T2</button>
+                                    <button className="btn btn-outline" style={{padding: '2px 8px', fontSize: '0.75rem'}} onClick={() => { setPreviewClassId(student.class_id); setPreviewPeriod('3ème Trimestre'); setPreviewStudentId(student.id); }}>T3</button>
+                                  </div>
+                                ) : (
+                                  <span style={{fontSize: '0.8rem', color: '#888'}}>Réservé au Professeur Principal</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                          {studentsData.filter(s => s.class_id === selectedClass).length === 0 && (
+                            <tr>
+                              <td colSpan={5} style={{textAlign: 'center', padding: '24px', color: '#777'}}>{t('teacher.no_student_found', "Aucun élève trouvé dans cette classe.")}</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="panel" style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '64px'}}>
+                    <Icons.Users />
+                    <h3 style={{marginTop: '16px'}}>{t('teacher.no_class_selected', "Aucune classe sélectionnée")}</h3>
+                    <p>{t('teacher.select_class_to_start', "Veuillez choisir une classe dans le menu déroulant ci-dessus pour voir la liste de vos élèves.")}</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

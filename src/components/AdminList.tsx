@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { SkeletonStatGrid, SkeletonTable } from './SkeletonLoader';
 
 export function AdminList({ onSwitchToSchool }: { onSwitchToSchool?: (schoolId: string) => void }) {
   const [admins, setAdmins] = useState<any[]>([]);
@@ -380,7 +381,14 @@ $$;`;
   });
 
   if (isLoading) {
-    return <div style={{ padding: '40px', textAlign: 'center' }}>Chargement des administrateurs...</div>;
+    return (
+      <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+        <SkeletonStatGrid count={3} />
+        <div style={{ marginTop: '24px' }}>
+          <SkeletonTable rows={8} columns={6} />
+        </div>
+      </div>
+    );
   }
 
   if (errorSQL) {

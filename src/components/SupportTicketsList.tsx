@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { SkeletonTable } from './SkeletonLoader';
 
 export function SupportTicketsList() {
   const [tickets, setTickets] = useState<any[]>([]);
@@ -73,7 +74,7 @@ export function SupportTicketsList() {
       <p style={{ color: '#6B7280', marginBottom: '24px' }}>Gérez les demandes d'aide et les questions des utilisateurs.</p>
 
       {isLoading ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>Chargement des tickets...</div>
+        <SkeletonTable rows={5} columns={3} />
       ) : (
         <div style={{ display: 'flex', gap: '24px' }}>
           {/* Liste des tickets */}

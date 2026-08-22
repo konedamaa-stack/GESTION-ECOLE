@@ -339,8 +339,8 @@ html {
   overflow-y: auto;
 }
 
-/* --- CLASSIC BULLETIN (IVORIAN FORMAT) --- */
-.bulletin-classic-container {
+/* --- BULLETIN CONTAINERS & TEMPLATES --- */
+.bulletins-container, .bulletin-classic-container {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -350,6 +350,7 @@ html {
   color: #000;
 }
 
+/* 1. CLASSIC / OFFICIAL TEMPLATE */
 .bulletin-classic-page {
   background: white;
   width: 210mm;
@@ -504,6 +505,112 @@ html {
   border-top: none;
 }
 
+/* 2. MODERN / PREMIUM TEMPLATE */
+.bulletin-modern-page {
+  background: white;
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 12mm 14mm;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  color: #1e293b;
+  border-radius: 8px;
+  position: relative;
+}
+
+.modern-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 12px;
+}
+
+.modern-student-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.modern-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 0.82rem;
+  margin-bottom: 12px;
+}
+
+.modern-table th {
+  padding: 8px 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
+.modern-table td {
+  border-top: 1px solid #f1f5f9;
+  padding: 6px 10px;
+}
+
+/* 3. COMPACT TEMPLATE (2 PER PAGE) */
+.compact-pages-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 210mm;
+  margin: 0 auto;
+  gap: 0;
+}
+
+.bulletin-compact-half {
+  background: white;
+  width: 210mm;
+  min-height: 148.5mm;
+  max-height: 148.5mm;
+  padding: 6mm 10mm;
+  box-sizing: border-box;
+  font-size: 0.72rem;
+  font-family: Arial, sans-serif;
+  color: #0f172a;
+  overflow: hidden;
+  position: relative;
+}
+
+.compact-cut-line {
+  text-align: center;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  letter-spacing: 2px;
+  margin: 2mm 0;
+  font-weight: bold;
+}
+
+/* 4. PRIMARY / ELEMENTARY TEMPLATE */
+.bulletin-primary-page {
+  background: white;
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 12mm 15mm;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #1e293b;
+  border-radius: 12px;
+}
+
 @media print {
   @page {
     size: A4 portrait;
@@ -543,7 +650,9 @@ html {
     max-height: none !important;
     overflow: visible !important;
   }
-  .bulletin-classic-page {
+  .bulletin-classic-page,
+  .bulletin-modern-page,
+  .bulletin-primary-page {
     box-shadow: none !important;
     border: none !important;
     width: 100% !important;
@@ -551,9 +660,24 @@ html {
     height: auto !important;
     min-height: auto !important;
     margin: 0 !important;
-    padding: 5mm !important; /* Reduce padding slightly for print to save space */
+    padding: 5mm !important;
     page-break-after: always;
     box-sizing: border-box !important;
+  }
+  .compact-pages-wrapper {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  .bulletin-compact-half {
+    width: 100% !important;
+    max-height: 140mm !important;
+    padding: 3mm 5mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    box-sizing: border-box !important;
+  }
+  .bulletin-compact-half:nth-child(2n) {
+    page-break-after: always;
   }
   .modal-overlay {
     background: white !important;
@@ -1146,4 +1270,71 @@ html {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+}
+
+/* =========================================
+   Skeleton Loader Design System
+   ========================================= */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-color-hover, #f1f5f9) 25%,
+    rgba(226, 232, 240, 0.6) 37%,
+    var(--surface-color-hover, #f1f5f9) 63%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
+  display: inline-block;
+  pointer-events: none;
+}
+
+[data-theme='dark'] .skeleton,
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.12) 37%,
+    rgba(255, 255, 255, 0.05) 63%
+  );
+  background-size: 200% 100%;
+}
+
+.skeleton-text {
+  height: 14px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.skeleton-circle {
+  border-radius: 50% !important;
+}
+
+.skeleton-card {
+  background: var(--surface-color, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-stat-card {
+  background: var(--surface-color, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }

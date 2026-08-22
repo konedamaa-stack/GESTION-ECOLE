@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { getSchoolUrl, slugifySubdomain } from '../utils/subdomain';
+import { SkeletonStatGrid, SkeletonCardGrid } from './SkeletonLoader';
 
 interface SaaSDashboardProps {
   session: any;
@@ -106,27 +107,32 @@ export function SaaSDashboard({ session, onSwitchToSchool }: SaaSDashboardProps)
 
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-        <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-          <div style={{ color: '#6B7280', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase' }}>Établissements</div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 700, color: '#111827' }}>{schools.length}</div>
-        </div>
-        <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-          <div style={{ color: '#6B7280', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase' }}>Élèves Globaux</div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 700, color: '#3B82F6' }}>{formatNum(stats.totalStudents)}</div>
-        </div>
-        <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-          <div style={{ color: '#6B7280', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase' }}>Professeurs Globaux</div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 700, color: '#10B981' }}>{formatNum(stats.totalTeachers)}</div>
-        </div>
-      </div>
-
-      <h2 style={{ fontSize: '1.5rem', marginBottom: '16px' }}>Liste des Établissements</h2>
-      
       {isLoading ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>Chargement des données globales...</div>
+        <div>
+          <SkeletonStatGrid count={3} />
+          <h2 style={{ fontSize: '1.5rem', marginTop: '32px', marginBottom: '16px' }}>Liste des Établissements</h2>
+          <SkeletonCardGrid count={6} />
+        </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+            <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+              <div style={{ color: '#6B7280', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase' }}>Établissements</div>
+              <div style={{ fontSize: '2.5rem', fontWeight: 700, color: '#111827' }}>{schools.length}</div>
+            </div>
+            <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+              <div style={{ color: '#6B7280', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase' }}>Élèves Globaux</div>
+              <div style={{ fontSize: '2.5rem', fontWeight: 700, color: '#3B82F6' }}>{formatNum(stats.totalStudents)}</div>
+            </div>
+            <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+              <div style={{ color: '#6B7280', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase' }}>Professeurs Globaux</div>
+              <div style={{ fontSize: '2.5rem', fontWeight: 700, color: '#10B981' }}>{formatNum(stats.totalTeachers)}</div>
+            </div>
+          </div>
+
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '16px' }}>Liste des Établissements</h2>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
           {schools.map(school => {
             const schoolUrl = getSchoolUrl(school.subdomain || slugifySubdomain(school.name));
             return (
@@ -201,6 +207,7 @@ export function SaaSDashboard({ session, onSwitchToSchool }: SaaSDashboardProps)
             );
           })}
         </div>
+        </>
       )}
       {/* Sub Modal */}
       {activeSubModal && (

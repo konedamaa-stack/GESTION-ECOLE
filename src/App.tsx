@@ -21,10 +21,18 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { applyThemeSettings } from './lib/theme';
 import { QuickStartGuideModal } from './components/QuickStartGuideModal';
+import { GlobalSearch } from './components/GlobalSearch';
 import { IdleTimeoutManager } from './components/IdleTimeoutManager';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { getSubdomain, slugifySubdomain, getSchoolUrl } from './utils/subdomain';
 import { sanitizeText, sanitizeAmount, sanitizeFormData, sanitizeObject } from './lib/security';
+import { 
+  Skeleton, 
+  SkeletonStatGrid, 
+  SkeletonTable, 
+  SkeletonCardGrid, 
+  SkeletonSchedule 
+} from './components/SkeletonLoader';
 import './App.css';
 
 // Custom SVG Icons
@@ -91,6 +99,7 @@ function App() {
   });
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sges_tab') || 'dashboard');
   const [activeSettingsTab, setActiveSettingsTab] = useState('general');
+  const [selectedBulletinTemplate, setSelectedBulletinTemplate] = useState<string>('classic');
   const [activeModalState, setActiveModalState] = useState<string | null>(null);
   const [selectedTeacherPayment, setSelectedTeacherPayment] = useState<any>(null);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
@@ -470,6 +479,7 @@ function App() {
   const [scheduleViewMode, setScheduleViewMode] = useState<'class' | 'teacher'>('class');
   const [selectedTeacherForSchedule, setSelectedTeacherForSchedule] = useState<string>('');
   const [selectedEvalClassId, setSelectedEvalClassId] = useState<string>('');
+  const [isAppLoading, setIsAppLoading] = useState<boolean>(true);
 
   useEffect(() => {
     applyThemeSettings(settingsData);
@@ -906,6 +916,7 @@ function App() {
 
   useEffect(() => {
     if (currentSchoolId) {
+      setIsAppLoading(true);
       supabase.from('schools').select('*').eq('id', currentSchoolId).single().then(({ data }) => {
         if (data) {
           let plan = data.subscription_plan || 'Standard';
@@ -917,20 +928,24 @@ function App() {
         }
       });
 
-      fetchStudents();
-      fetchClasses();
-      fetchTeachers();
-      fetchEmployees();
-      fetchParents();
-      fetchInvoices();
-      fetchAbsences();
-      fetchSchedules();
-      fetchEvaluations();
-      fetchSettings();
-      fetchExpenses();
-      fetchLoans();
-      fetchTeacherPayments();
-      fetchEmployeePayments();
+      Promise.all([
+        fetchStudents(),
+        fetchClasses(),
+        fetchTeachers(),
+        fetchEmployees(),
+        fetchParents(),
+        fetchInvoices(),
+        fetchAbsences(),
+        fetchSchedules(),
+        fetchEvaluations(),
+        fetchSettings(),
+        fetchExpenses(),
+        fetchLoans(),
+        fetchTeacherPayments(),
+        fetchEmployeePayments()
+      ]).finally(() => {
+        setIsAppLoading(false);
+      });
     }
   }, [currentSchoolId]);
 
@@ -1282,7 +1297,12 @@ function App() {
 
   const fetchSettings = async () => {
     const { data } = await supabase.from('school_settings').select('*').eq('school_id', currentSchoolId).single();
-    if (data) setSettingsData(data);
+    if (data) {
+      setSettingsData(data);
+      if (data.bulletin_template) {
+        setSelectedBulletinTemplate(data.bulletin_template);
+      }
+    }
   };
 
   const saveSettings = async (e: any) => {
@@ -1307,6 +1327,24 @@ function App() {
       }
     }
 
+    const stampFile = formData.get('stamp_file') as File;
+    let newStampUrl: string | undefined = undefined;
+    if (stampFile && stampFile.size > 0 && currentSchoolId) {
+      if (stampFile.size > 2 * 1024 * 1024) {
+        window.alert('Le cachet/tampon est trop volumineux. Maximum 2 Mo.');
+        return;
+      }
+      const fileExt = stampFile.name.split('.').pop();
+      const fileName = `${currentSchoolId}-stamp-${Math.random()}.${fileExt}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage.from('logos').upload(fileName, stampFile);
+      if (!uploadError && uploadData) {
+         const { data: urlData } = supabase.storage.from('logos').getPublicUrl(fileName);
+         if (urlData) {
+           newStampUrl = urlData.publicUrl;
+         }
+      }
+    }
+
     const settingsObj: any = {
       school_name: formData.get('school_name'),
       address: formData.get('address'),
@@ -1320,7 +1358,22 @@ function App() {
       primary_color: formData.get('primary_color'),
       accent_color: formData.get('accent_color'),
       font_main: formData.get('font_main'),
+      bulletin_template: formData.get('bulletin_template') || selectedBulletinTemplate || 'classic',
+      bulletin_title: formData.get('bulletin_title') || 'BULLETIN TRIMESTRIEL DE NOTES',
+      ministry_header: formData.get('ministry_header') || "MINISTERE DE L'EDUCATION NATIONALE ET DE L'ALPHABETISATION",
+      dren_name: formData.get('dren_name') || '',
+      school_statut: formData.get('school_statut') || 'Privé',
+      show_student_photo: formData.get('show_student_photo') === 'on',
+      show_rank: formData.get('show_rank') === 'on',
+      show_class_stats: formData.get('show_class_stats') === 'on',
+      show_teacher_names: formData.get('show_teacher_names') === 'on',
+      show_honor_roll: formData.get('show_honor_roll') === 'on',
+      show_signatures: formData.get('show_signatures') === 'on',
+      bulletin_color: formData.get('bulletin_color') || formData.get('primary_color') || '#1e3a8a',
     };
+    if (newStampUrl) {
+      settingsObj.stamp_url = newStampUrl;
+    }
     if (currentSchoolId) settingsObj.school_id = currentSchoolId;
     
     let { data: existing } = await supabase.from('school_settings').select('id').eq('school_id', currentSchoolId as string).maybeSingle();
@@ -2740,7 +2793,7 @@ function App() {
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.students.col_matricule', 'Matricule')}</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.students.col_name', 'Nom & Prénom')}</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.students.col_class', 'Classe')}</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.students.col_status', 'Statut')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500, minWidth: '190px'}}>{t('admin.students.col_status', 'Statut')}</th>
               <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>{t('admin.students.col_actions', 'Actions')}</th>
             </tr>
           </thead>
@@ -2763,10 +2816,38 @@ function App() {
                   </div>
                 </td>
                 <td style={{padding: '16px 0'}}>{row.classes?.name || t('admin.students.unassigned', 'Non assigné')}</td>
-                <td style={{padding: '16px 0', whiteSpace: 'nowrap'}}>
-                  <div style={{display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', flexWrap: 'nowrap'}}>
-                    <span className={`badge ${row.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`} style={{whiteSpace: 'nowrap'}}>{row.status}</span>
-                    <span className="badge badge-info" style={{background: row.affecte === 'Affecté' ? '#3B82F6' : '#6B7280', color: 'white', whiteSpace: 'nowrap'}}>
+                <td style={{padding: '16px 0', minWidth: '190px', whiteSpace: 'nowrap'}}>
+                  <div style={{display: 'inline-flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap', flexWrap: 'nowrap'}}>
+                    <span 
+                      style={{
+                        padding: '4px 10px', 
+                        borderRadius: '20px', 
+                        fontSize: '0.78rem', 
+                        fontWeight: 700, 
+                        whiteSpace: 'nowrap', 
+                        letterSpacing: '0.02em',
+                        textTransform: 'uppercase',
+                        background: row.status === 'Inscrit' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                        color: row.status === 'Inscrit' ? '#059669' : '#d97706',
+                        border: row.status === 'Inscrit' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(245, 158, 11, 0.3)'
+                      }}
+                    >
+                      {row.status}
+                    </span>
+                    <span 
+                      style={{
+                        padding: '4px 10px', 
+                        borderRadius: '20px', 
+                        fontSize: '0.78rem', 
+                        fontWeight: 700, 
+                        whiteSpace: 'nowrap', 
+                        letterSpacing: '0.02em',
+                        textTransform: 'uppercase',
+                        background: row.affecte === 'Affecté' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(107, 114, 128, 0.15)', 
+                        color: row.affecte === 'Affecté' ? '#2563eb' : '#4b5563',
+                        border: row.affecte === 'Affecté' ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(107, 114, 128, 0.3)'
+                      }}
+                    >
                       {row.affecte || 'Non affecté'}
                     </span>
                   </div>
@@ -4787,6 +4868,9 @@ function App() {
             <li className={`nav-item ${activeSettingsTab === 'general' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('general')} style={{marginBottom: '4px'}}>
               <Icons.Settings /> {t('admin.settings.tab_general', 'Général')}
             </li>
+            <li className={`nav-item ${activeSettingsTab === 'bulletin' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('bulletin')} style={{marginBottom: '4px', background: activeSettingsTab === 'bulletin' ? 'rgba(99, 102, 241, 0.15)' : 'transparent', borderLeft: activeSettingsTab === 'bulletin' ? '3px solid var(--primary-color)' : 'none'}}>
+              <Icons.FileText /> Format & Design du Bulletin
+            </li>
             <li className={`nav-item ${activeSettingsTab === 'academic' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('academic')} style={{marginBottom: '4px'}}>
               <Icons.BookOpen /> {t('admin.settings.tab_academic', 'Pédagogique')}
             </li>
@@ -4876,6 +4960,294 @@ function App() {
                     </select>
                   </div>
                 </div>
+              </div>
+            </form>
+          )}
+
+          {activeSettingsTab === 'bulletin' && (
+            <form id="settingsForm" onSubmit={saveSettings}>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>
+                <div>
+                  <h3 className="panel-title" style={{margin: 0}}>Format & Design du Bulletin</h3>
+                  <p style={{margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)'}}>
+                    Personnalisez le modèle de bulletin, les couleurs, les textes officiels et les éléments affichés pour votre établissement.
+                  </p>
+                </div>
+                <button type="submit" className="btn btn-primary">
+                  {t('admin.settings.btn_save', 'Sauvegarder')}
+                </button>
+              </div>
+
+              {/* 1. Modèle de bulletin (Templates) */}
+              <div style={{marginBottom: '28px'}}>
+                <label style={{display: 'block', fontSize: '1rem', fontWeight: 700, marginBottom: '12px'}}>
+                  1. Choisissez le Modèle de Bulletin
+                </label>
+                <input type="hidden" name="bulletin_template" value={selectedBulletinTemplate} />
+                
+                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px'}}>
+                  {/* Template 1: Classic */}
+                  <div 
+                    onClick={() => setSelectedBulletinTemplate('classic')}
+                    style={{
+                      cursor: 'pointer',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      border: selectedBulletinTemplate === 'classic' ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
+                      backgroundColor: selectedBulletinTemplate === 'classic' ? 'rgba(99, 102, 241, 0.08)' : 'var(--surface-color)',
+                      boxShadow: selectedBulletinTemplate === 'classic' ? '0 4px 12px rgba(99, 102, 241, 0.15)' : 'none',
+                      transition: 'all 0.2s ease',
+                      position: 'relative'
+                    }}
+                  >
+                    {selectedBulletinTemplate === 'classic' && (
+                      <span style={{position: 'absolute', top: '10px', right: '10px', fontSize: '1.1rem'}}>✅</span>
+                    )}
+                    <div style={{fontSize: '1.8rem', marginBottom: '8px'}}>🏛️</div>
+                    <div style={{fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px'}}>Classique / Officiel</div>
+                    <div style={{fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: '1.3'}}>
+                      Format standard conforme ministère. Regroupement par pôles (Lettres, Sciences, Autres), bilans et appréciations.
+                    </div>
+                  </div>
+
+                  {/* Template 2: Modern */}
+                  <div 
+                    onClick={() => setSelectedBulletinTemplate('modern')}
+                    style={{
+                      cursor: 'pointer',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      border: selectedBulletinTemplate === 'modern' ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
+                      backgroundColor: selectedBulletinTemplate === 'modern' ? 'rgba(99, 102, 241, 0.08)' : 'var(--surface-color)',
+                      boxShadow: selectedBulletinTemplate === 'modern' ? '0 4px 12px rgba(99, 102, 241, 0.15)' : 'none',
+                      transition: 'all 0.2s ease',
+                      position: 'relative'
+                    }}
+                  >
+                    {selectedBulletinTemplate === 'modern' && (
+                      <span style={{position: 'absolute', top: '10px', right: '10px', fontSize: '1.1rem'}}>✅</span>
+                    )}
+                    <div style={{fontSize: '1.8rem', marginBottom: '8px'}}>💎</div>
+                    <div style={{fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px'}}>Moderne & Épuré</div>
+                    <div style={{fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: '1.3'}}>
+                      Design graphique soigné aux couleurs de l'école. Badges arrondis, cartes KPIs et mise en page contemporaine.
+                    </div>
+                  </div>
+
+                  {/* Template 3: Compact */}
+                  <div 
+                    onClick={() => setSelectedBulletinTemplate('compact')}
+                    style={{
+                      cursor: 'pointer',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      border: selectedBulletinTemplate === 'compact' ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
+                      backgroundColor: selectedBulletinTemplate === 'compact' ? 'rgba(99, 102, 241, 0.08)' : 'var(--surface-color)',
+                      boxShadow: selectedBulletinTemplate === 'compact' ? '0 4px 12px rgba(99, 102, 241, 0.15)' : 'none',
+                      transition: 'all 0.2s ease',
+                      position: 'relative'
+                    }}
+                  >
+                    {selectedBulletinTemplate === 'compact' && (
+                      <span style={{position: 'absolute', top: '10px', right: '10px', fontSize: '1.1rem'}}>✅</span>
+                    )}
+                    <div style={{fontSize: '1.8rem', marginBottom: '8px'}}>📄</div>
+                    <div style={{fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px'}}>Compact (2 / page A4)</div>
+                    <div style={{fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: '1.3'}}>
+                      2 bulletins par feuille A4 avec trait de découpe. Idéal pour économiser le papier et l'encre d'impression.
+                    </div>
+                  </div>
+
+                  {/* Template 4: Primary */}
+                  <div 
+                    onClick={() => setSelectedBulletinTemplate('primary')}
+                    style={{
+                      cursor: 'pointer',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      border: selectedBulletinTemplate === 'primary' ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
+                      backgroundColor: selectedBulletinTemplate === 'primary' ? 'rgba(99, 102, 241, 0.08)' : 'var(--surface-color)',
+                      boxShadow: selectedBulletinTemplate === 'primary' ? '0 4px 12px rgba(99, 102, 241, 0.15)' : 'none',
+                      transition: 'all 0.2s ease',
+                      position: 'relative'
+                    }}
+                  >
+                    {selectedBulletinTemplate === 'primary' && (
+                      <span style={{position: 'absolute', top: '10px', right: '10px', fontSize: '1.1rem'}}>✅</span>
+                    )}
+                    <div style={{fontSize: '1.8rem', marginBottom: '8px'}}>🎒</div>
+                    <div style={{fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px'}}>Primaire & Compétences</div>
+                    <div style={{fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: '1.3'}}>
+                      Adapté aux classes primaires. Grille de compétences (Acquis/En cours), appréciations et conseils de l'enseignant.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Couleur thématique du bulletin */}
+              <div style={{marginBottom: '28px', backgroundColor: 'var(--surface-color)', padding: '18px', borderRadius: '12px', border: '1px solid var(--border-color)'}}>
+                <label style={{display: 'block', fontSize: '0.95rem', fontWeight: 700, marginBottom: '8px'}}>
+                  2. Couleur Thématique du Bulletin
+                </label>
+                <p style={{fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 12px 0'}}>
+                  Cette couleur sera utilisée pour les en-têtes de colonnes, titres et bordures d'accentuation sur les bulletins imprimés.
+                </p>
+                <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+                  <input 
+                    type="color" 
+                    name="bulletin_color" 
+                    defaultValue={settingsData?.bulletin_color || settingsData?.primary_color || '#1e3a8a'} 
+                    style={{width: '45px', height: '45px', padding: 0, border: 'none', borderRadius: '8px', cursor: 'pointer'}} 
+                  />
+                  <span style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>
+                    Couleur active : <strong>{settingsData?.bulletin_color || '#1e3a8a'}</strong>
+                  </span>
+                </div>
+              </div>
+
+              {/* 3. En-têtes et textes officiels */}
+              <div style={{marginBottom: '28px', backgroundColor: 'var(--surface-color)', padding: '18px', borderRadius: '12px', border: '1px solid var(--border-color)'}}>
+                <label style={{display: 'block', fontSize: '0.95rem', fontWeight: 700, marginBottom: '14px'}}>
+                  3. En-têtes & Textes Officiels
+                </label>
+                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px'}}>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '6px'}}>
+                    <label style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>Titre du Document</label>
+                    <input 
+                      type="text" 
+                      name="bulletin_title" 
+                      defaultValue={settingsData?.bulletin_title || 'BULLETIN TRIMESTRIEL DE NOTES'} 
+                      className="form-input" 
+                      placeholder="ex: BULLETIN TRIMESTRIEL DE NOTES ou RELEVE DE NOTES" 
+                    />
+                  </div>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '6px'}}>
+                    <label style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>Tutelle Ministérielle (En-tête gauche)</label>
+                    <input 
+                      type="text" 
+                      name="ministry_header" 
+                      defaultValue={settingsData?.ministry_header || "MINISTERE DE L'EDUCATION NATIONALE ET DE L'ALPHABETISATION"} 
+                      className="form-input" 
+                    />
+                  </div>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '6px'}}>
+                    <label style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>DREN / Inspection / Circonscription</label>
+                    <input 
+                      type="text" 
+                      name="dren_name" 
+                      defaultValue={settingsData?.dren_name || settingsData?.address || 'DIVO'} 
+                      className="form-input" 
+                      placeholder="ex: DREN DIVO ou CIRCONSCRIPTION D'ABIDJAN" 
+                    />
+                  </div>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '6px'}}>
+                    <label style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>Statut de l'établissement</label>
+                    <input 
+                      type="text" 
+                      name="school_statut" 
+                      defaultValue={settingsData?.school_statut || 'Privé'} 
+                      className="form-input" 
+                      placeholder="ex: Privé, Public, Laïc, Confessionnel" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Cachet / Tampon numérique */}
+              <div style={{marginBottom: '28px', backgroundColor: 'var(--surface-color)', padding: '18px', borderRadius: '12px', border: '1px solid var(--border-color)'}}>
+                <label style={{display: 'block', fontSize: '0.95rem', fontWeight: 700, marginBottom: '8px'}}>
+                  4. Cachet / Tampon Numérisé de l'Établissement (Optionnel)
+                </label>
+                <p style={{fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 12px 0'}}>
+                  Si vous téléchargez votre cachet avec signature en fond transparent (PNG), il sera automatiquement apposé sur chaque bulletin.
+                </p>
+                <div style={{display: 'flex', gap: '20px', alignItems: 'center'}}>
+                  {settingsData?.stamp_url && (
+                    <div style={{padding: '8px', border: '1px dashed #cbd5e1', borderRadius: '8px', backgroundColor: 'white'}}>
+                      <img src={settingsData.stamp_url} alt="Tampon actuel" style={{maxHeight: '60px', maxWidth: '120px', objectFit: 'contain'}} />
+                      <div style={{fontSize: '0.7rem', color: '#64748b', textAlign: 'center', marginTop: '4px'}}>Cachet actuel</div>
+                    </div>
+                  )}
+                  <div style={{flex: 1}}>
+                    <input type="file" name="stamp_file" accept="image/*" className="form-input" />
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. Options d'affichage modulaires */}
+              <div style={{marginBottom: '28px', backgroundColor: 'var(--surface-color)', padding: '18px', borderRadius: '12px', border: '1px solid var(--border-color)'}}>
+                <label style={{display: 'block', fontSize: '0.95rem', fontWeight: 700, marginBottom: '14px'}}>
+                  5. Éléments à Afficher sur le Bulletin
+                </label>
+                
+                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px'}}>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.9rem'}}>
+                    <input 
+                      type="checkbox" 
+                      name="show_student_photo" 
+                      defaultChecked={settingsData?.show_student_photo !== false} 
+                      style={{width: '18px', height: '18px', cursor: 'pointer'}} 
+                    />
+                    <span>Afficher la <strong>photo</strong> de l'élève</span>
+                  </label>
+
+                  <label style={{display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.9rem'}}>
+                    <input 
+                      type="checkbox" 
+                      name="show_rank" 
+                      defaultChecked={settingsData?.show_rank !== false} 
+                      style={{width: '18px', height: '18px', cursor: 'pointer'}} 
+                    />
+                    <span>Afficher le <strong>rang / classement</strong></span>
+                  </label>
+
+                  <label style={{display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.9rem'}}>
+                    <input 
+                      type="checkbox" 
+                      name="show_class_stats" 
+                      defaultChecked={settingsData?.show_class_stats !== false} 
+                      style={{width: '18px', height: '18px', cursor: 'pointer'}} 
+                    />
+                    <span>Afficher les <strong>statistiques de classe</strong> (Moyenne, Min, Max)</span>
+                  </label>
+
+                  <label style={{display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.9rem'}}>
+                    <input 
+                      type="checkbox" 
+                      name="show_teacher_names" 
+                      defaultChecked={settingsData?.show_teacher_names !== false} 
+                      style={{width: '18px', height: '18px', cursor: 'pointer'}} 
+                    />
+                    <span>Afficher les <strong>noms des professeurs</strong></span>
+                  </label>
+
+                  <label style={{display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.9rem'}}>
+                    <input 
+                      type="checkbox" 
+                      name="show_honor_roll" 
+                      defaultChecked={settingsData?.show_honor_roll !== false} 
+                      style={{width: '18px', height: '18px', cursor: 'pointer'}} 
+                    />
+                    <span>Afficher le <strong>tableau d'honneur & distinctions</strong></span>
+                  </label>
+
+                  <label style={{display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.9rem'}}>
+                    <input 
+                      type="checkbox" 
+                      name="show_signatures" 
+                      defaultChecked={settingsData?.show_signatures !== false} 
+                      style={{width: '18px', height: '18px', cursor: 'pointer'}} 
+                    />
+                    <span>Afficher les <strong>blocs de signature</strong></span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Submit button */}
+              <div style={{display: 'flex', justifyContent: 'flex-end', marginTop: '20px'}}>
+                <button type="submit" className="btn btn-primary" style={{padding: '10px 24px', fontSize: '1rem'}}>
+                  💾 Enregistrer la Configuration du Bulletin
+                </button>
               </div>
             </form>
           )}
@@ -5480,10 +5852,17 @@ function App() {
             <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(true)}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
-            <div className="header-search hide-on-mobile">
-              <Icons.Search />
-              <input type="text" placeholder={t('admin.header.search', 'Rechercher...')} />
-            </div>
+            <GlobalSearch 
+              studentsData={studentsData}
+              parentsData={parentsData}
+              teachersData={teachersData}
+              classesData={classesData}
+              setActiveTab={setActiveTab}
+              setSelectedStudent={setSelectedStudent}
+              setActiveModal={setActiveModal}
+              setParentSearchQuery={setParentSearchQuery}
+              currentAdminRole={currentAdminRole}
+            />
             {adminSchools && adminSchools.length > 1 && !employeeSession && !detectedSubdomain && ['konedamaa@gmail.com'].includes(session?.user?.email || '') && (
               <select 
                 className="form-select hide-on-mobile" 
@@ -5618,47 +5997,92 @@ function App() {
               <span><strong>Mode Superviseur :</strong> Vous disposez d'un accès en lecture seule. Les modifications sont désactivées, mais vous pouvez consulter et imprimer les rapports.</span>
             </div>
           )}
-          {activeTab === 'dashboard' && renderDashboard()}
-          {activeTab === 'students' && renderStudents()}
-          {activeTab === 'absences' && renderAbsences()}
-          {activeTab === 'pedagogy' && renderPedagogy()}
-          {activeTab === 'schedules' && renderSchedules()}
-          {activeTab === 'communication' && renderCommunication()}
-          {['notes_bulletins', 'grades', 'bulletins'].includes(activeTab) && (
-            <div className="animate-fade-in">
-              <div className="panel" style={{ marginBottom: '20px', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
-                <h2 style={{ margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Icons.FileText /> Notes & Bulletins Scolaires
-                </h2>
-                <div style={{ display: 'flex', background: 'var(--surface-color-hover, #f1f5f9)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-color)', gap: '4px' }}>
-                  <button
-                    type="button"
-                    className={`btn ${notesSubTab === 'grades' ? 'btn-primary' : 'btn-outline'}`}
-                    style={{ padding: '8px 20px', fontSize: '0.9rem', fontWeight: 600, borderRadius: '8px' }}
-                    onClick={() => setNotesSubTab('grades')}
-                  >
-                    📝 Évaluations & Notes
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn ${notesSubTab === 'bulletins' ? 'btn-primary' : 'btn-outline'}`}
-                    style={{ padding: '8px 20px', fontSize: '0.9rem', fontWeight: 600, borderRadius: '8px' }}
-                    onClick={() => setNotesSubTab('bulletins')}
-                  >
-                    📜 Bulletins Scolaires
-                  </button>
+          {isAppLoading ? (
+            <div className="animate-fade-in" style={{ padding: '4px' }}>
+              {activeTab === 'dashboard' && (
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+                    <SkeletonStatGrid count={5} />
+                  </div>
+                  <SkeletonStatGrid count={4} />
+                  <div style={{ marginTop: '20px' }}>
+                    <SkeletonTable rows={5} columns={4} />
+                  </div>
                 </div>
-              </div>
-
-              {notesSubTab === 'grades' ? renderGrades() : renderBulletins()}
+              )}
+              {['students', 'parents', 'teachers', 'absences', 'scolarite', 'depenses', 'rh'].includes(activeTab) && (
+                <SkeletonTable rows={8} columns={6} />
+              )}
+              {['notes_bulletins', 'grades', 'bulletins'].includes(activeTab) && (
+                <div>
+                  <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+                    <Skeleton width={180} height={38} borderRadius={8} />
+                    <Skeleton width={180} height={38} borderRadius={8} />
+                  </div>
+                  <SkeletonTable rows={7} columns={7} />
+                </div>
+              )}
+              {activeTab === 'pedagogy' && (
+                <SkeletonCardGrid count={6} />
+              )}
+              {activeTab === 'schedules' && (
+                <SkeletonSchedule />
+              )}
+              {activeTab === 'settings' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <Skeleton width="40%" height={28} />
+                  <SkeletonCardGrid count={4} />
+                </div>
+              )}
+              {activeTab === 'communication' && (
+                <SkeletonTable rows={6} columns={4} />
+              )}
             </div>
+          ) : (
+            <>
+              {activeTab === 'dashboard' && renderDashboard()}
+              {activeTab === 'students' && renderStudents()}
+              {activeTab === 'absences' && renderAbsences()}
+              {activeTab === 'pedagogy' && renderPedagogy()}
+              {activeTab === 'schedules' && renderSchedules()}
+              {activeTab === 'communication' && renderCommunication()}
+              {['notes_bulletins', 'grades', 'bulletins'].includes(activeTab) && (
+                <div className="animate-fade-in">
+                  <div className="panel" style={{ marginBottom: '20px', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+                    <h2 style={{ margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <Icons.FileText /> Notes & Bulletins Scolaires
+                    </h2>
+                    <div style={{ display: 'flex', background: 'var(--surface-color-hover, #f1f5f9)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-color)', gap: '4px' }}>
+                      <button
+                        type="button"
+                        className={`btn ${notesSubTab === 'grades' ? 'btn-primary' : 'btn-outline'}`}
+                        style={{ padding: '8px 20px', fontSize: '0.9rem', fontWeight: 600, borderRadius: '8px' }}
+                        onClick={() => setNotesSubTab('grades')}
+                      >
+                        📝 Évaluations & Notes
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn ${notesSubTab === 'bulletins' ? 'btn-primary' : 'btn-outline'}`}
+                        style={{ padding: '8px 20px', fontSize: '0.9rem', fontWeight: 600, borderRadius: '8px' }}
+                        onClick={() => setNotesSubTab('bulletins')}
+                      >
+                        📜 Bulletins Scolaires
+                      </button>
+                    </div>
+                  </div>
+
+                  {notesSubTab === 'grades' ? renderGrades() : renderBulletins()}
+                </div>
+              )}
+              {activeTab === 'rh' && renderRH()}
+              {activeTab === 'depenses' && renderDepenses()}
+              {activeTab === 'teachers' && renderTeachers()}
+              {activeTab === 'parents' && renderParents()}
+              {activeTab === 'scolarite' && renderScolarite()}
+              {activeTab === 'settings' && renderSettings()}
+            </>
           )}
-          {activeTab === 'rh' && renderRH()}
-          {activeTab === 'depenses' && renderDepenses()}
-          {activeTab === 'teachers' && renderTeachers()}
-          {activeTab === 'parents' && renderParents()}
-          {activeTab === 'scolarite' && renderScolarite()}
-          {activeTab === 'settings' && renderSettings()}
         </div>
       </main>
 
