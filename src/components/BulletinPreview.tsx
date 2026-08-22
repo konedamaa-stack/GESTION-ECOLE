@@ -735,13 +735,16 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
           </div>
 
           <div className="header-center">
-            <div style={{fontSize: '1rem', fontWeight: 900, fontFamily: '"Cairo", serif', direction: 'rtl', color: brandColor, marginBottom: '2px'}}>
+            <div style={{fontSize: '1rem', fontWeight: 900, fontFamily: '"Cairo", serif', direction: 'rtl', color: brandColor, marginBottom: '1px'}}>
               ! الله أكبر
             </div>
-            <h2 style={{color: brandColor, margin: '2px 0', fontSize: '1.25rem'}}>
-              {customTitle ? `${customTitle.toUpperCase()} - كشف الدرجات` : 'BULLETIN DE NOTES - كشف الدرجات'}
+            <div style={{fontSize: '1.25rem', fontWeight: 900, fontFamily: '"Cairo", "Traditional Arabic", serif', direction: 'rtl', color: brandColor, margin: '1px 0'}}>
+              كشف الدرجات
+            </div>
+            <h2 style={{color: brandColor, margin: '1px 0 2px 0', fontSize: '1.05rem', fontWeight: 800, letterSpacing: '0.5px'}}>
+              {customTitle ? customTitle.toUpperCase() : 'BULLETIN TRIMESTRIEL DE NOTES'}
             </h2>
-            <h3 style={{margin: '2px 0', fontSize: '0.95rem'}}>
+            <h3 style={{margin: '2px 0', fontSize: '0.9rem'}}>
               {period || '1er Trimestre - الفترة الأولى'}
             </h3>
           </div>
@@ -873,13 +876,13 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
                     {showRank && (
                       <tr>
                         <td style={{border: 'none', borderRight: '1px solid black', textAlign: 'center', padding: '4px'}}>
-                          Rang: <strong>{period === '1er Trimestre' ? getRankStr(stats.rank) : '-'}</strong>
+                          Rang: <strong style={{unicodeBidi: 'isolate', direction: 'ltr', display: 'inline-block'}}>{period === '1er Trimestre' ? `${stats.rank}${stats.rank === 1 ? 'er' : 'e'}` : '-'}</strong>
                         </td>
                         <td style={{border: 'none', borderRight: '1px solid black', textAlign: 'center', padding: '4px'}}>
-                          Rang: <strong>{period === '2ème Trimestre' ? getRankStr(stats.rank) : '-'}</strong>
+                          Rang: <strong style={{unicodeBidi: 'isolate', direction: 'ltr', display: 'inline-block'}}>{period === '2ème Trimestre' ? `${stats.rank}${stats.rank === 1 ? 'er' : 'e'}` : '-'}</strong>
                         </td>
                         <td style={{border: 'none', textAlign: 'center', padding: '4px'}}>
-                          Rang: <strong>{period === '3ème Trimestre' ? getRankStr(stats.rank) : '-'}</strong>
+                          Rang: <strong style={{unicodeBidi: 'isolate', direction: 'ltr', display: 'inline-block'}}>{period === '3ème Trimestre' ? `${stats.rank}${stats.rank === 1 ? 'er' : 'e'}` : '-'}</strong>
                         </td>
                       </tr>
                     )}
@@ -896,8 +899,14 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
                   {formatNum(stats.generalAverage, 2)} /20
                 </p>
                 {showRank && (
-                  <p style={{margin: 0, fontSize: '0.85rem'}}>
-                    Rang / الترتيب : <strong style={{fontSize: '1.1rem'}}>{getRankStr(stats.rank)}</strong>
+                  <p style={{margin: 0, fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'}}>
+                    <span>Rang :</span>
+                    <strong style={{fontSize: '1.15rem', display: 'inline-block', unicodeBidi: 'isolate', direction: 'ltr'}}>
+                      {stats.rank}<sup>{stats.rank === 1 ? 'er' : 'e'}</sup>
+                    </strong>
+                    <span style={{fontFamily: '"Cairo", serif', direction: 'rtl', marginRight: '4px'}}>
+                      (الترتيب : {formatNum(stats.rank, 0)})
+                    </span>
                   </p>
                 )}
                 <div style={{marginTop: '4px', fontSize: '0.8rem', fontWeight: 'bold', color: '#15803d'}}>
