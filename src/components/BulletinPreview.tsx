@@ -677,139 +677,106 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
           </div>
         </div>
 
-        {/* 5. Dual Side-by-Side Tables (Left: French, Right: Arabic) */}
-        <div style={{display: 'flex', border: '2px solid black', marginBottom: '10px'}}>
-          
-          {/* LEFT TABLE: FRANÇAIS */}
-          <div style={{width: '50%', borderRight: '2px solid black'}}>
-            <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem'}}>
-              <thead>
-                <tr style={{backgroundColor: '#fff', borderBottom: '1px solid black'}}>
-                  <th style={{padding: '4px 6px', borderRight: '1px solid black', textAlign: 'left', width: '45%'}}>Matières</th>
-                  <th style={{padding: '4px 2px', borderRight: '1px solid black', textAlign: 'center', width: '13%'}}>Trim 1</th>
-                  <th style={{padding: '4px 2px', borderRight: '1px solid black', textAlign: 'center', width: '14%'}}>Rang</th>
-                  <th style={{padding: '4px 2px', borderRight: '1px solid black', textAlign: 'center', width: '13%'}}>Trim 2</th>
-                  <th style={{padding: '4px 2px', textAlign: 'center', width: '15%'}}>Rang</th>
-                </tr>
-              </thead>
-              <tbody>
-                {studentSubjs.map(s => {
-                  const val = stats.subjects[s];
-                  const sRank = subjectRanks[s]?.[st.id];
-                  return (
-                    <tr key={s} style={{borderBottom: '1px solid black'}}>
-                      <td style={{padding: '3px 6px', borderRight: '1px solid black', fontWeight: 'bold'}}>{s}</td>
-                      <td style={{padding: '3px 2px', borderRight: '1px solid black', textAlign: 'center', fontWeight: 'bold'}}>{formatNum(val, 1)}</td>
-                      <td style={{padding: '3px 2px', borderRight: '1px solid black', textAlign: 'center'}}>{sRank || '-'}</td>
-                      <td style={{padding: '3px 2px', borderRight: '1px solid black', textAlign: 'center'}}>-</td>
-                      <td style={{padding: '3px 2px', textAlign: 'center'}}>-</td>
-                    </tr>
-                  );
-                })}
+        {/* 5. Unified 10-Column Bilingual Table (Perfect Row Alignment) */}
+        <div style={{marginBottom: '10px'}}>
+          <table style={{width: '100%', borderCollapse: 'collapse', border: '2px solid black', tableLayout: 'fixed'}}>
+            <thead>
+              <tr style={{backgroundColor: '#fff', borderBottom: '2px solid black', fontSize: '0.74rem'}}>
+                <th style={{width: '24%', padding: '4px 6px', borderRight: '1px solid black', textAlign: 'left'}}>Matières</th>
+                <th style={{width: '6.5%', padding: '4px 2px', borderRight: '1px solid black', textAlign: 'center'}}>Trim 1</th>
+                <th style={{width: '6.5%', padding: '4px 2px', borderRight: '1px solid black', textAlign: 'center'}}>Rang</th>
+                <th style={{width: '6.5%', padding: '4px 2px', borderRight: '1px solid black', textAlign: 'center'}}>Trim 2</th>
+                <th style={{width: '6.5%', padding: '4px 2px', borderRight: '2px solid black', textAlign: 'center'}}>Rang</th>
+                <th style={{width: '6.5%', padding: '4px 2px', borderRight: '1px solid black', textAlign: 'center', fontFamily: '"Cairo", serif'}}>الترتيب</th>
+                <th style={{width: '6.5%', padding: '4px 2px', borderRight: '1px solid black', textAlign: 'center', fontFamily: '"Cairo", serif'}}>الفترة الثانية</th>
+                <th style={{width: '6.5%', padding: '4px 2px', borderRight: '1px solid black', textAlign: 'center', fontFamily: '"Cairo", serif'}}>الترتيب</th>
+                <th style={{width: '6.5%', padding: '4px 2px', borderRight: '1px solid black', textAlign: 'center', fontFamily: '"Cairo", serif'}}>الفترة الأولى</th>
+                <th style={{width: '24%', padding: '4px 6px', textAlign: 'right', fontFamily: '"Cairo", "Traditional Arabic", serif'}}>المواد</th>
+              </tr>
+            </thead>
+            <tbody>
+              {studentSubjs.map(s => {
+                const val = stats.subjects[s];
+                const sRank = subjectRanks[s]?.[st.id];
+                const arName = getSubjectArabicName(s);
+                return (
+                  <tr key={s} style={{borderBottom: '1px solid black', height: '24px'}}>
+                    <td style={{padding: '3px 6px', borderRight: '1px solid black', fontWeight: 'bold', fontSize: '0.78rem', textAlign: 'left'}}>{s}</td>
+                    <td style={{padding: '3px 2px', borderRight: '1px solid black', textAlign: 'center', fontWeight: 'bold', fontSize: '0.8rem'}}>{formatNum(val, 1)}</td>
+                    <td style={{padding: '3px 2px', borderRight: '1px solid black', textAlign: 'center', fontSize: '0.8rem'}}>{sRank || '-'}</td>
+                    <td style={{padding: '3px 2px', borderRight: '1px solid black', textAlign: 'center', fontSize: '0.8rem'}}>-</td>
+                    <td style={{padding: '3px 2px', borderRight: '2px solid black', textAlign: 'center', fontSize: '0.8rem'}}>-</td>
+                    <td style={{padding: '3px 2px', borderRight: '1px solid black', textAlign: 'center', fontSize: '0.8rem'}}>-</td>
+                    <td style={{padding: '3px 2px', borderRight: '1px solid black', textAlign: 'center', fontSize: '0.8rem'}}>-</td>
+                    <td style={{padding: '3px 2px', borderRight: '1px solid black', textAlign: 'center', fontSize: '0.8rem'}}>{sRank || '-'}</td>
+                    <td style={{padding: '3px 2px', borderRight: '1px solid black', textAlign: 'center', fontWeight: 'bold', fontSize: '0.8rem'}}>{formatNum(val, 1)}</td>
+                    <td style={{padding: '3px 6px', textAlign: 'right', fontWeight: 'bold', fontSize: '0.85rem', fontFamily: '"Cairo", "Traditional Arabic", serif'}}>{arName}</td>
+                  </tr>
+                );
+              })}
 
-                {/* French Totals & Summary */}
-                <tr style={{backgroundColor: '#f8fafc', borderBottom: '1px solid black', fontWeight: 'bold'}}>
-                  <td style={{padding: '3px 6px', borderRight: '1px solid black'}}>Trimestre 1</td>
-                  <td colSpan={2} style={{padding: '3px 4px', borderRight: '1px solid black', textAlign: 'center'}}>Trimestre 2</td>
-                  <td colSpan={2} style={{padding: '3px 4px', textAlign: 'center'}}>Total</td>
-                </tr>
-                <tr style={{borderBottom: '1px solid black'}}>
-                  <td style={{padding: '3px 6px', borderRight: '1px solid black', fontWeight: 'bold'}}>Total: {formatNum(stats.totalWeightedScore, 1)}</td>
-                  <td colSpan={2} style={{borderRight: '1px solid black', textAlign: 'center'}}>-</td>
-                  <td colSpan={2} style={{textAlign: 'center', fontWeight: 'bold'}}>{formatNum(stats.totalWeightedScore, 1)}</td>
-                </tr>
-                <tr style={{borderBottom: '1px solid black'}}>
-                  <td style={{padding: '3px 6px', borderRight: '1px solid black', fontWeight: 'bold'}}>Moy: {formatNum(stats.generalAverage, 2)}</td>
-                  <td colSpan={2} style={{borderRight: '1px solid black', textAlign: 'center'}}>-</td>
-                  <td colSpan={2} style={{textAlign: 'center', fontWeight: 'bold'}}>{formatNum(stats.generalAverage, 2)}</td>
-                </tr>
-                <tr style={{borderBottom: '1px solid black'}}>
-                  <td style={{padding: '3px 6px', borderRight: '1px solid black', fontWeight: 'bold'}}>Rang: {stats.rank}</td>
-                  <td colSpan={2} style={{borderRight: '1px solid black', textAlign: 'center'}}>-</td>
-                  <td colSpan={2} style={{textAlign: 'center', fontWeight: 'bold'}}>{stats.rank}</td>
-                </tr>
-                <tr style={{borderBottom: '1px solid black'}}>
-                  <td style={{padding: '3px 6px', borderRight: '1px solid black', fontWeight: 'bold'}}>{getAppreciation(stats.generalAverage, 20)}</td>
-                  <td colSpan={2} style={{borderRight: '1px solid black', textAlign: 'center'}}>-</td>
-                  <td colSpan={2} style={{textAlign: 'center'}}>{getAppreciation(stats.generalAverage, 20)}</td>
-                </tr>
-                <tr style={{borderBottom: '1px solid black'}}>
-                  <td style={{padding: '3px 6px', borderRight: '1px solid black', fontWeight: 'bold'}}>Moyenne Annuel :</td>
-                  <td colSpan={4} style={{padding: '3px 6px'}}></td>
-                </tr>
-                <tr>
-                  <td style={{padding: '3px 6px', borderRight: '1px solid black', fontWeight: 'bold'}}>Rang Annuel :</td>
-                  <td colSpan={4} style={{padding: '3px 6px'}}></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+              {/* Bottom Totals: Row 1 Periods */}
+              <tr style={{backgroundColor: '#f8fafc', borderBottom: '1px solid black', fontWeight: 'bold', fontSize: '0.75rem'}}>
+                <td colSpan={3} style={{padding: '3px 6px', borderRight: '1px solid black', textAlign: 'center'}}>Trimestre 1</td>
+                <td colSpan={2} style={{padding: '3px 4px', borderRight: '2px solid black', textAlign: 'center'}}>Trimestre 2</td>
+                <td colSpan={2} style={{padding: '3px 4px', borderRight: '1px solid black', textAlign: 'center', fontFamily: '"Cairo", serif'}}>الفترة الثالثة</td>
+                <td style={{padding: '3px 4px', borderRight: '1px solid black', textAlign: 'center', fontFamily: '"Cairo", serif'}}>الفترة الثانية</td>
+                <td colSpan={2} style={{padding: '3px 6px', textAlign: 'center', fontFamily: '"Cairo", serif'}}>الفترة الأولى</td>
+              </tr>
 
-          {/* RIGHT TABLE: ARABE */}
-          <div style={{width: '50%', direction: 'rtl'}}>
-            <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', fontFamily: '"Cairo", "Traditional Arabic", serif'}}>
-              <thead>
-                <tr style={{backgroundColor: '#fff', borderBottom: '1px solid black'}}>
-                  <th style={{padding: '4px 6px', borderLeft: '1px solid black', textAlign: 'right', width: '45%'}}>المواد</th>
-                  <th style={{padding: '4px 2px', borderLeft: '1px solid black', textAlign: 'center', width: '13%'}}>الفترة الأولى</th>
-                  <th style={{padding: '4px 2px', borderLeft: '1px solid black', textAlign: 'center', width: '14%'}}>الترتيب</th>
-                  <th style={{padding: '4px 2px', borderLeft: '1px solid black', textAlign: 'center', width: '13%'}}>الفترة الثانية</th>
-                  <th style={{padding: '4px 2px', textAlign: 'center', width: '15%'}}>الترتيب</th>
-                </tr>
-              </thead>
-              <tbody>
-                {studentSubjs.map(s => {
-                  const val = stats.subjects[s];
-                  const sRank = subjectRanks[s]?.[st.id];
-                  const arName = getSubjectArabicName(s);
-                  return (
-                    <tr key={s} style={{borderBottom: '1px solid black'}}>
-                      <td style={{padding: '3px 6px', borderLeft: '1px solid black', fontWeight: 'bold'}}>{arName}</td>
-                      <td style={{padding: '3px 2px', borderLeft: '1px solid black', textAlign: 'center', fontWeight: 'bold'}}>{formatNum(val, 1)}</td>
-                      <td style={{padding: '3px 2px', borderLeft: '1px solid black', textAlign: 'center'}}>{sRank || '-'}</td>
-                      <td style={{padding: '3px 2px', borderLeft: '1px solid black', textAlign: 'center'}}>-</td>
-                      <td style={{padding: '3px 2px', textAlign: 'center'}}>-</td>
-                    </tr>
-                  );
-                })}
+              {/* Bottom Totals: Row 2 Total Scores */}
+              <tr style={{borderBottom: '1px solid black', fontSize: '0.78rem'}}>
+                <td colSpan={3} style={{padding: '3px 6px', borderRight: '1px solid black', fontWeight: 'bold'}}>Total: {formatNum(stats.totalWeightedScore, 1)}</td>
+                <td colSpan={2} style={{borderRight: '2px solid black', textAlign: 'center'}}>-</td>
+                <td colSpan={2} style={{borderRight: '1px solid black', textAlign: 'center'}}>-</td>
+                <td style={{borderRight: '1px solid black', textAlign: 'center'}}>-</td>
+                <td colSpan={2} style={{padding: '3px 6px', textAlign: 'right', fontWeight: 'bold', fontFamily: '"Cairo", serif'}}>المجموع : {formatNum(stats.totalWeightedScore, 1)}</td>
+              </tr>
 
-                {/* Arabic Totals & Summary */}
-                <tr style={{backgroundColor: '#f8fafc', borderBottom: '1px solid black', fontWeight: 'bold'}}>
-                  <td style={{padding: '3px 6px', borderLeft: '1px solid black'}}>الفترة الأولى</td>
-                  <td colSpan={2} style={{padding: '3px 4px', borderLeft: '1px solid black', textAlign: 'center'}}>الفترة الثانية</td>
-                  <td colSpan={2} style={{padding: '3px 4px', textAlign: 'center'}}>الفترة الثالثة</td>
-                </tr>
-                <tr style={{borderBottom: '1px solid black'}}>
-                  <td style={{padding: '3px 6px', borderLeft: '1px solid black', fontWeight: 'bold'}}>المجموع : {formatNum(stats.totalWeightedScore, 1)}</td>
-                  <td colSpan={2} style={{borderLeft: '1px solid black', textAlign: 'center'}}>-</td>
-                  <td colSpan={2} style={{textAlign: 'center', fontWeight: 'bold'}}>{formatNum(stats.totalWeightedScore, 1)}</td>
-                </tr>
-                <tr style={{borderBottom: '1px solid black'}}>
-                  <td style={{padding: '3px 6px', borderLeft: '1px solid black', fontWeight: 'bold'}}>المعدل : {formatNum(stats.generalAverage, 2)}</td>
-                  <td colSpan={2} style={{borderLeft: '1px solid black', textAlign: 'center'}}>-</td>
-                  <td colSpan={2} style={{textAlign: 'center', fontWeight: 'bold'}}>{formatNum(stats.generalAverage, 2)}</td>
-                </tr>
-                <tr style={{borderBottom: '1px solid black'}}>
-                  <td style={{padding: '3px 6px', borderLeft: '1px solid black', fontWeight: 'bold'}}>الترتيب : {stats.rank}</td>
-                  <td colSpan={2} style={{borderLeft: '1px solid black', textAlign: 'center'}}>-</td>
-                  <td colSpan={2} style={{textAlign: 'center', fontWeight: 'bold'}}>{stats.rank}</td>
-                </tr>
-                <tr style={{borderBottom: '1px solid black'}}>
-                  <td style={{padding: '3px 6px', borderLeft: '1px solid black', fontWeight: 'bold'}}>التقدير : {getArabicAppreciation(stats.generalAverage)}</td>
-                  <td colSpan={2} style={{borderLeft: '1px solid black', textAlign: 'center'}}>-</td>
-                  <td colSpan={2} style={{textAlign: 'center'}}>{getArabicAppreciation(stats.generalAverage)}</td>
-                </tr>
-                <tr style={{borderBottom: '1px solid black'}}>
-                  <td style={{padding: '3px 6px', borderLeft: '1px solid black', fontWeight: 'bold'}}>المعدل السنوي :</td>
-                  <td colSpan={4} style={{padding: '3px 6px'}}></td>
-                </tr>
-                <tr>
-                  <td style={{padding: '3px 6px', borderLeft: '1px solid black', fontWeight: 'bold'}}>الترتيب السنوي :</td>
-                  <td colSpan={4} style={{padding: '3px 6px'}}></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+              {/* Bottom Totals: Row 3 General Average */}
+              <tr style={{borderBottom: '1px solid black', fontSize: '0.78rem'}}>
+                <td colSpan={3} style={{padding: '3px 6px', borderRight: '1px solid black', fontWeight: 'bold'}}>Moy: {formatNum(stats.generalAverage, 2)}</td>
+                <td colSpan={2} style={{borderRight: '2px solid black', textAlign: 'center'}}>-</td>
+                <td colSpan={2} style={{borderRight: '1px solid black', textAlign: 'center'}}>-</td>
+                <td style={{borderRight: '1px solid black', textAlign: 'center'}}>-</td>
+                <td colSpan={2} style={{padding: '3px 6px', textAlign: 'right', fontWeight: 'bold', fontFamily: '"Cairo", serif'}}>المعدل : {formatNum(stats.generalAverage, 2)}</td>
+              </tr>
+
+              {/* Bottom Totals: Row 4 Rank */}
+              <tr style={{borderBottom: '1px solid black', fontSize: '0.78rem'}}>
+                <td colSpan={3} style={{padding: '3px 6px', borderRight: '1px solid black', fontWeight: 'bold'}}>Rang: {stats.rank}</td>
+                <td colSpan={2} style={{borderRight: '2px solid black', textAlign: 'center'}}>-</td>
+                <td colSpan={2} style={{borderRight: '1px solid black', textAlign: 'center'}}>-</td>
+                <td style={{borderRight: '1px solid black', textAlign: 'center'}}>-</td>
+                <td colSpan={2} style={{padding: '3px 6px', textAlign: 'right', fontWeight: 'bold', fontFamily: '"Cairo", serif'}}>الترتيب : {stats.rank}</td>
+              </tr>
+
+              {/* Bottom Totals: Row 5 Appréciation */}
+              <tr style={{borderBottom: '1px solid black', fontSize: '0.78rem'}}>
+                <td colSpan={3} style={{padding: '3px 6px', borderRight: '1px solid black', fontWeight: 'bold'}}>{getAppreciation(stats.generalAverage, 20)}</td>
+                <td colSpan={2} style={{borderRight: '2px solid black', textAlign: 'center'}}>-</td>
+                <td colSpan={2} style={{borderRight: '1px solid black', textAlign: 'center'}}>-</td>
+                <td style={{borderRight: '1px solid black', textAlign: 'center'}}>-</td>
+                <td colSpan={2} style={{padding: '3px 6px', textAlign: 'right', fontWeight: 'bold', fontFamily: '"Cairo", serif'}}>التقدير : {getArabicAppreciation(stats.generalAverage)}</td>
+              </tr>
+
+              {/* Bottom Totals: Row 6 Moyenne Annuelle */}
+              <tr style={{borderBottom: '1px solid black', fontSize: '0.78rem'}}>
+                <td colSpan={2} style={{padding: '3px 6px', borderRight: '1px solid black', fontWeight: 'bold'}}>Moyenne Annuel :</td>
+                <td colSpan={3} style={{borderRight: '2px solid black'}}></td>
+                <td colSpan={3} style={{borderRight: '1px solid black'}}></td>
+                <td colSpan={2} style={{padding: '3px 6px', textAlign: 'right', fontWeight: 'bold', fontFamily: '"Cairo", serif'}}> : المعدل السنوي</td>
+              </tr>
+
+              {/* Bottom Totals: Row 7 Rang Annuel */}
+              <tr style={{fontSize: '0.78rem'}}>
+                <td colSpan={2} style={{padding: '3px 6px', borderRight: '1px solid black', fontWeight: 'bold'}}>Rang Annuel :</td>
+                <td colSpan={3} style={{borderRight: '2px solid black'}}></td>
+                <td colSpan={3} style={{borderRight: '1px solid black'}}></td>
+                <td colSpan={2} style={{padding: '3px 6px', textAlign: 'right', fontWeight: 'bold', fontFamily: '"Cairo", serif'}}> : الترتيب السنوي</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         {/* 6. Signatures & Visas Section */}
