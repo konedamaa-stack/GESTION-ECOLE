@@ -1345,49 +1345,67 @@ function App() {
       }
     }
 
-    const settingsObj: any = {
-      school_name: formData.get('school_name'),
-      address: formData.get('address'),
-      phone: formData.get('phone'),
-      email: formData.get('email'),
-      director_name: formData.get('director_name'),
-      cashier_name: formData.get('cashier_name'),
-      city: formData.get('city'),
-      principal_name: formData.get('principal_name'),
-      studies_director_name: formData.get('studies_director_name'),
-      primary_color: formData.get('primary_color'),
-      accent_color: formData.get('accent_color'),
-      font_main: formData.get('font_main'),
-      bulletin_template: formData.get('bulletin_template') || selectedBulletinTemplate || 'classic',
-      bulletin_title: formData.get('bulletin_title') || 'BULLETIN TRIMESTRIEL DE NOTES',
-      ministry_header: formData.get('ministry_header') || "MINISTERE DE L'EDUCATION NATIONALE ET DE L'ALPHABETISATION",
-      dren_name: formData.get('dren_name') || '',
-      school_statut: formData.get('school_statut') || 'Privé',
-      show_student_photo: formData.get('show_student_photo') === 'on',
-      show_rank: formData.get('show_rank') === 'on',
-      show_class_stats: formData.get('show_class_stats') === 'on',
-      show_teacher_names: formData.get('show_teacher_names') === 'on',
-      show_honor_roll: formData.get('show_honor_roll') === 'on',
-      show_signatures: formData.get('show_signatures') === 'on',
-      bulletin_color: formData.get('bulletin_color') || formData.get('primary_color') || '#1e3a8a',
-    };
-    if (newStampUrl) {
-      settingsObj.stamp_url = newStampUrl;
-    }
-    if (currentSchoolId) settingsObj.school_id = currentSchoolId;
-    
-    let { data: existing } = await supabase.from('school_settings').select('id').eq('school_id', currentSchoolId as string).maybeSingle();
+    let { data: existing } = await supabase.from('school_settings').select('*').eq('school_id', currentSchoolId as string).maybeSingle();
     
     if (!existing) {
-        const { data: orphaned } = await supabase.from('school_settings').select('id').is('school_id', null).maybeSingle();
+        const { data: orphaned } = await supabase.from('school_settings').select('*').is('school_id', null).maybeSingle();
         if (orphaned) {
             await supabase.from('school_settings').update({ school_id: currentSchoolId as string }).eq('id', orphaned.id);
             existing = orphaned;
         }
     }
 
+    const baseData = existing || settingsData || {};
+
+    const settingsObj: any = {
+      ...baseData,
+      school_id: currentSchoolId,
+      updated_at: new Date().toISOString()
+    };
+
+    if (formData.has('school_name')) {
+      settingsObj.school_name = formData.get('school_name') || baseData.school_name || currentSchoolObj?.name || 'Établissement Scolaire';
+    } else if (!settingsObj.school_name) {
+      settingsObj.school_name = baseData.school_name || currentSchoolObj?.name || 'Établissement Scolaire';
+    }
+
+    if (formData.has('address')) settingsObj.address = formData.get('address');
+    if (formData.has('phone')) settingsObj.phone = formData.get('phone');
+    if (formData.has('email')) settingsObj.email = formData.get('email');
+    if (formData.has('director_name')) settingsObj.director_name = formData.get('director_name');
+    if (formData.has('cashier_name')) settingsObj.cashier_name = formData.get('cashier_name');
+    if (formData.has('city')) settingsObj.city = formData.get('city');
+    if (formData.has('principal_name')) settingsObj.principal_name = formData.get('principal_name');
+    if (formData.has('studies_director_name')) settingsObj.studies_director_name = formData.get('studies_director_name');
+    if (formData.has('primary_color')) settingsObj.primary_color = formData.get('primary_color');
+    if (formData.has('accent_color')) settingsObj.accent_color = formData.get('accent_color');
+    if (formData.has('font_main')) settingsObj.font_main = formData.get('font_main');
+
+    if (formData.has('bulletin_template')) settingsObj.bulletin_template = formData.get('bulletin_template') || selectedBulletinTemplate || 'classic';
+    if (formData.has('bulletin_title')) settingsObj.bulletin_title = formData.get('bulletin_title') || 'BULLETIN TRIMESTRIEL DE NOTES';
+    if (formData.has('ministry_header')) settingsObj.ministry_header = formData.get('ministry_header');
+    if (formData.has('dren_name')) settingsObj.dren_name = formData.get('dren_name');
+    if (formData.has('school_statut')) settingsObj.school_statut = formData.get('school_statut');
+    if (formData.has('bulletin_color')) settingsObj.bulletin_color = formData.get('bulletin_color');
+
+    if (activeSettingsTab === 'bulletin') {
+      settingsObj.show_student_photo = formData.get('show_student_photo') === 'on';
+      settingsObj.show_rank = formData.get('show_rank') === 'on';
+      settingsObj.show_class_stats = formData.get('show_class_stats') === 'on';
+      settingsObj.show_teacher_names = formData.get('show_teacher_names') === 'on';
+      settingsObj.show_honor_roll = formData.get('show_honor_roll') === 'on';
+      settingsObj.show_signatures = formData.get('show_signatures') === 'on';
+    }
+
+    if (newStampUrl) {
+      settingsObj.stamp_url = newStampUrl;
+    }
+
+    // Delete id field from update payload to avoid primary key conflict
+    delete settingsObj.id;
+
     let error;
-    if (existing) {
+    if (existing?.id) {
       const { error: err } = await supabase.from('school_settings').update(settingsObj).eq('id', existing.id);
       error = err;
     } else {
