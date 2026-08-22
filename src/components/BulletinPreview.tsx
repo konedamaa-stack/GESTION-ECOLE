@@ -942,38 +942,44 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
                   <table style={{width: '100%', height: '100%', borderCollapse: 'collapse', border: 'none', fontSize: '0.78rem'}}>
                     <thead>
                       <tr>
-                        <th colSpan={2} style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center', padding: '3px'}}>
+                        <th colSpan={3} style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center', padding: '3px'}}>
                           Résultat Classe / نتائج القسم
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
-                        <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', padding: '2px 6px'}}>
-                          <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                            <span>Moyenne</span>
-                            <span style={{fontFamily: '"Cairo", serif'}}>المعدل : {toArDigits(formatNum(classAvg, 2))}</span>
-                          </div>
+                        <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', padding: '3px 6px', width: '32%', fontWeight: 500}}>
+                          Moyenne
                         </td>
-                        <td style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center', fontWeight: 'bold'}}>{formatNum(classAvg, 2)}</td>
+                        <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', textAlign: 'center', fontWeight: 'bold', width: '34%', fontSize: '0.85rem'}}>
+                          {formatNum(classAvg, 2)}
+                        </td>
+                        <td style={{border: 'none', borderBottom: '1px solid black', padding: '3px 6px', textAlign: 'right', fontFamily: '"Cairo", serif', direction: 'rtl', width: '34%'}}>
+                          معدل القسم
+                        </td>
                       </tr>
                       <tr>
-                        <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', padding: '2px 6px'}}>
-                          <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                            <span>Min</span>
-                            <span style={{fontFamily: '"Cairo", serif'}}>أدنى : {toArDigits(formatNum(classMin, 2))}</span>
-                          </div>
+                        <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', padding: '3px 6px', fontWeight: 500}}>
+                          Min
                         </td>
-                        <td style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center'}}>{formatNum(classMin, 2)}</td>
+                        <td style={{border: 'none', borderBottom: '1px solid black', borderRight: '1px solid black', textAlign: 'center', fontWeight: 'bold', fontSize: '0.85rem'}}>
+                          {formatNum(classMin, 2)}
+                        </td>
+                        <td style={{border: 'none', borderBottom: '1px solid black', padding: '3px 6px', textAlign: 'right', fontFamily: '"Cairo", serif', direction: 'rtl'}}>
+                          أدنى درجة
+                        </td>
                       </tr>
                       <tr>
-                        <td style={{border: 'none', borderRight: '1px solid black', padding: '2px 6px'}}>
-                          <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                            <span>Max</span>
-                            <span style={{fontFamily: '"Cairo", serif'}}>أعلى : {toArDigits(formatNum(classMax, 2))}</span>
-                          </div>
+                        <td style={{border: 'none', borderRight: '1px solid black', padding: '3px 6px', fontWeight: 500}}>
+                          Max
                         </td>
-                        <td style={{border: 'none', textAlign: 'center'}}>{formatNum(classMax, 2)}</td>
+                        <td style={{border: 'none', borderRight: '1px solid black', textAlign: 'center', fontWeight: 'bold', fontSize: '0.85rem'}}>
+                          {formatNum(classMax, 2)}
+                        </td>
+                        <td style={{border: 'none', padding: '3px 6px', textAlign: 'right', fontFamily: '"Cairo", serif', direction: 'rtl'}}>
+                          أعلى درجة
+                        </td>
                       </tr>
                     </tbody>
                   </table>
