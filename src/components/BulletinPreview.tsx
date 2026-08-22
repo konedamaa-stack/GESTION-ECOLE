@@ -1090,140 +1090,388 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
   };
 
   // ----------------------------------------------------
-  // TEMPLATE 3: MODÈLE COMPACT (2 PAR PAGE A4) - ARABE UNIQUEMENT
+  // TEMPLATE 3: MODÈLE ARABE OFFICIEL (INSPIRÉ DU MODÈLE CLASSIQUE)
   // ----------------------------------------------------
-  const renderCompact = (st: any, index: number) => {
+  const renderCompact = (st: any, _index: number) => {
     const stats = studentStats[st.id];
+    const studentSubjs = subjects.filter(s => stats.subjects[s] !== undefined);
+    
+    // Group subjects into Arabic categories
+    const groupeIslamique = studentSubjs.filter(s => categorizeBilingualSubject(s) === 'ARABE_ISLAMIQUE');
+    const groupeGeneral = studentSubjs.filter(s => categorizeBilingualSubject(s) === 'GENERAL');
+    const groupeAutres = studentSubjs.filter(s => categorizeBilingualSubject(s) === 'AUTRES');
+
+    const calculateArabicGroupTotal = (group: string[]) => {
+      let tMoy = 0;
+      let tCoef = 0;
+      group.forEach(s => {
+        const val = stats.subjects[s];
+        const coef = getSubjectCoef(s);
+        if (val !== undefined && val !== null) {
+          const maxScore = subjectMaxScores[s] || 20;
+          const val20 = (val / maxScore) * 20;
+          tMoy += val20 * coef;
+          tCoef += coef;
+        }
+      });
+      return { tMoy, tCoef };
+    };
+
+    const renderArabicSubjectRow = (s: string) => {
+      const val = stats.subjects[s];
+      const coef = getSubjectCoef(s);
+      const total = val * coef;
+      const sRank = subjectRanks[s]?.[st.id];
+      const teacherName = getTeacherName(s);
+      const maxScore = subjectMaxScores[s] || 20;
+      const arName = getSubjectArabicName(s);
+
+      const val20 = (val / maxScore) * 20;
+
+      return (
+        <tr key={s}>
+          <td style={{padding: '5px 8px', textAlign: 'right', fontWeight: 'bold', fontSize: '0.85rem'}}>
+            {arName}
+          </td>
+          <td style={{textAlign: 'center', fontWeight: 'bold', fontSize: '0.85rem'}}>
+            {toArDigits(formatNum(val, 1))}{maxScore !== 20 ? ' /' + toArDigits(maxScore) : ''}
+          </td>
+          <td style={{textAlign: 'center', fontSize: '0.82rem'}}>{toArDigits(coef)}</td>
+          <td style={{textAlign: 'center', fontWeight: 'bold', fontSize: '0.85rem'}}>
+            {toArDigits(formatNum(total, 1))}{maxScore !== 20 ? ' /' + toArDigits(maxScore * coef) : ''}
+          </td>
+          {showRank && (
+            <td style={{textAlign: 'center', fontSize: '0.82rem'}}>
+              {sRank ? toArDigits(sRank) : '-'}
+            </td>
+          )}
+          <td style={{padding: '4px 6px', fontSize: '0.8rem', textAlign: 'right'}}>
+            <div style={{fontWeight: 600}}>{getArabicAppreciation(val20).split(' ')[0]}</div>
+          </td>
+          {showTeacherNames && <td style={{fontSize: '0.78rem', color: '#334155', textAlign: 'center'}}>{teacherName}</td>}
+          <td style={{textAlign: 'center'}}></td>
+        </tr>
+      );
+    };
+
+    const renderArabicGroup = (titleAr: string, group: string[], bgColor = '#f0fdf4') => {
+      if (group.length === 0) return null;
+      const { tMoy } = calculateArabicGroupTotal(group);
+      const colSpanLeft = 3;
+      const colSpanRight = (showRank ? 1 : 0) + 1 + (showTeacherNames ? 1 : 0) + 1;
+
+      return (
+        <React.Fragment key={titleAr}>
+          {group.map(renderArabicSubjectRow)}
+          {titleAr !== 'مواد أخرى والأنشطة' && (
+            <tr className="bulletin-group-header">
+              <td colSpan={colSpanLeft} style={{fontWeight: 'bold', padding: '4px 8px', backgroundColor: bgColor, textAlign: 'right'}}>
+                <span style={{fontSize: '0.82rem', fontFamily: '"Cairo", serif'}}>{titleAr}</span>
+              </td>
+              <td style={{fontWeight: 'bold', textAlign: 'center', backgroundColor: bgColor, fontSize: '0.85rem'}}>
+                {toArDigits(formatNum(tMoy, 1))}
+              </td>
+              <td colSpan={colSpanRight} style={{backgroundColor: bgColor}}></td>
+            </tr>
+          )}
+        </React.Fragment>
+      );
+    };
 
     const studentFullNameAr = (st.first_name_ar || st.last_name_ar) 
       ? `${st.first_name_ar || ''} ${st.last_name_ar || ''}`.trim() 
       : `${st.first_name || ''} ${st.last_name || ''}`.trim();
 
     return (
-      <div key={st.id} className="bulletin-compact-half" dir="rtl" style={{fontFamily: '"Cairo", "Traditional Arabic", "Segoe UI", serif', textAlign: 'right'}}>
-        {/* Compact Arabic Header */}
-        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `2px solid ${brandColor}`, paddingBottom: '4px', marginBottom: '5px'}}>
-          <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+      <div key={st.id} className="bulletin-classic-page" dir="rtl" style={{fontFamily: '"Cairo", "Traditional Arabic", "Segoe UI", serif', textAlign: 'right'}}>
+        {/* 1. Header Row (100% Arabic) */}
+        <div className="bulletin-classic-header">
+          <div className="header-right" style={{lineHeight: 1.3, textAlign: 'right'}}>
+            <div style={{fontWeight: 'bold', fontSize: '0.85rem'}}>جمهورية كوت ديفوار</div>
+            <div style={{fontSize: '0.75rem', margin: '2px 0'}}>وزارة التربية الوطنية والتعليم الأولي</div>
+            <div style={{fontSize: '0.75rem', color: '#475569'}}>المديرية الإقليمية : {schoolInfo?.address || drenText || 'ديفو'}</div>
+          </div>
+
+          <div className="header-center">
+            <div style={{fontSize: '1rem', fontWeight: 900, color: brandColor, marginBottom: '2px'}}>
+              ! الله أكبر
+            </div>
+            <h2 style={{color: brandColor, margin: '2px 0', fontSize: '1.25rem', fontWeight: 900}}>
+              {customTitle ? customTitle : 'كشف درجات الطلاب'}
+            </h2>
+            <h3 style={{margin: '2px 0', fontSize: '0.92rem', color: '#334155'}}>
+              {getArabicPeriodName(period)}
+            </h3>
+          </div>
+
+          <div className="header-left" style={{lineHeight: 1.3, textAlign: 'left'}}>
+            <div style={{fontSize: '0.8rem', fontWeight: 'bold'}}>
+              العام الدراسي : {toArDigits(schoolInfo?.academic_year || `${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`)}
+            </div>
+            <div style={{fontSize: '0.75rem', margin: '2px 0', color: '#64748b'}}>
+              تاريخ الإصدار : {toArDigits(getHijriDate())}
+            </div>
+          </div>
+        </div>
+
+        {/* 2. School Info Box (Arabic) */}
+        <div className="bulletin-classic-school" style={{borderColor: brandColor}}>
+          <div className="school-logo">
             <img 
               src={schoolInfo?.logo_url || '/logo-coran.jpg'} 
               alt="Logo" 
-              style={{width: '36px', height: '36px', borderRadius: '50%', objectFit: 'contain', border: `1px solid ${brandColor}`}} 
+              style={{width: '75px', height: '75px', borderRadius: '50%', objectFit: 'contain'}} 
               onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo-coran.jpg'; }}
             />
-            <div>
-              <div style={{fontWeight: 900, fontSize: '0.88rem', color: brandColor}}>
-                {schoolInfo?.school_name_ar || schoolInfo?.school_name || "المؤسسة التعليمية"}
-              </div>
-              <div style={{fontSize: '0.72rem', color: '#334155', fontWeight: 700}}>
-                كشف درجات الطلاب • {getArabicPeriodName(period)}
-              </div>
+          </div>
+          <div className="school-details">
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px'}}>
+              <p style={{margin: 0, fontSize: '1rem', fontWeight: 900, color: '#0f172a'}}>
+                المؤسسة التعليمية : <strong>{schoolInfo?.school_name_ar || schoolInfo?.school_name || "مدرسة دار الأرقم"}</strong>
+              </p>
+            </div>
+            <div style={{display: 'flex', gap: '30px', marginTop: '6px', fontSize: '0.82rem'}}>
+              <p style={{margin: 0}}>العنوان : <strong>{schoolInfo?.address || drenText}</strong></p>
+              <p style={{margin: 0}}>الهاتف : <strong>{toArDigits(schoolInfo?.phone || '-')}</strong></p>
             </div>
           </div>
-          <div style={{textAlign: 'left', fontSize: '0.72rem', lineHeight: 1.3}}>
-            <div>العام الدراسي : <strong>{toArDigits(schoolInfo?.academic_year || '2025-2026')}</strong></div>
-            <div>القسم : <strong>{classData?.name || '-'}</strong></div>
+          <div className="school-statut">
+            {showPhoto && st.photo_url ? (
+              <img src={st.photo_url} alt="Élève" style={{width: '55px', height: '65px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #ccc'}} />
+            ) : null}
+            <div>
+              <p>رمز المؤسسة : <strong>{toArDigits(schoolInfo?.code || (schoolInfo?.id ? String(schoolInfo.id).substring(0, 6) : '198192'))}</strong></p>
+              <p>الصفة : <strong>{schoolStatut === 'Public' ? 'عمومي' : 'خاص'}</strong></p>
+            </div>
           </div>
         </div>
 
-        {/* Student Bar (Arabic) */}
-        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f1f5f9', padding: '4px 8px', borderRadius: '5px', fontSize: '0.75rem', marginBottom: '5px', border: '1px solid #e2e8f0'}}>
-          <div>
-            اسم الطالب(ة) : <strong style={{color: '#0f172a', fontSize: '0.82rem'}}>{studentFullNameAr}</strong>
-            <span style={{marginRight: '8px', color: '#64748b', fontSize: '0.7rem'}}>
-              (الرقم : {toArDigits(st.matricule || st.id.substring(0,6))})
+        {/* 3. Student Profile Box (Arabic) */}
+        <div className="bulletin-classic-student" style={{borderColor: brandColor}}>
+          <div className="student-profile-header">
+            <span className="student-fullname" style={{fontSize: '1.05rem', fontWeight: 900}}>
+              اسم الطالب(ة) : {studentFullNameAr}
             </span>
+            <span>الجنس : <strong>{st.gender === 'F' ? 'أنثى' : 'ذكر'}</strong></span>
+            <span>معيد(ة) : <strong>{st.is_repeater ? 'نعم' : 'لا'}</strong></span>
+            <span>الصفة : <strong>{st.is_assigned !== undefined ? (st.is_assigned ? 'نظامي' : 'حر') : 'نظامي'}</strong></span>
           </div>
-          <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
-            <div>
-              المعدل : <strong style={{color: brandColor, fontSize: '0.85rem'}}>{toArDigits(formatNum(stats.generalAverage, 2))} / ٢٠</strong>
-            </div>
-            {showRank && (
-              <div>
-                الترتيب : <strong style={{color: '#0f172a'}}>{toArDigits(stats.rank)}</strong>
-              </div>
-            )}
-            <span style={{backgroundColor: stats.generalAverage >= 12 ? '#dcfce7' : '#fef3c7', color: stats.generalAverage >= 12 ? '#166534' : '#92400e', padding: '1px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: 700}}>
-              {getArabicAppreciation(stats.generalAverage).split(' ')[0]}
-            </span>
+          <div className="student-profile-grid">
+            <div>الرقم المدرسي : <strong>{toArDigits(st.matricule || st.id.substring(0,8))}</strong></div>
+            <div>تاريخ الميلاد : <strong>{st.birth_date ? toArDigits(new Date(st.birth_date).toLocaleDateString('fr-FR')) : '-'}</strong></div>
+            <div>مكان الميلاد : <strong>{st.birth_place || '-'}</strong></div>
+            <div>القسم / الصف : <strong>{classData?.name || '-'}</strong></div>
+            <div>عدد طلاب القسم : <strong>{toArDigits(students.length)}</strong></div>
+            <div>الجنسية : <strong>{st.nationality ? translateBulletinWord(st.nationality) : 'إيفوارية'}</strong></div>
           </div>
         </div>
 
-        {/* Compact Table (100% Arabic) */}
-        <table className="compact-table" style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.7rem', marginBottom: '5px'}}>
+        {/* 4. Grades Table (100% Arabic) */}
+        <table className="bulletin-classic-table">
           <thead>
             <tr style={{backgroundColor: '#f8fafc'}}>
-              <th style={{textAlign: 'right', padding: '3px 6px', border: '1px solid #cbd5e1', width: '34%'}}>المادة الدراسية</th>
-              <th style={{width: '12%', textAlign: 'center', border: '1px solid #cbd5e1'}}>المعدل / ٢٠</th>
-              <th style={{width: '10%', textAlign: 'center', border: '1px solid #cbd5e1'}}>المعامل</th>
-              <th style={{width: '12%', textAlign: 'center', border: '1px solid #cbd5e1'}}>المجموع</th>
-              {showRank && <th style={{width: '10%', textAlign: 'center', border: '1px solid #cbd5e1'}}>الترتيب</th>}
-              <th style={{textAlign: 'right', padding: '3px 6px', border: '1px solid #cbd5e1', width: '22%'}}>التقدير والملاحظات</th>
+              <th style={{width: '28%', textAlign: 'right', padding: '6px 8px'}}>المواد الدراسية</th>
+              <th style={{width: '8%', textAlign: 'center'}}>المعدل</th>
+              <th style={{width: '6%', textAlign: 'center'}}>المعامل</th>
+              <th style={{width: '9%', textAlign: 'center'}}>المجموع</th>
+              {showRank && <th style={{width: '7%', textAlign: 'center'}}>الترتيب</th>}
+              <th style={{width: '18%', textAlign: 'right', paddingRight: '8px'}}>التقدير والملاحظات</th>
+              {showTeacherNames && <th style={{width: '14%', textAlign: 'center'}}>اسم الأستاذ</th>}
+              <th style={{width: '10%', textAlign: 'center'}}>التوقيع</th>
             </tr>
           </thead>
           <tbody>
-            {subjects.filter(s => stats.subjects[s] !== undefined).map(s => {
-              const val = stats.subjects[s];
-              const coef = getSubjectCoef(s);
-              const total = val * coef;
-              const sRank = subjectRanks[s]?.[st.id];
-              const maxScore = subjectMaxScores[s] || 20;
-              const val20 = (val / maxScore) * 20;
-
-              return (
-                <tr key={s}>
-                  <td style={{padding: '3px 6px', border: '1px solid #cbd5e1', fontWeight: 700}}>
-                    {getSubjectArabicName(s)}
-                  </td>
-                  <td style={{textAlign: 'center', border: '1px solid #cbd5e1', fontWeight: 800}}>
-                    {toArDigits(formatNum(val20, 1))}
-                  </td>
-                  <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>
-                    {toArDigits(coef)}
-                  </td>
-                  <td style={{textAlign: 'center', border: '1px solid #cbd5e1', fontWeight: 700}}>
-                    {toArDigits(formatNum(total, 1))}
-                  </td>
-                  {showRank && (
-                    <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>
-                      {sRank ? toArDigits(sRank) : '-'}
-                    </td>
-                  )}
-                  <td style={{padding: '3px 6px', border: '1px solid #cbd5e1', fontSize: '0.68rem', fontWeight: 600}}>
-                    {getArabicAppreciation(val20).split(' ')[0]}
-                  </td>
-                </tr>
-              );
-            })}
-            <tr style={{backgroundColor: '#f1f5f9', fontWeight: 'bold'}}>
-              <td style={{padding: '3px 6px', border: '1px solid #cbd5e1'}}>المجموع العام</td>
-              <td style={{border: '1px solid #cbd5e1'}}></td>
-              <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>{toArDigits(stats.totalSubjectCoefs)}</td>
-              <td style={{textAlign: 'center', border: '1px solid #cbd5e1'}}>{toArDigits(formatNum(stats.totalWeightedScore, 1))}</td>
-              <td colSpan={(showRank ? 1 : 0) + 1} style={{border: '1px solid #cbd5e1'}}></td>
+            {renderArabicGroup('التعليم العربي والإسلامي', groupeIslamique, '#dcfce7')}
+            {renderArabicGroup('التعليم العام والمواد الأساسية', groupeGeneral, '#e0f2fe')}
+            {renderArabicGroup('مواد أخرى والأنشطة', groupeAutres, '#f1f5f9')}
+            
+            <tr className="bulletin-classic-totaux">
+              <td colSpan={2} style={{fontWeight: 'bold', padding: '6px 8px', textAlign: 'right'}}>
+                <span>المجموع العام</span>
+              </td>
+              <td style={{fontWeight: 'bold', textAlign: 'center'}}>{toArDigits(stats.totalSubjectCoefs)}</td>
+              <td style={{fontWeight: 'bold', textAlign: 'center'}}>{toArDigits(formatNum(stats.totalWeightedScore, 1))}</td>
+              <td colSpan={(showRank ? 1 : 0) + 1 + (showTeacherNames ? 1 : 0) + 1}></td>
             </tr>
           </tbody>
         </table>
 
-        {/* Compact Arabic Footer */}
-        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem', marginTop: '3px'}}>
-          <div style={{color: '#334155'}}>
-            معدل القسم : <strong>{toArDigits(formatNum(classAvg, 2))}</strong> | أدنى درجة : <strong>{toArDigits(formatNum(classMin, 2))}</strong> | أعلى درجة : <strong>{toArDigits(formatNum(classMax, 2))}</strong>
-          </div>
-          <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-            <span>تأشير وختم الإدارة :</span>
-            {stampUrl ? (
-              <img src={stampUrl} alt="Cachet" style={{maxHeight: '26px', maxWidth: '60px', objectFit: 'contain'}} />
-            ) : (
-              <span style={{fontWeight: 700, color: '#475569'}}>الإدارة</span>
-            )}
-          </div>
-        </div>
+        {/* 5. Averages & Ranks Box (Arabic 3-Column) */}
+        <table className="bulletin-classic-table bulletin-classic-bottom-table">
+          <tbody>
+            <tr>
+              {/* Right Column: Trimestres */}
+              <td style={{width: '38%', verticalAlign: 'top', padding: 0}}>
+                <table style={{width: '100%', borderCollapse: 'collapse', border: 'none', fontSize: '0.78rem'}}>
+                  <thead>
+                    <tr>
+                      <th style={{border: 'none', borderBottom: '1px solid black', borderLeft: '1px solid black', width: '33%', textAlign: 'center', padding: '3px'}}>الفترة ١ (ف ١)</th>
+                      <th style={{border: 'none', borderBottom: '1px solid black', borderLeft: '1px solid black', width: '33%', textAlign: 'center', padding: '3px'}}>الفترة ٢ (ف ٢)</th>
+                      <th style={{border: 'none', borderBottom: '1px solid black', width: '34%', textAlign: 'center', padding: '3px'}}>الفترة ٣ (ف ٣)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{border: 'none', borderBottom: '1px solid black', borderLeft: '1px solid black', textAlign: 'center', padding: '4px'}}>
+                        المعدل : <strong>{period === '1er Trimestre' ? toArDigits(formatNum(stats.generalAverage, 2)) : '-'}</strong>
+                      </td>
+                      <td style={{border: 'none', borderBottom: '1px solid black', borderLeft: '1px solid black', textAlign: 'center', padding: '4px'}}>
+                        المعدل : <strong>{period === '2ème Trimestre' ? toArDigits(formatNum(stats.generalAverage, 2)) : '-'}</strong>
+                      </td>
+                      <td style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center', padding: '4px'}}>
+                        المعدل : <strong>{period === '3ème Trimestre' ? toArDigits(formatNum(stats.generalAverage, 2)) : '-'}</strong>
+                      </td>
+                    </tr>
+                    {showRank && (
+                      <tr>
+                        <td style={{border: 'none', borderLeft: '1px solid black', textAlign: 'center', padding: '4px'}}>
+                          الترتيب : <strong>{period === '1er Trimestre' ? toArDigits(stats.rank) : '-'}</strong>
+                        </td>
+                        <td style={{border: 'none', borderLeft: '1px solid black', textAlign: 'center', padding: '4px'}}>
+                          الترتيب : <strong>{period === '2ème Trimestre' ? toArDigits(stats.rank) : '-'}</strong>
+                        </td>
+                        <td style={{border: 'none', textAlign: 'center', padding: '4px'}}>
+                          الترتيب : <strong>{period === '3ème Trimestre' ? toArDigits(stats.rank) : '-'}</strong>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </td>
 
-        {/* Dotted Cut Line if first item of pair */}
-        {index % 2 === 0 && (
-          <div className="compact-cut-line" style={{marginTop: '4px'}}>
-            <span>✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ✂</span>
-          </div>
+              {/* Center Column: General Average */}
+              <td style={{width: '32%', textAlign: 'center', verticalAlign: 'middle', borderRight: '2px solid black', borderLeft: '2px solid black', padding: '6px', backgroundColor: '#f8fafc'}}>
+                <p style={{fontWeight: 'bold', marginBottom: '2px', fontSize: '0.85rem'}}>
+                  المعدل الدوري العام
+                </p>
+                <p style={{fontSize: '1.5rem', fontWeight: 'bold', margin: '3px 0', color: brandColor}}>
+                  {toArDigits(formatNum(stats.generalAverage, 2))} / ٢٠
+                </p>
+                {showRank && (
+                  <p style={{margin: 0, fontSize: '0.85rem'}}>
+                    الترتيب : <strong style={{fontSize: '1.15rem'}}>{toArDigits(stats.rank)}</strong>
+                  </p>
+                )}
+                <div style={{marginTop: '4px', fontSize: '0.82rem', fontWeight: 'bold', color: '#15803d'}}>
+                  {getArabicAppreciation(stats.generalAverage)}
+                </div>
+              </td>
+
+              {/* Left Column: Class Stats */}
+              <td style={{width: '30%', verticalAlign: 'top', padding: 0}}>
+                {showClassStats ? (
+                  <table style={{width: '100%', height: '100%', borderCollapse: 'collapse', border: 'none', fontSize: '0.78rem'}}>
+                    <thead>
+                      <tr>
+                        <th colSpan={2} style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center', padding: '3px'}}>
+                          نتائج القسم
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td style={{border: 'none', borderBottom: '1px solid black', borderLeft: '1px solid black', padding: '3px 6px', textAlign: 'right'}}>معدل القسم</td>
+                        <td style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center', fontWeight: 'bold'}}>{toArDigits(formatNum(classAvg, 2))}</td>
+                      </tr>
+                      <tr>
+                        <td style={{border: 'none', borderBottom: '1px solid black', borderLeft: '1px solid black', padding: '3px 6px', textAlign: 'right'}}>أدنى درجة</td>
+                        <td style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center'}}>{toArDigits(formatNum(classMin, 2))}</td>
+                      </tr>
+                      <tr>
+                        <td style={{border: 'none', borderLeft: '1px solid black', padding: '3px 6px', textAlign: 'right'}}>أعلى درجة</td>
+                        <td style={{border: 'none', textAlign: 'center'}}>{toArDigits(formatNum(classMax, 2))}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                ) : (
+                  <div style={{padding: '10px', textAlign: 'center', fontSize: '0.8rem', color: '#64748b'}}>الإحصائيات محجوبة</div>
+                )}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* 6. Signatures & Honors Box (Arabic) */}
+        {showSignatures && (
+          <table className="bulletin-classic-table bulletin-classic-bottom-table" style={{borderTop: 'none'}}>
+            <tbody>
+              <tr>
+                {/* Honors */}
+                <td style={{width: '34%', verticalAlign: 'top', padding: 0}}>
+                  {showHonorRoll ? (
+                    <table style={{width: '100%', borderCollapse: 'collapse', border: 'none', fontSize: '0.72rem'}}>
+                      <thead>
+                        <tr>
+                          <th style={{border: 'none', borderBottom: '1px solid black', textAlign: 'center', padding: '2px'}}>
+                            لوحة الشرف والتشريفات
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr style={{backgroundColor: stats.generalAverage >= 14 ? '#dcfce7' : 'transparent'}}>
+                          <td style={{border: 'none', borderBottom: '1px solid black', padding: '2px 6px', textAlign: 'right'}}>
+                            لوحة الشرف + تهنئة {stats.generalAverage >= 16 ? '⭐' : ''}
+                          </td>
+                        </tr>
+                        <tr style={{backgroundColor: stats.generalAverage >= 12 && stats.generalAverage < 14 ? '#dcfce7' : 'transparent'}}>
+                          <td style={{border: 'none', borderBottom: '1px solid black', padding: '2px 6px', textAlign: 'right'}}>
+                            لوحة الشرف + تشجيع
+                          </td>
+                        </tr>
+                        <tr style={{backgroundColor: stats.generalAverage >= 10 && stats.generalAverage < 12 ? '#f1f5f9' : 'transparent'}}>
+                          <td style={{border: 'none', borderBottom: '1px solid black', padding: '2px 6px', textAlign: 'right'}}>
+                            لوحة الشرف
+                          </td>
+                        </tr>
+                        <tr><td style={{border: 'none', borderBottom: '1px solid black', padding: '2px 6px', fontWeight: 'bold', backgroundColor: '#f8fafc', textAlign: 'right'}}>تأشير وتوقيع الولي</td></tr>
+                        <tr><td style={{border: 'none', height: '24px', padding: '2px 6px'}}></td></tr>
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div style={{padding: '12px', fontSize: '0.75rem', color: '#64748b', textAlign: 'center'}}>التقدير العام : <strong>{getArabicAppreciation(stats.generalAverage)}</strong></div>
+                  )}
+                </td>
+
+                {/* Teachers Appreciations */}
+                <td style={{width: '33%', textAlign: 'center', verticalAlign: 'top', padding: '6px', borderRight: '2px solid black', borderLeft: '2px solid black'}}>
+                  <p style={{fontWeight: 'bold', textDecoration: 'underline', marginBottom: '6px', fontSize: '0.82rem'}}>
+                    تقدير المدرسين وقرار المجلس
+                  </p>
+                  <p style={{marginBottom: '6px', fontSize: '0.8rem'}}>ناجح(ة) إلى المستوى الأعلى</p>
+                  <p style={{fontSize: '0.75rem', fontStyle: 'italic', color: '#64748b', marginBottom: '20px'}}>ملاحظات وتوجيهات الأستاذ</p>
+                  <p style={{fontWeight: 'bold', fontSize: '0.8rem', margin: 0}}>الأستاذ الرئيسي</p>
+                </td>
+
+                {/* Direction & Stamp */}
+                <td style={{width: '33%', textAlign: 'center', verticalAlign: 'top', padding: '6px', position: 'relative'}}>
+                  <div style={{display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between'}}>
+                    <div>
+                      <p style={{fontWeight: 'bold', fontSize: '0.82rem', margin: '0 0 2px 0'}}>
+                        تأشير وختم مدير المؤسسة
+                      </p>
+                    </div>
+                    
+                    <div style={{margin: '6px 0', fontSize: '0.75rem'}}>
+                      <p style={{margin: 0}}>حرر في {schoolInfo?.city || drenText || 'ديفو'} بتاريخ :</p>
+                      <p style={{margin: '2px 0 0 0', fontWeight: 'bold'}}>{toArDigits(getHijriDate())}</p>
+                    </div>
+
+                    {stampUrl && (
+                      <div style={{margin: '4px 0'}}>
+                        <img src={stampUrl} alt="Cachet" style={{maxHeight: '45px', maxWidth: '100px', objectFit: 'contain', opacity: 0.85}} />
+                      </div>
+                    )}
+
+                    <div>
+                      <p style={{fontSize: '0.82rem', fontWeight: 'bold', marginTop: stampUrl ? '2px' : '15px'}}>
+                        {schoolInfo?.principal_name || schoolInfo?.studies_director_name || 'إدارة المؤسسة'}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         )}
       </div>
     );
@@ -1347,18 +1595,12 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
 
   return (
     <div className="bulletins-container">
-      {template === 'compact' ? (
-        // For compact, pair up students 2 per page A4
-        <div className="compact-pages-wrapper">
-          {filteredStudents.map((st, idx) => renderCompact(st, idx))}
-        </div>
-      ) : (
-        filteredStudents.map((st) => {
-          if (template === 'modern') return renderModern(st);
-          if (template === 'primary') return renderPrimary(st);
-          return renderClassic(st);
-        })
-      )}
+      {filteredStudents.map((st, idx) => {
+        if (template === 'modern') return renderModern(st);
+        if (template === 'compact') return renderCompact(st, idx);
+        if (template === 'primary') return renderPrimary(st);
+        return renderClassic(st);
+      })}
     </div>
   );
 };

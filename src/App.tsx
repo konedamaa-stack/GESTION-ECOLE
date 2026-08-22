@@ -5071,10 +5071,10 @@ function App() {
                     {selectedBulletinTemplate === 'compact' && (
                       <span style={{position: 'absolute', top: '10px', right: '10px', fontSize: '1.1rem'}}>✅</span>
                     )}
-                    <div style={{fontSize: '1.8rem', marginBottom: '8px'}}>📄</div>
-                    <div style={{fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px'}}>Arabe Compact (2 / صفحة A4)</div>
+                    <div style={{fontSize: '1.8rem', marginBottom: '8px'}}>📜</div>
+                    <div style={{fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px'}}>Arabe Officiel (كشف الدرجات باللغة العربية)</div>
                     <div style={{fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: '1.3'}}>
-                      كشف درجات باللغة العربية بالكامل (2 في الصفحة A4 مع خط القص). مخصص للمدارس العربية والإسلامية واقتصاد الورق.
+                      نموذج رسمي كامل باللغة العربية (صفحة A4 كاملة) مستوحى من النموذج الكلاسيكي الأول، مخصص للتعليم العربي والإسلامي.
                     </div>
                   </div>
 
