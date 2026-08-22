@@ -783,11 +783,11 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
             />
           </div>
           <div className="school-details">
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px'}}>
-              <p style={{margin: 0, fontSize: '0.95rem'}}>
-                Établissement : <strong>{(schoolInfo?.school_name || schoolInfo?.name || "CENTRE D'ENSEIGNEMENT CORANIQUE").toUpperCase()}</strong>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', gap: '10px', flexWrap: 'wrap'}}>
+              <p style={{margin: 0, fontSize: '0.98rem'}}>
+                Établissement : <strong style={{color: '#0f172a'}}>{(schoolInfo?.school_name || schoolInfo?.name || "ÉTABLISSEMENT SCOLAIRE").toUpperCase()}</strong>
               </p>
-              <span style={{fontSize: '1.1rem', fontWeight: 900, fontFamily: '"Cairo", serif', direction: 'rtl', color: '#0f172a'}}>
+              <span style={{fontSize: '1.15rem', fontWeight: 900, fontFamily: '"Cairo", "Traditional Arabic", serif', direction: 'rtl', color: brandColor}}>
                 {schoolInfo?.school_name_ar || "مدرسة تعليم القرآن الكريم"}
               </span>
             </div>

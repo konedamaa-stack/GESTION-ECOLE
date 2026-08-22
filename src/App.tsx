@@ -4915,6 +4915,8 @@ function App() {
                   <input type="file" name="logo_file" accept="image/*" className="form-input" style={{marginBottom: '10px'}} />
                   <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{t('admin.settings.gen_name', "Nom de l'établissement")}</label>
                   <input type="text" name="school_name" defaultValue={settingsData?.school_name || ''} className="form-input" required />
+                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '6px'}}>Nom de l'établissement en Arabe (اسم المؤسسة / المدرسة بالعربية)</label>
+                  <input type="text" name="school_name_ar" defaultValue={settingsData?.school_name_ar || ''} className="form-input" placeholder="مثال: مدرسة دار الأرقم / كلية شريفلا" style={{direction: 'rtl'}} />
                 </div>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
                   <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{t('admin.settings.gen_director', 'Directeur')}</label>
@@ -5129,6 +5131,27 @@ function App() {
                   3. En-têtes & Textes Officiels
                 </label>
                 <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px'}}>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '6px'}}>
+                    <label style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>Nom de l'Établissement (Français)</label>
+                    <input 
+                      type="text" 
+                      name="school_name" 
+                      defaultValue={settingsData?.school_name || ''} 
+                      className="form-input" 
+                      placeholder="ex: COLLEGE CONFESSIONNEL CHERIFLA" 
+                    />
+                  </div>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '6px'}}>
+                    <label style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>Nom de l'Établissement (Arabe - اسم المؤسسة)</label>
+                    <input 
+                      type="text" 
+                      name="school_name_ar" 
+                      defaultValue={settingsData?.school_name_ar || ''} 
+                      className="form-input" 
+                      placeholder="مثال: مدرسة دار الأرقم / كلية شريفلا" 
+                      style={{direction: 'rtl'}}
+                    />
+                  </div>
                   <div style={{display: 'flex', flexDirection: 'column', gap: '6px'}}>
                     <label style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>Titre du Document</label>
                     <input 
@@ -5749,6 +5772,7 @@ function App() {
     ...currentSchoolObj,
     ...settingsData,
     school_name: settingsData?.school_name || currentSchoolObj?.name || "COLLEGE CONFESSIONNELLE CHERIFLA DIVO",
+    school_name_ar: settingsData?.school_name_ar || currentSchoolObj?.name_ar || "",
     name: settingsData?.school_name || currentSchoolObj?.name || "COLLEGE CONFESSIONNELLE CHERIFLA DIVO",
     logo_url: settingsData?.logo_url || currentSchoolObj?.logo_url || '/logo-coran.jpg',
     phone: settingsData?.phone || currentSchoolObj?.phone || "00 00 00 00 00",
