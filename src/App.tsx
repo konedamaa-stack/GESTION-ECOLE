@@ -13,6 +13,7 @@ import { ReceiptPreview } from './components/ReceiptPreview';
 import { SmallReceiptPreview } from './components/SmallReceiptPreview';
 import { TeacherReceiptPreview } from './components/TeacherReceiptPreview';
 import { ExpenseReceiptPreview } from './components/ExpenseReceiptPreview';
+import { CategoryExpensesPrintPreview } from './components/CategoryExpensesPrintPreview';
 import { SalaryReceiptPreview } from './components/SalaryReceiptPreview';
 import { SuperAdminPortal } from './components/SuperAdminPortal';
 import { PasswordRecovery } from './components/PasswordRecovery';
@@ -206,6 +207,7 @@ function App() {
         'small_receipt_preview',
         'teacher_receipt_preview',
         'expense_receipt_preview',
+        'category_expenses_print',
         'salary_receipt_preview',
         'receipt_choice',
         'studentDossier',
@@ -3525,16 +3527,37 @@ function App() {
             </div>
 
             {expenseViewTab === 'depenses' ? (
-              <button 
-                className="btn btn-primary" 
-                onClick={() => { 
-                  setEditEntity(null); 
-                  setActiveModal('expense'); 
-                }}
-                style={{display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)'}}
-              >
-                ➕ {t('admin.expenses.add', 'Nouvelle Dépense')}
-              </button>
+              <div style={{display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap'}}>
+                <button 
+                  type="button"
+                  className="btn btn-outline" 
+                  onClick={() => setActiveModal('category_expenses_print')}
+                  style={{
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '6px', 
+                    padding: '8px 14px', 
+                    fontWeight: 600, 
+                    fontSize: '0.88rem', 
+                    color: 'var(--primary-color)', 
+                    borderColor: 'var(--primary-color)',
+                    backgroundColor: 'rgba(99, 102, 241, 0.05)'
+                  }}
+                  title={`Imprimer le rapport : ${getExpenseCategoryMeta(selectedExpenseCategory).label}`}
+                >
+                  🖨️ Imprimer l'État ({selectedExpenseCategory === 'all' ? 'Toutes Catégories' : getExpenseCategoryMeta(selectedExpenseCategory).label.split(' ')[0]})
+                </button>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={() => { 
+                    setEditEntity(null); 
+                    setActiveModal('expense'); 
+                  }}
+                  style={{display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)'}}
+                >
+                  ➕ {t('admin.expenses.add', 'Nouvelle Dépense')}
+                </button>
+              </div>
             ) : (
               <button 
                 className="btn btn-primary" 
@@ -3635,15 +3658,36 @@ function App() {
                 <span style={{fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px'}}>
                   📁 Filtrer par Type de Dépense :
                 </span>
-                {selectedExpenseCategory !== 'all' && (
+                <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
                   <button
                     type="button"
-                    onClick={() => setSelectedExpenseCategory('all')}
-                    style={{background: 'none', border: 'none', color: 'var(--primary-color)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer'}}
+                    onClick={() => setActiveModal('category_expenses_print')}
+                    style={{
+                      background: 'none', 
+                      border: '1px solid var(--primary-color)', 
+                      borderRadius: '6px', 
+                      padding: '4px 10px', 
+                      color: 'var(--primary-color)', 
+                      fontSize: '0.8rem', 
+                      fontWeight: 700, 
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
                   >
-                    Afficher toutes les catégories
+                    🖨️ Imprimer rapport ({getExpenseCategoryMeta(selectedExpenseCategory).label.split(' ')[0]})
                   </button>
-                )}
+                  {selectedExpenseCategory !== 'all' && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedExpenseCategory('all')}
+                      style={{background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer'}}
+                    >
+                      Afficher tout
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div style={{display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px'}}>
@@ -3730,27 +3774,29 @@ function App() {
                   </div>
                 </div>
 
-                {/* Reset Filters button */}
-                {(selectedExpenseCategory !== 'all' || expenseSearchQuery || expenseMonthFilter !== 'all') && (
-                  <button
-                    type="button"
-                    className="btn btn-outline"
-                    style={{fontSize: '0.8rem', padding: '6px 12px'}}
-                    onClick={() => {
-                      setSelectedExpenseCategory('all');
-                      setExpenseSearchQuery('');
-                      setExpenseMonthFilter('all');
-                    }}
-                  >
-                    🔄 Réinitialiser filtres
-                  </button>
-                )}
+                {/* Reset Filters & Print buttons */}
+                <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                  {(selectedExpenseCategory !== 'all' || expenseSearchQuery || expenseMonthFilter !== 'all') && (
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      style={{fontSize: '0.8rem', padding: '6px 12px'}}
+                      onClick={() => {
+                        setSelectedExpenseCategory('all');
+                        setExpenseSearchQuery('');
+                        setExpenseMonthFilter('all');
+                      }}
+                    >
+                      🔄 Réinitialiser filtres
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* EXPENSES TABLE */}
             <div className="panel delay-200">
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px'}}>
                 <h3 className="panel-title" style={{margin: 0, display: 'flex', alignItems: 'center', gap: '8px'}}>
                   <span>{getExpenseCategoryMeta(selectedExpenseCategory).icon}</span>
                   <span>{selectedExpenseCategory === 'all' ? 'Historique des Dépenses' : `Dépenses : ${getExpenseCategoryMeta(selectedExpenseCategory).label}`}</span>
@@ -3759,9 +3805,20 @@ function App() {
                   </span>
                 </h3>
 
-                <span style={{fontSize: '0.95rem', fontWeight: 800, color: 'var(--primary-color)'}}>
-                  Sous-total : {formatNum(filteredTotalAmount)} F
-                </span>
+                <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                  <span style={{fontSize: '0.95rem', fontWeight: 800, color: 'var(--primary-color)'}}>
+                    Sous-total : {formatNum(filteredTotalAmount)} F
+                  </span>
+                  <button 
+                    type="button" 
+                    className="btn btn-outline" 
+                    style={{padding: '5px 12px', fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary-color)', borderColor: 'var(--primary-color)'}}
+                    onClick={() => setActiveModal('category_expenses_print')}
+                    title="Imprimer l'état récapitulatif de cette catégorie"
+                  >
+                    🖨️ Imprimer la sélection
+                  </button>
+                </div>
               </div>
 
               <div className="table-responsive">
@@ -8033,6 +8090,46 @@ function App() {
               <ExpenseReceiptPreview 
                 expense={editEntity} 
                 schoolInfo={effectiveSchoolInfo} 
+              />
+            </div>
+          </div>
+        )}
+
+        {activeModal === 'category_expenses_print' && (
+          <div className="modal-content fade-in" style={{maxWidth: '1200px', width: '98%'}} onClick={e => e.stopPropagation()}>
+            <div className="modal-header hide-print">
+              <h3>🖨️ Aperçu du Rapport des Dépenses ({selectedExpenseCategory === 'all' ? 'Toutes Catégories' : getExpenseCategoryMeta(selectedExpenseCategory).label})</h3>
+              <div style={{display: 'flex', gap: '12px'}}>
+                <button className="btn btn-primary" onClick={() => window.print()} style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+                  <Icons.Printer /> Imprimer le rapport
+                </button>
+                <button className="close-btn" onClick={closeModal}>×</button>
+              </div>
+            </div>
+            <div className="modal-body print-area" style={{maxHeight: '80vh', overflowY: 'auto', backgroundColor: '#f8fafc', padding: '20px'}}>
+              <CategoryExpensesPrintPreview 
+                expenses={
+                  (expensesData || []).filter((exp: any) => {
+                    const meta = getExpenseCategoryMeta(exp.category);
+                    if (selectedExpenseCategory !== 'all' && meta.id !== selectedExpenseCategory) return false;
+                    if (expenseSearchQuery.trim()) {
+                      const query = expenseSearchQuery.toLowerCase().trim();
+                      const descMatch = (exp.description || '').toLowerCase().includes(query);
+                      const catMatch = (exp.category || '').toLowerCase().includes(query) || meta.label.toLowerCase().includes(query);
+                      const amountMatch = String(exp.amount).includes(query);
+                      if (!descMatch && !catMatch && !amountMatch) return false;
+                    }
+                    if (expenseMonthFilter !== 'all' && exp.payment_date) {
+                      const expMonth = exp.payment_date.substring(0, 7);
+                      if (expMonth !== expenseMonthFilter) return false;
+                    }
+                    return true;
+                  })
+                }
+                categoryTitle={selectedExpenseCategory === 'all' ? 'Toutes les Dépenses Confondues' : getExpenseCategoryMeta(selectedExpenseCategory).label}
+                categoryIcon={selectedExpenseCategory === 'all' ? '📋' : getExpenseCategoryMeta(selectedExpenseCategory).icon}
+                schoolInfo={effectiveSchoolInfo}
+                monthFilter={expenseMonthFilter}
               />
             </div>
           </div>
