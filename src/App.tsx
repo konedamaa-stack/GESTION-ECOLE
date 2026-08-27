@@ -242,6 +242,10 @@ function App() {
   const [financeStatusFilter, setFinanceStatusFilter] = useState('all');
   const [financeClassFilter, setFinanceClassFilter] = useState('all');
   const [selectedClassForSchedule, setSelectedClassForSchedule] = useState<string>('');
+  const [selectedExpenseCategory, setSelectedExpenseCategory] = useState<string>('all');
+  const [expenseSearchQuery, setExpenseSearchQuery] = useState<string>('');
+  const [expenseMonthFilter, setExpenseMonthFilter] = useState<string>('all');
+  const [expenseViewTab, setExpenseViewTab] = useState<'depenses' | 'emprunts'>('depenses');
   
   const [employeeSearchQuery, setEmployeeSearchQuery] = useState('');
   const [activeDossierTab, setActiveDossierTab] = useState<'infos' | 'documents' | 'finances'>('infos');
@@ -3363,181 +3367,604 @@ function App() {
     </div>
   );
 
-  const renderDepenses = () => (
-    <div className="fade-in">
-      {/* EMPRUNTS SECTION */}
-      <div className="section-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
-        <div>
-          <h2 className="section-title">💼 Emprunts & Financements</h2>
-          <p className="section-subtitle">Gérez les fonds prêtés par des banques ou organisations</p>
-        </div>
-        <button className="btn btn-primary" onClick={() => { setEditEntity(null); setActiveModal('loan'); }}>
-          + Nouvel Emprunt
-        </button>
-      </div>
+  const EXPENSE_CATEGORIES_CONFIG = [
+    { id: 'all', label: 'Toutes les Dépenses', icon: '📋', color: '#6366f1', bg: 'rgba(99, 102, 241, 0.1)', description: 'Toutes les sorties de caisse confondues' },
+    { id: 'Entretien', label: 'Entretien & Bâtiment', icon: '🧹', color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.1)', description: 'Nettoyage, réparations, plomberie, électricité bâtiment, menuiserie' },
+    { id: 'Transport', label: 'Transport & Carburant', icon: '🚌', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)', description: 'Carburant des bus, déplacements, entretien des véhicules' },
+    { id: 'Factures', label: 'Factures & Charges', icon: '💡', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)', description: 'Électricité (CIE), Eau (SODECI), Loyer, Internet' },
+    { id: 'Fournitures', label: 'Fournitures & Matériel', icon: '📦', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)', description: 'Rames de papier, craies, consommables bureau, matériel' },
+    { id: 'Salaires', label: 'Salaires & Gratifications', icon: '🧑‍💼', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)', description: 'Personnel d\'appoint, gardiens, femmes de ménage, primes' },
+    { id: 'Evenements', label: 'Événements & Activités', icon: '🎉', color: '#f97316', bg: 'rgba(249, 115, 22, 0.1)', description: 'Fêtes scolaires, kermesses, sorties éducatives' },
+    { id: 'Sante', label: 'Santé & Hygiène', icon: '🩺', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)', description: 'Infirmerie, pharmacie scolaire, désinfection' },
+    { id: 'Autre', label: 'Autre / Divers', icon: '📌', color: '#64748b', bg: 'rgba(100, 116, 139, 0.1)', description: 'Dépenses imprévues et diverses' },
+  ];
 
-      <div className="panel" style={{marginBottom: '32px'}}>
-        <h3 className="panel-title">Historique des Emprunts & Suivi des Règlements</h3>
-        <div className="table-responsive">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Date Prêt</th>
-                <th>Prêteur / Organisme</th>
-                <th>Emprunteur / Bénéficiaire</th>
-                <th>Montant</th>
-                <th>Mode de Règlement</th>
-                <th>Échéance</th>
-                <th>Statut</th>
-                <th style={{textAlign: 'right'}}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loansData && loansData.length > 0 ? loansData.map((loan: any) => (
-                <tr key={loan.id}>
-                  <td>{new Date(loan.loan_date).toLocaleDateString('fr-FR')}</td>
-                  <td style={{fontWeight: 'bold'}}>{loan.lender_name}</td>
-                  <td>{loan.borrower_name || <span style={{color: '#9ca3af', fontStyle: 'italic'}}>Établissement</span>}</td>
-                  <td style={{fontWeight: 'bold', color: '#10b981'}}>+{formatNum(loan.amount)} F</td>
-                  <td>
-                    <span className="badge" style={{background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)'}}>
-                      💳 {loan.repayment_method || 'Espèces'}
-                    </span>
-                  </td>
-                  <td>
-                    {loan.due_date ? new Date(loan.due_date).toLocaleDateString('fr-FR') : '-'}
-                  </td>
-                  <td>
-                    <span className={`badge ${loan.status === 'Actif' ? 'badge-primary' : 'badge-success'}`}>{loan.status}</span>
-                  </td>
-                  <td style={{textAlign: 'right'}}>
-                    {loan.status === 'Actif' && (
-                      <button 
-                        className="btn btn-outline" 
-                        style={{padding: '4px 8px', marginRight: '8px', fontSize: '0.8rem', color: '#10b981', borderColor: '#10b981'}} 
-                        onClick={() => handleSettleLoan(loan)}
-                        title="Marquer comme Remboursé / Régler"
-                      >
-                        ✅ Régler
-                      </button>
-                    )}
-                    <button className="btn btn-outline" style={{padding: '4px 8px', marginRight: '8px', fontSize: '0.8rem'}} onClick={() => { setEditEntity(loan); setActiveModal('loan'); }}>✏️</button>
-                    <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem', color: '#ef4444', borderColor: '#ef4444'}} onClick={() => handleDeleteLoan(loan.id)}>🗑️</button>
-                  </td>
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan={8} style={{textAlign: 'center', padding: '24px'}}>
-                    Aucun emprunt enregistré
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      {/* END EMPRUNTS SECTION */}
-      <div className="section-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
-        <div>
-          <h2 className="section-title">📉 {t('admin.expenses.title', 'Dépenses')}</h2>
-          <p className="section-subtitle">{t('admin.expenses.subtitle', 'Gérez les factures et sorties d\'argent de l\'établissement')}</p>
-        </div>
-        <button className="btn btn-primary" onClick={() => { setEditEntity(null); setActiveModal('expense'); }}>
-          ➕ {t('admin.expenses.add', 'Nouvelle Dépense')}
-        </button>
-      </div>
+  const getExpenseCategoryMeta = (cat: string) => {
+    if (!cat) return { id: 'Autre', label: 'Autre / Divers', icon: '📌', color: '#64748b', bg: 'rgba(100, 116, 139, 0.12)' };
+    const c = cat.toLowerCase();
+    if (c.includes('entretien') || c.includes('réparation') || c.includes('reparation') || c.includes('nettoyage') || c.includes('maintenance') || c.includes('plomberie') || c.includes('peinture')) {
+      return { id: 'Entretien', label: 'Entretien & Bâtiment', icon: '🧹', color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.12)' };
+    }
+    if (c.includes('transport') || c.includes('carburant') || c.includes('essence') || c.includes('bus') || c.includes('déplacement') || c.includes('deplacement') || c.includes('gasoil')) {
+      return { id: 'Transport', label: 'Transport & Carburant', icon: '🚌', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' };
+    }
+    if (c.includes('électricité') || c.includes('electricite') || c.includes('eau') || c.includes('loyer') || c.includes('facture') || c.includes('internet') || c.includes('wifi') || c.includes('cie') || c.includes('sodeci')) {
+      return { id: 'Factures', label: 'Factures & Charges', icon: '💡', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.12)' };
+    }
+    if (c.includes('fourniture') || c.includes('papier') || c.includes('rame') || c.includes('craie') || c.includes('matériel') || c.includes('materiel') || c.includes('cahier') || c.includes('bureau') || c.includes('imprim')) {
+      return { id: 'Fournitures', label: 'Fournitures & Matériel', icon: '📦', color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' };
+    }
+    if (c.includes('salaire') || c.includes('prime') || c.includes('vacataire') || c.includes('gardien') || c.includes('rémunération') || c.includes('remuneration') || c.includes('gratification')) {
+      return { id: 'Salaires', label: 'Salaires & Rémunérations', icon: '🧑‍💼', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.12)' };
+    }
+    if (c.includes('événement') || c.includes('evenement') || c.includes('fête') || c.includes('fete') || c.includes('sortie') || c.includes('sport') || c.includes('kermesse') || c.includes('cérémonie') || c.includes('ceremonie')) {
+      return { id: 'Evenements', label: 'Événements & Activités', icon: '🎉', color: '#f97316', bg: 'rgba(249, 115, 22, 0.12)' };
+    }
+    if (c.includes('santé') || c.includes('sante') || c.includes('médical') || c.includes('medical') || c.includes('pharmacie') || c.includes('infirmerie') || c.includes('hygiène') || c.includes('hygiene') || c.includes('soin')) {
+      return { id: 'Sante', label: 'Santé & Hygiène', icon: '🩺', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)' };
+    }
+    return { id: 'Autre', label: cat, icon: '📌', color: '#64748b', bg: 'rgba(100, 116, 139, 0.12)' };
+  };
 
+  const renderDepenses = () => {
+    // 1. Calculate totals per category
+    const categoryTotals: Record<string, { total: number; count: number }> = {
+      all: { total: 0, count: expensesData?.length || 0 },
+      Entretien: { total: 0, count: 0 },
+      Transport: { total: 0, count: 0 },
+      Factures: { total: 0, count: 0 },
+      Fournitures: { total: 0, count: 0 },
+      Salaires: { total: 0, count: 0 },
+      Evenements: { total: 0, count: 0 },
+      Sante: { total: 0, count: 0 },
+      Autre: { total: 0, count: 0 },
+    };
+
+    (expensesData || []).forEach((exp: any) => {
+      const amount = Number(exp.amount) || 0;
+      categoryTotals.all.total += amount;
+      const meta = getExpenseCategoryMeta(exp.category);
+      if (!categoryTotals[meta.id]) {
+        categoryTotals[meta.id] = { total: 0, count: 0 };
+      }
+      categoryTotals[meta.id].total += amount;
+      categoryTotals[meta.id].count += 1;
+    });
+
+    // 2. Filter expenses by selected category, search query, and month
+    const filteredExpenses = (expensesData || []).filter((exp: any) => {
+      const meta = getExpenseCategoryMeta(exp.category);
       
-      <div className="dashboard-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '16px', marginBottom: '24px'}}>
-        <div className="stat-card delay-100">
-          <div className="stat-icon" style={{backgroundColor: '#fee2e2', color: '#ef4444'}}>💸</div>
-          <div className="stat-info">
-            <h3>{t('admin.expenses.total', 'Total Dépenses Courantes')}</h3>
-            <p className="stat-value">{formatNum(expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)} F</p>
-          </div>
-        </div>
-        <div className="stat-card delay-100">
-          <div className="stat-icon" style={{backgroundColor: '#e0f2fe', color: '#0ea5e9'}}>🏦</div>
-          <div className="stat-info">
-            <h3>Total Emprunts</h3>
-            <p className="stat-value">{formatNum(loansData?.filter(l => l.status === 'Actif').reduce((sum, item) => sum + Number(item.amount), 0) || 0)} F</p>
-          </div>
-        </div>
-        <div className="stat-card delay-100">
-          <div className="stat-icon" style={{backgroundColor: '#fef3c7', color: '#f59e0b'}}>🧑‍🏫</div>
-          <div className="stat-info">
-            <h3>Salaires Payés</h3>
-            <p className="stat-value">{formatNum(
-              (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) +
-              (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)
-            )} F</p>
-          </div>
-        </div>
-        <div className="stat-card delay-200">
-          <div className="stat-icon" style={{backgroundColor: '#d1fae5', color: '#10b981'}}>💰</div>
-          <div className="stat-info">
-            <h3>Total Rentrées (Factures)</h3>
-            <p className="stat-value">{formatNum(invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0)} F</p>
-          </div>
-        </div>
-        <div className="stat-card delay-300">
-          <div className="stat-icon" style={{backgroundColor: '#e0e7ff', color: '#6366f1'}}>🏦</div>
-          <div className="stat-info">
-            <h3>Solde Caisse (Rentabilité)</h3>
-            <p className="stat-value" style={{color: (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) + (loansData?.filter(l => l.status === 'Actif').reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) - (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) >= 0 ? '#10b981' : '#ef4444'}}>
-              {formatNum(
-                (invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount), 0) || 0) +
-                (loansData?.filter(l => l.status === 'Actif').reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
-                (expensesData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
-                (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0) -
-                (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0)
-              )} F
+      // Category filter
+      if (selectedExpenseCategory !== 'all' && meta.id !== selectedExpenseCategory) {
+        return false;
+      }
+
+      // Search query filter
+      if (expenseSearchQuery.trim()) {
+        const query = expenseSearchQuery.toLowerCase().trim();
+        const descMatch = (exp.description || '').toLowerCase().includes(query);
+        const catMatch = (exp.category || '').toLowerCase().includes(query) || meta.label.toLowerCase().includes(query);
+        const amountMatch = String(exp.amount).includes(query);
+        if (!descMatch && !catMatch && !amountMatch) return false;
+      }
+
+      // Month filter
+      if (expenseMonthFilter !== 'all' && exp.payment_date) {
+        const expMonth = exp.payment_date.substring(0, 7); // 'YYYY-MM'
+        if (expMonth !== expenseMonthFilter) return false;
+      }
+
+      return true;
+    });
+
+    const filteredTotalAmount = filteredExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const activeLoansTotal = loansData?.filter(l => l.status === 'Actif').reduce((sum, item) => sum + Number(item.amount || 0), 0) || 0;
+    const paidInvoicesTotal = invoicesData?.filter(i => i.status === 'Payée').reduce((sum, item) => sum + Number(item.paid_amount || item.amount || 0), 0) || 0;
+    const salariesTotal = (teacherPaymentsData?.reduce((sum, item) => sum + Number(item.amount || 0), 0) || 0) +
+                          (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount || 0), 0) || 0);
+    const currentBalance = paidInvoicesTotal + activeLoansTotal - (categoryTotals.all.total) - salariesTotal;
+
+    // Distinct months for filter dropdown
+    const availableMonths = Array.from(new Set((expensesData || []).map((e: any) => e.payment_date ? e.payment_date.substring(0, 7) : null).filter(Boolean))).sort().reverse();
+
+    return (
+      <div className="fade-in" style={{paddingBottom: '40px'}}>
+        {/* TOP HEADER & SECTION NAVIGATION */}
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px'}}>
+          <div>
+            <h1 className="section-title" style={{fontSize: '1.6rem', fontWeight: 800, margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '10px'}}>
+              💰 {t('admin.expenses.title', 'Dépenses & Sorties de Caisse')}
+            </h1>
+            <p className="section-subtitle" style={{margin: 0, color: 'var(--text-secondary)'}}>
+              Organisation structurée des dépenses par catégorie (Entretien, Transport, Factures, Fournitures...)
             </p>
           </div>
-        </div>
-      </div>
 
-      <div className="panel delay-200">
-        <h3 className="panel-title">{t('admin.expenses.list', 'Historique des Dépenses')}</h3>
-        <div className="table-responsive">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>{t('admin.expenses.date', 'Date')}</th>
-                <th>{t('admin.expenses.category', 'Catégorie')}</th>
-                <th>{t('admin.expenses.amount', 'Montant')}</th>
-                <th>{t('admin.expenses.description', 'Description')}</th>
-                <th style={{textAlign: 'right'}}>{t('common.actions', 'Actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {expensesData && expensesData.length > 0 ? expensesData.map((expense: any) => (
-                <tr key={expense.id}>
-                  <td>{new Date(expense.payment_date).toLocaleDateString('fr-FR')}</td>
-                  <td>
-                    <span className="badge badge-warning">{expense.category}</span>
-                  </td>
-                  <td style={{fontWeight: 'bold'}}>{formatNum(expense.amount)} F</td>
-                  <td>{expense.description || '-'}</td>
-                  <td style={{textAlign: 'right'}}>
-                    <button className="btn btn-outline" style={{padding: '4px 8px', marginRight: '8px', fontSize: '0.8rem'}} title="Imprimer le reçu" onClick={() => { setEditEntity(expense); setActiveModal('expense_receipt_preview'); }}>🖨️</button>
-                    <button className="btn btn-outline" style={{padding: '4px 8px', marginRight: '8px', fontSize: '0.8rem'}} onClick={() => { setEditEntity(expense); setActiveModal('expense'); }}>✏️</button>
-                    <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem', color: '#ef4444', borderColor: '#ef4444'}} onClick={() => handleDeleteExpense(expense.id)}>🗑️</button>
-                  </td>
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan={5} style={{textAlign: 'center', padding: '24px', color: 'var(--text-secondary)'}}>
-                    {t('admin.expenses.empty', 'Aucune dépense enregistrée')}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          <div style={{display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap'}}>
+            {/* View Switcher Tabs */}
+            <div style={{display: 'flex', backgroundColor: 'var(--surface-color)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-color)'}}>
+              <button
+                type="button"
+                onClick={() => setExpenseViewTab('depenses')}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: expenseViewTab === 'depenses' ? 'var(--primary-color)' : 'transparent',
+                  color: expenseViewTab === 'depenses' ? 'white' : 'var(--text-color)',
+                  fontWeight: expenseViewTab === 'depenses' ? 700 : 500,
+                  cursor: 'pointer',
+                  fontSize: '0.88rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                💸 Dépenses ({expensesData?.length || 0})
+              </button>
+              <button
+                type="button"
+                onClick={() => setExpenseViewTab('emprunts')}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: expenseViewTab === 'emprunts' ? 'var(--primary-color)' : 'transparent',
+                  color: expenseViewTab === 'emprunts' ? 'white' : 'var(--text-color)',
+                  fontWeight: expenseViewTab === 'emprunts' ? 700 : 500,
+                  cursor: 'pointer',
+                  fontSize: '0.88rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                💼 Emprunts ({loansData?.length || 0})
+              </button>
+            </div>
+
+            {expenseViewTab === 'depenses' ? (
+              <button 
+                className="btn btn-primary" 
+                onClick={() => { 
+                  setEditEntity(null); 
+                  setActiveModal('expense'); 
+                }}
+                style={{display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)'}}
+              >
+                ➕ {t('admin.expenses.add', 'Nouvelle Dépense')}
+              </button>
+            ) : (
+              <button 
+                className="btn btn-primary" 
+                onClick={() => { 
+                  setEditEntity(null); 
+                  setActiveModal('loan'); 
+                }}
+                style={{display: 'flex', alignItems: 'center', gap: '8px'}}
+              >
+                💼 + Nouvel Emprunt
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* ---------------------------------------------------- */}
+        {/* VIEW 1: DÉPENSES PAR CATÉGORIE                       */}
+        {/* ---------------------------------------------------- */}
+        {expenseViewTab === 'depenses' && (
+          <>
+            {/* KPI OVERVIEW CARDS */}
+            <div className="dashboard-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '20px'}}>
+              <div className="stat-card" style={{borderLeft: `4px solid ${getExpenseCategoryMeta(selectedExpenseCategory).color || '#6366f1'}`}}>
+                <div className="stat-icon" style={{backgroundColor: getExpenseCategoryMeta(selectedExpenseCategory).bg || '#e0e7ff', color: getExpenseCategoryMeta(selectedExpenseCategory).color || '#6366f1'}}>
+                  {selectedExpenseCategory === 'all' ? '💸' : getExpenseCategoryMeta(selectedExpenseCategory).icon}
+                </div>
+                <div className="stat-info">
+                  <h3 style={{fontSize: '0.82rem', color: 'var(--text-secondary)'}}>
+                    {selectedExpenseCategory === 'all' ? 'Total Dépenses Courantes' : `Total ${getExpenseCategoryMeta(selectedExpenseCategory).label}`}
+                  </h3>
+                  <p className="stat-value" style={{fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-color)'}}>
+                    {formatNum(filteredTotalAmount)} F
+                  </p>
+                  <small style={{color: 'var(--text-secondary)', fontSize: '0.75rem'}}>
+                    {filteredExpenses.length} dépense{filteredExpenses.length > 1 ? 's' : ''} enregistrée{filteredExpenses.length > 1 ? 's' : ''}
+                  </small>
+                </div>
+              </div>
+
+              <div className="stat-card" style={{borderLeft: '4px solid #0ea5e9'}}>
+                <div className="stat-icon" style={{backgroundColor: '#e0f2fe', color: '#0ea5e9'}}>🧹</div>
+                <div className="stat-info">
+                  <h3 style={{fontSize: '0.82rem', color: 'var(--text-secondary)'}}>Total Entretien & Bâtiment</h3>
+                  <p className="stat-value" style={{fontSize: '1.3rem', fontWeight: 800, color: '#0ea5e9'}}>
+                    {formatNum(categoryTotals.Entretien?.total || 0)} F
+                  </p>
+                  <small style={{color: 'var(--text-secondary)', fontSize: '0.75rem'}}>
+                    {categoryTotals.Entretien?.count || 0} intervention{categoryTotals.Entretien?.count > 1 ? 's' : ''}
+                  </small>
+                </div>
+              </div>
+
+              <div className="stat-card" style={{borderLeft: '4px solid #f59e0b'}}>
+                <div className="stat-icon" style={{backgroundColor: '#fef3c7', color: '#f59e0b'}}>🚌</div>
+                <div className="stat-info">
+                  <h3 style={{fontSize: '0.82rem', color: 'var(--text-secondary)'}}>Total Transport & Carburant</h3>
+                  <p className="stat-value" style={{fontSize: '1.3rem', fontWeight: 800, color: '#f59e0b'}}>
+                    {formatNum(categoryTotals.Transport?.total || 0)} F
+                  </p>
+                  <small style={{color: 'var(--text-secondary)', fontSize: '0.75rem'}}>
+                    {categoryTotals.Transport?.count || 0} frais de transport
+                  </small>
+                </div>
+              </div>
+
+              <div className="stat-card" style={{borderLeft: '4px solid #8b5cf6'}}>
+                <div className="stat-icon" style={{backgroundColor: '#ede9fe', color: '#8b5cf6'}}>💡</div>
+                <div className="stat-info">
+                  <h3 style={{fontSize: '0.82rem', color: 'var(--text-secondary)'}}>Factures & Charges</h3>
+                  <p className="stat-value" style={{fontSize: '1.3rem', fontWeight: 800, color: '#8b5cf6'}}>
+                    {formatNum(categoryTotals.Factures?.total || 0)} F
+                  </p>
+                  <small style={{color: 'var(--text-secondary)', fontSize: '0.75rem'}}>
+                    CIE, SODECI, Loyer, Net
+                  </small>
+                </div>
+              </div>
+
+              <div className="stat-card" style={{borderLeft: `4px solid ${currentBalance >= 0 ? '#10b981' : '#ef4444'}`}}>
+                <div className="stat-icon" style={{backgroundColor: currentBalance >= 0 ? '#d1fae5' : '#fee2e2', color: currentBalance >= 0 ? '#10b981' : '#ef4444'}}>
+                  🏦
+                </div>
+                <div className="stat-info">
+                  <h3 style={{fontSize: '0.82rem', color: 'var(--text-secondary)'}}>Solde Caisse Disponible</h3>
+                  <p className="stat-value" style={{fontSize: '1.3rem', fontWeight: 800, color: currentBalance >= 0 ? '#10b981' : '#ef4444'}}>
+                    {formatNum(currentBalance)} F
+                  </p>
+                  <small style={{color: currentBalance >= 0 ? '#166534' : '#991b1b', fontSize: '0.75rem', fontWeight: 600}}>
+                    {currentBalance >= 0 ? '✅ Trésorerie positive' : '⚠️ Solde déficitaire'}
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            {/* CATEGORY SELECTOR TABS (HORIZONTAL SCROLL PILLS) */}
+            <div style={{marginBottom: '20px', background: 'var(--surface-color)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)'}}>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
+                <span style={{fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px'}}>
+                  📁 Filtrer par Type de Dépense :
+                </span>
+                {selectedExpenseCategory !== 'all' && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedExpenseCategory('all')}
+                    style={{background: 'none', border: 'none', color: 'var(--primary-color)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer'}}
+                  >
+                    Afficher toutes les catégories
+                  </button>
+                )}
+              </div>
+
+              <div style={{display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px'}}>
+                {EXPENSE_CATEGORIES_CONFIG.map((cat) => {
+                  const isSelected = selectedExpenseCategory === cat.id;
+                  const catData = categoryTotals[cat.id] || { total: 0, count: 0 };
+
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setSelectedExpenseCategory(cat.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 14px',
+                        borderRadius: '10px',
+                        border: isSelected ? `2px solid ${cat.color}` : '1px solid var(--border-color)',
+                        backgroundColor: isSelected ? cat.bg : 'var(--surface-color-hover)',
+                        color: isSelected ? cat.color : 'var(--text-color)',
+                        fontWeight: isSelected ? 700 : 500,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        transition: 'all 0.2s ease',
+                        fontSize: '0.85rem'
+                      }}
+                      title={cat.description}
+                    >
+                      <span style={{fontSize: '1.1rem'}}>{cat.icon}</span>
+                      <span>{cat.label}</span>
+                      <span style={{
+                        backgroundColor: isSelected ? cat.color : 'rgba(100, 116, 139, 0.2)',
+                        color: isSelected ? 'white' : 'var(--text-secondary)',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        padding: '2px 6px',
+                        borderRadius: '12px'
+                      }}>
+                        {formatNum(catData.total)} F
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* SEARCH & DATE FILTERS PANEL */}
+            <div className="panel delay-200" style={{marginBottom: '20px'}}>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'}}>
+                <div style={{display: 'flex', gap: '12px', alignItems: 'center', flex: 1, minWidth: '280px', flexWrap: 'wrap'}}>
+                  {/* Search input */}
+                  <div className="header-search" style={{flex: 1, minWidth: '220px'}}>
+                    <Icons.Search />
+                    <input 
+                      type="text" 
+                      placeholder="Rechercher par motif, catégorie, montant..." 
+                      value={expenseSearchQuery}
+                      onChange={(e) => setExpenseSearchQuery(e.target.value)}
+                      style={{width: '100%'}}
+                    />
+                  </div>
+
+                  {/* Month filter */}
+                  <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                    <span style={{fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap'}}>📅 Période :</span>
+                    <select
+                      className="form-select"
+                      style={{padding: '6px 12px', fontSize: '0.85rem'}}
+                      value={expenseMonthFilter}
+                      onChange={(e) => setExpenseMonthFilter(e.target.value)}
+                    >
+                      <option value="all">Tous les mois</option>
+                      {availableMonths.map((m: any) => {
+                        const [y, mo] = m.split('-');
+                        const monthName = new Date(parseInt(y), parseInt(mo) - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+                        return (
+                          <option key={m} value={m}>
+                            {monthName.charAt(0).toUpperCase() + monthName.slice(1)}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Reset Filters button */}
+                {(selectedExpenseCategory !== 'all' || expenseSearchQuery || expenseMonthFilter !== 'all') && (
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    style={{fontSize: '0.8rem', padding: '6px 12px'}}
+                    onClick={() => {
+                      setSelectedExpenseCategory('all');
+                      setExpenseSearchQuery('');
+                      setExpenseMonthFilter('all');
+                    }}
+                  >
+                    🔄 Réinitialiser filtres
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* EXPENSES TABLE */}
+            <div className="panel delay-200">
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
+                <h3 className="panel-title" style={{margin: 0, display: 'flex', alignItems: 'center', gap: '8px'}}>
+                  <span>{getExpenseCategoryMeta(selectedExpenseCategory).icon}</span>
+                  <span>{selectedExpenseCategory === 'all' ? 'Historique des Dépenses' : `Dépenses : ${getExpenseCategoryMeta(selectedExpenseCategory).label}`}</span>
+                  <span style={{fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginLeft: '6px'}}>
+                    ({filteredExpenses.length} résultat{filteredExpenses.length > 1 ? 's' : ''})
+                  </span>
+                </h3>
+
+                <span style={{fontSize: '0.95rem', fontWeight: 800, color: 'var(--primary-color)'}}>
+                  Sous-total : {formatNum(filteredTotalAmount)} F
+                </span>
+              </div>
+
+              <div className="table-responsive">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th style={{width: '12%'}}>{t('admin.expenses.date', 'Date')}</th>
+                      <th style={{width: '24%'}}>{t('admin.expenses.category', 'Catégorie')}</th>
+                      <th style={{width: '38%'}}>{t('admin.expenses.description', 'Description & Motif')}</th>
+                      <th style={{width: '14%', textAlign: 'right'}}>{t('admin.expenses.amount', 'Montant (F)')}</th>
+                      <th style={{width: '12%', textAlign: 'right'}}>{t('common.actions', 'Actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredExpenses && filteredExpenses.length > 0 ? (
+                      filteredExpenses.map((expense: any) => {
+                        const meta = getExpenseCategoryMeta(expense.category);
+
+                        return (
+                          <tr key={expense.id}>
+                            <td style={{fontWeight: 500, fontSize: '0.88rem', whiteSpace: 'nowrap'}}>
+                              {new Date(expense.payment_date).toLocaleDateString('fr-FR')}
+                            </td>
+                            <td>
+                              <span style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '4px 10px',
+                                borderRadius: '8px',
+                                backgroundColor: meta.bg,
+                                color: meta.color,
+                                fontWeight: 700,
+                                fontSize: '0.82rem',
+                                border: `1px solid ${meta.color}40`
+                              }}>
+                                <span>{meta.icon}</span>
+                                <span>{expense.category || meta.label}</span>
+                              </span>
+                            </td>
+                            <td style={{color: 'var(--text-color)', fontSize: '0.9rem', lineHeight: '1.4'}}>
+                              {expense.description || <span style={{color: 'var(--text-secondary)', fontStyle: 'italic'}}>Aucune précision</span>}
+                            </td>
+                            <td style={{textAlign: 'right', fontWeight: 800, fontSize: '0.95rem', color: '#ef4444', whiteSpace: 'nowrap'}}>
+                              -{formatNum(expense.amount)} F
+                            </td>
+                            <td style={{textAlign: 'right', whiteSpace: 'nowrap'}}>
+                              <button 
+                                className="btn btn-outline" 
+                                style={{padding: '4px 8px', marginRight: '6px', fontSize: '0.8rem'}} 
+                                title="Imprimer le reçu de dépense" 
+                                onClick={() => { 
+                                  setEditEntity(expense); 
+                                  setActiveModal('expense_receipt_preview'); 
+                                }}
+                              >
+                                🖨️
+                              </button>
+                              <button 
+                                className="btn btn-outline" 
+                                style={{padding: '4px 8px', marginRight: '6px', fontSize: '0.8rem'}} 
+                                title="Modifier"
+                                onClick={() => { 
+                                  setEditEntity(expense); 
+                                  setActiveModal('expense'); 
+                                }}
+                              >
+                                ✏️
+                              </button>
+                              <button 
+                                className="btn btn-outline" 
+                                style={{padding: '4px 8px', fontSize: '0.8rem', color: '#ef4444', borderColor: '#ef4444'}} 
+                                title="Supprimer"
+                                onClick={() => handleDeleteExpense(expense.id)}
+                              >
+                                🗑️
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={5} style={{textAlign: 'center', padding: '36px 20px', color: 'var(--text-secondary)'}}>
+                          <div style={{fontSize: '2rem', marginBottom: '8px'}}>📭</div>
+                          <div style={{fontWeight: 600, fontSize: '0.95rem'}}>Aucune dépense trouvée pour ces critères</div>
+                          <p style={{fontSize: '0.85rem', marginTop: '4px'}}>
+                            Cliquez sur "+ Nouvelle Dépense" pour enregistrer une sortie de caisse dans cette catégorie.
+                          </p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                  {filteredExpenses.length > 0 && (
+                    <tfoot>
+                      <tr style={{backgroundColor: 'var(--surface-color-hover)', fontWeight: 'bold'}}>
+                        <td colSpan={3} style={{padding: '12px 16px', fontSize: '0.95rem'}}>
+                          TOTAL {selectedExpenseCategory !== 'all' ? getExpenseCategoryMeta(selectedExpenseCategory).label.toUpperCase() : 'GÉNÉRAL'} :
+                        </td>
+                        <td style={{textAlign: 'right', padding: '12px 16px', fontSize: '1.1rem', color: '#ef4444'}}>
+                          -{formatNum(filteredTotalAmount)} F
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ---------------------------------------------------- */}
+        {/* VIEW 2: EMPRUNTS & FINANCEMENTS                      */}
+        {/* ---------------------------------------------------- */}
+        {expenseViewTab === 'emprunts' && (
+          <div>
+            <div className="dashboard-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px'}}>
+              <div className="stat-card">
+                <div className="stat-icon" style={{backgroundColor: '#e0f2fe', color: '#0ea5e9'}}>🏦</div>
+                <div className="stat-info">
+                  <h3>Total Emprunts Actifs</h3>
+                  <p className="stat-value" style={{color: '#0ea5e9'}}>{formatNum(activeLoansTotal)} F</p>
+                  <small style={{color: 'var(--text-secondary)'}}>Fonds actuellement engagés</small>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon" style={{backgroundColor: '#d1fae5', color: '#10b981'}}>✅</div>
+                <div className="stat-info">
+                  <h3>Emprunts Remboursés</h3>
+                  <p className="stat-value" style={{color: '#10b981'}}>
+                    {formatNum(loansData?.filter(l => l.status === 'Remboursé').reduce((sum, item) => sum + Number(item.amount || 0), 0) || 0)} F
+                  </p>
+                  <small style={{color: 'var(--text-secondary)'}}>Dettes totalement soldées</small>
+                </div>
+              </div>
+            </div>
+
+            <div className="panel">
+              <h3 className="panel-title">Historique des Emprunts & Suivi des Règlements</h3>
+              <div className="table-responsive">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Date Prêt</th>
+                      <th>Prêteur / Organisme</th>
+                      <th>Emprunteur / Bénéficiaire</th>
+                      <th>Montant</th>
+                      <th>Mode de Règlement</th>
+                      <th>Échéance</th>
+                      <th>Statut</th>
+                      <th style={{textAlign: 'right'}}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loansData && loansData.length > 0 ? loansData.map((loan: any) => (
+                      <tr key={loan.id}>
+                        <td>{new Date(loan.loan_date).toLocaleDateString('fr-FR')}</td>
+                        <td style={{fontWeight: 'bold'}}>{loan.lender_name}</td>
+                        <td>{loan.borrower_name || <span style={{color: '#9ca3af', fontStyle: 'italic'}}>Établissement</span>}</td>
+                        <td style={{fontWeight: 'bold', color: '#10b981'}}>+{formatNum(loan.amount)} F</td>
+                        <td>
+                          <span className="badge" style={{background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)'}}>
+                            💳 {loan.repayment_method || 'Espèces'}
+                          </span>
+                        </td>
+                        <td>
+                          {loan.due_date ? new Date(loan.due_date).toLocaleDateString('fr-FR') : '-'}
+                        </td>
+                        <td>
+                          <span className={`badge ${loan.status === 'Actif' ? 'badge-primary' : 'badge-success'}`}>{loan.status}</span>
+                        </td>
+                        <td style={{textAlign: 'right'}}>
+                          {loan.status === 'Actif' && (
+                            <button 
+                              className="btn btn-outline" 
+                              style={{padding: '4px 8px', marginRight: '8px', fontSize: '0.8rem', color: '#10b981', borderColor: '#10b981'}} 
+                              onClick={() => handleSettleLoan(loan)}
+                              title="Marquer comme Remboursé / Régler"
+                            >
+                              ✅ Régler
+                            </button>
+                          )}
+                          <button className="btn btn-outline" style={{padding: '4px 8px', marginRight: '8px', fontSize: '0.8rem'}} onClick={() => { setEditEntity(loan); setActiveModal('loan'); }}>✏️</button>
+                          <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem', color: '#ef4444', borderColor: '#ef4444'}} onClick={() => handleDeleteLoan(loan.id)}>🗑️</button>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={8} style={{textAlign: 'center', padding: '24px'}}>
+                          Aucun emprunt enregistré
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderRH = () => currentSchoolPlan !== 'Pro' ? renderPremiumOverlay(t('admin.rh.premium_title', "Ressources Humaines"), t('admin.rh.premium_desc', "Gérez les contrats, salaires et plannings de vos employés avec le plan Pro.")) : (
     <div className="animate-fade-in">
@@ -8383,40 +8810,68 @@ function App() {
         )}
 
         {activeModal === 'expense' && (
-          <div className="modal-content fade-in" onClick={e => e.stopPropagation()}>
+          <div className="modal-content fade-in" onClick={e => e.stopPropagation()} style={{maxWidth: '560px'}}>
             <div className="modal-header">
               <h3>{editEntity ? t('admin.expenses.edit_expense', 'Modifier la Dépense') : t('admin.expenses.add_expense', 'Nouvelle Dépense')}</h3>
               <button className="close-btn" onClick={closeModal}>×</button>
             </div>
             <form onSubmit={handleAddExpense} className="modal-body">
               <div className="form-group">
-                <label>{t('admin.expenses.category', 'Catégorie')}</label>
-                <select name="category" className="form-control" required defaultValue={editEntity?.category || 'Électricité'}>
-                  <option value="Électricité">Électricité</option>
-                  <option value="Eau">Eau</option>
-                  <option value="Loyer">Loyer</option>
-                  <option value="Fournitures">Fournitures</option>
-                  <option value="Entretien">Entretien</option>
-                  <option value="Salaire">Salaire (Autre)</option>
-                  <option value="Autre">Autre</option>
+                <label style={{fontWeight: 600, color: 'var(--primary-color)'}}>{t('admin.expenses.category', 'Catégorie de la dépense')}</label>
+                <select 
+                  name="category" 
+                  className="form-control" 
+                  required 
+                  defaultValue={editEntity?.category || (selectedExpenseCategory !== 'all' ? selectedExpenseCategory : 'Entretien')}
+                >
+                  <option value="Entretien">🧹 Entretien & Bâtiment (Nettoyage, Réparations, Maintenance)</option>
+                  <option value="Transport">🚌 Transport & Carburant (Carburant bus, Déplacements, Véhicules)</option>
+                  <option value="Factures">💡 Factures & Charges (Électricité CIE, Eau SODECI, Loyer, Internet)</option>
+                  <option value="Fournitures">📦 Fournitures & Matériel (Rames, Craies, Pédagogie, Bureau)</option>
+                  <option value="Salaires">🧑‍💼 Salaires & Gratifications (Personnel temporaire, Gardiennage, Primes)</option>
+                  <option value="Evenements">🎉 Événements & Activités (Fêtes scolaires, Sorties, Cérémonies)</option>
+                  <option value="Sante">🩺 Santé & Hygiène (Infirmerie, Pharmacie, Désinfection)</option>
+                  <option value="Autre">📌 Autre / Divers</option>
                 </select>
               </div>
+
               <div className="form-group">
-                <label>{t('admin.expenses.amount', 'Montant (F)')}</label>
-                <input type="number" name="amount" className="form-control" required min="0" step="1" defaultValue={editEntity?.amount || ''} />
+                <label style={{fontWeight: 600}}>{t('admin.expenses.amount', 'Montant (F CFA)')}</label>
+                <input type="number" name="amount" className="form-control" required min="1" step="1" placeholder="Ex: 50000" defaultValue={editEntity?.amount || ''} />
               </div>
+
+              <div className="form-row" style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
+                <div className="form-group">
+                  <label>{t('admin.expenses.date', 'Date de la dépense')}</label>
+                  <input type="date" name="date" className="form-control" required defaultValue={editEntity?.payment_date ? editEntity.payment_date.split('T')[0] : new Date().toISOString().split('T')[0]} />
+                </div>
+                <div className="form-group">
+                  <label>Mode de paiement</label>
+                  <select name="payment_method" className="form-control" defaultValue="Espèces">
+                    <option value="Espèces">Espèces (Caisse)</option>
+                    <option value="Mobile Money">Mobile Money (Wave/Orange/MTN)</option>
+                    <option value="Chèque">Chèque bancaire</option>
+                    <option value="Virement">Virement bancaire</option>
+                  </select>
+                </div>
+              </div>
+
               <div className="form-group">
-                <label>{t('admin.expenses.date', 'Date')}</label>
-                <input type="date" name="date" className="form-control" required defaultValue={editEntity?.payment_date || new Date().toISOString().split('T')[0]} />
+                <label>{t('admin.expenses.description', 'Motif / Description détaillée')}</label>
+                <textarea 
+                  name="description" 
+                  className="form-control" 
+                  rows={3} 
+                  required
+                  defaultValue={editEntity?.description || ''} 
+                  placeholder="Ex: Réparation serrure classe 6ème B, Achat 10 rames de papier pour examens, Carburant minibus scolaire..."
+                ></textarea>
               </div>
-              <div className="form-group">
-                <label>{t('admin.expenses.description', 'Description')}</label>
-                <textarea name="description" className="form-control" rows={3} defaultValue={editEntity?.description || ''} placeholder="Détails de la dépense..."></textarea>
-              </div>
-              <div className="modal-footer">
+
+              <div className="modal-footer" style={{marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px'}}>
                 <button type="button" className="btn btn-outline" onClick={closeModal}>{t('common.cancel', 'Annuler')}</button>
-                <button type="submit" className="btn btn-primary">
-                  {t('common.save', 'Enregistrer')}
+                <button type="submit" className="btn btn-primary" style={{boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)'}}>
+                  💾 {t('common.save', 'Enregistrer la dépense')}
                 </button>
               </div>
             </form>
