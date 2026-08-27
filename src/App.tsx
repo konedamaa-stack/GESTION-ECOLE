@@ -1109,9 +1109,10 @@ function App() {
   };
 
   const handleDeleteStudent = async (id: string) => {
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer cet élève ? (Cette action supprimera également ses factures, absences, notes, etc.)")) {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer cet élève ? (Cette action supprimera également ses factures, règlements, absences, notes et documents associés)")) {
       try {
         // Delete related records to bypass foreign key constraints
+        await supabase.from('transactions').delete().eq('student_id', id);
         await supabase.from('student_parents').delete().eq('student_id', id);
         await supabase.from('invoices').delete().eq('student_id', id);
         await supabase.from('absences').delete().eq('student_id', id);
@@ -1121,9 +1122,20 @@ function App() {
         const { error } = await supabase.from('students').delete().eq('id', id);
         if (error) throw error;
         
+        // Optimistically update local student state immediately
+        setStudentsData(prev => prev.filter(s => s.id !== id));
+        if (activeModal === 'studentDossier' && selectedStudent?.id === id) {
+          closeModal();
+        }
+
+        // Refetch all fresh data from server
         fetchStudents();
+        fetchInvoices();
+        fetchAbsences();
+        fetchParents();
       } catch (error: any) {
-        alert("Erreur lors de la suppression : " + error.message);
+        console.error("Error deleting student:", error);
+        alert("Erreur lors de la suppression : " + (error.message || error));
       }
     }
   };
