@@ -18,6 +18,7 @@ import { SalaryReceiptPreview } from './components/SalaryReceiptPreview';
 import { SuperAdminPortal } from './components/SuperAdminPortal';
 import { PasswordRecovery } from './components/PasswordRecovery';
 import { UserSupportModal } from './components/UserSupportModal';
+import { DraggableSupportButton } from './components/DraggableSupportButton';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { applyThemeSettings } from './lib/theme';
@@ -9075,14 +9076,8 @@ function App() {
           </div>
         </div>
       )}
-      {/* Floating Support Button */}
-      <button 
-        className="hide-print floating-support-btn"
-        onClick={() => setIsSupportModalOpen(true)}
-      >
-        <span className="support-icon">❓</span>
-        <span className="support-text">Aide & Support</span>
-      </button>
+      {/* Floating & Draggable Support Button */}
+      <DraggableSupportButton onClick={() => setIsSupportModalOpen(true)} />
 
       {isSupportModalOpen && currentSchoolId && session && (
         <UserSupportModal 
