@@ -967,7 +967,7 @@ function App() {
   }, [activeModal, selectedStudent]);
 
   const fetchStudents = async () => {
-    const { data } = await supabase.from('students').select(`*, classes ( name, tuition_fee, tuition_fee_affecte ), student_parents(parents(first_name, last_name))`).eq('school_id', currentSchoolId);
+    const { data } = await supabase.from('students').select(`*, classes ( name, tuition_fee, tuition_fee_affecte ), student_parents(parent_id, relation_type, parents(id, first_name, last_name, phone, email, location))`).eq('school_id', currentSchoolId);
     if (data) setStudentsData(data);
   };
   const fetchClasses = async () => {
@@ -983,7 +983,7 @@ function App() {
     if (data) setEmployeesData(data);
   };
   const fetchInvoices = async () => {
-    const { data } = await supabase.from('invoices').select(`*, students ( *, classes ( name, tuition_fee, tuition_fee_affecte ), student_parents ( parents ( first_name, last_name ) ) )`).eq('school_id', currentSchoolId);
+    const { data } = await supabase.from('invoices').select(`*, students ( *, classes ( name, tuition_fee, tuition_fee_affecte ), student_parents ( parent_id, relation_type, parents ( id, first_name, last_name, phone, email, location ) ) )`).eq('school_id', currentSchoolId);
     if (data) setInvoicesData(data);
   };
   const fetchAbsences = async () => {
@@ -996,7 +996,7 @@ function App() {
   };
   const fetchParents = async () => {
     if (!currentSchoolId) return;
-    const { data } = await supabase.from('parents').select(`*, student_parents(student_id, parent_id, students(*, classes(name)))`).eq('school_id', currentSchoolId);
+    const { data } = await supabase.from('parents').select(`*, student_parents(student_id, parent_id, relation_type, students(*, classes(name)))`).eq('school_id', currentSchoolId);
     if (data) setParentsData(data);
   };
 
@@ -1838,11 +1838,86 @@ function App() {
           if (formData.get('password')) studentUpdate.password = formData.get('password');
           const { error } = await supabase.from('students').update(studentUpdate).eq('id', editEntity.id);
           if (error) throw error;
+
+          // Process parent info on student edit
+          const pLastName = (formData.get('parent_last_name') as string || '').trim();
+          const pFirstName = (formData.get('parent_first_name') as string || '').trim();
+          const pPhone = (formData.get('parent_phone') as string || '').trim();
+          const pEmail = (formData.get('parent_email') as string || '').trim();
+          const pLocation = (formData.get('parent_location') as string || '').trim();
+
+          if (pLastName || pFirstName || pPhone || pEmail || pLocation) {
+            const finalLastName = pLastName || (formData.get('last_name') as string || 'Parent');
+            const finalFirstName = pFirstName || 'Tuteur';
+
+            // Check if student already has a linked parent
+            const { data: existingLinks } = await supabase
+              .from('student_parents')
+              .select('parent_id')
+              .eq('student_id', editEntity.id);
+
+            if (existingLinks && existingLinks.length > 0) {
+              const currentParentId = existingLinks[0].parent_id;
+              await supabase.from('parents').update({
+                first_name: finalFirstName,
+                last_name: finalLastName,
+                phone: pPhone || null,
+                email: pEmail || null,
+                location: pLocation || null
+              }).eq('id', currentParentId);
+            } else {
+              // Check if parent already exists in school by phone or name
+              let existingParentId = null;
+              if (pPhone) {
+                const { data: byPhone } = await supabase
+                  .from('parents')
+                  .select('id')
+                  .eq('school_id', currentSchoolId)
+                  .eq('phone', pPhone)
+                  .limit(1);
+                if (byPhone && byPhone.length > 0) existingParentId = byPhone[0].id;
+              }
+              if (!existingParentId && finalLastName && finalFirstName) {
+                const { data: byName } = await supabase
+                  .from('parents')
+                  .select('id')
+                  .eq('school_id', currentSchoolId)
+                  .ilike('first_name', finalFirstName)
+                  .ilike('last_name', finalLastName)
+                  .limit(1);
+                if (byName && byName.length > 0) existingParentId = byName[0].id;
+              }
+
+              if (!existingParentId) {
+                const { data: newP } = await supabase.from('parents').insert([{
+                  first_name: finalFirstName,
+                  last_name: finalLastName,
+                  phone: pPhone || null,
+                  email: pEmail || null,
+                  location: pLocation || null,
+                  password: 'passer123',
+                  school_id: currentSchoolId
+                }]).select();
+                if (newP && newP.length > 0) existingParentId = newP[0].id;
+              }
+
+              if (existingParentId) {
+                await supabase.from('student_parents').insert([{
+                  student_id: editEntity.id,
+                  parent_id: existingParentId,
+                  relation_type: 'Parent'
+                }]);
+              }
+            }
+          }
+
           alert("Mise à jour : " + successMsg);
           fetchStudents();
+          fetchParents();
           closeModal();
           return;
         }
+
         const rawMatricule = formData.get('matricule') ? (formData.get('matricule') as string).trim().toUpperCase() : '';
         const matricule = rawMatricule || generateStudentMatricule();
         const password = formData.get('password') || 'passer123';
@@ -1865,24 +1940,77 @@ function App() {
         
         const newStudentId = studentData[0].id;
 
-        let parentObj = null;
-        if (formData.get('parent_first_name') && formData.get('parent_last_name')) {
-          const parent = {
-            first_name: formData.get('parent_first_name'),
-            last_name: formData.get('parent_last_name'),
-            phone: formData.get('parent_phone'),
-            email: formData.get('parent_email'),
-            location: formData.get('parent_location'),
-            password: 'passer123'
-          };
-          parentObj = parent;
-          const { data: parentData, error: parentError } = await supabase.from('parents').insert([{...parent, school_id: currentSchoolId}]).select();
-          if (!parentError && parentData && parentData.length > 0) {
+        // Robust Parent Handling
+        const pLastName = (formData.get('parent_last_name') as string || '').trim();
+        const pFirstName = (formData.get('parent_first_name') as string || '').trim();
+        const pPhone = (formData.get('parent_phone') as string || '').trim();
+        const pEmail = (formData.get('parent_email') as string || '').trim();
+        const pLocation = (formData.get('parent_location') as string || '').trim();
+
+        let parentObj: any = null;
+        if (pLastName || pFirstName || pPhone || pEmail || pLocation) {
+          const finalLastName = pLastName || (formData.get('last_name') as string || 'Parent');
+          const finalFirstName = pFirstName || 'Tuteur';
+
+          // Check if parent already exists in school
+          let existingParentId: string | null = null;
+          if (pPhone) {
+            const { data: byPhone } = await supabase
+              .from('parents')
+              .select('id, first_name, last_name, phone, email, location')
+              .eq('school_id', currentSchoolId)
+              .eq('phone', pPhone)
+              .limit(1);
+            if (byPhone && byPhone.length > 0) {
+              existingParentId = byPhone[0].id;
+              parentObj = byPhone[0];
+            }
+          }
+          if (!existingParentId && finalLastName && finalFirstName) {
+            const { data: byName } = await supabase
+              .from('parents')
+              .select('id, first_name, last_name, phone, email, location')
+              .eq('school_id', currentSchoolId)
+              .ilike('first_name', finalFirstName)
+              .ilike('last_name', finalLastName)
+              .limit(1);
+            if (byName && byName.length > 0) {
+              existingParentId = byName[0].id;
+              parentObj = byName[0];
+            }
+          }
+
+          if (existingParentId) {
+            // Link new student to existing parent
             await supabase.from('student_parents').insert([{
               student_id: newStudentId,
-              parent_id: parentData[0].id,
+              parent_id: existingParentId,
               relation_type: 'Parent'
             }]);
+          } else {
+            // Create new parent
+            const newParentPayload = {
+              first_name: finalFirstName,
+              last_name: finalLastName,
+              phone: pPhone || null,
+              email: pEmail || null,
+              location: pLocation || null,
+              password: 'passer123',
+              school_id: currentSchoolId
+            };
+            const { data: newParentData, error: parentError } = await supabase
+              .from('parents')
+              .insert([newParentPayload])
+              .select();
+
+            if (!parentError && newParentData && newParentData.length > 0) {
+              parentObj = newParentData[0];
+              await supabase.from('student_parents').insert([{
+                student_id: newStudentId,
+                parent_id: newParentData[0].id,
+                relation_type: 'Parent'
+              }]);
+            }
           }
         }
 
@@ -1903,6 +2031,7 @@ function App() {
         }
 
         fetchStudents();
+        fetchParents();
         if (formData.get('reg_fee_amount') !== null && formData.get('reg_fee_amount') !== '') {
           fetchInvoices();
           const clsForReceipt = classesData.find(c => c.id === student.class_id);
@@ -7455,58 +7584,90 @@ function App() {
                     </div>
                   </div>
 
-                  {!editEntity && (<><h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>{t('admin.modals.parent_info', '2. Informations du Parent / Tuteur')}</h3>
+                  <h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>{t('admin.modals.parent_info', '2. Informations du Parent / Tuteur')}</h3>
                   <div className="form-grid">
                     <div className="form-group">
                       <label>{t('admin.modals.parent_last_name', 'Nom du parent')}</label>
-                      <input type="text" name="parent_last_name" className="form-input" />
+                      <input 
+                        type="text" 
+                        name="parent_last_name" 
+                        className="form-input" 
+                        defaultValue={editEntity?.student_parents?.[0]?.parents?.last_name || ""} 
+                        placeholder="Ex: KONE" 
+                      />
                     </div>
                     <div className="form-group">
                       <label>{t('admin.modals.parent_first_name', 'Prénom du parent')}</label>
-                      <input type="text" name="parent_first_name" className="form-input" />
+                      <input 
+                        type="text" 
+                        name="parent_first_name" 
+                        className="form-input" 
+                        defaultValue={editEntity?.student_parents?.[0]?.parents?.first_name || ""} 
+                        placeholder="Ex: Moussa" 
+                      />
                     </div>
                   </div>
                   <div className="form-grid">
                     <div className="form-group">
                       <label>{t('admin.modals.phone', 'Téléphone')}</label>
-                      <input type="tel" name="parent_phone" className="form-input" />
+                      <input 
+                        type="tel" 
+                        name="parent_phone" 
+                        className="form-input" 
+                        defaultValue={editEntity?.student_parents?.[0]?.parents?.phone || ""} 
+                        placeholder="Ex: 0708091011" 
+                      />
                     </div>
                     <div className="form-group">
                       <label>{t('admin.modals.email', 'Email')}</label>
-                      <input type="email" name="parent_email" className="form-input" />
+                      <input 
+                        type="email" 
+                        name="parent_email" 
+                        className="form-input" 
+                        defaultValue={editEntity?.student_parents?.[0]?.parents?.email || ""} 
+                        placeholder="parent@email.com" 
+                      />
                     </div>
                     <div className="form-group">
                       <label>Lieu de résidence</label>
-                      <input type="text" name="parent_location" className="form-input" placeholder="Ex: Abidjan, Divo" />
+                      <input 
+                        type="text" 
+                        name="parent_location" 
+                        className="form-input" 
+                        placeholder="Ex: Abidjan, Divo" 
+                        defaultValue={editEntity?.student_parents?.[0]?.parents?.location || ""} 
+                      />
                     </div>
                   </div>
 
-                  <h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>{t('admin.modals.fees_info', "3. Frais d'Inscription & Scolarité")}</h3>
-                  <div className="form-group">
-                    <label>{t('admin.modals.reg_fee_amount', "Montant des frais d'inscription (CFA)")}</label>
-                    <input type="number" name="reg_fee_amount" className="form-input" required placeholder="Ex: 50000" />
-                    <small style={{color: 'var(--text-secondary)'}}>Saisissez obligatoirement un montant (mettez 0 si gratuité).</small>
-                  </div>
-                  <div className="form-grid">
-                    <div className="form-group">
-                      <label>{t('admin.modals.payment_method', 'Mode de paiement')}</label>
-                      <select name="reg_fee_method" className="form-select">
-                        <option value="Espèces">Espèces</option>
-                        <option value="Chèque">Chèque</option>
-                        <option value="Virement">Virement</option>
-                        <option value="Mobile Money">Mobile Money</option>
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label>{t('admin.modals.status', 'Statut')}</label>
-                      <select name="reg_fee_status" className="form-select">
-                        <option value="Payée">Payée (Immédiatement)</option>
-                        <option value="En attente">En attente (Paiement ultérieur)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  </>)}
+                  {!editEntity && (
+                    <>
+                      <h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>{t('admin.modals.fees_info', "3. Frais d'Inscription & Scolarité")}</h3>
+                      <div className="form-group">
+                        <label>{t('admin.modals.reg_fee_amount', "Montant des frais d'inscription (CFA)")}</label>
+                        <input type="number" name="reg_fee_amount" className="form-input" required placeholder="Ex: 50000" />
+                        <small style={{color: 'var(--text-secondary)'}}>Saisissez obligatoirement un montant (mettez 0 si gratuité).</small>
+                      </div>
+                      <div className="form-grid">
+                        <div className="form-group">
+                          <label>{t('admin.modals.payment_method', 'Mode de paiement')}</label>
+                          <select name="reg_fee_method" className="form-select">
+                            <option value="Espèces">Espèces</option>
+                            <option value="Chèque">Chèque</option>
+                            <option value="Virement">Virement</option>
+                            <option value="Mobile Money">Mobile Money</option>
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label>{t('admin.modals.status', 'Statut')}</label>
+                          <select name="reg_fee_status" className="form-select">
+                            <option value="Payée">Payée (Immédiatement)</option>
+                            <option value="En attente">En attente (Paiement ultérieur)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </>
+                  )}
                   <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
                     <button type="submit" className="btn btn-primary">{editEntity ? 'Mettre à jour' : t('admin.modals.complete_registration', "Valider l'inscription complète")}</button>
