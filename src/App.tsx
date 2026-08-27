@@ -14,6 +14,7 @@ import { SmallReceiptPreview } from './components/SmallReceiptPreview';
 import { TeacherReceiptPreview } from './components/TeacherReceiptPreview';
 import { ExpenseReceiptPreview } from './components/ExpenseReceiptPreview';
 import { CategoryExpensesPrintPreview } from './components/CategoryExpensesPrintPreview';
+import { DailyReceiptsPrintPreview } from './components/DailyReceiptsPrintPreview';
 import { SalaryReceiptPreview } from './components/SalaryReceiptPreview';
 import { SuperAdminPortal } from './components/SuperAdminPortal';
 import { PasswordRecovery } from './components/PasswordRecovery';
@@ -209,6 +210,7 @@ function App() {
         'teacher_receipt_preview',
         'expense_receipt_preview',
         'category_expenses_print',
+        'daily_receipts_print',
         'salary_receipt_preview',
         'receipt_choice',
         'studentDossier',
@@ -241,6 +243,8 @@ function App() {
   const [showHonorRollPanel, setShowHonorRollPanel] = useState(false);
   const [selectedHonorStudent, setSelectedHonorStudent] = useState<any | null>(null);
   const [invoiceSearchQuery, setInvoiceSearchQuery] = useState('');
+  const [invoiceDateFilter, setInvoiceDateFilter] = useState<string>('');
+  const [invoicePaymentMethodFilter, setInvoicePaymentMethodFilter] = useState<string>('all');
   const [parentSearchQuery, setParentSearchQuery] = useState('');
   const [financeStatusFilter, setFinanceStatusFilter] = useState('all');
   const [financeClassFilter, setFinanceClassFilter] = useState('all');
@@ -4650,15 +4654,32 @@ function App() {
     const totalResteGlobal = scolariteParClasse.reduce((sum, row) => sum + row.nonPaye, 0);
     const tauxRecouvrementGlobal = totalAttenduGlobal > 0 ? Math.round((totalPayeGlobal / totalAttenduGlobal) * 100) : 0;
 
-    // Calcul des factures filtrées pour la recherche
-        const filteredInvoices = (invoicesData || []).filter(inv => {
-        const q = invoiceSearchQuery.toLowerCase();
-        if (!q) return true;
-        return (inv.invoice_number?.toLowerCase().includes(q)) || 
-               (inv.students?.first_name?.toLowerCase().includes(q)) ||
-               (inv.students?.last_name?.toLowerCase().includes(q)) ||
-               (inv.motif?.toLowerCase().includes(q));
-      }).sort((a: any, b: any) => new Date(b.issue_date || 0).getTime() - new Date(a.issue_date || 0).getTime());
+    // Calcul des factures filtrées pour la recherche, la date précise et le mode de paiement
+    const filteredInvoices = (invoicesData || []).filter(inv => {
+      if (invoiceSearchQuery.trim()) {
+        const q = invoiceSearchQuery.toLowerCase().trim();
+        const matchNum = (inv.invoice_number || '').toLowerCase().includes(q);
+        const matchFirst = (inv.students?.first_name || '').toLowerCase().includes(q);
+        const matchLast = (inv.students?.last_name || '').toLowerCase().includes(q);
+        const matchMat = (inv.students?.matricule || '').toLowerCase().includes(q);
+        const matchMotif = (inv.motif || '').toLowerCase().includes(q);
+        if (!matchNum && !matchFirst && !matchLast && !matchMat && !matchMotif) return false;
+      }
+
+      if (invoiceDateFilter) {
+        const invDate = (inv.issue_date || inv.created_at || '').split('T')[0];
+        if (invDate !== invoiceDateFilter) return false;
+      }
+
+      if (invoicePaymentMethodFilter !== 'all') {
+        const method = inv.payment_method || 'Espèces';
+        if (method !== invoicePaymentMethodFilter) return false;
+      }
+
+      return true;
+    }).sort((a: any, b: any) => new Date(b.issue_date || 0).getTime() - new Date(a.issue_date || 0).getTime());
+
+    const filteredInvoicesTotal = filteredInvoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
 
     return (
     <div className="animate-fade-in">
@@ -4974,20 +4995,128 @@ function App() {
         </table>
       </div>
 
+      {/* PANEL: Journal des Transactions & Recette des Versements par Date */}
       <div className="panel delay-300" style={{marginTop: '24px'}}>
-        <div className="panel-header">
-          <h3 className="panel-title">{t('admin.finance.panel_title', 'Dernières Transactions')}</h3>
-          <div className="header-search" style={{width: 300}}>
-            <Icons.Search />
-            <input type="text" placeholder={t('admin.finance.search_ph', 'Rechercher un reçu, un élève...')} value={invoiceSearchQuery} onChange={e => setInvoiceSearchQuery(e.target.value)} />
+        <div className="panel-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px'}}>
+          <div>
+            <h3 className="panel-title" style={{margin: 0, display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <span>💰</span>
+              <span>{t('admin.finance.panel_title', 'Journal des Transactions & Recette des Versements')}</span>
+            </h3>
+            <p style={{margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)'}}>
+              Consultez et imprimez la recette des encaissements par date précise ou par période.
+            </p>
+          </div>
+
+          <div style={{display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap'}}>
+            {/* Search Input */}
+            <div className="header-search" style={{width: 220, margin: 0}}>
+              <Icons.Search />
+              <input 
+                type="text" 
+                placeholder={t('admin.finance.search_ph', 'Rechercher reçu, élève...')} 
+                value={invoiceSearchQuery} 
+                onChange={e => setInvoiceSearchQuery(e.target.value)} 
+              />
+            </div>
+
+            {/* Date Picker Input */}
+            <div style={{display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '4px 8px'}}>
+              <span style={{fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600}}>📅 Date :</span>
+              <input 
+                type="date" 
+                value={invoiceDateFilter} 
+                onChange={e => setInvoiceDateFilter(e.target.value)} 
+                className="form-input" 
+                style={{padding: '4px 8px', fontSize: '0.85rem', border: 'none', background: 'transparent', outline: 'none'}} 
+              />
+            </div>
+
+            {/* Payment Method Filter */}
+            <select 
+              className="form-select" 
+              value={invoicePaymentMethodFilter} 
+              onChange={e => setInvoicePaymentMethodFilter(e.target.value)}
+              style={{width: '140px', padding: '6px 10px', fontSize: '0.85rem'}}
+            >
+              <option value="all">Tous modes</option>
+              <option value="Espèces">💵 Espèces</option>
+              <option value="Mobile Money">📱 Mobile Money</option>
+              <option value="Virement">🏦 Virement</option>
+              <option value="Chèque">🧾 Chèque</option>
+            </select>
           </div>
         </div>
-        <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
+
+        {/* Quick Date Shortcuts Bar */}
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', padding: '12px 16px', background: 'var(--surface-color-hover)', borderRadius: '8px', marginTop: '16px'}}>
+          <div style={{display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap'}}>
+            <span style={{fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600}}>Raccourcis :</span>
+            <button 
+              type="button" 
+              className="btn btn-outline" 
+              style={{padding: '4px 10px', fontSize: '0.8rem', background: invoiceDateFilter === new Date().toISOString().split('T')[0] ? 'var(--primary-color)' : 'transparent', color: invoiceDateFilter === new Date().toISOString().split('T')[0] ? 'white' : 'var(--text-color)', borderColor: invoiceDateFilter === new Date().toISOString().split('T')[0] ? 'var(--primary-color)' : 'var(--border-color)'}}
+              onClick={() => setInvoiceDateFilter(new Date().toISOString().split('T')[0])}
+            >
+              Aujourd'hui ({new Date().toLocaleDateString('fr-FR', {day: '2-digit', month: '2-digit'})})
+            </button>
+            <button 
+              type="button" 
+              className="btn btn-outline" 
+              style={{padding: '4px 10px', fontSize: '0.8rem', background: (() => { const y = new Date(); y.setDate(y.getDate() - 1); return invoiceDateFilter === y.toISOString().split('T')[0]; })() ? 'var(--primary-color)' : 'transparent', color: (() => { const y = new Date(); y.setDate(y.getDate() - 1); return invoiceDateFilter === y.toISOString().split('T')[0]; })() ? 'white' : 'var(--text-color)', borderColor: (() => { const y = new Date(); y.setDate(y.getDate() - 1); return invoiceDateFilter === y.toISOString().split('T')[0]; })() ? 'var(--primary-color)' : 'var(--border-color)'}}
+              onClick={() => {
+                const y = new Date();
+                y.setDate(y.getDate() - 1);
+                setInvoiceDateFilter(y.toISOString().split('T')[0]);
+              }}
+            >
+              Hier
+            </button>
+            {invoiceDateFilter && (
+              <button 
+                type="button" 
+                className="btn btn-outline" 
+                style={{padding: '4px 10px', fontSize: '0.8rem', color: 'var(--primary-color)'}}
+                onClick={() => setInvoiceDateFilter('')}
+              >
+                ✕ Effacer date (Voir tout)
+              </button>
+            )}
+          </div>
+
+          {/* Revenue Highlight & Print Daily Collection Sheet */}
+          <div style={{display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap'}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '6px 12px', borderRadius: '8px'}}>
+              <span style={{fontSize: '0.85rem', color: 'var(--success-color)', fontWeight: 600}}>
+                {invoiceDateFilter ? `Recette du ${new Date(invoiceDateFilter).toLocaleDateString('fr-FR')} :` : 'Total Recette :'}
+              </span>
+              <strong style={{fontSize: '1.05rem', color: 'var(--success-color)'}}>
+                {formatNum(filteredInvoicesTotal)} F CFA
+              </strong>
+              <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '4px'}}>
+                ({filteredInvoices.length} versement{filteredInvoices.length > 1 ? 's' : ''})
+              </span>
+            </div>
+
+            <button 
+              type="button" 
+              className="btn btn-primary" 
+              style={{padding: '6px 14px', fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', background: '#10b981', borderColor: '#10b981', color: 'white', boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'}}
+              onClick={() => setActiveModal('daily_receipts_print')}
+              title="Imprimer le journal de caisse / rapport de recette pour cette sélection"
+            >
+              🖨️ Imprimer la Recette {invoiceDateFilter ? 'du Jour' : ''}
+            </button>
+          </div>
+        </div>
+
+        <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 14}}>
           <thead>
             <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.finance.col_invoice', 'N° Reçu')}</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.finance.col_student', 'Élève & Classe')}</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.finance.col_motif', 'Motif')}</th>
+              <th style={{padding: '12px 0', fontWeight: 500}}>Mode</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.finance.col_amount', 'Montant')}</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.finance.col_date', 'Date')}</th>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.finance.col_status', 'Statut')}</th>
@@ -5006,11 +5135,16 @@ function App() {
                 <td style={{padding: '16px 0', fontFamily: 'monospace', fontWeight: 500, color: 'var(--primary-color)'}}>{row.invoice_number}</td>
                 <td style={{padding: '16px 0'}}>
                   <div style={{fontWeight: 600}}>{row.students?.first_name} {row.students?.last_name}</div>
-                  <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>{row.students?.matricule}</div>
+                  <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>{row.students?.matricule} {row.students?.classes?.name ? `(${row.students.classes.name})` : ''}</div>
                 </td>
                 <td style={{padding: '16px 0'}}>{row.motif}</td>
                 <td style={{padding: '16px 0'}}>
-                  <div style={{fontWeight: 'bold'}}>{formatNum(row.amount)} F</div>
+                  <span className="badge" style={{background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', fontSize: '0.8rem'}}>
+                    {row.payment_method || 'Espèces'}
+                  </span>
+                </td>
+                <td style={{padding: '16px 0'}}>
+                  <div style={{fontWeight: 'bold', color: 'var(--success-color)'}}>{formatNum(row.amount)} F</div>
                   <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px'}}>
                     Total versé: {formatNum(verse)} <br/> Reste: <span style={{color: reste > 0 ? '#e74c3c' : '#2ecc71', fontWeight: 600}}>{formatNum(reste)}</span>
                   </div>
@@ -5040,9 +5174,30 @@ function App() {
               </tr>
             );
             }) : (
-              <tr><td colSpan={6} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.finance.empty_state', 'Aucun paiement enregistré.')}</td></tr>
+              <tr>
+                <td colSpan={8} style={{textAlign: 'center', padding: '36px 20px', color: 'var(--text-secondary)'}}>
+                  <div style={{fontSize: '2rem', marginBottom: '8px'}}>📭</div>
+                  <div style={{fontWeight: 600, fontSize: '0.95rem'}}>Aucun versement trouvé pour les critères sélectionnés.</div>
+                  <p style={{fontSize: '0.85rem', marginTop: '4px'}}>
+                    {invoiceDateFilter ? `Aucun encaissement n'a été enregistré à la date du ${new Date(invoiceDateFilter).toLocaleDateString('fr-FR')}.` : "Aucun paiement enregistré pour l'instant."}
+                  </p>
+                </td>
+              </tr>
             )}
           </tbody>
+          {filteredInvoices.length > 0 && (
+            <tfoot>
+              <tr style={{backgroundColor: 'var(--surface-color-hover)', fontWeight: 'bold', borderTop: '2px solid var(--border-color)'}}>
+                <td colSpan={4} style={{padding: '12px 16px', fontSize: '0.95rem'}}>
+                  TOTAL DES VERSEMENTS ({filteredInvoices.length} transaction{filteredInvoices.length > 1 ? 's' : ''}) :
+                </td>
+                <td style={{padding: '12px 0', fontSize: '1.1rem', color: 'var(--success-color)'}}>
+                  {formatNum(filteredInvoicesTotal)} F
+                </td>
+                <td colSpan={3}></td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
     </div>
@@ -8135,6 +8290,49 @@ function App() {
                 categoryIcon={selectedExpenseCategory === 'all' ? '📋' : getExpenseCategoryMeta(selectedExpenseCategory).icon}
                 schoolInfo={effectiveSchoolInfo}
                 monthFilter={expenseMonthFilter}
+              />
+            </div>
+          </div>
+        )}
+
+        {activeModal === 'daily_receipts_print' && (
+          <div className="modal-content fade-in" style={{maxWidth: '1200px', width: '98%'}} onClick={e => e.stopPropagation()}>
+            <div className="modal-header hide-print">
+              <h3>🖨️ Aperçu du Journal des Versements / Recette ({invoiceDateFilter ? `Date : ${new Date(invoiceDateFilter).toLocaleDateString('fr-FR')}` : 'Toutes les dates'})</h3>
+              <div style={{display: 'flex', gap: '12px'}}>
+                <button className="btn btn-primary" onClick={() => window.print()} style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+                  <Icons.Printer /> Imprimer la recette
+                </button>
+                <button className="close-btn" onClick={closeModal}>×</button>
+              </div>
+            </div>
+            <div className="modal-body print-area" style={{maxHeight: '80vh', overflowY: 'auto', backgroundColor: '#f8fafc', padding: '20px'}}>
+              <DailyReceiptsPrintPreview 
+                invoices={
+                  (invoicesData || []).filter(inv => {
+                    if (invoiceSearchQuery.trim()) {
+                      const q = invoiceSearchQuery.toLowerCase().trim();
+                      const matchNum = (inv.invoice_number || '').toLowerCase().includes(q);
+                      const matchFirst = (inv.students?.first_name || '').toLowerCase().includes(q);
+                      const matchLast = (inv.students?.last_name || '').toLowerCase().includes(q);
+                      const matchMat = (inv.students?.matricule || '').toLowerCase().includes(q);
+                      const matchMotif = (inv.motif || '').toLowerCase().includes(q);
+                      if (!matchNum && !matchFirst && !matchLast && !matchMat && !matchMotif) return false;
+                    }
+                    if (invoiceDateFilter) {
+                      const invDate = (inv.issue_date || inv.created_at || '').split('T')[0];
+                      if (invDate !== invoiceDateFilter) return false;
+                    }
+                    if (invoicePaymentMethodFilter !== 'all') {
+                      const method = inv.payment_method || 'Espèces';
+                      if (method !== invoicePaymentMethodFilter) return false;
+                    }
+                    return true;
+                  }).sort((a: any, b: any) => new Date(b.issue_date || 0).getTime() - new Date(a.issue_date || 0).getTime())
+                }
+                selectedDate={invoiceDateFilter}
+                schoolInfo={effectiveSchoolInfo}
+                paymentMethodFilter={invoicePaymentMethodFilter}
               />
             </div>
           </div>
