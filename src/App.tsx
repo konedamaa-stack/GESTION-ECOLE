@@ -3652,99 +3652,47 @@ function App() {
               </div>
             </div>
 
-            {/* CATEGORY SELECTOR TABS (HORIZONTAL SCROLL PILLS) */}
-            <div style={{marginBottom: '20px', background: 'var(--surface-color)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)'}}>
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
-                <span style={{fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px'}}>
-                  📁 Filtrer par Type de Dépense :
-                </span>
-                <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
-                  <button
-                    type="button"
-                    onClick={() => setActiveModal('category_expenses_print')}
-                    style={{
-                      background: 'none', 
-                      border: '1px solid var(--primary-color)', 
-                      borderRadius: '6px', 
-                      padding: '4px 10px', 
-                      color: 'var(--primary-color)', 
-                      fontSize: '0.8rem', 
-                      fontWeight: 700, 
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    🖨️ Imprimer rapport ({getExpenseCategoryMeta(selectedExpenseCategory).label.split(' ')[0]})
-                  </button>
-                  {selectedExpenseCategory !== 'all' && (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedExpenseCategory('all')}
-                      style={{background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer'}}
-                    >
-                      Afficher tout
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div style={{display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px'}}>
-                {EXPENSE_CATEGORIES_CONFIG.map((cat) => {
-                  const isSelected = selectedExpenseCategory === cat.id;
-                  const catData = categoryTotals[cat.id] || { total: 0, count: 0 };
-
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setSelectedExpenseCategory(cat.id)}
+            {/* FILTER BAR WITH DROPDOWN LIST FOR CATEGORIES */}
+            <div className="panel delay-200" style={{marginBottom: '20px', padding: '16px 20px'}}>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px'}}>
+                <div style={{display: 'flex', gap: '16px', alignItems: 'center', flex: 1, minWidth: '300px', flexWrap: 'wrap'}}>
+                  {/* Category Dropdown (Liste Déroulante) */}
+                  <div style={{display: 'flex', alignItems: 'center', gap: '8px', minWidth: '240px'}}>
+                    <span style={{fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-secondary)', whiteSpace: 'nowrap'}}>
+                      📁 Catégorie :
+                    </span>
+                    <select
+                      className="form-select"
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
                         padding: '8px 14px',
-                        borderRadius: '10px',
-                        border: isSelected ? `2px solid ${cat.color}` : '1px solid var(--border-color)',
-                        backgroundColor: isSelected ? cat.bg : 'var(--surface-color-hover)',
-                        color: isSelected ? cat.color : 'var(--text-color)',
-                        fontWeight: isSelected ? 700 : 500,
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        transition: 'all 0.2s ease',
-                        fontSize: '0.85rem'
-                      }}
-                      title={cat.description}
-                    >
-                      <span style={{fontSize: '1.1rem'}}>{cat.icon}</span>
-                      <span>{cat.label}</span>
-                      <span style={{
-                        backgroundColor: isSelected ? cat.color : 'rgba(100, 116, 139, 0.2)',
-                        color: isSelected ? 'white' : 'var(--text-secondary)',
-                        fontSize: '0.72rem',
+                        fontSize: '0.88rem',
                         fontWeight: 700,
-                        padding: '2px 6px',
-                        borderRadius: '12px'
-                      }}>
-                        {formatNum(catData.total)} F
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        backgroundColor: selectedExpenseCategory !== 'all' ? getExpenseCategoryMeta(selectedExpenseCategory).bg : 'var(--surface-color)',
+                        color: selectedExpenseCategory !== 'all' ? getExpenseCategoryMeta(selectedExpenseCategory).color : 'var(--text-color)',
+                        border: selectedExpenseCategory !== 'all' ? `1.5px solid ${getExpenseCategoryMeta(selectedExpenseCategory).color}` : '1px solid var(--border-color)',
+                      }}
+                      value={selectedExpenseCategory}
+                      onChange={(e) => setSelectedExpenseCategory(e.target.value)}
+                    >
+                      {EXPENSE_CATEGORIES_CONFIG.map((cat) => {
+                        const catData = categoryTotals[cat.id] || { total: 0, count: 0 };
+                        return (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.icon} {cat.label} ({formatNum(catData.total)} F)
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
 
-            {/* SEARCH & DATE FILTERS PANEL */}
-            <div className="panel delay-200" style={{marginBottom: '20px'}}>
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'}}>
-                <div style={{display: 'flex', gap: '12px', alignItems: 'center', flex: 1, minWidth: '280px', flexWrap: 'wrap'}}>
                   {/* Search input */}
                   <div className="header-search" style={{flex: 1, minWidth: '220px'}}>
                     <Icons.Search />
                     <input 
                       type="text" 
-                      placeholder="Rechercher par motif, catégorie, montant..." 
+                      placeholder="Rechercher motif, montant..." 
                       value={expenseSearchQuery}
                       onChange={(e) => setExpenseSearchQuery(e.target.value)}
                       style={{width: '100%'}}
@@ -3753,10 +3701,10 @@ function App() {
 
                   {/* Month filter */}
                   <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                    <span style={{fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap'}}>📅 Période :</span>
+                    <span style={{fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap'}}>📅 Période :</span>
                     <select
                       className="form-select"
-                      style={{padding: '6px 12px', fontSize: '0.85rem'}}
+                      style={{padding: '8px 12px', fontSize: '0.88rem', borderRadius: '8px'}}
                       value={expenseMonthFilter}
                       onChange={(e) => setExpenseMonthFilter(e.target.value)}
                     >
@@ -3774,20 +3722,41 @@ function App() {
                   </div>
                 </div>
 
-                {/* Reset Filters & Print buttons */}
+                {/* Reset Filters & Print actions */}
                 <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => setActiveModal('category_expenses_print')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 14px',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      color: 'var(--primary-color)',
+                      borderColor: 'var(--primary-color)',
+                      backgroundColor: 'rgba(99, 102, 241, 0.06)'
+                    }}
+                    title={`Imprimer le rapport : ${getExpenseCategoryMeta(selectedExpenseCategory).label}`}
+                  >
+                    🖨️ Imprimer ({selectedExpenseCategory === 'all' ? 'Toutes' : getExpenseCategoryMeta(selectedExpenseCategory).label.split(' ')[0]})
+                  </button>
+
                   {(selectedExpenseCategory !== 'all' || expenseSearchQuery || expenseMonthFilter !== 'all') && (
                     <button
                       type="button"
                       className="btn btn-outline"
-                      style={{fontSize: '0.8rem', padding: '6px 12px'}}
+                      style={{fontSize: '0.85rem', padding: '8px 12px'}}
                       onClick={() => {
                         setSelectedExpenseCategory('all');
                         setExpenseSearchQuery('');
                         setExpenseMonthFilter('all');
                       }}
+                      title="Réinitialiser tous les filtres"
                     >
-                      🔄 Réinitialiser filtres
+                      🔄 Réinitialiser
                     </button>
                   )}
                 </div>
