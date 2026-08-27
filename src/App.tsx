@@ -1109,9 +1109,15 @@ function App() {
   };
 
   const handleDeleteStudent = async (id: string) => {
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer cet élève ? (Cette action supprimera également ses factures, règlements, absences, notes et documents associés)")) {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer cet élève ? (Cette action supprimera également ses factures, règlements, absences, notes et son parent s'il n'a pas d'autre élève)")) {
       try {
-        // Delete related records to bypass foreign key constraints
+        // 1. Find linked parents before deleting links
+        const { data: linkedParents } = await supabase
+          .from('student_parents')
+          .select('parent_id')
+          .eq('student_id', id);
+
+        // 2. Delete related records to bypass foreign key constraints
         await supabase.from('transactions').delete().eq('student_id', id);
         await supabase.from('student_parents').delete().eq('student_id', id);
         await supabase.from('invoices').delete().eq('student_id', id);
@@ -1119,20 +1125,37 @@ function App() {
         await supabase.from('grades').delete().eq('student_id', id);
         await supabase.from('student_documents').delete().eq('student_id', id);
         
+        // 3. Delete student record
         const { error } = await supabase.from('students').delete().eq('id', id);
         if (error) throw error;
         
-        // Optimistically update local student state immediately
+        // 4. Check if linked parents have any remaining students
+        if (linkedParents && linkedParents.length > 0) {
+          for (const lp of linkedParents) {
+            if (!lp.parent_id) continue;
+            const { count } = await supabase
+              .from('student_parents')
+              .select('student_id', { count: 'exact', head: true })
+              .eq('parent_id', lp.parent_id);
+            
+            // If parent has no other children in the school, delete parent record
+            if (count === 0) {
+              await supabase.from('parents').delete().eq('id', lp.parent_id);
+            }
+          }
+        }
+
+        // 5. Optimistically update local student state immediately
         setStudentsData(prev => prev.filter(s => s.id !== id));
         if (activeModal === 'studentDossier' && selectedStudent?.id === id) {
           closeModal();
         }
 
-        // Refetch all fresh data from server
+        // 6. Refetch all fresh data from server
         fetchStudents();
+        fetchParents();
         fetchInvoices();
         fetchAbsences();
-        fetchParents();
       } catch (error: any) {
         console.error("Error deleting student:", error);
         alert("Erreur lors de la suppression : " + (error.message || error));
