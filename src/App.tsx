@@ -8836,6 +8836,18 @@ function App() {
               </div>
 
               <div className="form-group">
+                <label style={{fontWeight: 600}}>{t('admin.expenses.description', 'Motif / Description détaillée')}</label>
+                <textarea 
+                  name="description" 
+                  className="form-control" 
+                  rows={3} 
+                  required
+                  defaultValue={editEntity?.description || ''} 
+                  placeholder="Ex: Réparation serrure classe 6ème B, Achat 10 rames de papier pour examens, Carburant minibus scolaire..."
+                ></textarea>
+              </div>
+
+              <div className="form-group">
                 <label style={{fontWeight: 600}}>{t('admin.expenses.amount', 'Montant (F CFA)')}</label>
                 <input type="number" name="amount" className="form-control" required min="1" step="1" placeholder="Ex: 50000" defaultValue={editEntity?.amount || ''} />
               </div>
@@ -8854,18 +8866,6 @@ function App() {
                     <option value="Virement">Virement bancaire</option>
                   </select>
                 </div>
-              </div>
-
-              <div className="form-group">
-                <label>{t('admin.expenses.description', 'Motif / Description détaillée')}</label>
-                <textarea 
-                  name="description" 
-                  className="form-control" 
-                  rows={3} 
-                  required
-                  defaultValue={editEntity?.description || ''} 
-                  placeholder="Ex: Réparation serrure classe 6ème B, Achat 10 rames de papier pour examens, Carburant minibus scolaire..."
-                ></textarea>
               </div>
 
               <div className="modal-footer" style={{marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px'}}>
