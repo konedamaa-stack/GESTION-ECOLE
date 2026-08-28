@@ -451,114 +451,147 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
         )}
 
         {/* 3. MODE: BY CLASS NOMINATIVE REPORT */}
-        {printMode === 'by_class' && selectedClassObj && (
-          <div>
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                fontSize: '0.84rem',
-                border: '1px solid #cbd5e1',
-              }}
-            >
-              <thead>
-                <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #94a3b8' }}>
-                  <th style={{ padding: '10px', border: '1px solid #cbd5e1', width: '40px', textAlign: 'center' }}>N°</th>
-                  <th style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'left' }}>Matricule</th>
-                  <th style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'left' }}>Nom & Prénoms</th>
-                  {sortedFrais.map((f) => {
-                    const price = getFeeForClass(selectedClassObj.id, f.id, f.amount);
-                    return (
-                      <th key={f.id} style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'right' }}>
-                        {f.name}
-                        <br />
-                        <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 'normal' }}>
-                          ({formatNum(price)} F)
-                        </span>
-                      </th>
-                    );
-                  })}
-                  <th style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#eff6ff' }}>
-                    Total Versé
-                  </th>
-                  <th style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#fef2f2' }}>
-                    Reste Dû
-                  </th>
-                  <th style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'center' }}>Statut</th>
-                </tr>
-              </thead>
-              <tbody>
-                {classStudents.length === 0 ? (
-                  <tr>
-                    <td colSpan={6 + sortedFrais.length} style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
-                      Aucun élève enregistré dans cette classe.
-                    </td>
+        {printMode === 'by_class' && selectedClassObj && (() => {
+          const classForfaitPerStudent = sortedFrais.reduce((sum, f) => sum + getFeeForClass(selectedClassObj.id, f.id, f.amount), 0);
+          const classTotalAttendu = classForfaitPerStudent * classStudents.length;
+          const classTotalPaid = classStudents.reduce((sum, st) => {
+            return sum + sortedFrais.reduce((fsum, f) => fsum + getStudentFeePaid(st.id, f.name), 0);
+          }, 0);
+          const classTotalReste = Math.max(0, classTotalAttendu - classTotalPaid);
+
+          return (
+            <div>
+              <table
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: '0.84rem',
+                  border: '1px solid #cbd5e1',
+                }}
+              >
+                <thead>
+                  <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #94a3b8' }}>
+                    <th style={{ padding: '10px', border: '1px solid #cbd5e1', width: '40px', textAlign: 'center' }}>N°</th>
+                    <th style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'left' }}>Matricule</th>
+                    <th style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'left' }}>Nom & Prénoms</th>
+                    {sortedFrais.map((f) => {
+                      const price = getFeeForClass(selectedClassObj.id, f.id, f.amount);
+                      return (
+                        <th key={f.id} style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'right' }}>
+                          {f.name}
+                          <br />
+                          <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 'normal' }}>
+                            ({formatNum(price)} F)
+                          </span>
+                        </th>
+                      );
+                    })}
+                    <th style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#eff6ff' }}>
+                      Total Versé
+                    </th>
+                    <th style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#fef2f2' }}>
+                      Reste Dû
+                    </th>
+                    <th style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'center' }}>Statut</th>
                   </tr>
-                ) : (
-                  classStudents.map((st, idx) => {
-                    const feesState = sortedFrais.map((f) => {
-                      const required = getFeeForClass(selectedClassObj.id, f.id, f.amount);
-                      const paid = getStudentFeePaid(st.id, f.name);
-                      return { fraisId: f.id, required, paid };
-                    });
+                </thead>
+                <tbody>
+                  {classStudents.length === 0 ? (
+                    <tr>
+                      <td colSpan={6 + sortedFrais.length} style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
+                        Aucun élève enregistré dans cette classe.
+                      </td>
+                    </tr>
+                  ) : (
+                    classStudents.map((st, idx) => {
+                      const feesState = sortedFrais.map((f) => {
+                        const required = getFeeForClass(selectedClassObj.id, f.id, f.amount);
+                        const paid = getStudentFeePaid(st.id, f.name);
+                        return { fraisId: f.id, required, paid };
+                      });
 
-                    const totalRequired = feesState.reduce((sum, fs) => sum + fs.required, 0);
-                    const totalPaid = feesState.reduce((sum, fs) => sum + fs.paid, 0);
-                    const reste = Math.max(0, totalRequired - totalPaid);
-                    const isSolde = reste <= 0;
+                      const totalRequired = feesState.reduce((sum, fs) => sum + fs.required, 0);
+                      const totalPaid = feesState.reduce((sum, fs) => sum + fs.paid, 0);
+                      const reste = Math.max(0, totalRequired - totalPaid);
+                      const isSolde = reste <= 0;
 
-                    return (
-                      <tr key={st.id} style={{ borderBottom: '1px solid #cbd5e1' }}>
-                        <td style={{ padding: '8px 10px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
-                          {idx + 1}
-                        </td>
-                        <td style={{ padding: '8px 10px', border: '1px solid #cbd5e1', fontFamily: 'monospace' }}>
-                          {st.matricule}
-                        </td>
-                        <td style={{ padding: '8px 10px', border: '1px solid #cbd5e1', fontWeight: 600 }}>
-                          {st.first_name} {st.last_name}
-                        </td>
+                      return (
+                        <tr key={st.id} style={{ borderBottom: '1px solid #cbd5e1' }}>
+                          <td style={{ padding: '8px 10px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
+                            {idx + 1}
+                          </td>
+                          <td style={{ padding: '8px 10px', border: '1px solid #cbd5e1', fontFamily: 'monospace' }}>
+                            {st.matricule}
+                          </td>
+                          <td style={{ padding: '8px 10px', border: '1px solid #cbd5e1', fontWeight: 600 }}>
+                            {st.first_name} {st.last_name}
+                          </td>
 
-                        {/* Each Fee Status for this Student */}
-                        {feesState.map((fs) => (
-                          <td key={fs.fraisId} style={{ padding: '8px 10px', border: '1px solid #cbd5e1', textAlign: 'right' }}>
-                            {fs.required === 0 ? (
-                              <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Exempté</span>
-                            ) : fs.paid >= fs.required ? (
-                              <span style={{ color: '#047857', fontWeight: 700 }}>✅ Payé</span>
-                            ) : fs.paid > 0 ? (
-                              <span style={{ color: '#d97706', fontWeight: 600 }}>{formatNum(fs.paid)} F</span>
+                          {/* Résultat financier pour chaque frais de l'élève */}
+                          {feesState.map((fs) => (
+                            <td key={fs.fraisId} style={{ padding: '8px 10px', border: '1px solid #cbd5e1', textAlign: 'right' }}>
+                              {fs.required === 0 ? (
+                                <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>—</span>
+                              ) : fs.paid >= fs.required ? (
+                                <span style={{ color: '#047857', fontWeight: 700 }}>{formatNum(fs.paid)} F</span>
+                              ) : fs.paid > 0 ? (
+                                <span style={{ color: '#d97706', fontWeight: 700 }}>{formatNum(fs.paid)} F</span>
+                              ) : (
+                                <span style={{ color: '#dc2626', fontWeight: 600, fontSize: '0.82rem' }}>0 F</span>
+                              )}
+                            </td>
+                          ))}
+
+                          <td style={{ padding: '8px 10px', border: '1px solid #cbd5e1', textAlign: 'right', fontWeight: 700, background: '#eff6ff', color: '#1d4ed8' }}>
+                            {formatNum(totalPaid)} F
+                          </td>
+                          <td style={{ padding: '8px 10px', border: '1px solid #cbd5e1', textAlign: 'right', fontWeight: 700, background: '#fef2f2', color: '#dc2626' }}>
+                            {formatNum(reste)} F
+                          </td>
+                          <td style={{ padding: '8px 10px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
+                            {isSolde ? (
+                              <span style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700 }}>
+                                SOLDÉ
+                              </span>
                             ) : (
-                              <span style={{ color: '#dc2626', fontSize: '0.8rem' }}>Non payé</span>
+                              <span style={{ background: '#fee2e2', color: '#b91c1c', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700 }}>
+                                EN COURS
+                              </span>
                             )}
                           </td>
-                        ))}
-
-                        <td style={{ padding: '8px 10px', border: '1px solid #cbd5e1', textAlign: 'right', fontWeight: 700, background: '#eff6ff', color: '#1d4ed8' }}>
-                          {formatNum(totalPaid)} F
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+                <tfoot>
+                  <tr style={{ background: '#f8fafc', borderTop: '2px solid #94a3b8', fontWeight: 800 }}>
+                    <td colSpan={3} style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'right', textTransform: 'uppercase', color: '#0f172a' }}>
+                      TOTAL CLASSE ({classStudents.length} élèves) :
+                    </td>
+                    {sortedFrais.map((f) => {
+                      const colTotal = classStudents.reduce((sum, st) => sum + getStudentFeePaid(st.id, f.name), 0);
+                      return (
+                        <td key={f.id} style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'right', color: '#047857' }}>
+                          {formatNum(colTotal)} F
                         </td>
-                        <td style={{ padding: '8px 10px', border: '1px solid #cbd5e1', textAlign: 'right', fontWeight: 700, background: '#fef2f2', color: '#dc2626' }}>
-                          {formatNum(reste)} F
-                        </td>
-                        <td style={{ padding: '8px 10px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
-                          {isSolde ? (
-                            <span style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700 }}>
-                              SOLDÉ
-                            </span>
-                          ) : (
-                            <span style={{ background: '#fee2e2', color: '#b91c1c', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700 }}>
-                              EN COURS
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+                      );
+                    })}
+                    <td style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#dbeafe', color: '#1e40af', fontSize: '0.95rem' }}>
+                      {formatNum(classTotalPaid)} F
+                    </td>
+                    <td style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#fee2e2', color: '#991b1b', fontSize: '0.95rem' }}>
+                      {formatNum(classTotalReste)} F
+                    </td>
+                    <td style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'center', color: '#047857' }}>
+                      {classTotalAttendu > 0 ? Math.min(100, Math.round((classTotalPaid / classTotalAttendu) * 100)) : 0}%
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          );
+        })()}
 
         {/* Footer Signatures */}
         <div
