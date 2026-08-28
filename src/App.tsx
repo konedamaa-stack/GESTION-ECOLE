@@ -482,6 +482,7 @@ function App() {
   const [classesData, setClassesData] = useState<any[]>([]);
   const [fraisAnnexesData, setFraisAnnexesData] = useState<any[]>([]);
   const [classFraisAnnexesData, setClassFraisAnnexesData] = useState<any[]>([]);
+  const [comptaActiveTab, setComptaActiveTab] = useState<'scolarite' | 'frais_annexes'>('scolarite');
   const [teachersData, setTeachersData] = useState<any[]>([]);
   const [employeesData, setEmployeesData] = useState<any[]>([]);
   const [expensesData, setExpensesData] = useState<any[]>([]);
@@ -4910,7 +4911,79 @@ function App() {
         </button>
       </div>
 
-      <div className="stats-grid finance-stats" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px'}}>
+      {/* Sous-navigation Comptabilité : Scolarité Générale vs Frais Annexes */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '12px',
+          marginBottom: '24px',
+          borderBottom: '2px solid var(--border-color, #e2e8f0)',
+          paddingBottom: '2px',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setComptaActiveTab('scolarite')}
+          style={{
+            padding: '10px 22px',
+            background: 'transparent',
+            border: 'none',
+            borderBottom: comptaActiveTab === 'scolarite' ? '3px solid var(--primary-color, #2563eb)' : '3px solid transparent',
+            color: comptaActiveTab === 'scolarite' ? 'var(--primary-color, #2563eb)' : 'var(--text-secondary, #64748b)',
+            fontWeight: comptaActiveTab === 'scolarite' ? 700 : 500,
+            fontSize: '1rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <span>🎓</span> Scolarité & Écolages
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setComptaActiveTab('frais_annexes')}
+          style={{
+            padding: '10px 22px',
+            background: 'transparent',
+            border: 'none',
+            borderBottom: comptaActiveTab === 'frais_annexes' ? '3px solid var(--primary-color, #2563eb)' : '3px solid transparent',
+            color: comptaActiveTab === 'frais_annexes' ? 'var(--primary-color, #2563eb)' : 'var(--text-secondary, #64748b)',
+            fontWeight: comptaActiveTab === 'frais_annexes' ? 700 : 500,
+            fontSize: '1rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <span>💳</span> Frais Annexes (Bulletins, Tricots...)
+        </button>
+      </div>
+
+      {comptaActiveTab === 'frais_annexes' ? (
+        <div className="panel delay-100" style={{ padding: '24px' }}>
+          <FraisAnnexesManager
+            schoolId={currentSchoolId || ''}
+            schoolInfo={adminSchools?.find((s: any) => s.id === currentSchoolId) || subdomainSchool}
+            fraisList={fraisAnnexesData}
+            classes={classesData}
+            classFraisList={classFraisAnnexesData}
+            students={studentsData}
+            invoices={invoicesData}
+            onRefresh={() => {
+              fetchFraisAnnexes();
+              fetchClassFraisAnnexes();
+              fetchInvoices();
+            }}
+          />
+        </div>
+      ) : (
+        <>
+          <div className="stats-grid finance-stats" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px'}}>
         <div className="stat-card delay-100">
           <div className="stat-header">
             <span className="stat-label">Total Attendu</span>
@@ -5423,6 +5496,8 @@ function App() {
           )}
         </table>
       </div>
+        </>
+      )}
     </div>
   );
 };
@@ -6538,6 +6613,7 @@ function App() {
             <div className="animate-fade-in">
               <FraisAnnexesManager
                 schoolId={currentSchoolId || ''}
+                schoolInfo={adminSchools?.find((s: any) => s.id === currentSchoolId) || subdomainSchool}
                 fraisList={fraisAnnexesData}
                 classes={classesData}
                 classFraisList={classFraisAnnexesData}

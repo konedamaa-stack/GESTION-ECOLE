@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { FraisAnnexesPrintPreview } from './FraisAnnexesPrintPreview';
 
 export interface FraisAnnexe {
   id: string;
@@ -24,6 +25,7 @@ export interface ClassFraisAnnexe {
 
 interface FraisAnnexesManagerProps {
   schoolId: string;
+  schoolInfo?: any;
   fraisList: FraisAnnexe[];
   classes: any[];
   classFraisList: ClassFraisAnnexe[];
@@ -34,6 +36,7 @@ interface FraisAnnexesManagerProps {
 
 export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
   schoolId,
+  schoolInfo,
   fraisList,
   classes = [],
   classFraisList = [],
@@ -43,6 +46,13 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
 }) => {
   const [activeView, setActiveView] = useState<'bilan_global' | 'by_class' | 'global' | 'matrix'>('bilan_global');
   const [selectedClassId, setSelectedClassId] = useState<string>(classes.length > 0 ? classes[0].id : '');
+
+  // Print State
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [printMode, setPrintMode] = useState<'global' | 'by_category' | 'by_class'>('global');
+  const [printCategoryId, setPrintCategoryId] = useState<string>(fraisList.length > 0 ? fraisList[0].id : '');
+  const [printClassId, setPrintClassId] = useState<string>(classes.length > 0 ? classes[0].id : '');
 
   // Modal State for Global Fees
   const [showModal, setShowModal] = useState(false);
@@ -379,9 +389,24 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
   const grandTotalReste = Math.max(0, grandTotalAttendu - grandTotalEncaisse);
   const grandTaux = grandTotalAttendu > 0 ? Math.min(100, Math.round((grandTotalEncaisse / grandTotalAttendu) * 100)) : 0;
 
-  // Print function
-  const handlePrintBilan = () => {
-    window.print();
+  // Print functions
+  const handleOpenPrintModal = () => {
+    setPrintMode('global');
+    if (!printCategoryId && sortedFrais.length > 0) setPrintCategoryId(sortedFrais[0].id);
+    if (!printClassId && classes.length > 0) setPrintClassId(classes[0].id);
+    setShowPrintModal(true);
+  };
+
+  const handleQuickPrintCategory = (fraisId: string) => {
+    setPrintMode('by_category');
+    setPrintCategoryId(fraisId);
+    setIsPrinting(true);
+  };
+
+  const handleQuickPrintClass = (classId: string) => {
+    setPrintMode('by_class');
+    setPrintClassId(classId);
+    setIsPrinting(true);
   };
 
   return (
@@ -428,10 +453,10 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
           <button
             type="button"
             className="btn btn-outline"
-            onClick={handlePrintBilan}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
+            onClick={handleOpenPrintModal}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, borderColor: '#2563eb', color: '#2563eb', background: '#eff6ff' }}
           >
-            <span>🖨️</span> Imprimer le Bilan
+            <span>🖨️</span> Imprimer les Frais Annexes
           </button>
 
           <button
@@ -685,9 +710,27 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
                     
                     {/* Colonnes par catégorie / rubrique */}
                     {sortedFrais.map((f) => (
-                      <th key={f.id} style={{ padding: '14px 14px', textAlign: 'right', fontWeight: 700 }}>
-                        {f.name}
-                        <br />
+                      <th key={f.id} style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
+                          <span>{f.name}</span>
+                          <button
+                            type="button"
+                            title={`Imprimer l'état de recouvrement : "${f.name}"`}
+                            onClick={() => handleQuickPrintCategory(f.id)}
+                            style={{
+                              background: '#eff6ff',
+                              border: '1px solid #bfdbfe',
+                              color: '#1d4ed8',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '0.72rem',
+                              padding: '2px 4px',
+                              lineHeight: 1,
+                            }}
+                          >
+                            🖨️
+                          </button>
+                        </div>
                         <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 'normal', textTransform: 'none' }}>
                           (Tarif / Attendu)
                         </span>
@@ -721,12 +764,35 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
                       }}
                     >
                       <td style={{ padding: '12px 16px', fontWeight: 700, color: '#1e293b' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '1.1rem' }}>🏫</span>
-                          <span>{cb.classObj.name}</span>
-                          <span style={{ fontSize: '0.72rem', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px' }}>
-                            {cb.classObj.level}
-                          </span>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '1.1rem' }}>🏫</span>
+                            <span>{cb.classObj.name}</span>
+                            <span style={{ fontSize: '0.72rem', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px' }}>
+                              {cb.classObj.level}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            title={`Imprimer la liste nominative pour la classe ${cb.classObj.name}`}
+                            onClick={() => handleQuickPrintClass(cb.classObj.id)}
+                            style={{
+                              background: '#eff6ff',
+                              border: '1px solid #bfdbfe',
+                              color: '#2563eb',
+                              borderRadius: '5px',
+                              padding: '3px 7px',
+                              fontSize: '0.74rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            <span>🖨️</span> Fiche
+                          </button>
                         </div>
                       </td>
 
@@ -1451,6 +1517,215 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* MODAL: CHOIX D'IMPRESSION (GLOBAL / CATÉGORIE / CLASSE) */}
+      {showPrintModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: '20px',
+          }}
+        >
+          <div
+            style={{
+              background: 'white',
+              borderRadius: '16px',
+              maxWidth: '540px',
+              width: '100%',
+              padding: '26px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>🖨️</span> Impression des Frais Annexes
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowPrintModal(false)}
+                style={{ background: 'transparent', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: '#64748b' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ margin: '0 0 18px 0', fontSize: '0.88rem', color: '#64748b' }}>
+              Sélectionnez le rapport officiel à imprimer ou exporter en PDF avec en-tête et signatures :
+            </p>
+
+            {/* Radio Options */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '22px' }}>
+              {/* Option 1: Bilan Global */}
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  padding: '14px',
+                  borderRadius: '10px',
+                  border: printMode === 'global' ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                  background: printMode === 'global' ? '#eff6ff' : '#f8fafc',
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="radio"
+                  name="print_mode_radio"
+                  checked={printMode === 'global'}
+                  onChange={() => setPrintMode('global')}
+                  style={{ marginTop: '3px' }}
+                />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1e293b' }}>
+                    📊 Bilan Global de l'Établissement
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '2px' }}>
+                    Synthèse de toutes les classes avec effectifs, montants attendus, total encaissé et soldes.
+                  </div>
+                </div>
+              </label>
+
+              {/* Option 2: Par Catégorie */}
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  padding: '14px',
+                  borderRadius: '10px',
+                  border: printMode === 'by_category' ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                  background: printMode === 'by_category' ? '#eff6ff' : '#f8fafc',
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="radio"
+                  name="print_mode_radio"
+                  checked={printMode === 'by_category'}
+                  onChange={() => setPrintMode('by_category')}
+                  style={{ marginTop: '3px' }}
+                />
+                <div style={{ width: '100%' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1e293b' }}>
+                    🏷️ État par Catégorie de Frais
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '2px', marginBottom: printMode === 'by_category' ? '8px' : '0' }}>
+                    Suivi classe par classe pour un frais particulier (ex: Bulletins, Tricots, Assurance...).
+                  </div>
+
+                  {printMode === 'by_category' && (
+                    <select
+                      className="form-select"
+                      value={printCategoryId}
+                      onChange={(e) => setPrintCategoryId(e.target.value)}
+                      style={{ width: '100%', padding: '7px 10px', fontSize: '0.88rem', borderRadius: '6px', marginTop: '4px' }}
+                    >
+                      {sortedFrais.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.name} (défaut : {f.amount} F)
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </label>
+
+              {/* Option 3: Par Classe */}
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  padding: '14px',
+                  borderRadius: '10px',
+                  border: printMode === 'by_class' ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                  background: printMode === 'by_class' ? '#eff6ff' : '#f8fafc',
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="radio"
+                  name="print_mode_radio"
+                  checked={printMode === 'by_class'}
+                  onChange={() => setPrintMode('by_class')}
+                  style={{ marginTop: '3px' }}
+                />
+                <div style={{ width: '100%' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1e293b' }}>
+                    🏫 Fiche Nominative par Classe
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '2px', marginBottom: printMode === 'by_class' ? '8px' : '0' }}>
+                    Liste nominative complète des élèves d'une classe avec état pour chaque rubrique.
+                  </div>
+
+                  {printMode === 'by_class' && (
+                    <select
+                      className="form-select"
+                      value={printClassId}
+                      onChange={(e) => setPrintClassId(e.target.value)}
+                      style={{ width: '100%', padding: '7px 10px', fontSize: '0.88rem', borderRadius: '6px', marginTop: '4px' }}
+                    >
+                      {classes.map((cls) => (
+                        <option key={cls.id} value={cls.id}>
+                          {cls.name} ({cls.level})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => setShowPrintModal(false)}
+                style={{ padding: '9px 16px', borderRadius: '8px' }}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  setShowPrintModal(false);
+                  setIsPrinting(true);
+                }}
+                style={{ padding: '9px 20px', borderRadius: '8px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <span>🖨️</span> Lancer l'impression / PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* APERÇU AVANT IMPRESSION OFFICIEL */}
+      {isPrinting && (
+        <FraisAnnexesPrintPreview
+          schoolInfo={schoolInfo}
+          fraisList={sortedFrais}
+          classes={classes}
+          classFraisList={classFraisList}
+          students={students}
+          invoices={invoices}
+          printMode={printMode}
+          selectedCategoryId={printCategoryId}
+          selectedClassId={printClassId}
+          onClose={() => setIsPrinting(false)}
+        />
       )}
     </div>
   );
