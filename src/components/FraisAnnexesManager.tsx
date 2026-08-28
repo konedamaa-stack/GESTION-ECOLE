@@ -54,6 +54,11 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
   const [printCategoryId, setPrintCategoryId] = useState<string>(fraisList.length > 0 ? fraisList[0].id : '');
   const [printClassId, setPrintClassId] = useState<string>(classes.length > 0 ? classes[0].id : '');
 
+  // Mass Validation State
+  const [showValidateModal, setShowValidateModal] = useState(false);
+  const [validateTargetClassId, setValidateTargetClassId] = useState<'all' | string>('all');
+  const [isValidating, setIsValidating] = useState(false);
+
   // Modal State for Global Fees
   const [showModal, setShowModal] = useState(false);
   const [editingFrais, setEditingFrais] = useState<FraisAnnexe | null>(null);
@@ -409,6 +414,76 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
     setIsPrinting(true);
   };
 
+  const executeValidateFraisAnnexes = async (target: 'all' | string) => {
+    if (!schoolId) return;
+    setIsValidating(true);
+    try {
+      const targetStudents = target === 'all'
+        ? students
+        : students.filter((s: any) => s.class_id === target);
+
+      if (targetStudents.length === 0) {
+        alert("Aucun élève trouvé pour cette sélection.");
+        setIsValidating(false);
+        return;
+      }
+
+      const invoicePayloads: any[] = [];
+
+      for (const student of targetStudents) {
+        const studentClassId = student.class_id;
+        const studentInvoices = invoices.filter((inv: any) => inv.student_id === student.id);
+
+        for (const frais of sortedFrais) {
+          const expectedAmount = getFeeForClass(studentClassId, frais.id, frais.amount);
+          if (expectedAmount <= 0) continue;
+
+          const alreadyPaid = studentInvoices
+            .filter((inv: any) => (inv.motif || '').toLowerCase().includes(frais.name.toLowerCase()))
+            .reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
+
+          const stillDue = Math.max(0, expectedAmount - alreadyPaid);
+          if (stillDue > 0) {
+            invoicePayloads.push({
+              school_id: schoolId,
+              student_id: student.id,
+              amount: stillDue,
+              motif: frais.name,
+              payment_method: 'Espèces',
+              status: 'Payée',
+              invoice_number: 'FAC-ANNEXE-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 100000),
+            });
+          }
+        }
+      }
+
+      if (invoicePayloads.length === 0) {
+        alert("Tous les frais annexes de cette sélection sont déjà soldés à 100% !");
+        setShowValidateModal(false);
+        setIsValidating(false);
+        return;
+      }
+
+      const { error: insertErr } = await supabase.from('invoices').insert(invoicePayloads);
+      if (insertErr) throw insertErr;
+
+      alert(`✅ Validation réussie ! ${invoicePayloads.length} écriture(s) de frais annexes enregistrée(s) et soldée(s) avec succès.`);
+      setShowValidateModal(false);
+      onRefresh();
+    } catch (err: any) {
+      console.error("Error validating annexes:", err);
+      alert("Erreur lors de la validation : " + (err.message || 'Erreur inconnue'));
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  const handleQuickValidateClass = (classId: string, className: string) => {
+    if (confirm(`Voulez-vous solder et valider directement TOUS les frais annexes restants pour la classe "${className}" ?`)) {
+      executeValidateFraisAnnexes(classId);
+    }
+  };
+
   return (
     <div style={{ width: '100%' }}>
       {/* Header */}
@@ -449,7 +524,16 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() => setShowValidateModal(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, borderColor: '#10b981', color: '#047857', background: '#ecfdf5' }}
+          >
+            <span>⚡</span> Tout Valider (Soldé)
+          </button>
+
           <button
             type="button"
             className="btn btn-outline"
@@ -772,27 +856,51 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
                               {cb.classObj.level}
                             </span>
                           </div>
-                          <button
-                            type="button"
-                            title={`Imprimer la liste nominative pour la classe ${cb.classObj.name}`}
-                            onClick={() => handleQuickPrintClass(cb.classObj.id)}
-                            style={{
-                              background: '#eff6ff',
-                              border: '1px solid #bfdbfe',
-                              color: '#2563eb',
-                              borderRadius: '5px',
-                              padding: '3px 7px',
-                              fontSize: '0.74rem',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '3px',
-                              whiteSpace: 'nowrap'
-                            }}
-                          >
-                            <span>🖨️</span> Fiche
-                          </button>
+                          <div style={{ display: 'flex', gap: '5px' }}>
+                            <button
+                              type="button"
+                              title={`Valider et solder tous les frais annexes pour la classe ${cb.classObj.name}`}
+                              onClick={() => handleQuickValidateClass(cb.classObj.id, cb.classObj.name)}
+                              style={{
+                                background: '#ecfdf5',
+                                border: '1px solid #a7f3d0',
+                                color: '#047857',
+                                borderRadius: '5px',
+                                padding: '3px 7px',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              <span>⚡</span> Solder
+                            </button>
+
+                            <button
+                              type="button"
+                              title={`Imprimer la liste nominative pour la classe ${cb.classObj.name}`}
+                              onClick={() => handleQuickPrintClass(cb.classObj.id)}
+                              style={{
+                                background: '#eff6ff',
+                                border: '1px solid #bfdbfe',
+                                color: '#2563eb',
+                                borderRadius: '5px',
+                                padding: '3px 7px',
+                                fontSize: '0.74rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              <span>🖨️</span> Fiche
+                            </button>
+                          </div>
                         </div>
                       </td>
 
@@ -1706,6 +1814,157 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
                 style={{ padding: '9px 20px', borderRadius: '8px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
               >
                 <span>🖨️</span> Lancer l'impression / PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE VALIDATION MASSIVE DES FRAIS ANNEXES */}
+      {showValidateModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px',
+          }}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              maxWidth: '520px',
+              width: '100%',
+              padding: '24px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              border: '1px solid #e2e8f0',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1.4rem' }}>⚡</span>
+                <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
+                  Valider les Frais Annexes
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowValidateModal(false)}
+                style={{ background: 'transparent', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#64748b' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ color: '#475569', fontSize: '0.9rem', marginBottom: '20px', lineHeight: 1.5 }}>
+              Cette opération enregistre automatiquement le règlement complet de tous les frais annexes non encore soldés (Bulletins, Tricots, Assurance, Badges...) avec le statut <strong>« Payée »</strong>.
+            </p>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontWeight: 700, fontSize: '0.88rem', color: '#1e293b', marginBottom: '8px' }}>
+                Portée de la validation :
+              </label>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: validateTargetClassId === 'all' ? '2px solid #10b981' : '1px solid #e2e8f0',
+                    background: validateTargetClassId === 'all' ? '#f0fdf4' : '#ffffff',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="validate_target_radio"
+                    checked={validateTargetClassId === 'all'}
+                    onChange={() => setValidateTargetClassId('all')}
+                  />
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#0f172a' }}>🏫 Tout l'établissement</div>
+                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                      Solder tous les frais annexes de l'ensemble des {students.length} élèves
+                    </div>
+                  </div>
+                </label>
+
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: validateTargetClassId !== 'all' ? '2px solid #10b981' : '1px solid #e2e8f0',
+                    background: validateTargetClassId !== 'all' ? '#f0fdf4' : '#ffffff',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="validate_target_radio"
+                    checked={validateTargetClassId !== 'all'}
+                    onChange={() => setValidateTargetClassId(classes.length > 0 ? classes[0].id : '')}
+                  />
+                  <div style={{ width: '100%' }}>
+                    <div style={{ fontWeight: 700, color: '#0f172a' }}>🏫 Une classe spécifique</div>
+                    {validateTargetClassId !== 'all' && (
+                      <select
+                        className="form-select"
+                        value={validateTargetClassId}
+                        onChange={(e) => setValidateTargetClassId(e.target.value)}
+                        style={{ marginTop: '8px', width: '100%', padding: '6px 10px', fontSize: '0.86rem' }}
+                      >
+                        {classes.map((cls) => (
+                          <option key={cls.id} value={cls.id}>
+                            {cls.name} ({students.filter((s: any) => s.class_id === cls.id).length} élèves)
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => setShowValidateModal(false)}
+                disabled={isValidating}
+                style={{ padding: '9px 16px', borderRadius: '8px' }}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={isValidating}
+                onClick={() => executeValidateFraisAnnexes(validateTargetClassId)}
+                style={{
+                  padding: '9px 20px',
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  background: '#059669',
+                  borderColor: '#059669',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <span>{isValidating ? '⏳' : '⚡'}</span>
+                {isValidating ? 'Validation en cours...' : 'Confirmer & Tout Solder'}
               </button>
             </div>
           </div>
