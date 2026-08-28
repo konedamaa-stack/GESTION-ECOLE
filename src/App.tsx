@@ -8895,24 +8895,24 @@ function App() {
                   </div>
                   
                   {/* Tabs */}
-                  <div style={{display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '24px'}}>
+                  <div style={{display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '24px', gap: '4px'}}>
                     <button 
                       className={`btn ${activeDossierTab === 'infos' ? '' : 'btn-outline'}`}
-                      style={{borderBottom: activeDossierTab === 'infos' ? '2px solid var(--primary-color)' : 'none', borderRadius: '4px 4px 0 0', border: 'none', background: activeDossierTab === 'infos' ? 'rgba(59, 130, 246, 0.1)' : 'transparent', color: activeDossierTab === 'infos' ? 'var(--primary-color)' : 'var(--text-secondary)'}}
+                      style={{borderBottom: activeDossierTab === 'infos' ? '2px solid var(--primary-color)' : 'none', borderRadius: '4px 4px 0 0', border: 'none', background: activeDossierTab === 'infos' ? 'rgba(59, 130, 246, 0.1)' : 'transparent', color: activeDossierTab === 'infos' ? 'var(--primary-color)' : 'var(--text-secondary)', padding: '10px 16px', fontWeight: 600}}
                       onClick={() => setActiveDossierTab('infos')}
                     >
                       {t('admin.modals.dossier_title_infos', 'Informations & Planning')}
                     </button>
                     <button 
                       className={`btn ${activeDossierTab === 'documents' ? '' : 'btn-outline'}`}
-                      style={{borderBottom: activeDossierTab === 'documents' ? '2px solid var(--primary-color)' : 'none', borderRadius: '4px 4px 0 0', border: 'none', background: activeDossierTab === 'documents' ? 'rgba(59, 130, 246, 0.1)' : 'transparent', color: activeDossierTab === 'documents' ? 'var(--primary-color)' : 'var(--text-secondary)'}}
+                      style={{borderBottom: activeDossierTab === 'documents' ? '2px solid var(--primary-color)' : 'none', borderRadius: '4px 4px 0 0', border: 'none', background: activeDossierTab === 'documents' ? 'rgba(59, 130, 246, 0.1)' : 'transparent', color: activeDossierTab === 'documents' ? 'var(--primary-color)' : 'var(--text-secondary)', padding: '10px 16px', fontWeight: 600}}
                       onClick={() => setActiveDossierTab('documents')}
                     >
                       {t('admin.modals.dossier_title_docs', 'Documents & Annexes')}
                     </button>
                     <button 
                       className={`btn ${activeDossierTab === 'finances' ? '' : 'btn-outline'}`}
-                      style={{borderBottom: activeDossierTab === 'finances' ? '2px solid var(--primary-color)' : 'none', borderRadius: '4px 4px 0 0', border: 'none', background: activeDossierTab === 'finances' ? 'rgba(59, 130, 246, 0.1)' : 'transparent', color: activeDossierTab === 'finances' ? 'var(--primary-color)' : 'var(--text-secondary)'}}
+                      style={{borderBottom: activeDossierTab === 'finances' ? '2px solid var(--primary-color)' : 'none', borderRadius: '4px 4px 0 0', border: 'none', background: activeDossierTab === 'finances' ? 'rgba(59, 130, 246, 0.1)' : 'transparent', color: activeDossierTab === 'finances' ? 'var(--primary-color)' : 'var(--text-secondary)', padding: '10px 16px', fontWeight: 600}}
                       onClick={() => setActiveDossierTab('finances')}
                     >
                       Finances & Paiements
@@ -9270,74 +9270,114 @@ function App() {
                             </div>
                           </div>
                         ) : (
-                          <div style={{display: 'flex', gap: '24px', flexWrap: 'wrap', marginBottom: '16px', background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px', alignItems: 'center', justifyContent: 'space-between'}}>
-                            <div style={{display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'center'}}>
-                              {/* Scolarité Totale Card */}
-                              <div>
-                                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                                  <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Scolarité Totale</span>
-                                  <button 
-                                    type="button" 
-                                    className="btn btn-outline" 
-                                    style={{padding: '2px 8px', fontSize: '0.75rem', borderRadius: '4px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--primary-color)', borderColor: 'var(--primary-color)'}}
-                                    onClick={() => {
-                                      setCustomTuitionVal(hasCustomTuition ? String(selectedStudent.tuition_fee) : String(studentTotal));
-                                      setCustomPayeVal(String(studentPaye));
-                                      setIsEditingTuition(true);
-                                    }}
-                                    title="Modifier le montant de la scolarité totale"
-                                  >
-                                    ✏️ Modifier
-                                  </button>
-                                </div>
-                                <strong style={{fontSize: '1.2rem', display: 'block', marginTop: '2px'}}>{formatNum(studentTotal)} F</strong>
-                                {hasCustomTuition && (
-                                  <span style={{fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 500}}>
-                                    (Montant personnalisé)
-                                  </span>
-                                )}
+                          <div style={{
+                            display: 'grid', 
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', 
+                            gap: '16px', 
+                            marginBottom: '20px'
+                          }}>
+                            {/* Scolarité Totale Card */}
+                            <div style={{
+                              background: 'var(--surface-color-hover)', 
+                              padding: '16px', 
+                              borderRadius: '8px', 
+                              border: '1px solid var(--border-color)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              minHeight: '100px'
+                            }}>
+                              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px'}}>
+                                <span style={{fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)'}}>Scolarité Totale</span>
+                                <button 
+                                  type="button" 
+                                  className="btn btn-outline" 
+                                  style={{padding: '2px 8px', fontSize: '0.75rem', borderRadius: '4px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--primary-color)', borderColor: 'var(--primary-color)'}}
+                                  onClick={() => {
+                                    setCustomTuitionVal(hasCustomTuition ? String(selectedStudent.tuition_fee) : String(studentTotal));
+                                    setCustomPayeVal(String(studentPaye));
+                                    setIsEditingTuition(true);
+                                  }}
+                                  title="Modifier le montant de la scolarité totale"
+                                >
+                                  ✏️ Modifier
+                                </button>
                               </div>
-
-                              {/* Total Payé Card */}
                               <div>
-                                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                                  <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Total Payé</span>
-                                  <button 
-                                    type="button" 
-                                    className="btn btn-outline" 
-                                    style={{padding: '2px 8px', fontSize: '0.75rem', borderRadius: '4px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--success-color)', borderColor: 'var(--success-color)'}}
-                                    onClick={() => {
-                                      setCustomTuitionVal(hasCustomTuition ? String(selectedStudent.tuition_fee) : String(studentTotal));
-                                      setCustomPayeVal(String(studentPaye));
-                                      setIsEditingTuition(true);
-                                    }}
-                                    title="Modifier le montant total payé"
-                                  >
-                                    ✏️ Modifier
-                                  </button>
-                                </div>
-                                <strong style={{fontSize: '1.2rem', color: 'var(--success-color)', display: 'block', marginTop: '2px'}}>{formatNum(studentPaye)} F</strong>
+                                <strong style={{fontSize: '1.3rem', display: 'block', color: 'var(--text-primary)'}}>{formatNum(studentTotal)} F</strong>
+                                <span style={{fontSize: '0.75rem', color: hasCustomTuition ? 'var(--primary-color)' : 'var(--text-secondary)', fontWeight: hasCustomTuition ? 600 : 400}}>
+                                  {hasCustomTuition ? 'Tarif personnalisé' : 'Tarif classe standard'}
+                                </span>
                               </div>
+                            </div>
 
-                              {/* Reste à Payer Card */}
+                            {/* Total Payé Card */}
+                            <div style={{
+                              background: 'var(--surface-color-hover)', 
+                              padding: '16px', 
+                              borderRadius: '8px', 
+                              border: '1px solid var(--border-color)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              minHeight: '100px'
+                            }}>
+                              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px'}}>
+                                <span style={{fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)'}}>Total Payé</span>
+                                <button 
+                                  type="button" 
+                                  className="btn btn-outline" 
+                                  style={{padding: '2px 8px', fontSize: '0.75rem', borderRadius: '4px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--success-color)', borderColor: 'var(--success-color)'}}
+                                  onClick={() => {
+                                    setCustomTuitionVal(hasCustomTuition ? String(selectedStudent.tuition_fee) : String(studentTotal));
+                                    setCustomPayeVal(String(studentPaye));
+                                    setIsEditingTuition(true);
+                                  }}
+                                  title="Modifier le montant total payé"
+                                >
+                                  ✏️ Modifier
+                                </button>
+                              </div>
                               <div>
-                                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                                  <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Reste à Payer</span>
-                                  <button 
-                                    type="button" 
-                                    className="btn btn-outline" 
-                                    style={{padding: '2px 8px', fontSize: '0.75rem', borderRadius: '4px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', color: studentReste > 0 ? 'var(--danger-color)' : 'var(--success-color)', borderColor: studentReste > 0 ? 'var(--danger-color)' : 'var(--success-color)'}}
-                                    onClick={() => {
-                                      setCustomTuitionVal(hasCustomTuition ? String(selectedStudent.tuition_fee) : String(studentTotal));
-                                      setCustomPayeVal(String(studentPaye));
-                                      setIsEditingTuition(true);
-                                    }}
-                                    title="Modifier le reste à payer / solde"
-                                  >
-                                    ✏️ Modifier
-                                  </button>
-                                </div>
-                                <strong style={{fontSize: '1.2rem', color: studentReste > 0 ? 'var(--danger-color)' : 'var(--success-color)', display: 'block', marginTop: '2px'}}>{formatNum(studentReste)} F</strong>
+                                <strong style={{fontSize: '1.3rem', color: 'var(--success-color)', display: 'block'}}>{formatNum(studentPaye)} F</strong>
+                                <span style={{fontSize: '0.75rem', color: 'var(--text-secondary)'}}>
+                                  {studentInvoices.filter(i => i.status === 'Payée').length} versement(s)
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Reste à Payer Card */}
+                            <div style={{
+                              background: 'var(--surface-color-hover)', 
+                              padding: '16px', 
+                              borderRadius: '8px', 
+                              border: '1px solid var(--border-color)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              minHeight: '100px'
+                            }}>
+                              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px'}}>
+                                <span style={{fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)'}}>Reste à Payer</span>
+                                <button 
+                                  type="button" 
+                                  className="btn btn-outline" 
+                                  style={{padding: '2px 8px', fontSize: '0.75rem', borderRadius: '4px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', color: studentReste > 0 ? 'var(--danger-color)' : 'var(--success-color)', borderColor: studentReste > 0 ? 'var(--danger-color)' : 'var(--success-color)'}}
+                                  onClick={() => {
+                                    setCustomTuitionVal(hasCustomTuition ? String(selectedStudent.tuition_fee) : String(studentTotal));
+                                    setCustomPayeVal(String(studentPaye));
+                                    setIsEditingTuition(true);
+                                  }}
+                                  title="Modifier le reste à payer"
+                                >
+                                  ✏️ Modifier
+                                </button>
+                              </div>
+                              <div>
+                                <strong style={{fontSize: '1.3rem', color: studentReste > 0 ? 'var(--danger-color)' : 'var(--success-color)', display: 'block'}}>{formatNum(studentReste)} F</strong>
+                                <span style={{fontSize: '0.75rem', color: studentReste === 0 ? 'var(--success-color)' : 'var(--danger-color)', fontWeight: 600}}>
+                                  {studentReste === 0 ? 'Scolarité soldée' : 'Solde restant'}
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -9346,30 +9386,32 @@ function App() {
                         {studentInvoices.length > 0 ? (
                           <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem'}}>
                             <thead>
-                              <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
-                                <th style={{padding: '16px 0', fontWeight: 500}}>N° Reçu</th>
-                                <th style={{padding: '16px 0', fontWeight: 500}}>Motif</th>
-                                <th style={{padding: '16px 0', fontWeight: 500}}>Montant</th>
-                                <th style={{padding: '16px 0', fontWeight: 500}}>Date</th>
-                                <th style={{padding: '16px 0', fontWeight: 500}}>Statut</th>
-                                <th style={{padding: '16px 0', fontWeight: 500, textAlign: 'right'}}>Action</th>
+                              <tr style={{borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)'}}>
+                                <th style={{padding: '12px 10px', fontWeight: 600, textAlign: 'left'}}>N° Reçu</th>
+                                <th style={{padding: '12px 10px', fontWeight: 600, textAlign: 'left'}}>Motif</th>
+                                <th style={{padding: '12px 10px', fontWeight: 600, textAlign: 'left'}}>Montant</th>
+                                <th style={{padding: '12px 10px', fontWeight: 600, textAlign: 'left'}}>Date</th>
+                                <th style={{padding: '12px 10px', fontWeight: 600, textAlign: 'center'}}>Statut</th>
+                                <th style={{padding: '12px 10px', fontWeight: 600, textAlign: 'right'}}>Actions</th>
                               </tr>
                             </thead>
                             <tbody>
                               {studentInvoices.map((inv, idx) => (
                                 <tr key={idx} style={{borderBottom: '1px solid var(--border-color)'}}>
-                                  <td style={{padding: '12px 0', fontFamily: 'monospace', fontWeight: 500, color: 'var(--primary-color)'}}>{inv.invoice_number}</td>
-                                  <td style={{padding: '12px 0'}}>{inv.motif}</td>
-                                  <td style={{padding: '12px 0', fontWeight: 'bold'}}>{formatNum(inv.amount)} F</td>
-                                  <td style={{padding: '12px 0', color: 'var(--text-secondary)'}}>{new Date(inv.issue_date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</td>
-                                  <td style={{padding: '12px 0'}}>
+                                  <td style={{padding: '12px 10px', fontFamily: 'monospace', fontWeight: 600, color: 'var(--primary-color)', textAlign: 'left'}}>{inv.invoice_number}</td>
+                                  <td style={{padding: '12px 10px', textAlign: 'left'}}>{inv.motif}</td>
+                                  <td style={{padding: '12px 10px', fontWeight: 700, textAlign: 'left'}}>{formatNum(inv.amount)} F</td>
+                                  <td style={{padding: '12px 10px', color: 'var(--text-secondary)', textAlign: 'left'}}>{new Date(inv.issue_date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</td>
+                                  <td style={{padding: '12px 10px', textAlign: 'center'}}>
                                     <span className={`badge ${inv.status === 'Payée' ? 'badge-success' : 'badge-warning'}`}>{inv.status}</span>
                                   </td>
-                                  <td style={{padding: '12px 0', textAlign: 'right', display: 'flex', gap: '4px', justifyContent: 'flex-end'}}>
-                                    <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => { setSelectedInvoice(inv); setActiveModal('receipt_preview'); }} title="Grand Format">🖨️ Grand</button>
-                                    <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => { setSelectedInvoice(inv); setActiveModal('small_receipt_preview'); }} title="Petit Format">🖨️ Petit</button>
-                                    <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem', color: 'var(--primary-color)'}} onClick={() => handleEditInvoice(inv)} title="Modifier ce versement">✏️</button>
-                                    <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem', color: 'var(--danger-color)', borderColor: 'var(--danger-color)'}} onClick={() => handleDeleteInvoice(inv.id)} title="Supprimer ce versement">🗑️</button>
+                                  <td style={{padding: '12px 10px', textAlign: 'right'}}>
+                                    <div style={{display: 'inline-flex', gap: '6px', justifyContent: 'flex-end', alignItems: 'center'}}>
+                                      <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => { setSelectedInvoice(inv); setActiveModal('receipt_preview'); }} title="Grand Format">🖨️ Grand</button>
+                                      <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => { setSelectedInvoice(inv); setActiveModal('small_receipt_preview'); }} title="Petit Format">🖨️ Petit</button>
+                                      <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem', color: 'var(--primary-color)'}} onClick={() => handleEditInvoice(inv)} title="Modifier ce versement">✏️</button>
+                                      <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem', color: 'var(--danger-color)', borderColor: 'var(--danger-color)'}} onClick={() => handleDeleteInvoice(inv.id)} title="Supprimer ce versement">🗑️</button>
+                                    </div>
                                   </td>
                                 </tr>
                               ))}
