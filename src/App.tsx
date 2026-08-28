@@ -484,6 +484,7 @@ function App() {
   const [annexesData, setAnnexesData] = useState<any[]>([]);
   const [selectedAnnexeId, setSelectedAnnexeId] = useState<string>('all');
   const [fraisAnnexesData, setFraisAnnexesData] = useState<any[]>([]);
+  const [classFraisAnnexesData, setClassFraisAnnexesData] = useState<any[]>([]);
   const [teachersData, setTeachersData] = useState<any[]>([]);
   const [employeesData, setEmployeesData] = useState<any[]>([]);
   const [expensesData, setExpensesData] = useState<any[]>([]);
@@ -952,6 +953,7 @@ function App() {
         fetchClasses(),
         fetchAnnexes(),
         fetchFraisAnnexes(),
+        fetchClassFraisAnnexes(),
         fetchTeachers(),
         fetchEmployees(),
         fetchParents(),
@@ -1004,6 +1006,32 @@ function App() {
       .order('created_at', { ascending: true });
     if (data) setFraisAnnexesData(data);
   };
+  const fetchClassFraisAnnexes = async () => {
+    if (!currentSchoolId) return;
+    const { data } = await supabase
+      .from('class_frais_annexes')
+      .select('*')
+      .eq('school_id', currentSchoolId);
+    if (data) setClassFraisAnnexesData(data);
+  };
+
+  const getFraisAmountForStudent = (frais: any, studentId?: string) => {
+    if (!frais) return 0;
+    const currentStudentId = studentId || (document.getElementById('hidden_student_id') as HTMLInputElement)?.value || preselectedStudentId;
+    if (currentStudentId) {
+      const student = studentsData.find(s => s.id === currentStudentId);
+      if (student && student.class_id) {
+        const override = classFraisAnnexesData.find(
+          (cf: any) => cf.class_id === student.class_id && cf.frais_annexe_id === frais.id
+        );
+        if (override) {
+          return override.is_active ? override.amount : 0;
+        }
+      }
+    }
+    return frais.amount;
+  };
+
   const fetchTeachers = async () => {
     const { data } = await supabase.from('teachers').select('*').eq('school_id', currentSchoolId);
     if (data) setTeachersData(data);
@@ -6579,7 +6607,12 @@ function App() {
               <FraisAnnexesManager
                 schoolId={currentSchoolId || ''}
                 fraisList={fraisAnnexesData}
-                onRefresh={fetchFraisAnnexes}
+                classes={classesData}
+                classFraisList={classFraisAnnexesData}
+                onRefresh={() => {
+                  fetchFraisAnnexes();
+                  fetchClassFraisAnnexes();
+                }}
               />
             </div>
           )}
@@ -7585,6 +7618,18 @@ function App() {
                            e.target.setCustomValidity('');
                            const hiddenInput = document.getElementById('hidden_student_id') as HTMLInputElement;
                            if(hiddenInput) hiddenInput.value = match.id;
+
+                           // Si un frais annexe est déjà sélectionné, adapter automatiquement au tarif de sa classe
+                           const motifSelect = document.getElementById('payment_motif_select') as HTMLSelectElement;
+                           if (motifSelect) {
+                             const currentMotif = motifSelect.value;
+                             const matchFrais = fraisAnnexesData.find(f => f.name === currentMotif);
+                             if (matchFrais) {
+                               const amountInput = document.querySelector('input[name="amount"]') as HTMLInputElement;
+                               const effAmount = getFraisAmountForStudent(matchFrais, match.id);
+                               if (amountInput && effAmount > 0) amountInput.value = effAmount.toString();
+                             }
+                           }
                         } else {
                            e.target.setCustomValidity('Veuillez sélectionner un élève dans la liste');
                            const hiddenInput = document.getElementById('hidden_student_id') as HTMLInputElement;
@@ -7612,8 +7657,11 @@ function App() {
                         const selectedVal = e.target.value;
                         const matchFrais = fraisAnnexesData.find(f => f.name === selectedVal);
                         const amountInput = document.querySelector('input[name="amount"]') as HTMLInputElement;
-                        if (matchFrais && matchFrais.amount > 0 && amountInput) {
-                          amountInput.value = matchFrais.amount.toString();
+                        if (matchFrais && amountInput) {
+                          const effAmount = getFraisAmountForStudent(matchFrais);
+                          if (effAmount > 0) {
+                            amountInput.value = effAmount.toString();
+                          }
                         }
                       }}
                     >
@@ -7622,7 +7670,7 @@ function App() {
                         <optgroup label="📋 Frais Annexes de l'établissement">
                           {fraisAnnexesData.map((f: any) => (
                             <option key={f.id} value={f.name}>
-                              {f.name} ({formatNum(f.amount)} F)
+                              {f.name} (Défaut: {formatNum(f.amount)} F)
                             </option>
                           ))}
                         </optgroup>
@@ -7646,7 +7694,8 @@ function App() {
                               const motifSelect = document.getElementById('payment_motif_select') as HTMLSelectElement;
                               const amountInput = document.querySelector('input[name="amount"]') as HTMLInputElement;
                               if (motifSelect) motifSelect.value = f.name;
-                              if (amountInput && f.amount > 0) amountInput.value = f.amount.toString();
+                              const effAmount = getFraisAmountForStudent(f);
+                              if (amountInput && effAmount > 0) amountInput.value = effAmount.toString();
                             }}
                             style={{
                               padding: '3px 10px',
@@ -7659,7 +7708,7 @@ function App() {
                               cursor: 'pointer'
                             }}
                           >
-                            + {f.name} ({formatNum(f.amount)} F)
+                            + {f.name}
                           </button>
                         ))}
                       </div>
