@@ -20,7 +20,6 @@ import { SuperAdminPortal } from './components/SuperAdminPortal';
 import { PasswordRecovery } from './components/PasswordRecovery';
 import { UserSupportModal } from './components/UserSupportModal';
 import { DraggableSupportButton } from './components/DraggableSupportButton';
-import { AnnexeManager } from './components/AnnexeManager';
 import { FraisAnnexesManager } from './components/FraisAnnexesManager';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -481,8 +480,6 @@ function App() {
 
   const [studentsData, setStudentsData] = useState<any[]>([]);
   const [classesData, setClassesData] = useState<any[]>([]);
-  const [annexesData, setAnnexesData] = useState<any[]>([]);
-  const [selectedAnnexeId, setSelectedAnnexeId] = useState<string>('all');
   const [fraisAnnexesData, setFraisAnnexesData] = useState<any[]>([]);
   const [classFraisAnnexesData, setClassFraisAnnexesData] = useState<any[]>([]);
   const [teachersData, setTeachersData] = useState<any[]>([]);
@@ -951,7 +948,6 @@ function App() {
       Promise.all([
         fetchStudents(),
         fetchClasses(),
-        fetchAnnexes(),
         fetchFraisAnnexes(),
         fetchClassFraisAnnexes(),
         fetchTeachers(),
@@ -985,16 +981,6 @@ function App() {
   const fetchClasses = async () => {
     const { data } = await supabase.from('classes').select('*').eq('school_id', currentSchoolId);
     if (data) setClassesData(data);
-  };
-  const fetchAnnexes = async () => {
-    if (!currentSchoolId) return;
-    const { data } = await supabase
-      .from('annexes')
-      .select('*')
-      .eq('school_id', currentSchoolId)
-      .order('is_main', { ascending: false })
-      .order('name');
-    if (data) setAnnexesData(data);
   };
   const fetchFraisAnnexes = async () => {
     if (!currentSchoolId) return;
@@ -2911,14 +2897,7 @@ function App() {
       }
     }
 
-    let matchAnnexe = true;
-    if (selectedAnnexeId !== 'all') {
-      const studentClass = classesData.find(c => c.id === s.class_id);
-      const studentAnnexeId = s.annexe_id || studentClass?.annexe_id;
-      matchAnnexe = studentAnnexeId === selectedAnnexeId;
-    }
-
-    return matchQuery && matchClass && matchStatus && matchAffecte && matchPayment && matchAnnexe;
+    return matchQuery && matchClass && matchStatus && matchAffecte && matchPayment;
   });
 
   const renderStudents = () => {
@@ -3109,28 +3088,6 @@ function App() {
                 </td>
                 <td style={{padding: '16px 0'}}>
                   <div>{row.classes?.name || t('admin.students.unassigned', 'Non assigné')}</div>
-                  {(() => {
-                    const studentClass = classesData.find((c: any) => c.id === row.class_id);
-                    const studentAnnexe = annexesData.find((a: any) => a.id === (row.annexe_id || studentClass?.annexe_id));
-                    if (!studentAnnexe) return null;
-                    return (
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        fontSize: '0.72rem',
-                        background: '#eff6ff',
-                        color: '#1d4ed8',
-                        border: '1px solid #bfdbfe',
-                        borderRadius: '4px',
-                        padding: '1px 6px',
-                        marginTop: '3px',
-                        fontWeight: 600
-                      }}>
-                        🏫 {studentAnnexe.name}
-                      </span>
-                    );
-                  })()}
                 </td>
                 <td style={{padding: '16px 0', minWidth: '190px', whiteSpace: 'nowrap'}}>
                   <div style={{display: 'inline-flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap', flexWrap: 'nowrap'}}>
@@ -3352,41 +3309,19 @@ function App() {
             </tr>
           </thead>
           <tbody>
-            {(() => {
-              const displayClasses = (classesData || []).filter(cls => selectedAnnexeId === 'all' || cls.annexe_id === selectedAnnexeId);
-              if (displayClasses.length === 0) {
-                return (
-                  <tr>
-                    <td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>
-                      {selectedAnnexeId !== 'all' ? "Aucune classe enregistrée pour cette annexe." : "Aucune classe enregistrée."}
-                    </td>
-                  </tr>
-                );
-              }
-              return displayClasses.map((cls) => {
+            {classesData.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>
+                  Aucune classe enregistrée.
+                </td>
+              </tr>
+            ) : (
+              classesData.map((cls) => {
                 const studentCount = studentsData?.filter((s: any) => s.class_id === cls.id).length || 0;
-                const clsAnnexe = annexesData.find((a: any) => a.id === cls.annexe_id);
                 return (
                   <tr key={cls.id} style={{borderBottom: '1px solid var(--border-color)'}}>
                     <td style={{padding: '16px 0', fontWeight: 600}}>
                       <div>{cls.name}</div>
-                      {clsAnnexe && (
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          fontSize: '0.72rem',
-                          background: '#eff6ff',
-                          color: '#1d4ed8',
-                          border: '1px solid #bfdbfe',
-                          borderRadius: '4px',
-                          padding: '1px 6px',
-                          marginTop: '4px',
-                          fontWeight: 600
-                        }}>
-                          🏫 {clsAnnexe.name}
-                        </span>
-                      )}
                     </td>
                     <td style={{padding: '16px 0'}}>{cls.level}</td>
                     <td style={{padding: '16px 0'}}>
@@ -3414,8 +3349,8 @@ function App() {
                     </td>
                   </tr>
                 );
-              });
-            })()}
+              })
+            )}
           </tbody>
         </table>
       </div>
@@ -5833,9 +5768,6 @@ function App() {
             <li className={`nav-item ${activeSettingsTab === 'frais_annexes' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('frais_annexes')} style={{marginBottom: '4px'}}>
               <Icons.CreditCard /> Frais Annexes (Bulletins, Tricots...)
             </li>
-            <li className={`nav-item ${activeSettingsTab === 'annexes' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('annexes')} style={{marginBottom: '4px'}}>
-              <Icons.Home /> {t('admin.settings.tab_annexes', 'Annexes & Campus')}
-            </li>
             <li className={`nav-item ${activeSettingsTab === 'abonnement' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('abonnement')} style={{marginBottom: '4px'}}>
               <Icons.TrendingUp /> {t('admin.settings.tab_subscription', 'Abonnement')}
             </li>
@@ -6619,20 +6551,6 @@ function App() {
               />
             </div>
           )}
-
-          {activeSettingsTab === 'annexes' && (
-            <div className="animate-fade-in">
-              <AnnexeManager
-                schoolId={currentSchoolId || ''}
-                annexes={annexesData}
-                classes={classesData}
-                students={studentsData}
-                onRefresh={fetchAnnexes}
-                selectedAnnexeId={selectedAnnexeId}
-                onSelectAnnexe={setSelectedAnnexeId}
-              />
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -6886,55 +6804,6 @@ function App() {
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
-            )}
-
-            {/* Sélecteur d'Annexe / Site */}
-            {currentSchoolId && (
-              <div 
-                className="hide-on-mobile" 
-                style={{
-                  marginLeft: 14,
-                  display: 'flex',
-                  alignItems: 'center',
-                  background: 'var(--surface-color, #ffffff)',
-                  border: '1.5px solid var(--border-color, #cbd5e1)',
-                  borderRadius: '8px',
-                  padding: '4px 10px',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                  gap: '6px'
-                }}
-                title="Filtrer l'affichage par Annexe / Site"
-              >
-                <span style={{ fontSize: '1rem' }}>🏫</span>
-                <select 
-                  style={{
-                    border: 'none',
-                    background: 'transparent',
-                    color: 'var(--text-color, #1e293b)',
-                    fontWeight: 600,
-                    fontSize: '0.86rem',
-                    cursor: 'pointer',
-                    outline: 'none'
-                  }}
-                  value={selectedAnnexeId}
-                  onChange={(e) => {
-                    if (e.target.value === '__manage__') {
-                      setActiveTab('settings');
-                      setActiveSettingsTab('annexes');
-                    } else {
-                      setSelectedAnnexeId(e.target.value);
-                    }
-                  }}
-                >
-                  <option value="all">🌐 Toutes les annexes</option>
-                  {annexesData.map((a: any) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name} {a.code ? `(${a.code})` : ''} {a.is_main ? '⭐' : ''}
-                    </option>
-                  ))}
-                  <option value="__manage__">➕ Gérer les annexes...</option>
-                </select>
-              </div>
             )}
           </div>
           
@@ -7379,17 +7248,6 @@ function App() {
                       <option value="Collège">Collège</option>
                       <option value="Lycée">Lycée</option>
                       <option value="Autre">Autre</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>🏫 Annexe / Site de rattachement</label>
-                    <select name="annexe_id" className="form-select" defaultValue={editEntity?.annexe_id || (selectedAnnexeId !== 'all' ? selectedAnnexeId : '')}>
-                      <option value="">-- Siège Principal / Non assigné --</option>
-                      {annexesData.map((a: any) => (
-                        <option key={a.id} value={a.id}>
-                          {a.name} {a.code ? `(${a.code})` : ''} {a.is_main ? '⭐' : ''}
-                        </option>
-                      ))}
                     </select>
                   </div>
                   <div className="form-group">
