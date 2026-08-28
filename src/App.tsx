@@ -258,6 +258,7 @@ function App() {
   const [activeDossierTab, setActiveDossierTab] = useState<'infos' | 'documents' | 'finances'>('infos');
   const [isEditingTuition, setIsEditingTuition] = useState<boolean>(false);
   const [customTuitionVal, setCustomTuitionVal] = useState<string>('');
+  const [customPayeVal, setCustomPayeVal] = useState<string>('');
   const [studentDocumentsData, setStudentDocumentsData] = useState<any[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   
@@ -9073,67 +9074,123 @@ function App() {
                       </div>
                       <div style={{marginBottom: '24px'}}>
                         {isEditingTuition ? (
-                          <div style={{background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px', marginBottom: '16px', border: '2px solid var(--primary-color)'}}>
-                            <div style={{marginBottom: '10px', fontWeight: 600, fontSize: '0.95rem', color: 'var(--primary-color)'}}>
-                              ✏️ Modifier la Scolarité Totale de {selectedStudent.first_name} {selectedStudent.last_name}
+                          <div style={{background: 'var(--surface-color)', padding: '20px', borderRadius: '10px', marginBottom: '20px', border: '2px solid var(--primary-color)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)'}}>
+                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', flexWrap: 'wrap', gap: '8px'}}>
+                              <div style={{fontWeight: 700, fontSize: '1.05rem', color: 'var(--primary-color)'}}>
+                                ✏️ Modifier la situation financière de {selectedStudent.first_name} {selectedStudent.last_name}
+                              </div>
+                              <span style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>
+                                Matricule : <strong>{selectedStudent.matricule}</strong>
+                              </span>
                             </div>
-                            <div style={{display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center'}}>
-                              <div style={{flex: '1', minWidth: '180px'}}>
+
+                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px'}}>
+                              {/* 1. Scolarité Totale */}
+                              <div>
+                                <label style={{display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)'}}>
+                                  1. Scolarité Totale (F CFA)
+                                </label>
                                 <input 
                                   type="number" 
                                   className="form-input" 
-                                  placeholder="Montant en Francs CFA"
+                                  placeholder="Ex: 50000"
                                   value={customTuitionVal}
                                   onChange={(e) => setCustomTuitionVal(e.target.value)}
-                                  autoFocus
+                                  style={{fontWeight: 600, fontSize: '1rem'}}
                                 />
+                                <div style={{display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap'}}>
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline"
+                                    style={{padding: '2px 8px', fontSize: '0.75rem', height: 'auto'}}
+                                    onClick={() => setCustomTuitionVal(String(defaultClassFee))}
+                                    title="Rétablir le tarif standard de la classe"
+                                  >
+                                    Tarif classe ({formatNum(defaultClassFee)} F)
+                                  </button>
+                                </div>
                               </div>
-                              <button 
-                                type="button" 
-                                className="btn btn-primary"
-                                onClick={async () => {
-                                  const val = customTuitionVal.trim() === '' ? null : Number(customTuitionVal);
-                                  if (val !== null && (isNaN(val) || val < 0)) {
-                                    alert('Veuillez entrer un montant valide supérieur ou égal à 0.');
-                                    return;
-                                  }
-                                  try {
-                                    const { error } = await supabase.from('students').update({ tuition_fee: val }).eq('id', selectedStudent.id);
-                                    if (error) throw error;
-                                    const updatedStudent = { ...selectedStudent, tuition_fee: val };
-                                    setSelectedStudent(updatedStudent);
-                                    setStudentsData((prev: any[]) => prev.map(s => s.id === selectedStudent.id ? updatedStudent : s));
-                                    setIsEditingTuition(false);
-                                    alert('Montant de la scolarité mis à jour avec succès !');
-                                  } catch (err: any) {
-                                    alert('Erreur lors de la mise à jour : ' + (err.message || err));
-                                  }
-                                }}
-                              >
-                                💾 Enregistrer
-                              </button>
-                              <button 
-                                type="button" 
-                                className="btn btn-outline"
-                                onClick={async () => {
-                                  if (window.confirm(`Rétablir le tarif standard de la classe (${formatNum(defaultClassFee)} F) ?`)) {
-                                    try {
-                                      const { error } = await supabase.from('students').update({ tuition_fee: null }).eq('id', selectedStudent.id);
-                                      if (error) throw error;
-                                      const updatedStudent = { ...selectedStudent, tuition_fee: null };
-                                      setSelectedStudent(updatedStudent);
-                                      setStudentsData((prev: any[]) => prev.map(s => s.id === selectedStudent.id ? updatedStudent : s));
-                                      setIsEditingTuition(false);
-                                      alert('Tarif standard de la classe rétabli !');
-                                    } catch (err: any) {
-                                      alert('Erreur : ' + (err.message || err));
-                                    }
-                                  }
-                                }}
-                                title="Rétablir le tarif par défaut de la classe"
-                              >
-                                🔄 Tarif classe ({formatNum(defaultClassFee)} F)
-                              </button>
+
+                              {/* 2. Total Payé */}
+                              <div>
+                                <label style={{display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)'}}>
+                                  2. Total Payé (F CFA)
+                                </label>
+                                <input 
+                                  type="number" 
+                                  className="form-input" 
+                                  placeholder="Ex: 25000"
+                                  value={customPayeVal}
+                                  onChange={(e) => setCustomPayeVal(e.target.value)}
+                                  style={{fontWeight: 600, fontSize: '1rem', color: 'var(--success-color)'}}
+                                />
+                                <div style={{display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap'}}>
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline"
+                                    style={{padding: '2px 8px', fontSize: '0.75rem', height: 'auto', color: 'var(--success-color)', borderColor: 'var(--success-color)'}}
+                                    onClick={() => setCustomPayeVal(customTuitionVal || String(studentTotal))}
+                                    title="Régler l'intégralité de la scolarité"
+                                  >
+                                    Tout solder (100%)
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline"
+                                    style={{padding: '2px 8px', fontSize: '0.75rem', height: 'auto'}}
+                                    onClick={() => setCustomPayeVal('0')}
+                                    title="Remettre le total payé à 0 F"
+                                  >
+                                    0 F
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* 3. Reste à Payer */}
+                              <div>
+                                <label style={{display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)'}}>
+                                  3. Reste à Payer (F CFA)
+                                </label>
+                                {(() => {
+                                  const curTot = customTuitionVal.trim() === '' ? studentTotal : (Number(customTuitionVal) || 0);
+                                  const curPay = customPayeVal.trim() === '' ? studentPaye : (Number(customPayeVal) || 0);
+                                  const curRes = Math.max(0, curTot - curPay);
+                                  return (
+                                    <div>
+                                      <div style={{
+                                        height: '42px', 
+                                        padding: '0 12px', 
+                                        background: 'var(--surface-color-hover)', 
+                                        borderRadius: '6px', 
+                                        border: '1px solid var(--border-color)', 
+                                        display: 'flex', 
+                                        alignItems: 'center',
+                                        fontWeight: 700,
+                                        fontSize: '1.1rem',
+                                        color: curRes > 0 ? 'var(--danger-color)' : 'var(--success-color)'
+                                      }}>
+                                        {formatNum(curRes)} F
+                                      </div>
+                                      <div style={{display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap'}}>
+                                        <button
+                                          type="button"
+                                          className="btn btn-outline"
+                                          style={{padding: '2px 8px', fontSize: '0.75rem', height: 'auto'}}
+                                          onClick={() => {
+                                            setCustomPayeVal(customTuitionVal || String(studentTotal));
+                                          }}
+                                          title="Régler le solde pour obtenir un reste de 0 F"
+                                        >
+                                          Soldé (Reste 0 F)
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+
+                            <div style={{display: 'flex', gap: '10px', justifyContent: 'flex-end', flexWrap: 'wrap', borderTop: '1px solid var(--border-color)', paddingTop: '14px'}}>
                               <button 
                                 type="button" 
                                 className="btn btn-outline"
@@ -9141,11 +9198,81 @@ function App() {
                               >
                                 Annuler
                               </button>
+                              <button 
+                                type="button" 
+                                className="btn btn-primary"
+                                onClick={async () => {
+                                  const parsedTotal = customTuitionVal.trim() === '' ? null : Number(customTuitionVal);
+                                  const parsedPaye = customPayeVal.trim() === '' ? 0 : Number(customPayeVal);
+
+                                  if (parsedTotal !== null && (isNaN(parsedTotal) || parsedTotal < 0)) {
+                                    alert('Veuillez entrer un montant de scolarité valide (>= 0).');
+                                    return;
+                                  }
+                                  if (isNaN(parsedPaye) || parsedPaye < 0) {
+                                    alert('Veuillez entrer un total payé valide (>= 0).');
+                                    return;
+                                  }
+
+                                  try {
+                                    // 1. Mettre à jour la scolarité totale
+                                    const { error: studentErr } = await supabase.from('students').update({ tuition_fee: parsedTotal }).eq('id', selectedStudent.id);
+                                    if (studentErr) throw studentErr;
+
+                                    // 2. Mettre à jour le Total Payé si modifié
+                                    const currentPayeSum = invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
+                                    const delta = parsedPaye - currentPayeSum;
+
+                                    if (delta > 0) {
+                                      // Ajouter un reçu pour la différence
+                                      const { error: invErr } = await supabase.from('invoices').insert([{
+                                        student_id: selectedStudent.id,
+                                        school_id: currentSchoolId,
+                                        amount: delta,
+                                        motif: 'Frais de scolarité',
+                                        payment_method: 'Espèces',
+                                        status: 'Payée',
+                                        invoice_number: 'REC-' + new Date().getFullYear() + '-' + Math.floor(1000 + Math.random() * 9000),
+                                      }]);
+                                      if (invErr) throw invErr;
+                                    } else if (delta < 0) {
+                                      // Réduire / Ajuster les paiements existants
+                                      let toReduce = Math.abs(delta);
+                                      const studentInvs = invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée');
+                                      
+                                      for (const inv of studentInvs) {
+                                        if (toReduce <= 0) break;
+                                        const invAmt = Number(inv.amount) || 0;
+                                        if (invAmt <= toReduce) {
+                                          await supabase.from('invoices').delete().eq('id', inv.id);
+                                          toReduce -= invAmt;
+                                        } else {
+                                          await supabase.from('invoices').update({ amount: invAmt - toReduce }).eq('id', inv.id);
+                                          toReduce = 0;
+                                        }
+                                      }
+                                    }
+
+                                    // 3. Rafraîchir les données
+                                    await fetchInvoices();
+                                    const updatedStudent = { ...selectedStudent, tuition_fee: parsedTotal };
+                                    setSelectedStudent(updatedStudent);
+                                    setStudentsData((prev: any[]) => prev.map(s => s.id === selectedStudent.id ? updatedStudent : s));
+                                    setIsEditingTuition(false);
+                                    alert('Situation financière mise à jour avec succès !');
+                                  } catch (err: any) {
+                                    alert('Erreur lors de la mise à jour : ' + (err.message || err));
+                                  }
+                                }}
+                              >
+                                💾 Enregistrer les modifications
+                              </button>
                             </div>
                           </div>
                         ) : (
                           <div style={{display: 'flex', gap: '24px', flexWrap: 'wrap', marginBottom: '16px', background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px', alignItems: 'center', justifyContent: 'space-between'}}>
                             <div style={{display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'center'}}>
+                              {/* Scolarité Totale Card */}
                               <div>
                                 <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
                                   <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Scolarité Totale</span>
@@ -9155,6 +9282,7 @@ function App() {
                                     style={{padding: '2px 8px', fontSize: '0.75rem', borderRadius: '4px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--primary-color)', borderColor: 'var(--primary-color)'}}
                                     onClick={() => {
                                       setCustomTuitionVal(hasCustomTuition ? String(selectedStudent.tuition_fee) : String(studentTotal));
+                                      setCustomPayeVal(String(studentPaye));
                                       setIsEditingTuition(true);
                                     }}
                                     title="Modifier le montant de la scolarité totale"
@@ -9169,13 +9297,47 @@ function App() {
                                   </span>
                                 )}
                               </div>
+
+                              {/* Total Payé Card */}
                               <div>
-                                <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Total Payé</span>
-                                <strong style={{fontSize: '1.2rem', color: 'var(--success-color)'}}>{formatNum(studentPaye)} F</strong>
+                                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                  <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Total Payé</span>
+                                  <button 
+                                    type="button" 
+                                    className="btn btn-outline" 
+                                    style={{padding: '2px 8px', fontSize: '0.75rem', borderRadius: '4px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--success-color)', borderColor: 'var(--success-color)'}}
+                                    onClick={() => {
+                                      setCustomTuitionVal(hasCustomTuition ? String(selectedStudent.tuition_fee) : String(studentTotal));
+                                      setCustomPayeVal(String(studentPaye));
+                                      setIsEditingTuition(true);
+                                    }}
+                                    title="Modifier le montant total payé"
+                                  >
+                                    ✏️ Modifier
+                                  </button>
+                                </div>
+                                <strong style={{fontSize: '1.2rem', color: 'var(--success-color)', display: 'block', marginTop: '2px'}}>{formatNum(studentPaye)} F</strong>
                               </div>
+
+                              {/* Reste à Payer Card */}
                               <div>
-                                <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Reste à Payer</span>
-                                <strong style={{fontSize: '1.2rem', color: studentReste > 0 ? 'var(--danger-color)' : 'var(--success-color)'}}>{formatNum(studentReste)} F</strong>
+                                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                  <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Reste à Payer</span>
+                                  <button 
+                                    type="button" 
+                                    className="btn btn-outline" 
+                                    style={{padding: '2px 8px', fontSize: '0.75rem', borderRadius: '4px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', color: studentReste > 0 ? 'var(--danger-color)' : 'var(--success-color)', borderColor: studentReste > 0 ? 'var(--danger-color)' : 'var(--success-color)'}}
+                                    onClick={() => {
+                                      setCustomTuitionVal(hasCustomTuition ? String(selectedStudent.tuition_fee) : String(studentTotal));
+                                      setCustomPayeVal(String(studentPaye));
+                                      setIsEditingTuition(true);
+                                    }}
+                                    title="Modifier le reste à payer / solde"
+                                  >
+                                    ✏️ Modifier
+                                  </button>
+                                </div>
+                                <strong style={{fontSize: '1.2rem', color: studentReste > 0 ? 'var(--danger-color)' : 'var(--success-color)', display: 'block', marginTop: '2px'}}>{formatNum(studentReste)} F</strong>
                               </div>
                             </div>
                           </div>
