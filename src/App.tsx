@@ -483,6 +483,8 @@ function App() {
   const [fraisAnnexesData, setFraisAnnexesData] = useState<any[]>([]);
   const [classFraisAnnexesData, setClassFraisAnnexesData] = useState<any[]>([]);
   const [comptaActiveTab, setComptaActiveTab] = useState<'scolarite' | 'frais_annexes'>('scolarite');
+  const [registrationClassId, setRegistrationClassId] = useState<string>('');
+  const [registrationPaymentAmount, setRegistrationPaymentAmount] = useState<number | ''>('');
   const [teachersData, setTeachersData] = useState<any[]>([]);
   const [employeesData, setEmployeesData] = useState<any[]>([]);
   const [expensesData, setExpensesData] = useState<any[]>([]);
@@ -1017,6 +1019,91 @@ function App() {
       }
     }
     return frais.amount;
+  };
+
+  // Obtenir le tarif d'un frais pour une classe
+  const getClassFeeAmount = (classId: string, frais: any) => {
+    if (!classId || !frais) return 0;
+    const override = classFraisAnnexesData.find(
+      (cf: any) => cf.class_id === classId && cf.frais_annexe_id === frais.id
+    );
+    if (override) {
+      return override.is_active ? override.amount : 0;
+    }
+    return frais.amount || 0;
+  };
+
+  // Liste ordonnée de tous les frais annexes pour une classe avec tarif effectif
+  const getClassFraisAnnexesBreakdown = (classId: string) => {
+    const sortedFrais = [...fraisAnnexesData].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+    return sortedFrais.map(f => ({
+      frais: f,
+      amount: getClassFeeAmount(classId, f)
+    }));
+  };
+
+  // Calcul du total des frais annexes pour une classe
+  const getTotalClassFraisAnnexes = (classId: string) => {
+    return getClassFraisAnnexesBreakdown(classId).reduce((sum, item) => sum + item.amount, 0);
+  };
+
+  // Répartition automatique à l'inscription : tous les frais annexes d'abord, puis la scolarité
+  const distributePaymentAnnexesThenScolarite = async (
+    studentId: string,
+    classId: string,
+    totalPaid: number,
+    paymentMethod: string,
+    status: string = 'Payée'
+  ) => {
+    let remaining = totalPaid;
+    const invoicePayloads: any[] = [];
+    const breakdown = getClassFraisAnnexesBreakdown(classId);
+
+    // Factures existantes de l'élève pour ne pas refacturer deux fois un frais déjà payé
+    const existingInvoices = invoicesData.filter((inv: any) => inv.student_id === studentId);
+
+    // 1. Payer tous les Frais Annexes de la classe en priorité
+    for (const item of breakdown) {
+      if (item.amount <= 0) continue;
+      const alreadyPaid = existingInvoices
+        .filter((inv: any) => (inv.motif || '').toLowerCase().includes(item.frais.name.toLowerCase()))
+        .reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
+
+      const stillDue = Math.max(0, item.amount - alreadyPaid);
+      if (stillDue > 0 && remaining > 0) {
+        const payNow = Math.min(stillDue, remaining);
+        invoicePayloads.push({
+          student_id: studentId,
+          amount: payNow,
+          motif: item.frais.name,
+          payment_method: paymentMethod,
+          status: status,
+          invoice_number: 'FAC-ANNEXE-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
+          school_id: currentSchoolId
+        });
+        remaining -= payNow;
+      }
+    }
+
+    // 2. Le surplus restant est versé en acompte sur la Scolarité
+    if (remaining > 0) {
+      invoicePayloads.push({
+        student_id: studentId,
+        amount: remaining,
+        motif: 'Frais de scolarité (Acompte inscription)',
+        payment_method: paymentMethod,
+        status: status,
+        invoice_number: 'FAC-SCO-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
+        school_id: currentSchoolId
+      });
+    }
+
+    if (invoicePayloads.length > 0) {
+      const { data: createdInvoices, error: invErr } = await supabase.from('invoices').insert(invoicePayloads).select();
+      if (invErr) throw invErr;
+      return createdInvoices || [];
+    }
+    return [];
   };
 
   const fetchTeachers = async () => {
@@ -1844,27 +1931,39 @@ function App() {
         if (updateError) throw updateError;
 
         let createdInvoice = null;
-        const invoicePayload = {
-          student_id: editEntity.id,
-          amount: formData.get('reg_fee_amount'),
-          motif: 'Frais de Réinscription',
-          payment_method: formData.get('reg_fee_method'),
-          status: formData.get('reg_fee_status'),
-          invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
-          school_id: currentSchoolId
-        };
-        
-        if (formData.get('reg_fee_amount') !== null && formData.get('reg_fee_amount') !== '') {
-          const { data: newInvoices } = await supabase.from('invoices').insert([invoicePayload]).select();
-          if (newInvoices && newInvoices.length > 0) createdInvoice = newInvoices[0];
+        const regAmount = Number(formData.get('reg_fee_amount')) || 0;
+        const regMethod = (formData.get('reg_fee_method') as string) || 'Espèces';
+        const regStatus = (formData.get('reg_fee_status') as string) || 'Payée';
+        const targetClassId = (formData.get('class_id') as string) || editEntity.class_id;
+
+        if (regAmount > 0) {
+          const createdInvoices = await distributePaymentAnnexesThenScolarite(
+            editEntity.id,
+            targetClassId,
+            regAmount,
+            regMethod,
+            regStatus
+          );
+          if (createdInvoices && createdInvoices.length > 0) {
+            createdInvoice = createdInvoices[0];
+          }
         }
         
         fetchStudents();
-        if (formData.get('reg_fee_amount')) {
+        if (regAmount > 0) {
           fetchInvoices();
           const studentFull = studentsData.find(s => s.id === editEntity.id) || editEntity;
           setSelectedStudent(studentFull);
-          setSelectedInvoice(createdInvoice || {...invoicePayload, id: 'temp-id', issue_date: new Date().toISOString()});
+          setSelectedInvoice(createdInvoice || {
+            student_id: editEntity.id,
+            amount: regAmount,
+            motif: "Frais de réinscription (Frais Annexes & Scolarité)",
+            payment_method: regMethod,
+            status: regStatus,
+            invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
+            id: 'temp-id',
+            issue_date: new Date().toISOString()
+          });
           setActiveModal('receipt_preview');
           return;
         } else {
@@ -2093,32 +2192,44 @@ function App() {
         }
 
         let createdInvoice = null;
-        const invoicePayload = {
-          student_id: newStudentId,
-          amount: formData.get('reg_fee_amount'),
-          motif: 'Frais d\'inscription et Scolarité',
-          payment_method: formData.get('reg_fee_method'),
-          status: 'Payée',
-          invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
-          school_id: currentSchoolId
-        };
+        const regAmount = Number(formData.get('reg_fee_amount')) || 0;
+        const regMethod = (formData.get('reg_fee_method') as string) || 'Espèces';
+        const regStatus = (formData.get('reg_fee_status') as string) || 'Payée';
+        const studentClassId = (formData.get('class_id') as string) || (student.class_id as string) || '';
 
-        if (formData.get('reg_fee_amount') !== null && formData.get('reg_fee_amount') !== '') {
-          const { data: newInvoices } = await supabase.from('invoices').insert([invoicePayload]).select();
-          if (newInvoices && newInvoices.length > 0) createdInvoice = newInvoices[0];
+        if (regAmount > 0) {
+          const createdInvoices = await distributePaymentAnnexesThenScolarite(
+            newStudentId,
+            studentClassId,
+            regAmount,
+            regMethod,
+            regStatus
+          );
+          if (createdInvoices && createdInvoices.length > 0) {
+            createdInvoice = createdInvoices[0];
+          }
         }
 
         fetchStudents();
         fetchParents();
-        if (formData.get('reg_fee_amount') !== null && formData.get('reg_fee_amount') !== '') {
+        if (regAmount > 0) {
           fetchInvoices();
           const clsForReceipt = classesData.find(c => c.id === student.class_id);
           setSelectedStudent({ ...student, id: newStudentId, classes: clsForReceipt, student_parents: parentObj ? [{ parents: parentObj }] : [] });
-          setSelectedInvoice(createdInvoice || {...invoicePayload, id: 'temp-id', issue_date: new Date().toISOString()});
+          setSelectedInvoice(createdInvoice || {
+            student_id: newStudentId,
+            amount: regAmount,
+            motif: "Frais d'inscription (Frais Annexes & Scolarité)",
+            payment_method: regMethod,
+            status: regStatus,
+            invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
+            id: 'temp-id',
+            issue_date: new Date().toISOString()
+          });
           setActiveModal('receipt_preview');
           return;
         } else {
-          alert("Inscription réussie ! L'élève, ses parents et ses frais ont été enregistrés.");
+          alert("Inscription réussie ! L'élève et ses parents ont été enregistrés.");
           closeModal();
         }
       } 
@@ -2212,8 +2323,42 @@ function App() {
         }
 
         const student = studentsData.find((s: any) => s.id === studentId);
-        if (student) {
-            const studentInvoices = invoicesData.filter((inv: any) => inv.student_id === studentId);
+        const motif = formData.get('motif') as string;
+        const paymentMethod = (formData.get('payment_method') as string) || 'Espèces';
+
+        // Si le motif est le Pack Inscription : régler les frais annexes en priorité puis le surplus en scolarité
+        if (motif === '⚡ Pack Inscription : Frais Annexes en priorité puis Scolarité' && student && student.class_id) {
+          const createdInvoices = await distributePaymentAnnexesThenScolarite(
+            studentId,
+            student.class_id,
+            amount,
+            paymentMethod,
+            'Payée'
+          );
+          fetchInvoices();
+          const studentForReceipt = studentsData.find((s: any) => s.id === studentId) || student;
+          setSelectedStudent(studentForReceipt);
+          if (createdInvoices && createdInvoices.length > 0) {
+            setSelectedInvoice(createdInvoices[0]);
+          } else {
+            setSelectedInvoice({
+              student_id: studentId,
+              amount: amount,
+              motif: motif,
+              payment_method: paymentMethod,
+              status: 'Payée',
+              id: 'temp-id',
+              issue_date: new Date().toISOString()
+            });
+          }
+          setActiveModal('receipt_preview');
+          return;
+        }
+
+        const isFraisAnnexePayment = fraisAnnexesData.some((f: any) => (motif || '').toLowerCase().includes(f.name.toLowerCase()));
+
+        if (student && !isFraisAnnexePayment) {
+            const studentInvoices = invoicesData.filter((inv: any) => inv.student_id === studentId && !fraisAnnexesData.some((f: any) => (inv.motif || '').toLowerCase().includes(f.name.toLowerCase()) && !(inv.motif || '').toLowerCase().includes('scolarité')));
             const studentPaye = studentInvoices.filter((inv: any) => inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
             const studentTotal = Number(student.tuition_fee) || (student.affecte === 'Affecté' ? Number(student.classes?.tuition_fee_affecte) : Number(student.classes?.tuition_fee)) || 0;
             const studentReste = Math.max(0, studentTotal - studentPaye);
@@ -2227,15 +2372,14 @@ function App() {
         const invoice = {
           student_id: studentId,
           amount: amount,
-          motif: formData.get('motif'),
-          payment_method: formData.get('payment_method'),
+          motif: motif,
+          payment_method: paymentMethod,
           status: 'Payée',
           invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
         };
         const { data: newInvoice, error } = await supabase.from('invoices').insert([{...invoice, school_id: currentSchoolId}]).select();
         if (error) throw error;
         
-        // Remove the alert so the receipt opens immediately and smoothly
         fetchInvoices();
         
         const studentForReceipt = studentsData.find((s: any) => s.id === studentId);
@@ -2246,7 +2390,6 @@ function App() {
         if (newInvoice && newInvoice.length > 0) {
           setSelectedInvoice(newInvoice[0]);
         } else {
-          // Fallback if .select() doesn't return the row due to some RLS quirk
           setSelectedInvoice({...invoice, id: 'temp-id', issue_date: new Date().toISOString()});
         }
         
@@ -4828,13 +4971,19 @@ function App() {
       return renderPremiumOverlay(t('admin.finance.premium_title', "Comptabilité & Scolarité"), t('admin.finance.premium_desc', "Gérez les factures, les paiements de scolarité et suivez votre trésorerie avec le plan Pro."));
     }
 
+    // Helper pour distinguer les factures de Frais Annexes des factures de scolarité
+    const isFraisAnnexeInvoice = (inv: any) => {
+      const m = (inv.motif || '').toLowerCase().trim();
+      return fraisAnnexesData.some((f: any) => m.includes(f.name.toLowerCase().trim()) && !m.includes('scolarité'));
+    };
+
     // Calcul des totaux par classe
     const scolariteParClasse = (classesData || []).map(cls => {
       const classStudents = (studentsData || []).filter(s => s.class_id === cls.id);
       const classStudentsIds = classStudents.map(s => s.id);
       const classInvoices = (invoicesData || []).filter(inv => classStudentsIds.includes(inv.student_id));
       
-      const paye = classInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+      const paye = classInvoices.filter(inv => inv.status === 'Payée' && !isFraisAnnexeInvoice(inv)).reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
       const total = classStudents.reduce((sum, s) => sum + (Number(s.tuition_fee) || (s.affecte === 'Affecté' ? Number(cls.tuition_fee_affecte) : Number(cls.tuition_fee)) || 0), 0);
       const nonPaye = Math.max(0, total - paye);
       
@@ -4846,7 +4995,7 @@ function App() {
         total,
         tauxRecouvrement: total > 0 ? Math.round((paye / total) * 100) : 0,
         studentsDetails: classStudents.map(s => {
-          const sInvoices = classInvoices.filter(inv => inv.student_id === s.id && inv.status === 'Payée');
+          const sInvoices = classInvoices.filter(inv => inv.student_id === s.id && inv.status === 'Payée' && !isFraisAnnexeInvoice(inv));
           const sPaye = sInvoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
           const sTotal = Number(s.tuition_fee) || (s.affecte === 'Affecté' ? Number(cls.tuition_fee_affecte) : Number(cls.tuition_fee)) || 0;
           const sNonPaye = Math.max(0, sTotal - sPaye);
@@ -7603,6 +7752,9 @@ function App() {
                       }}
                     >
                       <option value="Frais de scolarité">Frais de scolarité</option>
+                      <option value="⚡ Pack Inscription : Frais Annexes en priorité puis Scolarité" style={{ fontWeight: 'bold', color: '#2563eb' }}>
+                        ⚡ Pack Inscription : Frais Annexes en priorité puis Scolarité
+                      </option>
                       {fraisAnnexesData && fraisAnnexesData.length > 0 && (
                         <optgroup label="📋 Frais Annexes de l'établissement">
                           {fraisAnnexesData.map((f: any) => (
@@ -7623,6 +7775,32 @@ function App() {
                     {fraisAnnexesData && fraisAnnexesData.length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
                         <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary, #64748b)', alignSelf: 'center' }}>⚡ Sélection rapide :</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const motifSelect = document.getElementById('payment_motif_select') as HTMLSelectElement;
+                            const amountInput = document.querySelector('input[name="amount"]') as HTMLInputElement;
+                            if (motifSelect) motifSelect.value = '⚡ Pack Inscription : Frais Annexes en priorité puis Scolarité';
+                            const studentId = (document.getElementById('hidden_student_id') as HTMLInputElement)?.value || preselectedStudentId;
+                            const st = studentsData.find(s => s.id === studentId);
+                            if (st && st.class_id && amountInput) {
+                              const totAnnexes = getTotalClassFraisAnnexes(st.class_id);
+                              if (totAnnexes > 0) amountInput.value = totAnnexes.toString();
+                            }
+                          }}
+                          style={{
+                            padding: '3px 10px',
+                            borderRadius: '12px',
+                            border: '1.5px solid #2563eb',
+                            background: '#eff6ff',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            color: '#1d4ed8',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          ⚡ Pack Inscription (Annexes + Scolarité)
+                        </button>
                         {fraisAnnexesData.map((f: any) => (
                           <button
                             key={f.id}
@@ -7821,7 +7999,18 @@ function App() {
                     </div>
                     <div className="form-group">
                       <label>{t('admin.modals.class_assign', 'Classe (Affectation)')}</label>
-                      <select name="class_id" className="form-select" required defaultValue={editEntity?.class_id || ""}>
+                      <select 
+                        name="class_id" 
+                        className="form-select" 
+                        required 
+                        defaultValue={registrationClassId || editEntity?.class_id || ""}
+                        onChange={(e) => {
+                          const newClassId = e.target.value;
+                          setRegistrationClassId(newClassId);
+                          const totalAnnexes = getTotalClassFraisAnnexes(newClassId);
+                          setRegistrationPaymentAmount(totalAnnexes);
+                        }}
+                      >
                         <option value="">Choisir une classe...</option>
                         {classesData.map(cls => (
                           <option key={cls.id} value={cls.id}>{cls.name}</option>
@@ -7903,34 +8092,91 @@ function App() {
                     </div>
                   </div>
 
-                  {!editEntity && (
-                    <>
-                      <h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>{t('admin.modals.fees_info', "3. Frais d'Inscription & Scolarité")}</h3>
-                      <div className="form-group">
-                        <label>{t('admin.modals.reg_fee_amount', "Montant des frais d'inscription (CFA)")}</label>
-                        <input type="number" name="reg_fee_amount" className="form-input" required placeholder="Ex: 50000" />
-                        <small style={{color: 'var(--text-secondary)'}}>Saisissez obligatoirement un montant (mettez 0 si gratuité).</small>
-                      </div>
-                      <div className="form-grid">
-                        <div className="form-group">
-                          <label>{t('admin.modals.payment_method', 'Mode de paiement')}</label>
-                          <select name="reg_fee_method" className="form-select">
-                            <option value="Espèces">Espèces</option>
-                            <option value="Chèque">Chèque</option>
-                            <option value="Virement">Virement</option>
-                            <option value="Mobile Money">Mobile Money</option>
-                          </select>
+                  {!editEntity && (() => {
+                    const targetClassId = registrationClassId || (classesData.length > 0 ? classesData[0].id : '');
+                    const classFeesBreakdown = getClassFraisAnnexesBreakdown(targetClassId);
+                    const totalAnnexes = classFeesBreakdown.reduce((sum, item) => sum + item.amount, 0);
+                    const currentPayment = typeof registrationPaymentAmount === 'number' ? registrationPaymentAmount : totalAnnexes;
+                    const partAnnexes = Math.min(totalAnnexes, currentPayment);
+                    const partScolarite = Math.max(0, currentPayment - totalAnnexes);
+
+                    return (
+                      <>
+                        <h3 style={{marginTop: '24px', marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                          <span>💳</span> 3. Frais d'Inscription (Annexes en priorité puis Scolarité)
+                        </h3>
+
+                        {/* Récapitulatif des Frais Annexes de la classe */}
+                        <div style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '14px 16px', marginBottom: '16px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                            <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#1e293b' }}>
+                              📋 Frais Annexes de la classe (payés directement à l'inscription) :
+                            </div>
+                            <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#2563eb', background: '#eff6ff', padding: '3px 10px', borderRadius: '14px', border: '1px solid #bfdbfe' }}>
+                              Total Frais Annexes : {formatNum(totalAnnexes)} F CFA
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', fontSize: '0.84rem' }}>
+                            {classFeesBreakdown.map(item => (
+                              <div key={item.frais.id} style={{ background: 'white', padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between' }}>
+                                <span>{item.frais.name}</span>
+                                <strong style={{ color: item.amount > 0 ? '#1e293b' : '#94a3b8' }}>
+                                  {item.amount > 0 ? `${formatNum(item.amount)} F` : 'Exempté'}
+                                </strong>
+                              </div>
+                            ))}
+                            {classFeesBreakdown.length === 0 && (
+                              <div style={{ color: '#64748b', fontStyle: 'italic' }}>Aucun frais annexe configuré.</div>
+                            )}
+                          </div>
                         </div>
+
+                        {/* Champ Montant versé */}
                         <div className="form-group">
-                          <label>{t('admin.modals.status', 'Statut')}</label>
-                          <select name="reg_fee_status" className="form-select">
-                            <option value="Payée">Payée (Immédiatement)</option>
-                            <option value="En attente">En attente (Paiement ultérieur)</option>
-                          </select>
+                          <label style={{ fontWeight: 600 }}>Montant total versé par le parent à l'inscription (F CFA)</label>
+                          <input 
+                            type="number" 
+                            name="reg_fee_amount" 
+                            className="form-input" 
+                            required 
+                            placeholder={`Ex: ${totalAnnexes || 50000}`}
+                            value={registrationPaymentAmount !== '' ? registrationPaymentAmount : ''}
+                            onChange={(e) => setRegistrationPaymentAmount(e.target.value !== '' ? Number(e.target.value) : '')}
+                            style={{ fontSize: '1.05rem', fontWeight: 700, borderColor: '#2563eb' }}
+                          />
+                          
+                          {/* Message de répartition en temps réel */}
+                          <div style={{ marginTop: '8px', padding: '10px 14px', borderRadius: '8px', background: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: '0.86rem', color: '#166534' }}>
+                            <strong>⚡ Répartition automatique du versement :</strong>
+                            <div style={{ display: 'flex', gap: '16px', marginTop: '4px', flexWrap: 'wrap' }}>
+                              <span>✅ <strong>{formatNum(partAnnexes)} F</strong> pour solder les Frais Annexes</span>
+                              <span>✅ <strong>{formatNum(partScolarite)} F</strong> versés en acompte sur la Scolarité</span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </>
-                  )}
+
+                        <div className="form-grid">
+                          <div className="form-group">
+                            <label>{t('admin.modals.payment_method', 'Mode de paiement')}</label>
+                            <select name="reg_fee_method" className="form-select">
+                              <option value="Espèces">Espèces</option>
+                              <option value="Mobile Money">Mobile Money (Wave / Orange / MTN / Moov)</option>
+                              <option value="Chèque">Chèque</option>
+                              <option value="Virement">Virement bancaire</option>
+                            </select>
+                          </div>
+                          <div className="form-group">
+                            <label>{t('admin.modals.status', 'Statut du paiement')}</label>
+                            <select name="reg_fee_status" className="form-select">
+                              <option value="Payée">Payée (Encaissé immédiatement)</option>
+                              <option value="En attente">En attente (Paiement ultérieur)</option>
+                            </select>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                   <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
                     <button type="submit" className="btn btn-primary">{editEntity ? 'Mettre à jour' : t('admin.modals.complete_registration', "Valider l'inscription complète")}</button>
