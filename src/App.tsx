@@ -256,6 +256,8 @@ function App() {
   
   const [employeeSearchQuery, setEmployeeSearchQuery] = useState('');
   const [activeDossierTab, setActiveDossierTab] = useState<'infos' | 'documents' | 'finances'>('infos');
+  const [isEditingTuition, setIsEditingTuition] = useState<boolean>(false);
+  const [customTuitionVal, setCustomTuitionVal] = useState<string>('');
   const [studentDocumentsData, setStudentDocumentsData] = useState<any[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   
@@ -1020,6 +1022,37 @@ function App() {
     }
   };
 
+  const handleDeleteInvoice = async (id: string) => {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer ce reçu / versement ? Cette action est irréversible.")) {
+      try {
+        const { error } = await supabase.from('invoices').delete().eq('id', id);
+        if (error) throw error;
+        await fetchInvoices();
+        alert("Paiement supprimé avec succès.");
+      } catch (err: any) {
+        alert("Erreur lors de la suppression : " + (err.message || err));
+      }
+    }
+  };
+
+  const handleEditInvoice = async (inv: any) => {
+    const newAmountStr = window.prompt(`Modifier le montant du paiement (${inv.invoice_number}) en Francs CFA :`, String(inv.amount));
+    if (newAmountStr === null) return;
+    const newAmount = Number(newAmountStr.trim());
+    if (isNaN(newAmount) || newAmount <= 0) {
+      alert("Veuillez saisir un montant valide supérieur à 0.");
+      return;
+    }
+    try {
+      const { error } = await supabase.from('invoices').update({ amount: newAmount }).eq('id', inv.id);
+      if (error) throw error;
+      await fetchInvoices();
+      alert("Montant du paiement modifié avec succès !");
+    } catch (err: any) {
+      alert("Erreur lors de la modification : " + (err.message || err));
+    }
+  };
+
   const loadAdminInvites = async () => {
     if (!currentSchoolId) return;
     const { data: invites } = await supabase.from('admin_invitations').select('*').eq('school_id', currentSchoolId);
@@ -1468,7 +1501,7 @@ function App() {
     }
   };
 
-  const closeModal = () => { setActiveModal(null); setPreselectedStudentId(null); setEditEntity(null); };
+  const closeModal = () => { setActiveModal(null); setPreselectedStudentId(null); setEditEntity(null); setIsEditingTuition(false); };
 
   const handleCreateSchool = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -5299,6 +5332,12 @@ function App() {
                   }} title="Petit Format">
                     <Icons.Printer /> Petit
                   </button>
+                  <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem', color: 'var(--primary-color)'}} onClick={() => handleEditInvoice(row)} title="Modifier ce versement">
+                    ✏️
+                  </button>
+                  <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem', color: 'var(--danger-color)', borderColor: 'var(--danger-color)'}} onClick={() => handleDeleteInvoice(row.id)} title="Supprimer ce versement">
+                    🗑️
+                  </button>
                 </td>
               </tr>
             );
@@ -9022,6 +9061,8 @@ function App() {
                     const studentInvoices = invoicesData.filter(inv => inv.student_id === selectedStudent.id);
                     const studentPaye = studentInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
                     const studentTotal = Number(selectedStudent.tuition_fee) || (selectedStudent.affecte === 'Affecté' ? Number(selectedStudent.classes?.tuition_fee_affecte) : Number(selectedStudent.classes?.tuition_fee)) || 0;
+                    const defaultClassFee = selectedStudent.affecte === 'Affecté' ? Number(selectedStudent.classes?.tuition_fee_affecte || 0) : Number(selectedStudent.classes?.tuition_fee || 0);
+                    const hasCustomTuition = selectedStudent.tuition_fee !== null && selectedStudent.tuition_fee !== undefined && selectedStudent.tuition_fee !== '';
                     const studentReste = Math.max(0, studentTotal - studentPaye);
 
                     return (
@@ -9031,20 +9072,114 @@ function App() {
                         <button className="btn btn-primary" onClick={() => { setPreselectedStudentId(selectedStudent.id); setActiveModal('payment'); }}>+ Enregistrer un paiement</button>
                       </div>
                       <div style={{marginBottom: '24px'}}>
-                        <div style={{display: 'flex', gap: '24px', flexWrap: 'wrap', marginBottom: '16px', background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px'}}>
-                          <div>
-                            <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Scolarité Totale</span>
-                            <strong style={{fontSize: '1.2rem'}}>{formatNum(studentTotal)} F</strong>
+                        {isEditingTuition ? (
+                          <div style={{background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px', marginBottom: '16px', border: '2px solid var(--primary-color)'}}>
+                            <div style={{marginBottom: '10px', fontWeight: 600, fontSize: '0.95rem', color: 'var(--primary-color)'}}>
+                              ✏️ Modifier la Scolarité Totale de {selectedStudent.first_name} {selectedStudent.last_name}
+                            </div>
+                            <div style={{display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center'}}>
+                              <div style={{flex: '1', minWidth: '180px'}}>
+                                <input 
+                                  type="number" 
+                                  className="form-input" 
+                                  placeholder="Montant en Francs CFA"
+                                  value={customTuitionVal}
+                                  onChange={(e) => setCustomTuitionVal(e.target.value)}
+                                  autoFocus
+                                />
+                              </div>
+                              <button 
+                                type="button" 
+                                className="btn btn-primary"
+                                onClick={async () => {
+                                  const val = customTuitionVal.trim() === '' ? null : Number(customTuitionVal);
+                                  if (val !== null && (isNaN(val) || val < 0)) {
+                                    alert('Veuillez entrer un montant valide supérieur ou égal à 0.');
+                                    return;
+                                  }
+                                  try {
+                                    const { error } = await supabase.from('students').update({ tuition_fee: val }).eq('id', selectedStudent.id);
+                                    if (error) throw error;
+                                    const updatedStudent = { ...selectedStudent, tuition_fee: val };
+                                    setSelectedStudent(updatedStudent);
+                                    setStudentsData((prev: any[]) => prev.map(s => s.id === selectedStudent.id ? updatedStudent : s));
+                                    setIsEditingTuition(false);
+                                    alert('Montant de la scolarité mis à jour avec succès !');
+                                  } catch (err: any) {
+                                    alert('Erreur lors de la mise à jour : ' + (err.message || err));
+                                  }
+                                }}
+                              >
+                                💾 Enregistrer
+                              </button>
+                              <button 
+                                type="button" 
+                                className="btn btn-outline"
+                                onClick={async () => {
+                                  if (window.confirm(`Rétablir le tarif standard de la classe (${formatNum(defaultClassFee)} F) ?`)) {
+                                    try {
+                                      const { error } = await supabase.from('students').update({ tuition_fee: null }).eq('id', selectedStudent.id);
+                                      if (error) throw error;
+                                      const updatedStudent = { ...selectedStudent, tuition_fee: null };
+                                      setSelectedStudent(updatedStudent);
+                                      setStudentsData((prev: any[]) => prev.map(s => s.id === selectedStudent.id ? updatedStudent : s));
+                                      setIsEditingTuition(false);
+                                      alert('Tarif standard de la classe rétabli !');
+                                    } catch (err: any) {
+                                      alert('Erreur : ' + (err.message || err));
+                                    }
+                                  }
+                                }}
+                                title="Rétablir le tarif par défaut de la classe"
+                              >
+                                🔄 Tarif classe ({formatNum(defaultClassFee)} F)
+                              </button>
+                              <button 
+                                type="button" 
+                                className="btn btn-outline"
+                                onClick={() => setIsEditingTuition(false)}
+                              >
+                                Annuler
+                              </button>
+                            </div>
                           </div>
-                          <div>
-                            <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Total Payé</span>
-                            <strong style={{fontSize: '1.2rem', color: 'var(--success-color)'}}>{formatNum(studentPaye)} F</strong>
+                        ) : (
+                          <div style={{display: 'flex', gap: '24px', flexWrap: 'wrap', marginBottom: '16px', background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px', alignItems: 'center', justifyContent: 'space-between'}}>
+                            <div style={{display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'center'}}>
+                              <div>
+                                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                  <span style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Scolarité Totale</span>
+                                  <button 
+                                    type="button" 
+                                    className="btn btn-outline" 
+                                    style={{padding: '2px 8px', fontSize: '0.75rem', borderRadius: '4px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--primary-color)', borderColor: 'var(--primary-color)'}}
+                                    onClick={() => {
+                                      setCustomTuitionVal(hasCustomTuition ? String(selectedStudent.tuition_fee) : String(studentTotal));
+                                      setIsEditingTuition(true);
+                                    }}
+                                    title="Modifier le montant de la scolarité totale"
+                                  >
+                                    ✏️ Modifier
+                                  </button>
+                                </div>
+                                <strong style={{fontSize: '1.2rem', display: 'block', marginTop: '2px'}}>{formatNum(studentTotal)} F</strong>
+                                {hasCustomTuition && (
+                                  <span style={{fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 500}}>
+                                    (Montant personnalisé)
+                                  </span>
+                                )}
+                              </div>
+                              <div>
+                                <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Total Payé</span>
+                                <strong style={{fontSize: '1.2rem', color: 'var(--success-color)'}}>{formatNum(studentPaye)} F</strong>
+                              </div>
+                              <div>
+                                <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Reste à Payer</span>
+                                <strong style={{fontSize: '1.2rem', color: studentReste > 0 ? 'var(--danger-color)' : 'var(--success-color)'}}>{formatNum(studentReste)} F</strong>
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Reste à Payer</span>
-                            <strong style={{fontSize: '1.2rem', color: studentReste > 0 ? 'var(--danger-color)' : 'var(--success-color)'}}>{formatNum(studentReste)} F</strong>
-                          </div>
-                        </div>
+                        )}
 
                         {studentInvoices.length > 0 ? (
                           <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem'}}>
@@ -9071,6 +9206,8 @@ function App() {
                                   <td style={{padding: '12px 0', textAlign: 'right', display: 'flex', gap: '4px', justifyContent: 'flex-end'}}>
                                     <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => { setSelectedInvoice(inv); setActiveModal('receipt_preview'); }} title="Grand Format">🖨️ Grand</button>
                                     <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => { setSelectedInvoice(inv); setActiveModal('small_receipt_preview'); }} title="Petit Format">🖨️ Petit</button>
+                                    <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem', color: 'var(--primary-color)'}} onClick={() => handleEditInvoice(inv)} title="Modifier ce versement">✏️</button>
+                                    <button className="btn btn-outline" style={{padding: '4px 8px', fontSize: '0.8rem', color: 'var(--danger-color)', borderColor: 'var(--danger-color)'}} onClick={() => handleDeleteInvoice(inv.id)} title="Supprimer ce versement">🗑️</button>
                                   </td>
                                 </tr>
                               ))}
