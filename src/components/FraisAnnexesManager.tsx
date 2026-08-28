@@ -27,6 +27,8 @@ interface FraisAnnexesManagerProps {
   fraisList: FraisAnnexe[];
   classes: any[];
   classFraisList: ClassFraisAnnexe[];
+  students?: any[];
+  invoices?: any[];
   onRefresh: () => void;
 }
 
@@ -35,9 +37,11 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
   fraisList,
   classes = [],
   classFraisList = [],
+  students = [],
+  invoices = [],
   onRefresh,
 }) => {
-  const [activeView, setActiveView] = useState<'global' | 'by_class' | 'matrix'>('global');
+  const [activeView, setActiveView] = useState<'bilan_global' | 'by_class' | 'global' | 'matrix'>('bilan_global');
   const [selectedClassId, setSelectedClassId] = useState<string>(classes.length > 0 ? classes[0].id : '');
 
   // Modal State for Global Fees
@@ -230,7 +234,6 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
     }
   };
 
-  // Save class specific prices
   const handleSaveClassPrices = async () => {
     if (!selectedClassId || !schoolId) return;
     setLoading(true);
@@ -259,7 +262,6 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
     }
   };
 
-  // Copy class prices to all classes of same level
   const handleApplyToSameLevel = async () => {
     const targetClass = classes.find((c) => c.id === selectedClassId);
     if (!targetClass) return;
@@ -307,6 +309,81 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
 
   const selectedClassObj = classes.find((c) => c.id === selectedClassId);
 
+  // Helper to get fee for a class
+  const getFeeForClass = (classId: string, fraisId: string, defaultAmount: number) => {
+    const override = classFraisList.find((cf) => cf.class_id === classId && cf.frais_annexe_id === fraisId);
+    if (override) {
+      return override.is_active ? override.amount : 0;
+    }
+    return defaultAmount;
+  };
+
+  // Helper to get collected amount for a class & motif
+  const getCollectedForClass = (classId: string, motifName?: string) => {
+    const classStudentIds = students.filter((s) => s.class_id === classId).map((s) => s.id);
+    if (classStudentIds.length === 0) return 0;
+
+    return invoices
+      .filter((inv) => {
+        if (!classStudentIds.includes(inv.student_id)) return false;
+        if (motifName) {
+          return (inv.motif || '').toLowerCase().includes(motifName.toLowerCase());
+        }
+        // Match any frais annexe name
+        return sortedFrais.some((f) => (inv.motif || '').toLowerCase().includes(f.name.toLowerCase()));
+      })
+      .reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+  };
+
+  // Calculate Global Totals for Bilan
+  const classBreakdowns = classes.map((cls) => {
+    const classStudentsCount = students.filter((s) => s.class_id === cls.id).length;
+
+    // Per category breakdown for this class
+    const categories = sortedFrais.map((frais) => {
+      const unitAmount = getFeeForClass(cls.id, frais.id, frais.amount);
+      const totalAttendu = unitAmount * classStudentsCount;
+      const totalEncaisse = getCollectedForClass(cls.id, frais.name);
+      const reste = Math.max(0, totalAttendu - totalEncaisse);
+      return {
+        fraisId: frais.id,
+        fraisName: frais.name,
+        unitAmount,
+        totalAttendu,
+        totalEncaisse,
+        reste,
+      };
+    });
+
+    const totalForfaitParEleve = categories.reduce((sum, c) => sum + c.unitAmount, 0);
+    const totalClasseAttendu = totalForfaitParEleve * classStudentsCount;
+    const totalClasseEncaisse = getCollectedForClass(cls.id);
+    const totalClasseReste = Math.max(0, totalClasseAttendu - totalClasseEncaisse);
+    const taux = totalClasseAttendu > 0 ? Math.min(100, Math.round((totalClasseEncaisse / totalClasseAttendu) * 100)) : 0;
+
+    return {
+      classObj: cls,
+      studentCount: classStudentsCount,
+      categories,
+      totalForfaitParEleve,
+      totalClasseAttendu,
+      totalClasseEncaisse,
+      totalClasseReste,
+      taux,
+    };
+  });
+
+  // Grand Totals
+  const grandTotalAttendu = classBreakdowns.reduce((sum, cb) => sum + cb.totalClasseAttendu, 0);
+  const grandTotalEncaisse = classBreakdowns.reduce((sum, cb) => sum + cb.totalClasseEncaisse, 0);
+  const grandTotalReste = Math.max(0, grandTotalAttendu - grandTotalEncaisse);
+  const grandTaux = grandTotalAttendu > 0 ? Math.min(100, Math.round((grandTotalEncaisse / grandTotalAttendu) * 100)) : 0;
+
+  // Print function
+  const handlePrintBilan = () => {
+    window.print();
+  };
+
   return (
     <div style={{ width: '100%' }}>
       {/* Header */}
@@ -334,7 +411,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
               gap: '8px',
             }}
           >
-            <span>💳</span> Frais Annexes de l'Établissement (Bulletins, Tricots...)
+            <span>💳</span> Montant Global des Frais Annexes par Classe & Catégorie
           </h3>
           <p
             style={{
@@ -343,29 +420,19 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
               fontSize: '0.88rem',
             }}
           >
-            Définissez les frais généraux et personnalisez les tarifs pour chaque classe (ex: prix du bulletin ou tricot selon la classe).
+            Suivi financier complet : montants unitaires, montants attendus par classe, total encaissé et reste à percevoir.
           </p>
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          {sortedFrais.length === 0 && (
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={handleInitDefaultPacks}
-              disabled={loading}
-              style={{
-                borderColor: '#10b981',
-                color: '#059669',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
-            >
-              ⚡ Charger les modèles (Bulletin, Tricot...)
-            </button>
-          )}
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={handlePrintBilan}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
+          >
+            <span>🖨️</span> Imprimer le Bilan
+          </button>
 
           <button
             type="button"
@@ -385,6 +452,100 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
         </div>
       </div>
 
+      {/* KPI Cards (Montant Global Overview) */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '14px',
+          marginBottom: '20px',
+        }}
+      >
+        <div
+          style={{
+            background: '#ffffff',
+            padding: '16px 20px',
+            borderRadius: '12px',
+            border: '1px solid #e2e8f0',
+            borderLeft: '4px solid #3b82f6',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          }}
+        >
+          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
+            Montant Global Attendu
+          </span>
+          <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#1e293b', marginTop: '4px' }}>
+            {formatNum(grandTotalAttendu)} <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>F CFA</span>
+          </div>
+          <small style={{ color: '#64748b', fontSize: '0.75rem' }}>
+            Sur l'ensemble des {classes.length} classes
+          </small>
+        </div>
+
+        <div
+          style={{
+            background: '#ffffff',
+            padding: '16px 20px',
+            borderRadius: '12px',
+            border: '1px solid #e2e8f0',
+            borderLeft: '4px solid #10b981',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          }}
+        >
+          <span style={{ fontSize: '0.8rem', color: '#047857', fontWeight: 600, textTransform: 'uppercase' }}>
+            Montant Déjà Encaissé
+          </span>
+          <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#059669', marginTop: '4px' }}>
+            {formatNum(grandTotalEncaisse)} <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>F CFA</span>
+          </div>
+          <small style={{ color: '#059669', fontSize: '0.75rem', fontWeight: 600 }}>
+            Taux de recouvrement : {grandTaux}%
+          </small>
+        </div>
+
+        <div
+          style={{
+            background: '#ffffff',
+            padding: '16px 20px',
+            borderRadius: '12px',
+            border: '1px solid #e2e8f0',
+            borderLeft: '4px solid #ef4444',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          }}
+        >
+          <span style={{ fontSize: '0.8rem', color: '#b91c1c', fontWeight: 600, textTransform: 'uppercase' }}>
+            Reste Global à Recouvrer
+          </span>
+          <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#dc2626', marginTop: '4px' }}>
+            {formatNum(grandTotalReste)} <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>F CFA</span>
+          </div>
+          <small style={{ color: '#dc2626', fontSize: '0.75rem' }}>
+            Somme restante à percevoir
+          </small>
+        </div>
+
+        <div
+          style={{
+            background: '#ffffff',
+            padding: '16px 20px',
+            borderRadius: '12px',
+            border: '1px solid #e2e8f0',
+            borderLeft: '4px solid #8b5cf6',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          }}
+        >
+          <span style={{ fontSize: '0.8rem', color: '#6d28d9', fontWeight: 600, textTransform: 'uppercase' }}>
+            Catégories Configurées
+          </span>
+          <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#7c3aed', marginTop: '4px' }}>
+            {sortedFrais.length} <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>rubriques</span>
+          </div>
+          <small style={{ color: '#6d28d9', fontSize: '0.75rem' }}>
+            Bulletins, Tricots, Tenues, etc.
+          </small>
+        </div>
+      </div>
+
       {/* Tabs Switcher */}
       <div
         style={{
@@ -393,26 +554,28 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
           marginBottom: '20px',
           borderBottom: '1px solid var(--border-color, #e2e8f0)',
           paddingBottom: '2px',
+          overflowX: 'auto',
         }}
       >
         <button
           type="button"
-          onClick={() => setActiveView('global')}
+          onClick={() => setActiveView('bilan_global')}
           style={{
             padding: '8px 16px',
             border: 'none',
             background: 'transparent',
-            borderBottom: activeView === 'global' ? '3px solid #2563eb' : '3px solid transparent',
-            color: activeView === 'global' ? '#2563eb' : '#64748b',
-            fontWeight: activeView === 'global' ? 700 : 500,
+            borderBottom: activeView === 'bilan_global' ? '3px solid #2563eb' : '3px solid transparent',
+            color: activeView === 'bilan_global' ? '#2563eb' : '#64748b',
+            fontWeight: activeView === 'bilan_global' ? 700 : 500,
             cursor: 'pointer',
             fontSize: '0.92rem',
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
+            whiteSpace: 'nowrap',
           }}
         >
-          <span>📋</span> Frais Globaux & Priorité
+          <span>💰</span> Montant Global par Classe & Catégorie
         </button>
 
         <button
@@ -430,9 +593,31 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
+            whiteSpace: 'nowrap',
           }}
         >
           <span>🏫</span> Tarifs Personnalisés par Classe
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveView('global')}
+          style={{
+            padding: '8px 16px',
+            border: 'none',
+            background: 'transparent',
+            borderBottom: activeView === 'global' ? '3px solid #2563eb' : '3px solid transparent',
+            color: activeView === 'global' ? '#2563eb' : '#64748b',
+            fontWeight: activeView === 'global' ? 700 : 500,
+            cursor: 'pointer',
+            fontSize: '0.92rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span>📋</span> Frais Globaux & Priorité
         </button>
 
         <button
@@ -450,9 +635,10 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
+            whiteSpace: 'nowrap',
           }}
         >
-          <span>📊</span> Tableau Récapitulatif Global
+          <span>📊</span> Grille Tarifaire Complète
         </button>
       </div>
 
@@ -482,7 +668,413 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
         </div>
       )}
 
-      {/* VIEW 1: GLOBAL FEES LIST */}
+      {/* VIEW 1: BILAN GLOBAL PAR CLASSE ET PAR CATÉGORIE */}
+      {activeView === 'bilan_global' && (
+        <div>
+          {classes.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
+              Aucune classe trouvée.
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto', background: 'var(--surface-color, #ffffff)', borderRadius: '10px', border: '1px solid var(--border-color, #e2e8f0)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569', fontSize: '0.8rem', textTransform: 'uppercase' }}>
+                    <th style={{ padding: '14px 16px', fontWeight: 700 }}>Classe</th>
+                    <th style={{ padding: '14px 16px', textAlign: 'center', fontWeight: 700 }}>Effectif</th>
+                    
+                    {/* Colonnes par catégorie / rubrique */}
+                    {sortedFrais.map((f) => (
+                      <th key={f.id} style={{ padding: '14px 14px', textAlign: 'right', fontWeight: 700 }}>
+                        {f.name}
+                        <br />
+                        <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 'normal', textTransform: 'none' }}>
+                          (Tarif / Attendu)
+                        </span>
+                      </th>
+                    ))}
+
+                    <th style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 700, background: '#f1f5f9' }}>
+                      Forfait / Élève
+                    </th>
+                    <th style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 700, background: '#eff6ff', color: '#1d4ed8' }}>
+                      Total Attendu
+                    </th>
+                    <th style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 700, background: '#ecfdf5', color: '#065f46' }}>
+                      Total Encaissé
+                    </th>
+                    <th style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 700, background: '#fef2f2', color: '#991b1b' }}>
+                      Reste à Recouvrer
+                    </th>
+                    <th style={{ padding: '14px 16px', textAlign: 'center', fontWeight: 700 }}>
+                      Recouvrement
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {classBreakdowns.map((cb) => (
+                    <tr
+                      key={cb.classObj.id}
+                      style={{
+                        borderBottom: '1px solid #e2e8f0',
+                        transition: 'background 0.15s ease',
+                      }}
+                    >
+                      <td style={{ padding: '12px 16px', fontWeight: 700, color: '#1e293b' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '1.1rem' }}>🏫</span>
+                          <span>{cb.classObj.name}</span>
+                          <span style={{ fontSize: '0.72rem', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px' }}>
+                            {cb.classObj.level}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 600 }}>
+                        <span style={{ background: '#f8fafc', padding: '3px 8px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+                          {cb.studentCount} élèves
+                        </span>
+                      </td>
+
+                      {/* Catégories individuelles */}
+                      {cb.categories.map((cat) => (
+                        <td key={cat.fraisId} style={{ padding: '12px 14px', textAlign: 'right' }}>
+                          {cat.unitAmount === 0 ? (
+                            <span style={{ color: '#cbd5e1', fontSize: '0.8rem' }}>Exempté</span>
+                          ) : (
+                            <div>
+                              <div style={{ fontWeight: 600, color: '#1e293b' }}>
+                                {formatNum(cat.unitAmount)} F
+                              </div>
+                              <small style={{ color: '#64748b', fontSize: '0.75rem', display: 'block' }}>
+                                {formatNum(cat.totalAttendu)} F
+                              </small>
+                            </div>
+                          )}
+                        </td>
+                      ))}
+
+                      {/* Total Forfait par élève */}
+                      <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, background: '#f1f5f9' }}>
+                        {formatNum(cb.totalForfaitParEleve)} F
+                      </td>
+
+                      {/* Total Classe Attendu */}
+                      <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 800, background: '#eff6ff', color: '#1d4ed8' }}>
+                        {formatNum(cb.totalClasseAttendu)} F
+                      </td>
+
+                      {/* Total Classe Encaissé */}
+                      <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 800, background: '#ecfdf5', color: '#059669' }}>
+                        {formatNum(cb.totalClasseEncaisse)} F
+                      </td>
+
+                      {/* Reste à recouvrer */}
+                      <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 800, background: '#fef2f2', color: '#dc2626' }}>
+                        {formatNum(cb.totalClasseReste)} F
+                      </td>
+
+                      {/* Taux & Barre */}
+                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: cb.taux >= 80 ? '#059669' : cb.taux >= 50 ? '#d97706' : '#dc2626' }}>
+                            {cb.taux}%
+                          </span>
+                          <div style={{ width: '60px', height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                            <div
+                              style={{
+                                width: `${cb.taux}%`,
+                                height: '100%',
+                                background: cb.taux >= 80 ? '#10b981' : cb.taux >= 50 ? '#f59e0b' : '#ef4444',
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+
+                  {/* TOTAL GENERAL FOOTER */}
+                  <tr style={{ background: '#f8fafc', borderTop: '3px solid #cbd5e1', fontWeight: 800 }}>
+                    <td style={{ padding: '16px', fontSize: '1rem', color: '#0f172a' }}>
+                      TOTAL GÉNÉRAL ÉCOLE
+                    </td>
+                    <td style={{ padding: '16px', textAlign: 'center', fontSize: '0.95rem' }}>
+                      {students.length} élèves
+                    </td>
+
+                    {sortedFrais.map((f) => {
+                      const totalAttenduFrais = classBreakdowns.reduce((sum, cb) => {
+                        const cat = cb.categories.find((c) => c.fraisId === f.id);
+                        return sum + (cat ? cat.totalAttendu : 0);
+                      }, 0);
+                      return (
+                        <td key={f.id} style={{ padding: '16px 14px', textAlign: 'right', color: '#1e293b' }}>
+                          {formatNum(totalAttenduFrais)} F
+                        </td>
+                      );
+                    })}
+
+                    <td style={{ padding: '16px', textAlign: 'right', background: '#e2e8f0' }}>
+                      —
+                    </td>
+                    <td style={{ padding: '16px', textAlign: 'right', background: '#dbeafe', color: '#1d4ed8', fontSize: '1.05rem' }}>
+                      {formatNum(grandTotalAttendu)} F
+                    </td>
+                    <td style={{ padding: '16px', textAlign: 'right', background: '#d1fae5', color: '#065f46', fontSize: '1.05rem' }}>
+                      {formatNum(grandTotalEncaisse)} F
+                    </td>
+                    <td style={{ padding: '16px', textAlign: 'right', background: '#fee2e2', color: '#991b1b', fontSize: '1.05rem' }}>
+                      {formatNum(grandTotalReste)} F
+                    </td>
+                    <td style={{ padding: '16px', textAlign: 'center', color: '#059669', fontSize: '1.05rem' }}>
+                      {grandTaux}%
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* VIEW 2: TARIFS PAR CLASSE */}
+      {activeView === 'by_class' && (
+        <div>
+          {classes.length === 0 ? (
+            <div style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>
+              Veuillez d'abord créer des classes dans l'onglet "Classes & Pédagogie".
+            </div>
+          ) : (
+            <div>
+              {/* Class Selector Bar */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  background: 'var(--surface-color-hover, #f8fafc)',
+                  padding: '16px',
+                  borderRadius: '10px',
+                  border: '1px solid var(--border-color, #e2e8f0)',
+                  marginBottom: '20px',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e293b' }}>
+                    Sélectionner la classe à configurer :
+                  </span>
+                  <select
+                    className="form-select"
+                    value={selectedClassId}
+                    onChange={(e) => setSelectedClassId(e.target.value)}
+                    style={{ padding: '8px 12px', minWidth: '180px', fontWeight: 600 }}
+                  >
+                    {classes.map((cls) => (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.name} ({cls.level})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedClassObj && (
+                  <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={handleApplyToSameLevel}
+                      disabled={loading}
+                      title={`Copier ces tarifs à toutes les classes de niveau ${selectedClassObj.level}`}
+                      style={{ fontSize: '0.82rem', padding: '6px 12px' }}
+                    >
+                      📋 Appliquer à tout le {selectedClassObj.level}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={handleSaveClassPrices}
+                      disabled={loading}
+                      style={{ fontSize: '0.85rem', padding: '6px 16px', fontWeight: 600 }}
+                    >
+                      {loading ? 'Enregistrement...' : `💾 Enregistrer pour ${selectedClassObj.name}`}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Class Summary Banner */}
+              {selectedClassObj && (
+                <div
+                  style={{
+                    background: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    padding: '12px 18px',
+                    borderRadius: '8px',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '1.3rem' }}>🏫</span>
+                    <div>
+                      <strong style={{ color: '#1e3a8a', fontSize: '1rem' }}>
+                        Classe de {selectedClassObj.name} ({selectedClassObj.level})
+                      </strong>
+                      <div style={{ fontSize: '0.82rem', color: '#3b82f6' }}>
+                        Effectif actuel : {students.filter((s) => s.class_id === selectedClassObj.id).length} élèves
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <small style={{ color: '#64748b', display: 'block', fontSize: '0.75rem' }}>Forfait par élève</small>
+                      <strong style={{ color: '#1d4ed8', fontSize: '1.1rem' }}>
+                        {formatNum(
+                          sortedFrais.reduce((sum, f) => {
+                            const cur = classAmounts[f.id] !== undefined ? classAmounts[f.id] : f.amount;
+                            const active = classActives[f.id] !== undefined ? classActives[f.id] : true;
+                            return sum + (active ? cur : 0);
+                          }, 0)
+                        )}{' '}
+                        F CFA
+                      </strong>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <small style={{ color: '#64748b', display: 'block', fontSize: '0.75rem' }}>Montant total de la classe</small>
+                      <strong style={{ color: '#059669', fontSize: '1.1rem' }}>
+                        {formatNum(
+                          sortedFrais.reduce((sum, f) => {
+                            const cur = classAmounts[f.id] !== undefined ? classAmounts[f.id] : f.amount;
+                            const active = classActives[f.id] !== undefined ? classActives[f.id] : true;
+                            return sum + (active ? cur : 0);
+                          }, 0) * students.filter((s) => s.class_id === selectedClassObj.id).length
+                        )}{' '}
+                        F CFA
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Table of fees for this class */}
+              <div style={{ overflowX: 'auto', background: 'var(--surface-color, #ffffff)', borderRadius: '10px', border: '1px solid var(--border-color, #e2e8f0)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ background: 'var(--surface-color-hover, #f8fafc)', borderBottom: '1px solid var(--border-color, #e2e8f0)', color: 'var(--text-secondary, #64748b)', fontSize: '0.82rem', textTransform: 'uppercase' }}>
+                      <th style={{ padding: '12px 14px' }}>Frais Annexe</th>
+                      <th style={{ padding: '12px 14px' }}>Prix Standard École</th>
+                      <th style={{ padding: '12px 14px', width: '220px' }}>Prix Spécifique {selectedClassObj?.name} (FCFA)</th>
+                      <th style={{ padding: '12px 14px', width: '160px', textAlign: 'center' }}>Applicable à cette classe</th>
+                      <th style={{ padding: '12px 14px' }}>Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedFrais.map((frais) => {
+                      const curVal = classAmounts[frais.id] !== undefined ? classAmounts[frais.id] : frais.amount;
+                      const isActive = classActives[frais.id] !== undefined ? classActives[frais.id] : true;
+                      const isCustom = curVal !== frais.amount;
+
+                      return (
+                        <tr key={frais.id} style={{ borderBottom: '1px solid var(--border-color, #e2e8f0)' }}>
+                          <td style={{ padding: '12px 14px', fontWeight: 600 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>🏷️</span>
+                              <span>{frais.name}</span>
+                            </div>
+                            {frais.description && (
+                              <small style={{ color: '#64748b', display: 'block', marginTop: '2px' }}>
+                                {frais.description}
+                              </small>
+                            )}
+                          </td>
+
+                          <td style={{ padding: '12px 14px', color: '#64748b' }}>
+                            {formatNum(frais.amount)} F
+                          </td>
+
+                          <td style={{ padding: '12px 14px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={curVal}
+                                disabled={!isActive}
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? 0 : Number(e.target.value);
+                                  setClassAmounts((prev) => ({ ...prev, [frais.id]: val }));
+                                }}
+                                style={{
+                                  width: '140px',
+                                  padding: '6px 10px',
+                                  fontWeight: 700,
+                                  color: isCustom ? '#2563eb' : '#1e293b',
+                                  borderColor: isCustom ? '#93c5fd' : undefined,
+                                  background: isCustom ? '#eff6ff' : undefined,
+                                }}
+                              />
+                              <span style={{ fontSize: '0.85rem', color: '#64748b' }}>F</span>
+                            </div>
+                          </td>
+
+                          <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                            <input
+                              type="checkbox"
+                              checked={isActive}
+                              onChange={(e) => {
+                                setClassActives((prev) => ({ ...prev, [frais.id]: e.target.checked }));
+                              }}
+                              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                            />
+                          </td>
+
+                          <td style={{ padding: '12px 14px' }}>
+                            {!isActive ? (
+                              <span style={{ fontSize: '0.75rem', background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: '6px' }}>
+                                Non facturé
+                              </span>
+                            ) : isCustom ? (
+                              <span style={{ fontSize: '0.75rem', background: '#dbeafe', color: '#1d4ed8', padding: '2px 8px', borderRadius: '6px', fontWeight: 600 }}>
+                                Tarif personnalisé ({formatNum(curVal)} F)
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '0.75rem', background: '#f8fafc', color: '#475569', padding: '2px 8px', borderRadius: '6px' }}>
+                                Tarif standard ({formatNum(frais.amount)} F)
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {selectedClassObj && (
+                <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleSaveClassPrices}
+                    disabled={loading}
+                    style={{ padding: '10px 24px', fontWeight: 700 }}
+                  >
+                    {loading ? 'Enregistrement...' : `💾 Enregistrer les tarifs pour ${selectedClassObj.name}`}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* VIEW 3: GLOBAL FEES LIST */}
       {activeView === 'global' && (
         <>
           {sortedFrais.length === 0 ? (
@@ -663,185 +1255,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
         </>
       )}
 
-      {/* VIEW 2: CLASS SPECIFIC PRICING */}
-      {activeView === 'by_class' && (
-        <div>
-          {classes.length === 0 ? (
-            <div style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>
-              Veuillez d'abord créer des classes dans l'onglet "Classes & Pédagogie".
-            </div>
-          ) : (
-            <div>
-              {/* Class Selector Bar */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '16px',
-                  background: 'var(--surface-color-hover, #f8fafc)',
-                  padding: '16px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--border-color, #e2e8f0)',
-                  marginBottom: '20px',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e293b' }}>
-                    Sélectionner la classe à configurer :
-                  </span>
-                  <select
-                    className="form-select"
-                    value={selectedClassId}
-                    onChange={(e) => setSelectedClassId(e.target.value)}
-                    style={{ padding: '8px 12px', minWidth: '180px', fontWeight: 600 }}
-                  >
-                    {classes.map((cls) => (
-                      <option key={cls.id} value={cls.id}>
-                        {cls.name} ({cls.level})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {selectedClassObj && (
-                  <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
-                    <button
-                      type="button"
-                      className="btn btn-outline"
-                      onClick={handleApplyToSameLevel}
-                      disabled={loading}
-                      title={`Copier ces tarifs à toutes les classes de niveau ${selectedClassObj.level}`}
-                      style={{ fontSize: '0.82rem', padding: '6px 12px' }}
-                    >
-                      📋 Appliquer à tout le {selectedClassObj.level}
-                    </button>
-
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={handleSaveClassPrices}
-                      disabled={loading}
-                      style={{ fontSize: '0.85rem', padding: '6px 16px', fontWeight: 600 }}
-                    >
-                      {loading ? 'Enregistrement...' : `💾 Enregistrer pour ${selectedClassObj.name}`}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Table of fees for this class */}
-              <div style={{ overflowX: 'auto', background: 'var(--surface-color, #ffffff)', borderRadius: '10px', border: '1px solid var(--border-color, #e2e8f0)' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ background: 'var(--surface-color-hover, #f8fafc)', borderBottom: '1px solid var(--border-color, #e2e8f0)', color: 'var(--text-secondary, #64748b)', fontSize: '0.82rem', textTransform: 'uppercase' }}>
-                      <th style={{ padding: '12px 14px' }}>Frais Annexe</th>
-                      <th style={{ padding: '12px 14px' }}>Prix Standard École</th>
-                      <th style={{ padding: '12px 14px', width: '220px' }}>Prix Spécifique {selectedClassObj?.name} (FCFA)</th>
-                      <th style={{ padding: '12px 14px', width: '160px', textAlign: 'center' }}>Applicable à cette classe</th>
-                      <th style={{ padding: '12px 14px' }}>Statut</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedFrais.map((frais) => {
-                      const curVal = classAmounts[frais.id] !== undefined ? classAmounts[frais.id] : frais.amount;
-                      const isActive = classActives[frais.id] !== undefined ? classActives[frais.id] : true;
-                      const isCustom = curVal !== frais.amount;
-
-                      return (
-                        <tr key={frais.id} style={{ borderBottom: '1px solid var(--border-color, #e2e8f0)' }}>
-                          <td style={{ padding: '12px 14px', fontWeight: 600 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span>🏷️</span>
-                              <span>{frais.name}</span>
-                            </div>
-                            {frais.description && (
-                              <small style={{ color: '#64748b', display: 'block', marginTop: '2px' }}>
-                                {frais.description}
-                              </small>
-                            )}
-                          </td>
-
-                          <td style={{ padding: '12px 14px', color: '#64748b' }}>
-                            {formatNum(frais.amount)} F
-                          </td>
-
-                          <td style={{ padding: '12px 14px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <input
-                                type="number"
-                                className="form-input"
-                                value={curVal}
-                                disabled={!isActive}
-                                onChange={(e) => {
-                                  const val = e.target.value === '' ? 0 : Number(e.target.value);
-                                  setClassAmounts((prev) => ({ ...prev, [frais.id]: val }));
-                                }}
-                                style={{
-                                  width: '140px',
-                                  padding: '6px 10px',
-                                  fontWeight: 700,
-                                  color: isCustom ? '#2563eb' : '#1e293b',
-                                  borderColor: isCustom ? '#93c5fd' : undefined,
-                                  background: isCustom ? '#eff6ff' : undefined,
-                                }}
-                              />
-                              <span style={{ fontSize: '0.85rem', color: '#64748b' }}>F</span>
-                            </div>
-                          </td>
-
-                          <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                            <input
-                              type="checkbox"
-                              checked={isActive}
-                              onChange={(e) => {
-                                setClassActives((prev) => ({ ...prev, [frais.id]: e.target.checked }));
-                              }}
-                              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                            />
-                          </td>
-
-                          <td style={{ padding: '12px 14px' }}>
-                            {!isActive ? (
-                              <span style={{ fontSize: '0.75rem', background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: '6px' }}>
-                                Non facturé
-                              </span>
-                            ) : isCustom ? (
-                              <span style={{ fontSize: '0.75rem', background: '#dbeafe', color: '#1d4ed8', padding: '2px 8px', borderRadius: '6px', fontWeight: 600 }}>
-                                Tarif personnalisé ({formatNum(curVal)} F)
-                              </span>
-                            ) : (
-                              <span style={{ fontSize: '0.75rem', background: '#f8fafc', color: '#475569', padding: '2px 8px', borderRadius: '6px' }}>
-                                Tarif standard ({formatNum(frais.amount)} F)
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {selectedClassObj && (
-                <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={handleSaveClassPrices}
-                    disabled={loading}
-                    style={{ padding: '10px 24px', fontWeight: 700 }}
-                  >
-                    {loading ? 'Enregistrement...' : `💾 Enregistrer les tarifs pour ${selectedClassObj.name}`}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* VIEW 3: GLOBAL MATRIX VIEW */}
+      {/* VIEW 4: GLOBAL MATRIX VIEW */}
       {activeView === 'matrix' && (
         <div style={{ overflowX: 'auto', background: 'var(--surface-color, #ffffff)', borderRadius: '10px', border: '1px solid var(--border-color, #e2e8f0)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>

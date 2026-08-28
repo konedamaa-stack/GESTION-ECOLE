@@ -6609,9 +6609,12 @@ function App() {
                 fraisList={fraisAnnexesData}
                 classes={classesData}
                 classFraisList={classFraisAnnexesData}
+                students={studentsData}
+                invoices={invoicesData}
                 onRefresh={() => {
                   fetchFraisAnnexes();
                   fetchClassFraisAnnexes();
+                  fetchInvoices();
                 }}
               />
             </div>
