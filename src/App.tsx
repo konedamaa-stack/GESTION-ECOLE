@@ -21,6 +21,7 @@ import { PasswordRecovery } from './components/PasswordRecovery';
 import { UserSupportModal } from './components/UserSupportModal';
 import { DraggableSupportButton } from './components/DraggableSupportButton';
 import { AnnexeManager } from './components/AnnexeManager';
+import { FraisAnnexesManager } from './components/FraisAnnexesManager';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { applyThemeSettings } from './lib/theme';
@@ -482,6 +483,7 @@ function App() {
   const [classesData, setClassesData] = useState<any[]>([]);
   const [annexesData, setAnnexesData] = useState<any[]>([]);
   const [selectedAnnexeId, setSelectedAnnexeId] = useState<string>('all');
+  const [fraisAnnexesData, setFraisAnnexesData] = useState<any[]>([]);
   const [teachersData, setTeachersData] = useState<any[]>([]);
   const [employeesData, setEmployeesData] = useState<any[]>([]);
   const [expensesData, setExpensesData] = useState<any[]>([]);
@@ -949,6 +951,7 @@ function App() {
         fetchStudents(),
         fetchClasses(),
         fetchAnnexes(),
+        fetchFraisAnnexes(),
         fetchTeachers(),
         fetchEmployees(),
         fetchParents(),
@@ -990,6 +993,16 @@ function App() {
       .order('is_main', { ascending: false })
       .order('name');
     if (data) setAnnexesData(data);
+  };
+  const fetchFraisAnnexes = async () => {
+    if (!currentSchoolId) return;
+    const { data } = await supabase
+      .from('frais_annexes')
+      .select('*')
+      .eq('school_id', currentSchoolId)
+      .order('display_order', { ascending: true })
+      .order('created_at', { ascending: true });
+    if (data) setFraisAnnexesData(data);
   };
   const fetchTeachers = async () => {
     const { data } = await supabase.from('teachers').select('*').eq('school_id', currentSchoolId);
@@ -5789,6 +5802,9 @@ function App() {
             <li className={`nav-item ${activeSettingsTab === 'database' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('database')} style={{marginBottom: '4px'}}>
               <Icons.Database /> {t('admin.settings.tab_database', 'Base de Données')}
             </li>
+            <li className={`nav-item ${activeSettingsTab === 'frais_annexes' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('frais_annexes')} style={{marginBottom: '4px'}}>
+              <Icons.CreditCard /> Frais Annexes (Bulletins, Tricots...)
+            </li>
             <li className={`nav-item ${activeSettingsTab === 'annexes' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('annexes')} style={{marginBottom: '4px'}}>
               <Icons.Home /> {t('admin.settings.tab_annexes', 'Annexes & Campus')}
             </li>
@@ -6555,6 +6571,16 @@ function App() {
                   )}
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeSettingsTab === 'frais_annexes' && (
+            <div className="animate-fade-in">
+              <FraisAnnexesManager
+                schoolId={currentSchoolId || ''}
+                fraisList={fraisAnnexesData}
+                onRefresh={fetchFraisAnnexes}
+              />
             </div>
           )}
 
@@ -7576,12 +7602,68 @@ function App() {
                   </div>
                   <div className="form-group">
                     <label>{t('admin.modals.motif', 'Motif du paiement')}</label>
-                    <select name="motif" className="form-select" defaultValue="Frais de scolarité" required>
+                    <select 
+                      name="motif" 
+                      id="payment_motif_select"
+                      className="form-select" 
+                      defaultValue="Frais de scolarité" 
+                      required
+                      onChange={(e) => {
+                        const selectedVal = e.target.value;
+                        const matchFrais = fraisAnnexesData.find(f => f.name === selectedVal);
+                        const amountInput = document.querySelector('input[name="amount"]') as HTMLInputElement;
+                        if (matchFrais && matchFrais.amount > 0 && amountInput) {
+                          amountInput.value = matchFrais.amount.toString();
+                        }
+                      }}
+                    >
                       <option value="Frais de scolarité">Frais de scolarité</option>
-                      <option value="Frais d'inscription">Frais d'inscription</option>
-                      <option value="Frais de cantine">Frais de cantine</option>
-                      <option value="Transport">Transport</option>
+                      {fraisAnnexesData && fraisAnnexesData.length > 0 && (
+                        <optgroup label="📋 Frais Annexes de l'établissement">
+                          {fraisAnnexesData.map((f: any) => (
+                            <option key={f.id} value={f.name}>
+                              {f.name} ({formatNum(f.amount)} F)
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label="Autres rubriques">
+                        <option value="Frais d'inscription">Frais d'inscription</option>
+                        <option value="Frais de cantine">Frais de cantine</option>
+                        <option value="Transport">Transport</option>
+                        <option value="Autre motif">Autre motif</option>
+                      </optgroup>
                     </select>
+
+                    {fraisAnnexesData && fraisAnnexesData.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary, #64748b)', alignSelf: 'center' }}>⚡ Sélection rapide :</span>
+                        {fraisAnnexesData.map((f: any) => (
+                          <button
+                            key={f.id}
+                            type="button"
+                            onClick={() => {
+                              const motifSelect = document.getElementById('payment_motif_select') as HTMLSelectElement;
+                              const amountInput = document.querySelector('input[name="amount"]') as HTMLInputElement;
+                              if (motifSelect) motifSelect.value = f.name;
+                              if (amountInput && f.amount > 0) amountInput.value = f.amount.toString();
+                            }}
+                            style={{
+                              padding: '3px 10px',
+                              borderRadius: '12px',
+                              border: '1px solid #cbd5e1',
+                              background: '#eff6ff',
+                              fontSize: '0.78rem',
+                              fontWeight: 600,
+                              color: '#1d4ed8',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            + {f.name} ({formatNum(f.amount)} F)
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="form-group">
                     <label>{t('admin.modals.amount', 'Montant (F)')}</label>
