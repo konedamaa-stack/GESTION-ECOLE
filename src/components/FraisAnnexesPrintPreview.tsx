@@ -27,11 +27,6 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
   onClose,
 }) => {
   useEffect(() => {
-    // Fermeture automatique après impression ou annulation
-    const handleAfterPrint = () => {
-      onClose();
-    };
-
     // Fermeture par la touche Échap
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -39,24 +34,17 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
       }
     };
 
-    window.addEventListener('afterprint', handleAfterPrint);
     window.addEventListener('keydown', handleKeyDown);
 
     const timer = setTimeout(() => {
       window.print();
-    }, 450);
+    }, 500);
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener('afterprint', handleAfterPrint);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);
-
-  const handleManualPrint = () => {
-    window.addEventListener('afterprint', () => onClose(), { once: true });
-    window.print();
-  };
 
   const formatNum = (amount: number) => {
     return new Intl.NumberFormat('fr-FR').format(amount || 0);
@@ -125,20 +113,28 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
           .no-print {
             display: none !important;
           }
-          body {
-            background: white !important;
+          body * {
+            visibility: hidden !important;
+          }
+          #frais-annexes-print-modal, #frais-annexes-print-modal * {
+            visibility: visible !important;
           }
           #frais-annexes-print-modal {
-            position: static !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
             width: 100% !important;
             height: auto !important;
             padding: 0 !important;
+            margin: 0 !important;
+            background: white !important;
             overflow: visible !important;
+            box-shadow: none !important;
           }
         }
       `}</style>
 
-      {/* Action Bar (hidden on print, sticky on screen) */}
+      {/* Action Bar (Thème Clair Blanc & Bleu, aucun noir) */}
       <div
         className="no-print"
         style={{
@@ -148,33 +144,34 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          background: '#0f172a',
-          color: '#ffffff',
-          padding: '12px 20px',
+          background: '#ffffff',
+          color: '#1e293b',
+          padding: '14px 20px',
           borderRadius: '10px',
           marginBottom: '20px',
-          boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
+          border: '1px solid #bfdbfe',
+          boxShadow: '0 4px 14px rgba(37, 99, 235, 0.08)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '1.25rem' }}>🖨️</span>
+          <span style={{ fontSize: '1.3rem' }}>🖨️</span>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
+            <div style={{ fontWeight: 700, fontSize: '0.98rem', color: '#1e3a8a' }}>
               Aperçu avant impression : Frais Annexes
             </div>
-            <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
-              La page se ferme automatiquement à la fin de l'impression (ou appuyez sur Fermer / touche Échap)
+            <div style={{ fontSize: '0.76rem', color: '#64748b' }}>
+              Cliquez sur <strong>« Fermer »</strong> ou appuyez sur <strong>Échap</strong> pour revenir à l'application
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button
             type="button"
             className="btn btn-primary"
-            onClick={handleManualPrint}
+            onClick={() => window.print()}
             style={{
-              padding: '8px 18px',
+              padding: '9px 18px',
               fontWeight: 700,
               background: '#2563eb',
               color: '#ffffff',
@@ -192,11 +189,11 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
             type="button"
             onClick={onClose}
             style={{
-              padding: '8px 18px',
-              fontWeight: 600,
-              background: '#334155',
-              color: '#ffffff',
-              border: '1px solid #475569',
+              padding: '9px 18px',
+              fontWeight: 700,
+              background: '#f1f5f9',
+              color: '#334155',
+              border: '1px solid #cbd5e1',
               borderRadius: '6px',
               cursor: 'pointer',
               display: 'flex',
