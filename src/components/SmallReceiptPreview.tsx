@@ -56,20 +56,46 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
     return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
   };
 
-  // Calcul du numéro de versement identique au grand format
+  // Helper pour identifier les factures de Frais Annexes
+  const isFraisAnnexe = (inv: any) => {
+    if (!inv) return false;
+    if (inv.invoice_number && String(inv.invoice_number).includes('FAC-ANNEXE')) return true;
+    const m = (inv.motif || '').toLowerCase().trim();
+    if (m.includes('scolarité') || m.includes('scolarite')) return false;
+    return (
+      m.includes('bulletin') ||
+      m.includes('tricot') ||
+      m.includes('polo') ||
+      m.includes('macaron') ||
+      m.includes('badge') ||
+      m.includes('assurance') ||
+      m.includes('annexe')
+    );
+  };
+
+  // Calcul du numéro de versement (scolarité uniquement)
   let installmentNum = 1;
   if (invoicesData.length > 0 && invoice && student) {
-    const studentInvoices = invoicesData
-      .filter((inv: any) => inv.student_id === student.id && (inv.status === 'Payée' || inv.id === invoice.id))
+    const scolariteInvoices = invoicesData
+      .filter((inv: any) => inv.student_id === student.id && (inv.status === 'Payée' || inv.id === invoice.id) && !isFraisAnnexe(inv))
       .sort((a: any, b: any) => new Date(a.issue_date || a.paid_at || 0).getTime() - new Date(b.issue_date || b.paid_at || 0).getTime());
     
-    const index = studentInvoices.findIndex((inv: any) => inv.id === invoice.id);
+    const index = scolariteInvoices.findIndex((inv: any) => inv.id === invoice.id);
     if (index !== -1) {
       installmentNum = index + 1;
     } else {
-      installmentNum = studentInvoices.length + 1;
+      installmentNum = Math.max(1, scolariteInvoices.length + 1);
     }
   }
+
+  const isFirstInstallment = installmentNum === 1;
+
+  // Calcul du montant global des frais annexes pour l'élève
+  const fraisAnnexesTotal = invoice?.frais_annexes_amount !== undefined
+    ? Number(invoice.frais_annexes_amount)
+    : (invoicesData || [])
+        .filter((inv: any) => inv.student_id === student?.id && inv.status === 'Payée' && isFraisAnnexe(inv))
+        .reduce((sum: number, inv: any) => sum + (Number(inv.paid_amount !== undefined && inv.paid_amount !== null ? inv.paid_amount : inv.amount) || 0), 0);
 
   const getOrdinal = (n: number) => {
     if (n === 1) return '1er';
@@ -88,9 +114,12 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
   const receiptNo = invoice?.id ? invoice.id.split('-')[0].toUpperCase() : "-";
   const matricule = student?.matricule || "-";
   
-  // Calculs financiers rigoureusement identiques au Grand Format A4
+  // Calculs financiers
   const scolarite = Number(student?.tuition_fee) || (student?.affecte === 'Affecté' ? Number(student?.classes?.tuition_fee_affecte) : Number(student?.classes?.tuition_fee)) || Number(invoice?.amount) || 0;
-  const versement = invoice?.paid_amount !== undefined ? Number(invoice.paid_amount) : (Number(invoice?.amount) || 0);
+  const versementScolarite = invoice?.paid_amount !== undefined ? Number(invoice.paid_amount) : (Number(invoice?.amount) || 0);
+  const totalDonneAuCaissier = isFirstInstallment && fraisAnnexesTotal > 0
+    ? (invoice?.total_amount_given !== undefined ? Number(invoice.total_amount_given) : (versementScolarite + fraisAnnexesTotal))
+    : versementScolarite;
   const reste = studentReste !== undefined ? Number(studentReste) : 0;
   const totalPaid = Math.max(0, scolarite - reste);
 
@@ -174,14 +203,29 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', fontWeight: 'bold', fontSize: isAr ? '14px' : '12px', flexDirection: isAr ? 'row-reverse' : 'row' }}>
           <span>{isAr ? `${getArabicOrdinal(installmentNum)}:` : versementLabel}</span>
-          <span>{formatCurrency(versement)}</span>
+          <span>{formatCurrency(versementScolarite)}</span>
         </div>
+
+        {/* LIGNE FRAIS ANNEXES & TOTAL REMIS AU CAISSIER : VISIBLE UNIQUEMENT SUR LE 1ER REÇU ! */}
+        {isFirstInstallment && fraisAnnexesTotal > 0 && (
+          <div style={{ borderTop: '1px dashed #cbd5e1', borderBottom: '1px dashed #cbd5e1', padding: '3px 0', margin: '4px 0', background: '#f8fafc' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', color: '#047857', flexDirection: isAr ? 'row-reverse' : 'row' }}>
+              <span>{isAr ? 'رسوم الملحقات:' : 'Frais Annexes (Tenues/Bull.):'}</span>
+              <span style={{ fontWeight: 'bold' }}>{formatCurrency(fraisAnnexesTotal)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '13px', color: '#1e40af', flexDirection: isAr ? 'row-reverse' : 'row' }}>
+              <span>{isAr ? 'المبلغ المسلم للصندوق:' : 'TOTAL VERSÉ CE JOUR:'}</span>
+              <span>{formatCurrency(totalDonneAuCaissier)}</span>
+            </div>
+          </div>
+        )}
+
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', flexDirection: isAr ? 'row-reverse' : 'row' }}>
-          <span>{isAr ? 'إجمالي المدفوع:' : 'Total versé:'}</span>
+          <span>{isAr ? 'إجمالي المدفوع:' : 'Total versé scolarité:'}</span>
           <span>{formatCurrency(totalPaid)}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', paddingTop: '6px', borderTop: '1px dotted #ccc', flexDirection: isAr ? 'row-reverse' : 'row' }}>
-          <span>{isAr ? 'المتبقي:' : 'Reste:'}</span>
+          <span>{isAr ? 'المتبقي:' : 'Reste scolarité:'}</span>
           <span style={{ fontWeight: 'bold' }}>{formatCurrency(reste)}</span>
         </div>
         {isSoldé && (

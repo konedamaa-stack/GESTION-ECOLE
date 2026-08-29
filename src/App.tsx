@@ -1047,6 +1047,24 @@ function App() {
     return getClassFraisAnnexesBreakdown(classId).reduce((sum, item) => sum + item.amount, 0);
   };
 
+  // Helper global pour distinguer les factures de Frais Annexes des factures de scolarité
+  const isFraisAnnexeInvoice = (inv: any) => {
+    if (!inv) return false;
+    if (inv.invoice_number && String(inv.invoice_number).includes('FAC-ANNEXE')) return true;
+    const m = (inv.motif || '').toLowerCase().trim();
+    if (m.includes('scolarité') || m.includes('scolarite')) return false;
+    return (
+      (fraisAnnexesData || []).some((f: any) => m.includes(f.name.toLowerCase().trim())) ||
+      m.includes('bulletin') ||
+      m.includes('tricot') ||
+      m.includes('polo') ||
+      m.includes('macaron') ||
+      m.includes('badge') ||
+      m.includes('assurance') ||
+      m.includes('annexe')
+    );
+  };
+
   // Répartition automatique à l'inscription : tous les frais annexes d'abord, puis la scolarité
   const distributePaymentAnnexesThenScolarite = async (
     studentId: string,
@@ -1945,7 +1963,26 @@ function App() {
             regStatus
           );
           if (createdInvoices && createdInvoices.length > 0) {
-            createdInvoice = createdInvoices[0];
+            const scoInv = createdInvoices.find((inv: any) => !isFraisAnnexeInvoice(inv));
+            const annexesTotal = createdInvoices
+              .filter((inv: any) => isFraisAnnexeInvoice(inv))
+              .reduce((sum: number, inv: any) => sum + Number(inv.amount || 0), 0);
+            const scoTotal = scoInv ? Number(scoInv.amount || 0) : 0;
+
+            createdInvoice = {
+              ...(scoInv || createdInvoices[0]),
+              student_id: editEntity.id,
+              amount: scoTotal,
+              paid_amount: scoTotal,
+              frais_annexes_amount: annexesTotal,
+              total_amount_given: regAmount,
+              motif: scoTotal > 0 ? "Frais de scolarité (Acompte réinscription)" : "Frais de réinscription (Frais Annexes)",
+              payment_method: regMethod,
+              status: regStatus,
+              invoice_number: (scoInv || createdInvoices[0]).invoice_number || ('FAC-REC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000)),
+              id: (scoInv || createdInvoices[0]).id || 'temp-id',
+              issue_date: new Date().toISOString()
+            };
           }
         }
         
@@ -1956,8 +1993,11 @@ function App() {
           setSelectedStudent(studentFull);
           setSelectedInvoice(createdInvoice || {
             student_id: editEntity.id,
-            amount: regAmount,
-            motif: "Frais de réinscription (Frais Annexes & Scolarité)",
+            amount: 0,
+            paid_amount: 0,
+            frais_annexes_amount: regAmount,
+            total_amount_given: regAmount,
+            motif: "Frais de réinscription (Frais Annexes)",
             payment_method: regMethod,
             status: regStatus,
             invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
@@ -2206,7 +2246,26 @@ function App() {
             regStatus
           );
           if (createdInvoices && createdInvoices.length > 0) {
-            createdInvoice = createdInvoices[0];
+            const scoInv = createdInvoices.find((inv: any) => !isFraisAnnexeInvoice(inv));
+            const annexesTotal = createdInvoices
+              .filter((inv: any) => isFraisAnnexeInvoice(inv))
+              .reduce((sum: number, inv: any) => sum + Number(inv.amount || 0), 0);
+            const scoTotal = scoInv ? Number(scoInv.amount || 0) : 0;
+
+            createdInvoice = {
+              ...(scoInv || createdInvoices[0]),
+              student_id: newStudentId,
+              amount: scoTotal,
+              paid_amount: scoTotal,
+              frais_annexes_amount: annexesTotal,
+              total_amount_given: regAmount,
+              motif: scoTotal > 0 ? "Frais de scolarité (Acompte inscription)" : "Frais d'inscription (Frais Annexes)",
+              payment_method: regMethod,
+              status: regStatus,
+              invoice_number: (scoInv || createdInvoices[0]).invoice_number || ('FAC-REC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000)),
+              id: (scoInv || createdInvoices[0]).id || 'temp-id',
+              issue_date: new Date().toISOString()
+            };
           }
         }
 
@@ -2218,8 +2277,11 @@ function App() {
           setSelectedStudent({ ...student, id: newStudentId, classes: clsForReceipt, student_parents: parentObj ? [{ parents: parentObj }] : [] });
           setSelectedInvoice(createdInvoice || {
             student_id: newStudentId,
-            amount: regAmount,
-            motif: "Frais d'inscription (Frais Annexes & Scolarité)",
+            amount: 0,
+            paid_amount: 0,
+            frais_annexes_amount: regAmount,
+            total_amount_given: regAmount,
+            motif: "Frais d'inscription (Frais Annexes)",
             payment_method: regMethod,
             status: regStatus,
             invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
@@ -2339,11 +2401,33 @@ function App() {
           const studentForReceipt = studentsData.find((s: any) => s.id === studentId) || student;
           setSelectedStudent(studentForReceipt);
           if (createdInvoices && createdInvoices.length > 0) {
-            setSelectedInvoice(createdInvoices[0]);
+            const scoInv = createdInvoices.find((inv: any) => !isFraisAnnexeInvoice(inv));
+            const annexesTotal = createdInvoices
+              .filter((inv: any) => isFraisAnnexeInvoice(inv))
+              .reduce((sum: number, inv: any) => sum + Number(inv.amount || 0), 0);
+            const scoTotal = scoInv ? Number(scoInv.amount || 0) : 0;
+
+            setSelectedInvoice({
+              ...(scoInv || createdInvoices[0]),
+              student_id: studentId,
+              amount: scoTotal,
+              paid_amount: scoTotal,
+              frais_annexes_amount: annexesTotal,
+              total_amount_given: amount,
+              motif: scoTotal > 0 ? "Frais de scolarité (Acompte inscription)" : "Frais d'inscription (Frais Annexes)",
+              payment_method: paymentMethod,
+              status: 'Payée',
+              invoice_number: (scoInv || createdInvoices[0]).invoice_number || ('FAC-REC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000)),
+              id: (scoInv || createdInvoices[0]).id || 'temp-id',
+              issue_date: new Date().toISOString()
+            });
           } else {
             setSelectedInvoice({
               student_id: studentId,
-              amount: amount,
+              amount: 0,
+              paid_amount: 0,
+              frais_annexes_amount: amount,
+              total_amount_given: amount,
               motif: motif,
               payment_method: paymentMethod,
               status: 'Payée',
@@ -4970,12 +5054,6 @@ function App() {
     if (currentSchoolPlan !== 'Pro') {
       return renderPremiumOverlay(t('admin.finance.premium_title', "Comptabilité & Scolarité"), t('admin.finance.premium_desc', "Gérez les factures, les paiements de scolarité et suivez votre trésorerie avec le plan Pro."));
     }
-
-    // Helper pour distinguer les factures de Frais Annexes des factures de scolarité
-    const isFraisAnnexeInvoice = (inv: any) => {
-      const m = (inv.motif || '').toLowerCase().trim();
-      return fraisAnnexesData.some((f: any) => m.includes(f.name.toLowerCase().trim()) && !m.includes('scolarité'));
-    };
 
     // Calcul des totaux par classe
     const scolariteParClasse = (classesData || []).map(cls => {
@@ -9101,8 +9179,8 @@ function App() {
                                                           studentReste={
                                 (() => {
                                   const total = Number(selectedStudent.tuition_fee) || (selectedStudent.affecte === 'Affecté' ? Number(selectedStudent.classes?.tuition_fee_affecte) : Number(selectedStudent.classes?.tuition_fee)) || 0;
-                                  let paye = invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
-                                  if (selectedInvoice && selectedInvoice.status === 'Payée' && !invoicesData.some((i: any) => i.id === selectedInvoice.id)) {
+                                  let paye = invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée' && !isFraisAnnexeInvoice(inv)).reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
+                                  if (selectedInvoice && selectedInvoice.status === 'Payée' && !isFraisAnnexeInvoice(selectedInvoice) && !invoicesData.some((i: any) => i.id === selectedInvoice.id)) {
                                     paye += Number(selectedInvoice.amount) || 0;
                                   }
                                   return Math.max(0, total - paye);
@@ -9146,8 +9224,8 @@ function App() {
                             studentReste={
                                 (() => {
                                   const total = Number(selectedStudent.tuition_fee) || (selectedStudent.affecte === 'Affecté' ? Number(selectedStudent.classes?.tuition_fee_affecte) : Number(selectedStudent.classes?.tuition_fee)) || 0;
-                                  let paye = invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
-                                  if (selectedInvoice && selectedInvoice.status === 'Payée' && !invoicesData.some((i: any) => i.id === selectedInvoice.id)) {
+                                  let paye = invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée' && !isFraisAnnexeInvoice(inv)).reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
+                                  if (selectedInvoice && selectedInvoice.status === 'Payée' && !isFraisAnnexeInvoice(selectedInvoice) && !invoicesData.some((i: any) => i.id === selectedInvoice.id)) {
                                     paye += Number(selectedInvoice.amount) || 0;
                                   }
                                   return Math.max(0, total - paye);

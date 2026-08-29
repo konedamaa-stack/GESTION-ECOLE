@@ -55,20 +55,46 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
     return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
   };
 
-  // Calcul du numéro de versement
+  // Helper pour identifier les factures de Frais Annexes
+  const isFraisAnnexe = (inv: any) => {
+    if (!inv) return false;
+    if (inv.invoice_number && String(inv.invoice_number).includes('FAC-ANNEXE')) return true;
+    const m = (inv.motif || '').toLowerCase().trim();
+    if (m.includes('scolarité') || m.includes('scolarite')) return false;
+    return (
+      m.includes('bulletin') ||
+      m.includes('tricot') ||
+      m.includes('polo') ||
+      m.includes('macaron') ||
+      m.includes('badge') ||
+      m.includes('assurance') ||
+      m.includes('annexe')
+    );
+  };
+
+  // Calcul du numéro de versement (scolarité uniquement)
   let installmentNum = 1;
   if (invoicesData.length > 0 && invoice && student) {
-    const studentInvoices = invoicesData
-      .filter((inv: any) => inv.student_id === student.id && (inv.status === 'Payée' || inv.id === invoice.id))
+    const scolariteInvoices = invoicesData
+      .filter((inv: any) => inv.student_id === student.id && (inv.status === 'Payée' || inv.id === invoice.id) && !isFraisAnnexe(inv))
       .sort((a: any, b: any) => new Date(a.issue_date || a.paid_at || 0).getTime() - new Date(b.issue_date || b.paid_at || 0).getTime());
     
-    const index = studentInvoices.findIndex((inv: any) => inv.id === invoice.id);
+    const index = scolariteInvoices.findIndex((inv: any) => inv.id === invoice.id);
     if (index !== -1) {
       installmentNum = index + 1;
     } else {
-      installmentNum = studentInvoices.length + 1;
+      installmentNum = Math.max(1, scolariteInvoices.length + 1);
     }
   }
+
+  const isFirstInstallment = installmentNum === 1;
+
+  // Calcul du montant global des frais annexes pour l'élève
+  const fraisAnnexesTotal = invoice?.frais_annexes_amount !== undefined
+    ? Number(invoice.frais_annexes_amount)
+    : (invoicesData || [])
+        .filter((inv: any) => inv.student_id === student?.id && inv.status === 'Payée' && isFraisAnnexe(inv))
+        .reduce((sum: number, inv: any) => sum + (Number(inv.paid_amount !== undefined && inv.paid_amount !== null ? inv.paid_amount : inv.amount) || 0), 0);
 
   const getOrdinal = (n: number) => {
     if (n === 1) return '1er';
@@ -89,7 +115,10 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
   
   // Calculs financiers
   const scolarite = Number(student?.tuition_fee) || (student?.affecte === 'Affecté' ? Number(student?.classes?.tuition_fee_affecte) : Number(student?.classes?.tuition_fee)) || Number(invoice?.amount) || 0;
-  const versement = invoice?.paid_amount !== undefined ? Number(invoice.paid_amount) : (Number(invoice?.amount) || 0);
+  const versementScolarite = invoice?.paid_amount !== undefined ? Number(invoice.paid_amount) : (Number(invoice?.amount) || 0);
+  const totalDonneAuCaissier = isFirstInstallment && fraisAnnexesTotal > 0
+    ? (invoice?.total_amount_given !== undefined ? Number(invoice.total_amount_given) : (versementScolarite + fraisAnnexesTotal))
+    : versementScolarite;
   const reste = studentReste !== undefined ? Number(studentReste) : 0;
   const totalPaid = Math.max(0, scolarite - reste);
   
@@ -162,11 +191,33 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
             </tr>
             <tr>
               <td style={{ textAlign: isAr ? 'left' : 'right', paddingLeft: isAr ? '5px' : '0', paddingRight: isAr ? '0' : '5px', paddingBottom: '2px' }}>{isAr ? `${getArabicOrdinal(installmentNum)}:` : versementLabel}</td>
-              <td style={{ textAlign: isAr ? 'right' : 'left', paddingBottom: '2px' }}>{formatCurrency(versement)}</td>
+              <td style={{ textAlign: isAr ? 'right' : 'left', paddingBottom: '2px' }}>{formatCurrency(versementScolarite)}</td>
               <td style={{ textAlign: 'center', paddingBottom: '2px' }}>{paymentDate}</td>
               <td style={{ textAlign: isAr ? 'left' : 'right', paddingLeft: isAr ? '5px' : '0', paddingRight: isAr ? '0' : '5px', paddingBottom: '2px' }}>{isAr ? 'ولي الأمر:' : 'Parent:'}</td>
               <td style={{ textAlign: isAr ? 'right' : 'left', fontSize: '13px', paddingBottom: '2px' }} dir="rtl">{parentName}</td>
             </tr>
+
+            {/* LIGNE FRAIS ANNEXES & TOTAL REMIS AU CAISSIER : SUR LE 1ER REÇU UNIQUEMENT ! DISPARAÎT SUR LES AUTRES REÇUS */}
+            {isFirstInstallment && fraisAnnexesTotal > 0 && (
+              <tr style={{ background: '#f8fafc', borderTop: '1px dashed #cbd5e1', borderBottom: '1px dashed #cbd5e1' }}>
+                <td style={{ textAlign: isAr ? 'left' : 'right', paddingLeft: isAr ? '5px' : '0', paddingRight: isAr ? '0' : '5px', paddingTop: '3px', paddingBottom: '3px', color: '#047857' }}>
+                  {isAr ? 'رسوم الملحقات:' : 'Frais Annexes:'}
+                </td>
+                <td style={{ textAlign: isAr ? 'right' : 'left', paddingTop: '3px', paddingBottom: '3px', color: '#047857' }}>
+                  {formatCurrency(fraisAnnexesTotal)}
+                </td>
+                <td style={{ textAlign: 'center', fontSize: '10px', color: '#64748b', paddingTop: '3px', paddingBottom: '3px' }}>
+                  {isAr ? '(الملحقات)' : '(Inscr./Tenues)'}
+                </td>
+                <td style={{ textAlign: isAr ? 'left' : 'right', paddingLeft: isAr ? '5px' : '0', paddingRight: isAr ? '0' : '5px', paddingTop: '3px', paddingBottom: '3px', fontWeight: 'bold' }}>
+                  {isAr ? 'المبلغ المسلم للصندوق:' : 'Total versé ce jour:'}
+                </td>
+                <td style={{ textAlign: isAr ? 'right' : 'left', fontWeight: 'bold', fontSize: '14px', color: '#1e40af', paddingTop: '3px', paddingBottom: '3px' }}>
+                  {formatCurrency(totalDonneAuCaissier)}
+                </td>
+              </tr>
+            )}
+
             <tr>
               <td style={{ textAlign: isAr ? 'left' : 'right', paddingLeft: isAr ? '5px' : '0', paddingRight: isAr ? '0' : '5px', paddingBottom: '2px' }}>{isAr ? 'إجمالي المدفوع:' : 'Total versé:'}</td>
               <td style={{ textAlign: isAr ? 'right' : 'left', paddingBottom: '2px' }}>{formatCurrency(totalPaid)}</td>
