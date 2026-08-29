@@ -9462,7 +9462,7 @@ function App() {
                       }}
                       onClick={() => setActiveDossierTab('documents')}
                     >
-                      {t('admin.modals.dossier_title_docs', 'Documents & Annexes')}
+                      {t('admin.modals.dossier_title_docs', 'Documents & Fichiers')}
                     </button>
                     <button 
                       className={`btn ${activeDossierTab === 'finances' ? '' : 'btn-outline'}`}
@@ -9625,12 +9625,13 @@ function App() {
                   )}
 
                   {activeDossierTab === 'finances' && (() => {
-                    const studentInvoices = invoicesData.filter(inv => inv.student_id === selectedStudent.id);
+                    const studentInvoices = invoicesData.filter(inv => inv.student_id === selectedStudent.id && !isFraisAnnexeInvoice(inv));
                     const studentPaye = studentInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
                     const studentTotal = Number(selectedStudent.tuition_fee) || (selectedStudent.affecte === 'Affecté' ? Number(selectedStudent.classes?.tuition_fee_affecte) : Number(selectedStudent.classes?.tuition_fee)) || 0;
                     const defaultClassFee = selectedStudent.affecte === 'Affecté' ? Number(selectedStudent.classes?.tuition_fee_affecte || 0) : Number(selectedStudent.classes?.tuition_fee || 0);
                     const hasCustomTuition = selectedStudent.tuition_fee !== null && selectedStudent.tuition_fee !== undefined && selectedStudent.tuition_fee !== '';
                     const studentReste = Math.max(0, studentTotal - studentPaye);
+                    const totalAnnexesPayees = invoicesData.filter(inv => inv.student_id === selectedStudent.id && inv.status === 'Payée' && isFraisAnnexeInvoice(inv)).reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
 
                     return (
                     <div>
@@ -9786,7 +9787,7 @@ function App() {
                                     if (studentErr) throw studentErr;
 
                                     // 2. Mettre à jour le Total Payé si modifié
-                                    const currentPayeSum = invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
+                                    const currentPayeSum = invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée' && !isFraisAnnexeInvoice(inv)).reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
                                     const delta = parsedPaye - currentPayeSum;
 
                                     if (delta > 0) {
@@ -9802,9 +9803,9 @@ function App() {
                                       }]);
                                       if (invErr) throw invErr;
                                     } else if (delta < 0) {
-                                      // Réduire / Ajuster les paiements existants
+                                      // Réduire / Ajuster les paiements existants de scolarité uniquement
                                       let toReduce = Math.abs(delta);
-                                      const studentInvs = invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée');
+                                      const studentInvs = invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée' && !isFraisAnnexeInvoice(inv));
                                       
                                       for (const inv of studentInvs) {
                                         if (toReduce <= 0) break;
@@ -9958,6 +9959,26 @@ function App() {
                                 </div>
                               </div>
                             </div>
+                          </div>
+                        )}
+                        {totalAnnexesPayees > 0 && (
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: '#f0fdf4',
+                            border: '1px solid #bbf7d0',
+                            borderRadius: '8px',
+                            padding: '10px 16px',
+                            marginBottom: '16px',
+                            fontSize: '0.88rem',
+                            color: '#166534'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span>✅</span>
+                              <span><strong>Frais Annexes d'inscription :</strong> Réglés au total ({formatNum(totalAnnexesPayees)} F CFA)</span>
+                            </div>
+                            <span style={{ fontSize: '0.8rem', color: '#15803d', fontWeight: 600 }}>Gérés dans l'onglet Frais Annexes</span>
                           </div>
                         )}
 
