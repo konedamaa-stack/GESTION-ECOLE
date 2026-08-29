@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface FraisAnnexesPrintPreviewProps {
   schoolInfo: any;
@@ -26,11 +27,36 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
   onClose,
 }) => {
   useEffect(() => {
+    // Fermeture automatique après impression ou annulation
+    const handleAfterPrint = () => {
+      onClose();
+    };
+
+    // Fermeture par la touche Échap
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('afterprint', handleAfterPrint);
+    window.addEventListener('keydown', handleKeyDown);
+
     const timer = setTimeout(() => {
       window.print();
-    }, 400);
-    return () => clearTimeout(timer);
-  }, []);
+    }, 450);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('afterprint', handleAfterPrint);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
+  const handleManualPrint = () => {
+    window.addEventListener('afterprint', () => onClose(), { once: true });
+    window.print();
+  };
 
   const formatNum = (amount: number) => {
     return new Intl.NumberFormat('fr-FR').format(amount || 0);
@@ -75,56 +101,110 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
       .reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
   };
 
-  return (
+  const modalContent = (
     <div
+      id="frais-annexes-print-modal"
       style={{
         position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        background: 'white',
-        zIndex: 99999,
+        width: '100vw',
+        height: '100vh',
+        background: '#ffffff',
+        zIndex: 9999999, // Supérieur à toute la barre supérieure et aux boutons flottants
         overflowY: 'auto',
-        padding: '24px',
+        padding: '20px',
         color: '#0f172a',
         fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       }}
     >
-      {/* Action Bar (hidden on print) */}
+      <style>{`
+        @media print {
+          .no-print {
+            display: none !important;
+          }
+          body {
+            background: white !important;
+          }
+          #frais-annexes-print-modal {
+            position: static !important;
+            width: 100% !important;
+            height: auto !important;
+            padding: 0 !important;
+            overflow: visible !important;
+          }
+        }
+      `}</style>
+
+      {/* Action Bar (hidden on print, sticky on screen) */}
       <div
         className="no-print"
         style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 1000,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          background: '#f8fafc',
+          background: '#0f172a',
+          color: '#ffffff',
           padding: '12px 20px',
-          borderRadius: '8px',
-          marginBottom: '24px',
-          border: '1px solid #e2e8f0',
+          borderRadius: '10px',
+          marginBottom: '20px',
+          boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '1.2rem' }}>🖨️</span>
-          <strong>Aperçu avant impression : Frais Annexes</strong>
+          <span style={{ fontSize: '1.25rem' }}>🖨️</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
+              Aperçu avant impression : Frais Annexes
+            </div>
+            <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+              La page se ferme automatiquement à la fin de l'impression (ou appuyez sur Fermer / touche Échap)
+            </div>
+          </div>
         </div>
+
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => window.print()}
-            style={{ padding: '8px 16px', fontWeight: 600 }}
+            onClick={handleManualPrint}
+            style={{
+              padding: '8px 18px',
+              fontWeight: 700,
+              background: '#2563eb',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
           >
-            Imprimer / Enregistrer en PDF
+            <span>🖨️</span> Imprimer / Enregistrer en PDF
           </button>
           <button
             type="button"
-            className="btn btn-outline"
             onClick={onClose}
-            style={{ padding: '8px 16px' }}
+            style={{
+              padding: '8px 18px',
+              fontWeight: 600,
+              background: '#334155',
+              color: '#ffffff',
+              border: '1px solid #475569',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
           >
-            Fermer
+            <span>✕</span> Fermer
           </button>
         </div>
       </div>
@@ -624,4 +704,6 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
