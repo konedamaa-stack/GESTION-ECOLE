@@ -180,11 +180,14 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
   const handleDelete = async (id: string, fraisName: string) => {
     if (!window.confirm(`Supprimer définitivement le frais "${fraisName}" et tous ses tarifs associés ?`)) return;
     try {
+      // Supprimer d'abord les liaisons par classe pour éviter les blocages de clé étrangère
+      await supabase.from('class_frais_annexes').delete().eq('frais_annexe_id', id);
+
       const { error } = await supabase.from('frais_annexes').delete().eq('id', id);
       if (error) throw error;
       onRefresh();
     } catch (err: any) {
-      alert("Erreur: " + err.message);
+      alert("Erreur lors de la suppression : " + err.message);
     }
   };
 
@@ -1395,28 +1398,40 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
                             onClick={() => openEditModal(item)}
                             title="Modifier ce frais"
                             style={{
-                              background: 'transparent',
-                              border: 'none',
+                              background: '#eff6ff',
+                              border: '1px solid #bfdbfe',
+                              borderRadius: '6px',
                               cursor: 'pointer',
-                              fontSize: '1rem',
-                              padding: '4px',
+                              padding: '5px 10px',
+                              color: '#2563eb',
+                              fontSize: '0.82rem',
+                              fontWeight: 600,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
                             }}
                           >
-                            ✏️
+                            <span>✏️</span> Modifier
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDelete(item.id, item.name)}
                             title="Supprimer ce frais"
                             style={{
-                              background: 'transparent',
-                              border: 'none',
+                              background: '#fef2f2',
+                              border: '1px solid #fecaca',
+                              borderRadius: '6px',
                               cursor: 'pointer',
-                              fontSize: '1rem',
-                              padding: '4px',
+                              padding: '5px 10px',
+                              color: '#dc2626',
+                              fontSize: '0.82rem',
+                              fontWeight: 600,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
                             }}
                           >
-                            🗑️
+                            <span>🗑️</span> Supprimer
                           </button>
                         </div>
                       </td>
