@@ -100,7 +100,11 @@ function App() {
     const saved = localStorage.getItem('sges_employee');
     return saved ? JSON.parse(saved) : null;
   });
-  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sges_tab') || 'dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    const saved = localStorage.getItem('sges_tab');
+    if (saved === 'absences' || saved === 'communication') return 'dashboard';
+    return saved || 'dashboard';
+  });
   const [activeSettingsTab, setActiveSettingsTab] = useState('general');
   const [selectedBulletinTemplate, setSelectedBulletinTemplate] = useState<string>('classic');
   const [activeModalState, setActiveModalState] = useState<string | null>(null);
@@ -7295,9 +7299,6 @@ function App() {
 
           {(currentAdminRole === 'Director' || currentAdminRole === 'Secretary' || currentAdminRole === 'Supervisor') && (
             <>
-              <li className={`nav-item ${activeTab === 'absences' ? 'active' : ''}`} onClick={() => { setActiveTab('absences'); setIsMobileMenuOpen(false); }}>
-                <Icons.Activity /> {t('admin.sidebar.absences', 'Gestion Absences')}
-              </li>
               <li className={`nav-item ${activeTab === 'teachers' ? 'active' : ''}`} onClick={() => { setActiveTab('teachers'); setIsMobileMenuOpen(false); }}>
                 <Icons.GraduationCap /> {t('admin.sidebar.teachers', 'Enseignants')}
               </li>
@@ -7309,9 +7310,6 @@ function App() {
               </li>
               <li className={`nav-item ${['grades', 'bulletins', 'notes_bulletins'].includes(activeTab) ? 'active' : ''}`} onClick={() => { setActiveTab('notes_bulletins'); setIsMobileMenuOpen(false); }}>
                 <Icons.FileText /> Notes & Bulletins
-              </li>
-              <li className={`nav-item ${activeTab === 'communication' ? 'active' : ''}`} onClick={() => { setActiveTab('communication'); setIsMobileMenuOpen(false); }}>
-                <Icons.MessageSquare /> {t('admin.sidebar.communication', 'Communication')}
               </li>
             </>
           )}
