@@ -68,7 +68,6 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
       { id: 'dashboard', label: t('admin.sidebar.dashboard', 'Tableau de bord'), icon: '📊', tab: 'dashboard', keywords: ['accueil', 'stats', 'statistiques', 'لوحة التحكم', 'dashboard'], allowed: true },
       { id: 'students', label: t('admin.sidebar.students', 'Gestion Élèves'), icon: '🎓', tab: 'students', keywords: ['élèves', 'eleves', 'inscriptions', 'etudiants', 'الطلاب', 'dossier', 'matricule'], allowed: isDirectorOrSupervisor || isSecretary || isAccountant },
       { id: 'parents', label: t('admin.sidebar.parents', "Parents d'Élèves"), icon: '👨‍👩‍👧', tab: 'parents', keywords: ['parents', 'tuteurs', 'familles', 'contacts', 'اولياء الامور'], allowed: isDirectorOrSupervisor || isSecretary || isAccountant },
-      { id: 'absences', label: t('admin.sidebar.absences', 'Gestion Absences'), icon: '📋', tab: 'absences', keywords: ['absences', 'retards', 'presence', 'appel', 'الغياب'], allowed: isDirectorOrSupervisor || isSecretary },
       { id: 'teachers', label: t('admin.sidebar.teachers', 'Enseignants'), icon: '👨‍🏫', tab: 'teachers', keywords: ['profs', 'professeurs', 'enseignants', 'matieres', 'المعلمين'], allowed: isDirectorOrSupervisor || isSecretary },
       { id: 'pedagogy', label: t('admin.sidebar.pedagogy', 'Classes & Pédagogie'), icon: '🏫', tab: 'pedagogy', keywords: ['classes', 'niveaux', 'filières', 'pedagogie', 'الفصول'], allowed: isDirectorOrSupervisor || isSecretary },
       { id: 'schedules', label: t('admin.sidebar.schedules', 'Emplois du Temps'), icon: '📅', tab: 'schedules', keywords: ['emplois', 'temps', 'planning', 'horaires', 'جدول الحصص'], allowed: isDirectorOrSupervisor || isSecretary },
@@ -76,7 +75,6 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
       { id: 'scolarite', label: t('admin.sidebar.finance', 'Comptabilité & Scolarité'), icon: '💳', tab: 'scolarite', keywords: ['compta', 'finance', 'paiements', 'factures', 'scolarite', 'المحاسبة'], allowed: isDirectorOrSupervisor || isAccountant },
       { id: 'depenses', label: t('admin.sidebar.expenses', 'Dépenses & Emprunts'), icon: '💰', tab: 'depenses', keywords: ['depenses', 'emprunts', 'achats', 'frais', 'المصروفات'], allowed: isDirectorOrSupervisor || isAccountant },
       { id: 'rh', label: t('admin.sidebar.rh', 'RH & Admin'), icon: '💼', tab: 'rh', keywords: ['rh', 'salaires', 'employes', 'personnel', 'contrats', 'الموارد البشرية'], allowed: isDirectorOrSupervisor },
-      { id: 'communication', label: t('admin.sidebar.communication', 'Communication'), icon: '💬', tab: 'communication', keywords: ['communication', 'messages', 'sms', 'annonces', 'التواصل'], allowed: isDirectorOrSupervisor || isSecretary },
       { id: 'settings', label: t('admin.sidebar.settings', 'Paramètres'), icon: '⚙️', tab: 'settings', keywords: ['parametres', 'configuration', 'annee', 'profil', 'ecole', 'الاعدادats'], allowed: isDirectorOrSupervisor },
     ];
 

@@ -3235,13 +3235,13 @@ function App() {
             <div className="stat-trend trend-up">{t('dashboard.real_time_update', 'Mise à jour en temps réel')}</div>
           </div>
 
-          <div className="stat-card delay-300" onClick={() => setActiveTab('absences')} style={{cursor: 'pointer'}}>
+          <div className="stat-card delay-300" onClick={() => setActiveTab('parents')} style={{cursor: 'pointer'}}>
             <div className="stat-header">
-              <span className="stat-label">{t('dashboard.recorded_absences', 'Absences Enregistrées')}</span>
-              <Icons.Activity />
+              <span className="stat-label">{t('admin.sidebar.parents', "Parents d'Élèves")}</span>
+              <Icons.Heart />
             </div>
-            <div className="stat-value">{formatNum(totalAbsences)}</div>
-            <div className="stat-trend trend-down">{t('dashboard.monitor_closely', 'À surveiller de près')}</div>
+            <div className="stat-value">{formatNum(parentsData.length)}</div>
+            <div className="stat-trend trend-up">{t('dashboard.real_time_update', 'Mise à jour en temps réel')}</div>
           </div>
           
           <div className="stat-card delay-300" onClick={() => setActiveTab('pedagogy')} style={{cursor: 'pointer'}}>
@@ -3256,24 +3256,24 @@ function App() {
 
         {/* Grid Panels */}
         <div className="dashboard-grid">
-          {/* Recent Activity (Absences) */}
+          {/* Recent Activity (Dépenses Récentes) */}
           <div className="panel delay-200">
             <div className="panel-header">
-              <h3 className="panel-title">{t('dashboard.recent_absences', 'Absences Récentes')}</h3>
-              <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => setActiveTab('absences')}>{t('dashboard.see_all', 'Voir tout')}</button>
+              <h3 className="panel-title">💸 Dernières Dépenses de Caisse</h3>
+              <button className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.8rem'}} onClick={() => setActiveTab('depenses')}>{t('dashboard.see_all', 'Voir tout')}</button>
             </div>
             <div className="activity-list">
-              {recentAbsences.length > 0 ? recentAbsences.map(abs => (
-                <div className="activity-item" key={abs.id}>
-                  <div className="activity-dot" style={{backgroundColor: abs.justified ? 'var(--primary-color)' : 'var(--warning-color)'}}></div>
+              {expensesData && expensesData.length > 0 ? [...expensesData].sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime()).slice(0, 3).map(exp => (
+                <div className="activity-item" key={exp.id}>
+                  <div className="activity-dot" style={{backgroundColor: '#ef4444'}}></div>
                   <div className="activity-content">
-                    <h4>{abs.students?.first_name} {abs.students?.last_name} ({abs.students?.classes?.name})</h4>
-                    <p>{abs.reason || t('dashboard.no_reason_specified', "Aucun motif précisé")}</p>
-                    <span className="activity-time">{new Date(abs.date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR')} - {abs.justified ? t('dashboard.justified', 'Justifiée') : t('dashboard.unjustified', 'Non justifiée')}</span>
+                    <h4>{exp.category} - {formatNum(exp.amount)} F CFA</h4>
+                    <p>{exp.description || 'Sortie de caisse'}</p>
+                    <span className="activity-time">{new Date(exp.payment_date).toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR')}</span>
                   </div>
                 </div>
               )) : (
-                <div style={{color: 'var(--text-secondary)', textAlign: 'center', padding: '24px 0'}}>{t('dashboard.no_recent_absences', 'Aucune absence récente')}</div>
+                <div style={{color: 'var(--text-secondary)', textAlign: 'center', padding: '24px 0'}}>Aucune dépense récente enregistrée</div>
               )}
             </div>
           </div>
@@ -3403,11 +3403,11 @@ function App() {
         </div>
         <div className="stat-card delay-200">
           <div className="stat-header">
-            <span className="stat-label">{t('admin.students.stat_unjustified', 'Absences Non Justifiées')}</span>
-            <Icons.Activity />
+            <span className="stat-label">Classes Pédagogiques</span>
+            <Icons.BookOpen />
           </div>
-          <div className="stat-value">{formatNum(absencesData.length)}</div>
-          <div className="stat-trend trend-down">{t('admin.students.alert_presence', 'Alerte : vérifier les présences')}</div>
+          <div className="stat-value">{formatNum(classesData.length)}</div>
+          <div className="stat-trend trend-up">Effectif réparti</div>
         </div>
       </div>
 
@@ -7648,9 +7648,9 @@ function App() {
                     <div className="creation-icon" style={{color: 'var(--accent-color)', background: 'rgba(16, 185, 129, 0.1)'}}><Icons.CreditCard /></div>
                     <div><h4>{t('admin.modals.quick_payment_title', 'Encaisser Paiement')}</h4><p>{t('admin.modals.quick_payment_desc', 'Frais de scolarité.')}</p></div>
                   </div>
-                  <div className="creation-card" onClick={() => { closeModal(); setActiveTab('communication'); setActiveModal('message'); }}>
-                    <div className="creation-icon" style={{color: 'var(--warning-color)', background: 'rgba(245, 158, 11, 0.1)'}}><Icons.Mail /></div>
-                    <div><h4>{t('admin.modals.quick_message_title', 'Nouveau Message')}</h4><p>{t('admin.modals.quick_message_desc', 'Contacter les parents.')}</p></div>
+                  <div className="creation-card" onClick={() => { closeModal(); setActiveTab('depenses'); setActiveModal('expense'); }}>
+                    <div className="creation-icon" style={{color: 'var(--warning-color)', background: 'rgba(245, 158, 11, 0.1)'}}><Icons.CreditCard /></div>
+                    <div><h4>{t('admin.expenses.add_expense', 'Nouvelle Dépense')}</h4><p>Enregistrer une sortie de caisse.</p></div>
                   </div>
                   <div className="creation-card" onClick={() => { closeModal(); setActiveTab('bulletins'); setActiveModal('bulletin'); }}>
                     <div className="creation-icon" style={{color: '#ec4899', background: 'rgba(236, 72, 153, 0.1)'}}><Icons.FileText /></div>
