@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { HonorCertificate } from './components/HonorCertificate';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
@@ -3019,9 +3019,6 @@ function App() {
                              (employeePaymentsData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0);
     const soldeCaisseGlobal = (scolariteTotalEncaisse + annexesTotalEncaisse) + totalLoansSum - totalExpensesSum - totalSalariesSum;
 
-    // Last 3 absences
-    const recentAbsences = [...absencesData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 4);
-    
     // Upcoming evaluations
     const upcomingEvals = [...evaluationsData]
       .filter(e => new Date(e.date) >= new Date())
@@ -4452,7 +4449,7 @@ function App() {
                       value={selectedExpenseCategory}
                       onChange={(e) => setSelectedExpenseCategory(e.target.value)}
                     >
-                      {EXPENSE_CATEGORIES_CONFIG.map((cat) => {
+                      {EXPENSE_CATEGORIES_CONFIG.map((cat: any) => {
                         const catData = categoryTotals[cat.id] || { total: 0, count: 0 };
                         return (
                           <option key={cat.id} value={cat.id}>
