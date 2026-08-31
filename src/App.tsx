@@ -6990,11 +6990,6 @@ function App() {
         </div>
         
         <ul className="nav-menu">
-          {(currentAdminRole === 'Director' || currentAdminRole === 'Secretary' || currentAdminRole === 'Supervisor') && (
-            <li className="nav-item" onClick={() => { setIsQuickStartModalOpen(true); setIsMobileMenuOpen(false); }} style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', color: 'white' }}>
-              <span>🚀</span> {t('admin.sidebar.quickstart', 'Guide de démarrage')}
-            </li>
-          )}
           <li className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }}>
             <Icons.Home /> {t('admin.sidebar.dashboard', 'Tableau de bord')}
           </li>
