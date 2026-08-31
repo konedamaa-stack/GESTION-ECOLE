@@ -60,6 +60,18 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
     return defaultAmount;
   };
 
+  const matchesFraisMotif = (invoiceMotif: string, fraisName: string) => {
+    const inv = (invoiceMotif || '').toLowerCase().trim();
+    const tgt = (fraisName || '').toLowerCase().trim();
+    if (!inv || !tgt) return false;
+    if (inv.includes(tgt) || tgt.includes(inv)) return true;
+    const roots = ['bulletin', 'tricot', 'polo', 'macaron', 'badge', 'assurance', 'inscription', 'entretien', 'relev', 'examen', 'compo', 'ceremonie'];
+    for (const r of roots) {
+      if (inv.includes(r) && tgt.includes(r)) return true;
+    }
+    return false;
+  };
+
   const getCollectedForClass = (classId: string, motifName?: string) => {
     const classStudentIds = students.filter((s) => s.class_id === classId).map((s) => s.id);
     if (classStudentIds.length === 0) return 0;
@@ -68,9 +80,9 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
       .filter((inv) => {
         if (!classStudentIds.includes(inv.student_id)) return false;
         if (motifName) {
-          return (inv.motif || '').toLowerCase().includes(motifName.toLowerCase());
+          return matchesFraisMotif(inv.motif, motifName);
         }
-        return sortedFrais.some((f) => (inv.motif || '').toLowerCase().includes(f.name.toLowerCase()));
+        return sortedFrais.some((f) => matchesFraisMotif(inv.motif, f.name));
       })
       .reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
   };
@@ -85,7 +97,7 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
 
   const getStudentFeePaid = (studentId: string, motifName: string) => {
     return invoices
-      .filter((inv) => inv.student_id === studentId && (inv.motif || '').toLowerCase().includes(motifName.toLowerCase()))
+      .filter((inv) => inv.student_id === studentId && matchesFraisMotif(inv.motif, motifName))
       .reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
   };
 

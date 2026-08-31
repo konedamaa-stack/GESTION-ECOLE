@@ -336,6 +336,19 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
     return defaultAmount;
   };
 
+  // Helper to match invoice motif with frais name bidirectionally
+  const matchesFraisMotif = (invoiceMotif: string, fraisName: string) => {
+    const inv = (invoiceMotif || '').toLowerCase().trim();
+    const tgt = (fraisName || '').toLowerCase().trim();
+    if (!inv || !tgt) return false;
+    if (inv.includes(tgt) || tgt.includes(inv)) return true;
+    const roots = ['bulletin', 'tricot', 'polo', 'macaron', 'badge', 'assurance', 'inscription', 'entretien', 'relev', 'examen', 'compo', 'ceremonie'];
+    for (const r of roots) {
+      if (inv.includes(r) && tgt.includes(r)) return true;
+    }
+    return false;
+  };
+
   // Helper to get collected amount for a class & motif
   const getCollectedForClass = (classId: string, motifName?: string) => {
     const classStudentIds = students.filter((s) => s.class_id === classId).map((s) => s.id);
@@ -345,10 +358,10 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
       .filter((inv) => {
         if (!classStudentIds.includes(inv.student_id)) return false;
         if (motifName) {
-          return (inv.motif || '').toLowerCase().includes(motifName.toLowerCase());
+          return matchesFraisMotif(inv.motif, motifName);
         }
         // Match any frais annexe name
-        return sortedFrais.some((f) => (inv.motif || '').toLowerCase().includes(f.name.toLowerCase()));
+        return sortedFrais.some((f) => matchesFraisMotif(inv.motif, f.name));
       })
       .reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
   };
@@ -442,7 +455,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
           if (expectedAmount <= 0) continue;
 
           const alreadyPaid = studentInvoices
-            .filter((inv: any) => (inv.motif || '').toLowerCase().includes(frais.name.toLowerCase()))
+            .filter((inv: any) => matchesFraisMotif(inv.motif, frais.name))
             .reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
 
           const stillDue = Math.max(0, expectedAmount - alreadyPaid);
