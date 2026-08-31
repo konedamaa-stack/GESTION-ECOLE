@@ -487,6 +487,13 @@ function App() {
   const [teachersData, setTeachersData] = useState<any[]>([]);
   const [employeesData, setEmployeesData] = useState<any[]>([]);
   const [expensesData, setExpensesData] = useState<any[]>([]);
+  const [expenseCategoriesData, setExpenseCategoriesData] = useState<any[]>([]);
+  const [newCatName, setNewCatName] = useState<string>('');
+  const [newCatIcon, setNewCatIcon] = useState<string>('📁');
+  const [newCatColor, setNewCatColor] = useState<string>('#6366f1');
+  const [newCatDesc, setNewCatDesc] = useState<string>('');
+  const [isCreatingCategory, setIsCreatingCategory] = useState<boolean>(false);
+  const [newExpenseInlineCategory, setNewExpenseInlineCategory] = useState<boolean>(false);
   const [loansData, setLoansData] = useState<any[]>([]);
   const [teacherPaymentsData, setTeacherPaymentsData] = useState<any[]>([]);
   const [employeePaymentsData, setEmployeePaymentsData] = useState<any[]>([]);
@@ -961,6 +968,7 @@ function App() {
         fetchEvaluations(),
         fetchSettings(),
         fetchExpenses(),
+        fetchExpenseCategories(),
         fetchLoans(),
         fetchTeacherPayments(),
         fetchEmployeePayments()
@@ -1521,6 +1529,79 @@ function App() {
     }
   };
 
+  const fetchExpenseCategories = async () => {
+    if (!currentSchoolId) return;
+    try {
+      const { data, error } = await supabase
+        .from('expense_categories')
+        .select('*')
+        .eq('school_id', currentSchoolId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setExpenseCategoriesData(data || []);
+    } catch (err: any) {
+      console.error('Error fetching expense categories:', err);
+    }
+  };
+
+  const handleSaveExpenseCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentSchoolId || !newCatName.trim()) {
+      alert('Veuillez saisir un nom pour la catégorie.');
+      return;
+    }
+
+    const trimmed = newCatName.trim();
+    const existing = (expenseCategoriesData || []).some(
+      (c: any) => c.name.toLowerCase().trim() === trimmed.toLowerCase()
+    );
+    if (existing) {
+      alert('Une catégorie portant ce nom existe déjà.');
+      return;
+    }
+
+    setIsCreatingCategory(true);
+    try {
+      const { error } = await supabase.from('expense_categories').insert([{
+        school_id: currentSchoolId,
+        name: trimmed,
+        icon: newCatIcon || '📁',
+        color: newCatColor || '#6366f1',
+        description: newCatDesc.trim()
+      }]);
+
+      if (error) throw error;
+      await fetchExpenseCategories();
+      setNewCatName('');
+      setNewCatDesc('');
+      setNewCatIcon('📁');
+      setNewCatColor('#6366f1');
+      alert(`Catégorie "${trimmed}" créée avec succès !`);
+    } catch (err: any) {
+      console.error('Error creating category:', err);
+      alert('Erreur: ' + err.message);
+    } finally {
+      setIsCreatingCategory(false);
+    }
+  };
+
+  const handleDeleteExpenseCategory = async (id: string, name: string) => {
+    if (!confirm(`Voulez-vous vraiment supprimer la catégorie "${name}" ?`)) return;
+    try {
+      const { error } = await supabase
+        .from('expense_categories')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      await fetchExpenseCategories();
+    } catch (err: any) {
+      console.error('Error deleting category:', err);
+      alert('Erreur: ' + err.message);
+    }
+  };
+
   const fetchSettings = async () => {
     const { data } = await supabase.from('school_settings').select('*').eq('school_id', currentSchoolId).single();
     if (data) {
@@ -1648,7 +1729,7 @@ function App() {
     }
   };
 
-  const closeModal = () => { setActiveModal(null); setPreselectedStudentId(null); setEditEntity(null); setIsEditingTuition(false); };
+  const closeModal = () => { setActiveModal(null); setPreselectedStudentId(null); setEditEntity(null); setIsEditingTuition(false); setNewExpenseInlineCategory(false); };
 
   const handleCreateSchool = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -1822,7 +1903,27 @@ function App() {
     e.preventDefault();
     if (!currentSchoolId) return;
     const form = e.target as HTMLFormElement;
-    const category = (form.elements.namedItem('category') as HTMLSelectElement).value;
+    let category = (form.elements.namedItem('category') as HTMLSelectElement).value;
+    const customCatInput = form.elements.namedItem('custom_category_name') as HTMLInputElement | null;
+    if (category === '__NEW__' && customCatInput && customCatInput.value.trim()) {
+      category = customCatInput.value.trim();
+      const existing = (expenseCategoriesData || []).some(
+        (c: any) => c.name.toLowerCase().trim() === category.toLowerCase().trim()
+      );
+      if (!existing) {
+        try {
+          await supabase.from('expense_categories').insert([{
+            school_id: currentSchoolId,
+            name: category,
+            icon: '📁',
+            color: '#6366f1'
+          }]);
+          await fetchExpenseCategories();
+        } catch (catErr) {
+          console.error('Error auto-creating category:', catErr);
+        }
+      }
+    }
     const amount = (form.elements.namedItem('amount') as HTMLInputElement).value;
     const date = (form.elements.namedItem('date') as HTMLInputElement).value;
     const description = (form.elements.namedItem('description') as HTMLTextAreaElement).value;
@@ -3985,20 +4086,52 @@ function App() {
     </div>
   );
 
-  const EXPENSE_CATEGORIES_CONFIG = [
-    { id: 'all', label: 'Toutes les Dépenses', icon: '📋', color: '#6366f1', bg: 'rgba(99, 102, 241, 0.1)', description: 'Toutes les sorties de caisse confondues' },
-    { id: 'Entretien', label: 'Entretien & Bâtiment', icon: '🧹', color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.1)', description: 'Nettoyage, réparations, plomberie, électricité bâtiment, menuiserie' },
-    { id: 'Transport', label: 'Transport & Carburant', icon: '🚌', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)', description: 'Carburant des bus, déplacements, entretien des véhicules' },
-    { id: 'Factures', label: 'Factures & Charges', icon: '💡', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)', description: 'Électricité (CIE), Eau (SODECI), Loyer, Internet' },
-    { id: 'Fournitures', label: 'Fournitures & Matériel', icon: '📦', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)', description: 'Rames de papier, craies, consommables bureau, matériel' },
-    { id: 'Salaires', label: 'Salaires & Gratifications', icon: '🧑‍💼', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)', description: 'Personnel d\'appoint, gardiens, femmes de ménage, primes' },
-    { id: 'Evenements', label: 'Événements & Activités', icon: '🎉', color: '#f97316', bg: 'rgba(249, 115, 22, 0.1)', description: 'Fêtes scolaires, kermesses, sorties éducatives' },
-    { id: 'Sante', label: 'Santé & Hygiène', icon: '🩺', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)', description: 'Infirmerie, pharmacie scolaire, désinfection' },
-    { id: 'Autre', label: 'Autre / Divers', icon: '📌', color: '#64748b', bg: 'rgba(100, 116, 139, 0.1)', description: 'Dépenses imprévues et diverses' },
-  ];
+  const customExpenseCategories = useMemo(() => {
+    return (expenseCategoriesData || []).map((c: any) => ({
+      id: c.name,
+      label: c.name,
+      icon: c.icon || '📁',
+      color: c.color || '#6366f1',
+      bg: `${c.color || '#6366f1'}1a`,
+      description: c.description || 'Catégorie personnalisée',
+      isCustom: true,
+      rawId: c.id
+    }));
+  }, [expenseCategoriesData]);
+
+  const EXPENSE_CATEGORIES_CONFIG = useMemo(() => {
+    return [
+      { id: 'all', label: 'Toutes les Dépenses', icon: '📋', color: '#6366f1', bg: 'rgba(99, 102, 241, 0.1)', description: 'Toutes les sorties de caisse confondues' },
+      { id: 'Entretien', label: 'Entretien & Bâtiment', icon: '🧹', color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.1)', description: 'Nettoyage, réparations, plomberie, électricité bâtiment, menuiserie' },
+      { id: 'Transport', label: 'Transport & Carburant', icon: '🚌', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)', description: 'Carburant des bus, déplacements, entretien des véhicules' },
+      { id: 'Factures', label: 'Factures & Charges', icon: '💡', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)', description: 'Électricité (CIE), Eau (SODECI), Loyer, Internet' },
+      { id: 'Fournitures', label: 'Fournitures & Matériel', icon: '📦', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)', description: 'Rames de papier, craies, consommables bureau, matériel' },
+      { id: 'Salaires', label: 'Salaires & Gratifications', icon: '🧑‍💼', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)', description: 'Personnel d\'appoint, gardiens, femmes de ménage, primes' },
+      { id: 'Evenements', label: 'Événements & Activités', icon: '🎉', color: '#f97316', bg: 'rgba(249, 115, 22, 0.1)', description: 'Fêtes scolaires, kermesses, sorties éducatives' },
+      { id: 'Sante', label: 'Santé & Hygiène', icon: '🩺', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)', description: 'Infirmerie, pharmacie scolaire, désinfection' },
+      ...customExpenseCategories,
+      { id: 'Autre', label: 'Autre / Divers', icon: '📌', color: '#64748b', bg: 'rgba(100, 116, 139, 0.1)', description: 'Dépenses imprévues et diverses' },
+    ];
+  }, [customExpenseCategories]);
 
   const getExpenseCategoryMeta = (cat: string) => {
     if (!cat) return { id: 'Autre', label: 'Autre / Divers', icon: '📌', color: '#64748b', bg: 'rgba(100, 116, 139, 0.12)' };
+
+    // Check custom category first
+    const customMatch = (expenseCategoriesData || []).find((c: any) => c.name.toLowerCase().trim() === cat.toLowerCase().trim());
+    if (customMatch) {
+      return {
+        id: customMatch.name,
+        label: customMatch.name,
+        icon: customMatch.icon || '📁',
+        color: customMatch.color || '#6366f1',
+        bg: `${customMatch.color || '#6366f1'}1a`,
+        description: customMatch.description || '',
+        isCustom: true,
+        rawId: customMatch.id
+      };
+    }
+
     const c = cat.toLowerCase();
     if (c.includes('entretien') || c.includes('réparation') || c.includes('reparation') || c.includes('nettoyage') || c.includes('maintenance') || c.includes('plomberie') || c.includes('peinture')) {
       return { id: 'Entretien', label: 'Entretien & Bâtiment', icon: '🧹', color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.12)' };
@@ -4013,7 +4146,7 @@ function App() {
       return { id: 'Fournitures', label: 'Fournitures & Matériel', icon: '📦', color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' };
     }
     if (c.includes('salaire') || c.includes('prime') || c.includes('vacataire') || c.includes('gardien') || c.includes('rémunération') || c.includes('remuneration') || c.includes('gratification')) {
-      return { id: 'Salaires', label: 'Salaires & Rémunérations', icon: '🧑‍💼', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.12)' };
+      return { id: 'Salaires', label: 'Salaires & Gratifications', icon: '🧑‍💼', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.12)' };
     }
     if (c.includes('événement') || c.includes('evenement') || c.includes('fête') || c.includes('fete') || c.includes('sortie') || c.includes('sport') || c.includes('kermesse') || c.includes('cérémonie') || c.includes('ceremonie')) {
       return { id: 'Evenements', label: 'Événements & Activités', icon: '🎉', color: '#f97316', bg: 'rgba(249, 115, 22, 0.12)' };
@@ -4037,6 +4170,10 @@ function App() {
       Sante: { total: 0, count: 0 },
       Autre: { total: 0, count: 0 },
     };
+
+    (customExpenseCategories || []).forEach((c: any) => {
+      categoryTotals[c.id] = { total: 0, count: 0 };
+    });
 
     (expensesData || []).forEach((exp: any) => {
       const amount = Number(exp.amount) || 0;
@@ -4144,6 +4281,25 @@ function App() {
 
             {expenseViewTab === 'depenses' ? (
               <div style={{display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap'}}>
+                <button 
+                  type="button"
+                  className="btn btn-outline" 
+                  onClick={() => setActiveModal('manage_expense_categories')}
+                  style={{
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '6px', 
+                    padding: '8px 14px', 
+                    fontWeight: 700, 
+                    fontSize: '0.88rem', 
+                    color: '#0f172a', 
+                    borderColor: '#cbd5e1',
+                    backgroundColor: '#ffffff'
+                  }}
+                  title="Créer et gérer les catégories de dépenses personnalisées"
+                >
+                  🏷️ Catégories ({expenseCategoriesData?.length || 0})
+                </button>
                 <button 
                   type="button"
                   className="btn btn-outline" 
@@ -10363,22 +10519,77 @@ function App() {
             </div>
             <form onSubmit={handleAddExpense} className="modal-body">
               <div className="form-group">
-                <label style={{fontWeight: 600, color: 'var(--primary-color)'}}>{t('admin.expenses.category', 'Catégorie de la dépense')}</label>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px'}}>
+                  <label style={{fontWeight: 700, color: 'var(--primary-color)', margin: 0}}>
+                    {t('admin.expenses.category', 'Catégorie de la dépense')}
+                  </label>
+                  <button
+                    type="button"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--primary-color)',
+                      fontWeight: 700,
+                      fontSize: '0.82rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      textDecoration: 'underline'
+                    }}
+                    onClick={() => setActiveModal('manage_expense_categories')}
+                  >
+                    🏷️ + Gérer / Créer catégorie
+                  </button>
+                </div>
                 <select 
                   name="category" 
                   className="form-control" 
                   required 
                   defaultValue={editEntity?.category || (selectedExpenseCategory !== 'all' ? selectedExpenseCategory : 'Entretien')}
+                  onChange={(e) => {
+                    setNewExpenseInlineCategory(e.target.value === '__NEW__');
+                  }}
                 >
-                  <option value="Entretien">🧹 Entretien & Bâtiment (Nettoyage, Réparations, Maintenance)</option>
-                  <option value="Transport">🚌 Transport & Carburant (Carburant bus, Déplacements, Véhicules)</option>
-                  <option value="Factures">💡 Factures & Charges (Électricité CIE, Eau SODECI, Loyer, Internet)</option>
-                  <option value="Fournitures">📦 Fournitures & Matériel (Rames, Craies, Pédagogie, Bureau)</option>
-                  <option value="Salaires">🧑‍💼 Salaires & Gratifications (Personnel temporaire, Gardiennage, Primes)</option>
-                  <option value="Evenements">🎉 Événements & Activités (Fêtes scolaires, Sorties, Cérémonies)</option>
-                  <option value="Sante">🩺 Santé & Hygiène (Infirmerie, Pharmacie, Désinfection)</option>
-                  <option value="Autre">📌 Autre / Divers</option>
+                  <optgroup label="--- Catégories Standards ---">
+                    <option value="Entretien">🧹 Entretien & Bâtiment (Nettoyage, Réparations, Maintenance)</option>
+                    <option value="Transport">🚌 Transport & Carburant (Carburant bus, Déplacements, Véhicules)</option>
+                    <option value="Factures">💡 Factures & Charges (Électricité CIE, Eau SODECI, Loyer, Internet)</option>
+                    <option value="Fournitures">📦 Fournitures & Matériel (Rames, Craies, Pédagogie, Bureau)</option>
+                    <option value="Salaires">🧑‍💼 Salaires & Gratifications (Personnel temporaire, Gardiennage, Primes)</option>
+                    <option value="Evenements">🎉 Événements & Activités (Fêtes scolaires, Sorties, Cérémonies)</option>
+                    <option value="Sante">🩺 Santé & Hygiène (Infirmerie, Pharmacie, Désinfection)</option>
+                    <option value="Autre">📌 Autre / Divers</option>
+                  </optgroup>
+                  {(expenseCategoriesData && expenseCategoriesData.length > 0) && (
+                    <optgroup label="--- Mes Catégories Personnalisées ---">
+                      {expenseCategoriesData.map((c: any) => (
+                        <option key={c.id} value={c.name}>
+                          {c.icon || '📁'} {c.name} {c.description ? `(${c.description})` : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  <optgroup label="--- Action ---">
+                    <option value="__NEW__">➕ + Créer une nouvelle catégorie personnalisée...</option>
+                  </optgroup>
                 </select>
+
+                {newExpenseInlineCategory && (
+                  <div style={{marginTop: '10px', padding: '12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px'}}>
+                    <label style={{display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#1e40af', marginBottom: '4px'}}>
+                      Nom de la nouvelle catégorie :
+                    </label>
+                    <input 
+                      type="text" 
+                      name="custom_category_name" 
+                      className="form-control" 
+                      placeholder="Ex: Cantine & Restauration, Informatique, etc." 
+                      required 
+                      autoFocus 
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="form-group">
@@ -10421,6 +10632,234 @@ function App() {
                 </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {activeModal === 'manage_expense_categories' && (
+          <div className="modal-content fade-in" onClick={e => e.stopPropagation()} style={{maxWidth: '680px', width: '95%'}}>
+            <div className="modal-header" style={{borderBottom: '1px solid var(--border-color)', paddingBottom: '14px'}}>
+              <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                <span style={{fontSize: '1.6rem'}}>🏷️</span>
+                <div>
+                  <h3 style={{margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-color)'}}>
+                    Catégories de Dépenses
+                  </h3>
+                  <p style={{margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)'}}>
+                    Créez et personnalisez vos propres catégories pour classer vos dépenses scolaires.
+                  </p>
+                </div>
+              </div>
+              <button className="close-btn" onClick={closeModal}>×</button>
+            </div>
+
+            <div className="modal-body" style={{maxHeight: '75vh', overflowY: 'auto', padding: '20px'}}>
+              {/* Formulaire d'ajout rapide de catégorie */}
+              <div style={{background: 'var(--surface-color-hover, #f8fafc)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', marginBottom: '24px'}}>
+                <h4 style={{margin: '0 0 12px 0', fontSize: '0.98rem', fontWeight: 700, color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '6px'}}>
+                  <span>➕</span> Créer une Nouvelle Catégorie
+                </h4>
+                <form onSubmit={handleSaveExpenseCategory}>
+                  <div className="form-group" style={{marginBottom: '12px'}}>
+                    <label style={{fontWeight: 700, fontSize: '0.88rem'}}>Nom de la catégorie *</label>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      placeholder="Ex: Cantine & Vivres, Informatique, Sécurité, Impôts..." 
+                      value={newCatName}
+                      onChange={(e) => setNewCatName(e.target.value)}
+                      required 
+                    />
+                  </div>
+
+                  <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px'}}>
+                    <div>
+                      <label style={{fontWeight: 700, fontSize: '0.85rem', display: 'block', marginBottom: '6px'}}>
+                        Icône / Emoji :
+                      </label>
+                      <div style={{display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap'}}>
+                        {['🍽️', '🛡️', '💻', '📚', '🏛️', '🚜', '🔧', '🎨', '🎵', '⚖️', '🖨️', '🏥', '⛽', '📦', '📁', '🏷️'].map((emoji) => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            onClick={() => setNewCatIcon(emoji)}
+                            style={{
+                              border: newCatIcon === emoji ? '2px solid var(--primary-color)' : '1px solid #e2e8f0',
+                              background: newCatIcon === emoji ? '#ede9fe' : '#ffffff',
+                              borderRadius: '6px',
+                              padding: '4px 7px',
+                              fontSize: '1.1rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                        <input 
+                          type="text" 
+                          style={{width: '50px', textAlign: 'center', padding: '4px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '1rem'}} 
+                          value={newCatIcon} 
+                          onChange={(e) => setNewCatIcon(e.target.value)}
+                          maxLength={3} 
+                          title="Saisir un autre emoji"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{fontWeight: 700, fontSize: '0.85rem', display: 'block', marginBottom: '6px'}}>
+                        Couleur distinctive :
+                      </label>
+                      <div style={{display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', paddingTop: '4px'}}>
+                        {['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#f97316', '#ef4444', '#14b8a6', '#475569'].map((c) => (
+                          <span
+                            key={c}
+                            onClick={() => setNewCatColor(c)}
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '50%',
+                              backgroundColor: c,
+                              cursor: 'pointer',
+                              display: 'inline-block',
+                              boxShadow: newCatColor === c ? '0 0 0 3px #fff, 0 0 0 5px ' + c : 'none',
+                              transition: 'transform 0.15s ease'
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{marginBottom: '14px'}}>
+                    <label style={{fontWeight: 600, fontSize: '0.85rem'}}>Description / Précisions (facultatif)</label>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      placeholder="Ex: Achats denrées alimentaires pour les élèves demi-pensionnaires..." 
+                      value={newCatDesc}
+                      onChange={(e) => setNewCatDesc(e.target.value)}
+                    />
+                  </div>
+
+                  <div style={{display: 'flex', justifyContent: 'flex-end'}}>
+                    <button 
+                      type="submit" 
+                      className="btn btn-primary" 
+                      disabled={isCreatingCategory}
+                      style={{display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, padding: '8px 18px'}}
+                    >
+                      {isCreatingCategory ? 'Enregistrement...' : '➕ Enregistrer la Catégorie'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Liste des catégories existantes */}
+              <div>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px'}}>
+                  <h4 style={{margin: 0, fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-color)'}}>
+                    Catégories Actives ({8 + (expenseCategoriesData?.length || 0)})
+                  </h4>
+                  <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
+                    {expenseCategoriesData?.length || 0} personnalisée(s) • 8 système
+                  </span>
+                </div>
+
+                <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                  {/* Catégories Personnalisées de l'école */}
+                  {(expenseCategoriesData || []).map((cat: any) => (
+                    <div 
+                      key={cat.id} 
+                      style={{
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center', 
+                        padding: '10px 14px', 
+                        background: 'var(--surface-color)', 
+                        border: `1.5px solid ${cat.color || '#6366f1'}33`, 
+                        borderRadius: '10px',
+                        borderLeft: `5px solid ${cat.color || '#6366f1'}`
+                      }}
+                    >
+                      <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                        <span style={{fontSize: '1.3rem'}}>{cat.icon || '📁'}</span>
+                        <div>
+                          <strong style={{fontSize: '0.92rem', color: 'var(--text-color)'}}>{cat.name}</strong>
+                          {cat.description && (
+                            <p style={{margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)'}}>{cat.description}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                        <span style={{fontSize: '0.72rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: `${cat.color || '#6366f1'}15`, color: cat.color || '#6366f1'}}>
+                          Personnalisée
+                        </span>
+                        <button
+                          type="button"
+                          className="btn btn-outline"
+                          style={{padding: '4px 8px', fontSize: '0.8rem', color: '#ef4444', borderColor: '#fca5a5'}}
+                          onClick={() => handleDeleteExpenseCategory(cat.id, cat.name)}
+                          title="Supprimer cette catégorie"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Catégories Standards Système */}
+                  {[
+                    { name: 'Entretien & Bâtiment', icon: '🧹', color: '#0ea5e9' },
+                    { name: 'Transport & Carburant', icon: '🚌', color: '#f59e0b' },
+                    { name: 'Factures & Charges', icon: '💡', color: '#8b5cf6' },
+                    { name: 'Fournitures & Matériel', icon: '📦', color: '#10b981' },
+                    { name: 'Salaires & Gratifications', icon: '🧑‍💼', color: '#ec4899' },
+                    { name: 'Événements & Activités', icon: '🎉', color: '#f97316' },
+                    { name: 'Santé & Hygiène', icon: '🩺', color: '#ef4444' },
+                    { name: 'Autre / Divers', icon: '📌', color: '#64748b' },
+                  ].map((std) => (
+                    <div 
+                      key={std.name} 
+                      style={{
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center', 
+                        padding: '8px 14px', 
+                        background: 'var(--surface-color-hover, #f8fafc)', 
+                        border: '1px solid var(--border-color)', 
+                        borderRadius: '8px',
+                        opacity: 0.85
+                      }}
+                    >
+                      <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                        <span style={{fontSize: '1.2rem'}}>{std.icon}</span>
+                        <span style={{fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-color)'}}>{std.name}</span>
+                      </div>
+                      <span style={{fontSize: '0.72rem', fontWeight: 600, padding: '2px 8px', borderRadius: '6px', background: '#e2e8f0', color: '#475569'}}>
+                        Standard Système
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer" style={{borderTop: '1px solid var(--border-color)', padding: '14px 20px', display: 'flex', justifyContent: 'space-between'}}>
+              <button 
+                type="button" 
+                className="btn btn-outline"
+                onClick={() => {
+                  closeModal();
+                  setActiveModal('expense');
+                }}
+                style={{display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700}}
+              >
+                ➕ Ajouter une dépense
+              </button>
+              <button type="button" className="btn btn-primary" onClick={closeModal}>
+                Fermer
+              </button>
+            </div>
           </div>
         )}
 
