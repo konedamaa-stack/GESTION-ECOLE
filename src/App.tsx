@@ -2969,7 +2969,7 @@ function App() {
           <div className="stat-card delay-100" onClick={() => { setActiveTab('scolarite'); setComptaActiveTab('scolarite'); }} style={{cursor: 'pointer', borderLeft: '4px solid #2563eb'}}>
             <div className="stat-icon" style={{backgroundColor: '#dbeafe', color: '#2563eb'}}>🎓</div>
             <div className="stat-info">
-              <h3 style={{fontSize: '0.82rem', color: 'var(--text-secondary)'}}>Rentrées Scolarité</h3>
+              <h3 style={{fontSize: '0.82rem', color: 'var(--text-secondary)'}}>Total Scolarité</h3>
               <p className="stat-value" style={{color: '#2563eb'}}>{formatNum(scolariteTotalEncaisse)} F</p>
               <small style={{color: 'var(--text-secondary)', fontSize: '0.75rem'}}>
                 Taux : <strong>{scolariteTauxRecouvrement}%</strong>
@@ -2980,7 +2980,7 @@ function App() {
           <div className="stat-card delay-150" onClick={() => { setActiveTab('scolarite'); setComptaActiveTab('frais_annexes'); }} style={{cursor: 'pointer', borderLeft: '4px solid #10b981'}}>
             <div className="stat-icon" style={{backgroundColor: '#d1fae5', color: '#10b981'}}>💳</div>
             <div className="stat-info">
-              <h3 style={{fontSize: '0.82rem', color: 'var(--text-secondary)'}}>Rentrées Frais Annexes</h3>
+              <h3 style={{fontSize: '0.82rem', color: 'var(--text-secondary)'}}>Total Annexe</h3>
               <p className="stat-value" style={{color: '#10b981'}}>{formatNum(annexesTotalEncaisse)} F</p>
               <small style={{color: 'var(--text-secondary)', fontSize: '0.75rem'}}>
                 Taux : <strong>{annexesTauxRecouvrement}%</strong>
@@ -3023,14 +3023,14 @@ function App() {
           </div>
         </div>
 
-        {/* Panneau de Séparation Détaillé : Scolarité vs Frais Annexes */}
+        {/* Panneau de Séparation Détaillé : Total Scolarité vs Total Annexe */}
         <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px', marginBottom: '24px'}}>
           {/* Card Scolarité */}
           <div className="panel delay-150" style={{padding: '20px', borderLeft: '5px solid #2563eb', background: 'var(--surface-color)', boxShadow: '0 2px 10px rgba(37,99,235,0.06)'}}>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px'}}>
               <div>
                 <span style={{display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '6px', background: '#eff6ff', color: '#2563eb', fontWeight: 700, fontSize: '0.82rem', marginBottom: '6px'}}>
-                  <span>🎓</span> SCOLARITÉ & ÉCOLAGES
+                  <span>🎓</span> TOTAL SCOLARITÉ
                 </span>
                 <h3 style={{margin: 0, fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-color)'}}>
                   {formatNum(scolariteTotalEncaisse)} F <span style={{fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)'}}>encaissés</span>
@@ -3073,7 +3073,7 @@ function App() {
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px'}}>
               <div>
                 <span style={{display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '6px', background: '#ecfdf5', color: '#059669', fontWeight: 700, fontSize: '0.82rem', marginBottom: '6px'}}>
-                  <span>💳</span> FRAIS ANNEXES (TENUES, BADGES...)
+                  <span>💳</span> TOTAL ANNEXE
                 </span>
                 <h3 style={{margin: 0, fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-color)'}}>
                   {formatNum(annexesTotalEncaisse)} F <span style={{fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)'}}>encaissés</span>
@@ -3085,13 +3085,13 @@ function App() {
                 style={{padding: '6px 12px', fontSize: '0.8rem', fontWeight: 700, borderColor: '#10b981', color: '#059669', display: 'flex', alignItems: 'center', gap: '4px'}}
                 onClick={() => { setActiveTab('scolarite'); setComptaActiveTab('frais_annexes'); }}
               >
-                Détails Frais Annexes →
+                Détails Total Annexe →
               </button>
             </div>
 
             <div style={{marginBottom: '14px'}}>
               <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '4px', fontWeight: 600}}>
-                <span style={{color: 'var(--text-secondary)'}}>Recouvrement Frais Annexes</span>
+                <span style={{color: 'var(--text-secondary)'}}>Recouvrement Annexe</span>
                 <span style={{color: '#059669'}}>{annexesTauxRecouvrement}%</span>
               </div>
               <div style={{width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden'}}>
