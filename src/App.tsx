@@ -4110,10 +4110,10 @@ function App() {
                   borderRadius: '8px',
                   border: 'none',
                   backgroundColor: expenseViewTab === 'depenses' ? 'var(--primary-color)' : 'transparent',
-                  color: expenseViewTab === 'depenses' ? 'white' : 'var(--text-color)',
-                  fontWeight: expenseViewTab === 'depenses' ? 700 : 500,
+                  color: expenseViewTab === 'depenses' ? '#ffffff' : '#0f172a',
+                  fontWeight: 700,
                   cursor: 'pointer',
-                  fontSize: '0.88rem',
+                  fontSize: '0.9rem',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px'
@@ -4129,10 +4129,10 @@ function App() {
                   borderRadius: '8px',
                   border: 'none',
                   backgroundColor: expenseViewTab === 'emprunts' ? 'var(--primary-color)' : 'transparent',
-                  color: expenseViewTab === 'emprunts' ? 'white' : 'var(--text-color)',
-                  fontWeight: expenseViewTab === 'emprunts' ? 700 : 500,
+                  color: expenseViewTab === 'emprunts' ? '#ffffff' : '#0f172a',
+                  fontWeight: 700,
                   cursor: 'pointer',
-                  fontSize: '0.88rem',
+                  fontSize: '0.9rem',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px'
@@ -5287,8 +5287,8 @@ function App() {
             background: 'transparent',
             border: 'none',
             borderBottom: comptaActiveTab === 'scolarite' ? '3px solid var(--primary-color, #2563eb)' : '3px solid transparent',
-            color: comptaActiveTab === 'scolarite' ? 'var(--primary-color, #2563eb)' : 'var(--text-secondary, #64748b)',
-            fontWeight: comptaActiveTab === 'scolarite' ? 700 : 500,
+            color: comptaActiveTab === 'scolarite' ? 'var(--primary-color, #2563eb)' : '#0f172a',
+            fontWeight: 700,
             fontSize: '1rem',
             cursor: 'pointer',
             display: 'flex',
@@ -5308,8 +5308,8 @@ function App() {
             background: 'transparent',
             border: 'none',
             borderBottom: comptaActiveTab === 'frais_annexes' ? '3px solid var(--primary-color, #2563eb)' : '3px solid transparent',
-            color: comptaActiveTab === 'frais_annexes' ? 'var(--primary-color, #2563eb)' : 'var(--text-secondary, #64748b)',
-            fontWeight: comptaActiveTab === 'frais_annexes' ? 700 : 500,
+            color: comptaActiveTab === 'frais_annexes' ? 'var(--primary-color, #2563eb)' : '#0f172a',
+            fontWeight: 700,
             fontSize: '1rem',
             cursor: 'pointer',
             display: 'flex',
@@ -7398,16 +7398,34 @@ function App() {
                     <div style={{ display: 'flex', background: 'var(--surface-color-hover, #f1f5f9)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-color)', gap: '4px' }}>
                       <button
                         type="button"
-                        className={`btn ${notesSubTab === 'grades' ? 'btn-primary' : 'btn-outline'}`}
-                        style={{ padding: '8px 20px', fontSize: '0.9rem', fontWeight: 600, borderRadius: '8px' }}
+                        className={`btn ${notesSubTab === 'grades' ? 'btn-primary' : ''}`}
+                        style={{
+                          padding: '8px 20px',
+                          fontSize: '0.92rem',
+                          fontWeight: 700,
+                          borderRadius: '8px',
+                          color: notesSubTab === 'grades' ? '#ffffff' : '#0f172a',
+                          backgroundColor: notesSubTab === 'grades' ? 'var(--primary-color)' : '#ffffff',
+                          border: notesSubTab === 'grades' ? 'none' : '1px solid #cbd5e1',
+                          cursor: 'pointer'
+                        }}
                         onClick={() => setNotesSubTab('grades')}
                       >
                         📝 Évaluations & Notes
                       </button>
                       <button
                         type="button"
-                        className={`btn ${notesSubTab === 'bulletins' ? 'btn-primary' : 'btn-outline'}`}
-                        style={{ padding: '8px 20px', fontSize: '0.9rem', fontWeight: 600, borderRadius: '8px' }}
+                        className={`btn ${notesSubTab === 'bulletins' ? 'btn-primary' : ''}`}
+                        style={{
+                          padding: '8px 20px',
+                          fontSize: '0.92rem',
+                          fontWeight: 700,
+                          borderRadius: '8px',
+                          color: notesSubTab === 'bulletins' ? '#ffffff' : '#0f172a',
+                          backgroundColor: notesSubTab === 'bulletins' ? 'var(--primary-color)' : '#ffffff',
+                          border: notesSubTab === 'bulletins' ? 'none' : '1px solid #cbd5e1',
+                          cursor: 'pointer'
+                        }}
                         onClick={() => setNotesSubTab('bulletins')}
                       >
                         📜 Bulletins Scolaires
@@ -9562,9 +9580,9 @@ function App() {
                         borderLeft: 'none',
                         borderRight: 'none',
                         background: activeDossierTab === 'infos' ? 'rgba(59, 130, 246, 0.08)' : 'transparent',
-                        color: activeDossierTab === 'infos' ? 'var(--primary-color)' : 'var(--text-secondary)',
+                        color: activeDossierTab === 'infos' ? 'var(--primary-color)' : '#0f172a',
                         padding: '10px 18px',
-                        fontWeight: 600,
+                        fontWeight: 700,
                         marginBottom: '-2px',
                         cursor: 'pointer'
                       }}
@@ -9581,9 +9599,9 @@ function App() {
                         borderLeft: 'none',
                         borderRight: 'none',
                         background: activeDossierTab === 'documents' ? 'rgba(59, 130, 246, 0.08)' : 'transparent',
-                        color: activeDossierTab === 'documents' ? 'var(--primary-color)' : 'var(--text-secondary)',
+                        color: activeDossierTab === 'documents' ? 'var(--primary-color)' : '#0f172a',
                         padding: '10px 18px',
-                        fontWeight: 600,
+                        fontWeight: 700,
                         marginBottom: '-2px',
                         cursor: 'pointer'
                       }}
@@ -9600,9 +9618,9 @@ function App() {
                         borderLeft: 'none',
                         borderRight: 'none',
                         background: activeDossierTab === 'finances' ? 'rgba(59, 130, 246, 0.08)' : 'transparent',
-                        color: activeDossierTab === 'finances' ? 'var(--primary-color)' : 'var(--text-secondary)',
+                        color: activeDossierTab === 'finances' ? 'var(--primary-color)' : '#0f172a',
                         padding: '10px 18px',
-                        fontWeight: 600,
+                        fontWeight: 700,
                         marginBottom: '-2px',
                         cursor: 'pointer'
                       }}
