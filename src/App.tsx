@@ -5428,6 +5428,7 @@ function App() {
 
       {/* Sous-navigation Comptabilité : Scolarité Générale vs Frais Annexes */}
       <div
+        className="compta-subtabs hide-print"
         style={{
           display: 'flex',
           gap: '12px',
@@ -5682,8 +5683,21 @@ function App() {
 
       {/* NOUVEAU PANEL: Suivi des paiements par élève */}
       <div className="panel delay-250" id="finance-list-panel" style={{marginTop: '24px'}}>
+        {/* En-tête officiel imprimable avec nom de l'école */}
+        <div className="finance-print-header" style={{display: 'none', textAlign: 'center', marginBottom: '14px', borderBottom: '2px solid #0f172a', paddingBottom: '10px'}}>
+          <h2 style={{margin: '0 0 4px 0', fontSize: '1.25rem', fontWeight: 800, textTransform: 'uppercase', color: '#0f172a', letterSpacing: '0.5px'}}>
+            {effectiveSchoolInfo?.school_name || settingsData?.school_name || 'ÉTABLISSEMENT SCOLAIRE'}
+          </h2>
+          <div style={{fontSize: '0.85rem', color: '#334155', display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap'}}>
+            {settingsData?.academic_year && <span>Année Scolaire : <strong>{settingsData.academic_year}</strong></span>}
+            <span>Date d'édition : <strong>{new Date().toLocaleDateString('fr-FR')}</strong></span>
+            {financeClassFilter !== 'all' && <span>Classe : <strong>{classesData.find(c => c.id === financeClassFilter)?.name}</strong></span>}
+            {financeStatusFilter !== 'all' && <span>Statut : <strong>{financeStatusFilter}</strong></span>}
+          </div>
+        </div>
+
         <div className="panel-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px'}}>
-          <h3 className="panel-title finance-print-title" style={{textTransform: 'uppercase'}}>
+          <h3 className="panel-title finance-print-title" style={{textTransform: 'uppercase', fontSize: '1.1rem', fontWeight: 800}}>
             {(() => {
               if (financeStatusFilter === 'all' && financeClassFilter === 'all') return 'SUIVI DES PAIEMENTS PAR ÉLÈVE';
               const statusPart = financeStatusFilter === 'all' ? '' : (financeStatusFilter === 'Soldé' ? 'SOLDE' : 'NON SOLDE');
@@ -5734,15 +5748,15 @@ function App() {
         
         <table style={{width: '100%', borderCollapse: 'collapse', marginTop: '16px'}}>
           <thead>
-            <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Matricule</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Élève</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Classe</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Date Dernier Paiement</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Attendu</th>
-              <th style={{padding: '12px 0', fontWeight: 500, color: 'var(--success-color)'}}>Payé</th>
-              <th style={{padding: '12px 0', fontWeight: 500, color: 'var(--danger-color)'}}>Reste à Payer</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>Statut</th>
+            <tr style={{borderBottom: '2px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
+              <th style={{padding: '12px 10px 12px 14px', fontWeight: 700, width: '90px', whiteSpace: 'nowrap'}}>Matricule</th>
+              <th style={{padding: '12px 8px', fontWeight: 700}}>Élève</th>
+              <th style={{padding: '12px 8px', fontWeight: 700}}>Classe</th>
+              <th style={{padding: '12px 8px', fontWeight: 700, whiteSpace: 'nowrap'}}>Date Dernier Paiement</th>
+              <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap'}}>Attendu</th>
+              <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'right', color: 'var(--success-color)', whiteSpace: 'nowrap'}}>Payé</th>
+              <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'right', color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>Reste à Payer</th>
+              <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'center'}}>Statut</th>
             </tr>
           </thead>
           <tbody>
@@ -5770,26 +5784,26 @@ function App() {
                 <>
                   {filteredStudents.map((st, i) => (
                     <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
-                      <td style={{padding: '16px 0', fontFamily: 'monospace', color: 'var(--primary-color)'}}>{st.matricule}</td>
-                      <td style={{padding: '16px 0', fontWeight: 600}}>{st.name}</td>
-                      <td style={{padding: '16px 0'}}>{st.className}</td>
-                      <td style={{padding: '16px 0', color: st.lastPaymentDate ? 'var(--success-color)' : 'var(--text-secondary)', fontWeight: st.lastPaymentDate ? 600 : 400, fontSize: '0.9rem'}}>
+                      <td style={{padding: '12px 10px 12px 14px', fontFamily: 'monospace', fontWeight: 700, color: 'var(--primary-color)', whiteSpace: 'nowrap'}}>{st.matricule}</td>
+                      <td style={{padding: '12px 8px', fontWeight: 600}}>{st.name}</td>
+                      <td style={{padding: '12px 8px'}}>{st.className}</td>
+                      <td style={{padding: '12px 8px', color: st.lastPaymentDate ? 'var(--success-color)' : 'var(--text-secondary)', fontWeight: st.lastPaymentDate ? 600 : 400, fontSize: '0.9rem', whiteSpace: 'nowrap'}}>
                         {st.lastPaymentDate ? new Date(st.lastPaymentDate).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR') : '-'}
                       </td>
-                      <td style={{padding: '16px 0'}}>{formatNum(st.total)} F</td>
-                      <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--success-color)'}}>{formatNum(st.paye)} F</td>
-                      <td style={{padding: '16px 0', fontWeight: 'bold', color: 'var(--danger-color)'}}>{formatNum(st.nonPaye)} F</td>
-                      <td style={{padding: '16px 0'}}>
+                      <td style={{padding: '12px 8px', textAlign: 'right', whiteSpace: 'nowrap'}}>{formatNum(st.total)} F</td>
+                      <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: 'var(--success-color)', whiteSpace: 'nowrap'}}>{formatNum(st.paye)} F</td>
+                      <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>{formatNum(st.nonPaye)} F</td>
+                      <td style={{padding: '12px 8px', textAlign: 'center'}}>
                         <span className={`badge ${st.status === 'Soldé' ? 'badge-success' : 'badge-warning'}`}>{st.status}</span>
                       </td>
                     </tr>
                   ))}
                   {filteredStudents.length > 0 && (
-                    <tr className="finance-totals-row" style={{fontWeight: 'bold', borderTop: '2px solid var(--border-color)'}}>
-                      <td colSpan={4} style={{padding: '16px 0', textAlign: 'right', paddingRight: '24px'}}>TOTAL :</td>
-                      <td style={{padding: '16px 0'}}>{formatNum(totalAttendu)} F</td>
-                      <td style={{padding: '16px 0', color: 'var(--success-color)'}}>{formatNum(totalPaye)} F</td>
-                      <td style={{padding: '16px 0', color: 'var(--danger-color)'}}>{formatNum(totalReste)} F</td>
+                    <tr className="finance-totals-row" style={{fontWeight: 'bold', borderTop: '2px solid #0f172a', borderBottom: '2px solid #0f172a', background: 'rgba(0,0,0,0.02)'}}>
+                      <td colSpan={4} style={{padding: '12px 10px 12px 14px', textAlign: 'right', paddingRight: '24px', fontWeight: 800}}>TOTAL :</td>
+                      <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 800, whiteSpace: 'nowrap'}}>{formatNum(totalAttendu)} F</td>
+                      <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 800, color: 'var(--success-color)', whiteSpace: 'nowrap'}}>{formatNum(totalPaye)} F</td>
+                      <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 800, color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>{formatNum(totalReste)} F</td>
                       <td></td>
                     </tr>
                   )}

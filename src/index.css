@@ -786,13 +786,17 @@ html {
   body.print-finance-list .modal-overlay,
   body.print-finance-list .top-header,
   body.print-finance-list .panel:not(#finance-list-panel),
+  body.print-finance-list .compta-subtabs,
+  body.print-finance-list .hide-print,
   body.print-finance-class-summary .page-header,
   body.print-finance-class-summary .stats-grid,
   body.print-finance-class-summary .sidebar,
   body.print-finance-class-summary .sidebar-overlay,
   body.print-finance-class-summary .modal-overlay,
   body.print-finance-class-summary .top-header,
-  body.print-finance-class-summary .panel:not(#finance-class-summary-panel) {
+  body.print-finance-class-summary .panel:not(#finance-class-summary-panel),
+  body.print-finance-class-summary .compta-subtabs,
+  body.print-finance-class-summary .hide-print {
     display: none !important;
   }
   
@@ -811,12 +815,31 @@ html {
   body.print-finance-class-summary #finance-class-summary-panel .panel-header {
     justify-content: center !important;
   }
+
+  body.print-finance-list .finance-print-header,
+  body.print-finance-class-summary .finance-print-header {
+    display: block !important;
+  }
   
   body.print-finance-list table td, body.print-finance-list table th,
   body.print-finance-class-summary table td, body.print-finance-class-summary table th,
   body.print-student-list table td, body.print-student-list table th {
-    padding: 4px 0 !important;
-    font-size: 12px !important;
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Première colonne (Matricule) : protection contre tout rognage */
+  body.print-finance-list table th:first-child,
+  body.print-finance-list table td:first-child,
+  body.print-student-list table th:first-child,
+  body.print-student-list table td:first-child {
+    padding-left: 16px !important;
+    padding-right: 8px !important;
+    min-width: 90px !important;
+    width: 90px !important;
+    white-space: nowrap !important;
+    text-align: left !important;
   }
 
   body.print-finance-list .finance-print-title,
@@ -861,18 +884,30 @@ html {
     background: transparent !important;
   }
 
+  body.print-finance-list,
+  body.print-finance-class-summary,
+  body.print-student-list {
+    margin: 0 !important;
+    padding: 6mm 8mm !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    background: #ffffff !important;
+  }
+
   body.print-finance-list #finance-list-panel,
-  body.print-finance-class-summary #finance-class-summary-panel {
+  body.print-finance-class-summary #finance-class-summary-panel,
+  body.print-student-list #student-list-panel {
     display: block !important;
     position: static !important;
     height: auto !important;
     overflow: visible !important;
     border: none !important;
     box-shadow: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    padding: 6px 10px !important;
+    margin: 0 auto !important;
     background: transparent !important;
     width: 100% !important;
+    box-sizing: border-box !important;
   }
   
   /* Isolate Student List */
