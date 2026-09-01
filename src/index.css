@@ -817,7 +817,9 @@ html {
   }
 
   body.print-finance-list .finance-print-header,
-  body.print-finance-class-summary .finance-print-header {
+  body.print-finance-class-summary .finance-print-header,
+  body.print-student-list .student-print-header,
+  body.printing-schedule .schedule-student-print-header {
     display: block !important;
   }
   

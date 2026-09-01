@@ -3361,6 +3361,21 @@ function App() {
     return matchQuery && matchClass && matchStatus && matchAffecte && matchPayment;
   });
 
+  const currentSchoolObj = adminSchools?.find((s: any) => s.id === currentSchoolId) || subdomainSchool;
+  const effectiveSchoolInfo = {
+    ...currentSchoolObj,
+    ...settingsData,
+    school_name: settingsData?.school_name || currentSchoolObj?.name || "COLLEGE CONFESSIONNELLE CHERIFLA DIVO",
+    school_name_ar: settingsData?.school_name_ar || currentSchoolObj?.name_ar || "",
+    name: settingsData?.school_name || currentSchoolObj?.name || "COLLEGE CONFESSIONNELLE CHERIFLA DIVO",
+    logo_url: settingsData?.logo_url || currentSchoolObj?.logo_url || '/logo-coran.jpg',
+    phone: settingsData?.phone || currentSchoolObj?.phone || "00 00 00 00 00",
+    address: settingsData?.address || currentSchoolObj?.address || "Divo",
+    academic_year: settingsData?.academic_year || `${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`,
+    director_name: settingsData?.director_name || "La Direction",
+    cashier_name: settingsData?.cashier_name || "La Caissière"
+  };
+
   const renderStudents = () => {
 
     return (
@@ -3409,6 +3424,36 @@ function App() {
       </div>
 
       <div className="panel delay-300" id="student-list-panel">
+        {/* En-tête officiel imprimable avec nom et logo de l'école */}
+        <div className="student-print-header" style={{display: 'none', marginBottom: '16px', borderBottom: '2px solid #0f172a', paddingBottom: '12px'}}>
+          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px'}}>
+            <div style={{width: '75px', height: '75px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+              <img 
+                src={effectiveSchoolInfo?.logo_url || '/logo-coran.jpg'} 
+                alt="Logo École" 
+                style={{maxWidth: '75px', maxHeight: '75px', objectFit: 'contain', borderRadius: '6px'}} 
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo-coran.jpg'; }}
+              />
+            </div>
+            <div style={{flex: 1, textAlign: 'center'}}>
+              <h2 style={{margin: '0 0 4px 0', fontSize: '1.3rem', fontWeight: 800, textTransform: 'uppercase', color: '#0f172a', letterSpacing: '0.5px'}}>
+                {effectiveSchoolInfo?.school_name || settingsData?.school_name || 'ÉTABLISSEMENT SCOLAIRE'}
+              </h2>
+              {effectiveSchoolInfo?.address && (
+                <div style={{fontSize: '0.82rem', color: '#475569', marginBottom: '4px'}}>
+                  {effectiveSchoolInfo.address} {effectiveSchoolInfo.phone ? `• Tél: ${effectiveSchoolInfo.phone}` : ''}
+                </div>
+              )}
+              <div style={{fontSize: '0.85rem', color: '#334155', display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap'}}>
+                {settingsData?.academic_year && <span>Année Scolaire : <strong>{settingsData.academic_year}</strong></span>}
+                <span>Date d'édition : <strong>{new Date().toLocaleDateString('fr-FR')}</strong></span>
+                <span>Effectif : <strong>{filteredStudents.length} élèves</strong></span>
+              </div>
+            </div>
+            <div style={{width: '75px', height: '75px', flexShrink: 0}}></div>
+          </div>
+        </div>
+
         <div className="panel-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'}}>
           <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
             <h3 className="panel-title student-print-title" style={{margin: 0}}>{t('admin.students.panel_title', 'Annuaire des Élèves')}</h3>
@@ -5149,10 +5194,13 @@ function App() {
             #schedule-print-container { display: none !important; }
           }
         </style>
-        <div class="print-header">
-          <div>
-            <h2 style="margin: 0; font-size: 1.15rem; color: #0f172a; font-weight: bold; text-transform: uppercase;">ÉTABLISSEMENT : ${schoolName}</h2>
-            <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #475569;">Année Scolaire : 2024 - 2025</p>
+        <div class="print-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <img src="${effectiveSchoolInfo?.logo_url || '/logo-coran.jpg'}" alt="Logo" style="width: 55px; height: 55px; object-fit: contain; border-radius: 6px;" onerror="this.src='/logo-coran.jpg'" />
+            <div>
+              <h2 style="margin: 0; font-size: 1.15rem; color: #0f172a; font-weight: bold; text-transform: uppercase;">${schoolName}</h2>
+              <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #475569;">Année Scolaire : ${effectiveSchoolInfo?.academic_year || '2025 - 2026'}</p>
+            </div>
           </div>
           <div style="text-align: right;">
             <h1 style="margin: 0; font-size: 1.25rem; color: #2563eb; font-weight: bold; text-transform: uppercase;">${titleText}</h1>
@@ -5587,6 +5635,35 @@ function App() {
       </div>
 
       <div id="finance-class-summary-panel" className="panel delay-200" style={{marginTop: '24px'}}>
+        {/* En-tête officiel imprimable avec nom et logo de l'école */}
+        <div className="finance-print-header" style={{display: 'none', marginBottom: '16px', borderBottom: '2px solid #0f172a', paddingBottom: '12px'}}>
+          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px'}}>
+            <div style={{width: '75px', height: '75px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+              <img 
+                src={effectiveSchoolInfo?.logo_url || '/logo-coran.jpg'} 
+                alt="Logo École" 
+                style={{maxWidth: '75px', maxHeight: '75px', objectFit: 'contain', borderRadius: '6px'}} 
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo-coran.jpg'; }}
+              />
+            </div>
+            <div style={{flex: 1, textAlign: 'center'}}>
+              <h2 style={{margin: '0 0 4px 0', fontSize: '1.3rem', fontWeight: 800, textTransform: 'uppercase', color: '#0f172a', letterSpacing: '0.5px'}}>
+                {effectiveSchoolInfo?.school_name || settingsData?.school_name || 'ÉTABLISSEMENT SCOLAIRE'}
+              </h2>
+              {effectiveSchoolInfo?.address && (
+                <div style={{fontSize: '0.82rem', color: '#475569', marginBottom: '4px'}}>
+                  {effectiveSchoolInfo.address} {effectiveSchoolInfo.phone ? `• Tél: ${effectiveSchoolInfo.phone}` : ''}
+                </div>
+              )}
+              <div style={{fontSize: '0.85rem', color: '#334155', display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap'}}>
+                {settingsData?.academic_year && <span>Année Scolaire : <strong>{settingsData.academic_year}</strong></span>}
+                <span>Date d'édition : <strong>{new Date().toLocaleDateString('fr-FR')}</strong></span>
+              </div>
+            </div>
+            <div style={{width: '75px', height: '75px', flexShrink: 0}}></div>
+          </div>
+        </div>
+
         <div className="panel-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
           <h3 className="panel-title finance-class-print-title">{t('admin.finance.panel_class_title', 'Récapitulatif par Classe')}</h3>
           <button className="btn btn-outline" onClick={() => {
@@ -5683,16 +5760,34 @@ function App() {
 
       {/* NOUVEAU PANEL: Suivi des paiements par élève */}
       <div className="panel delay-250" id="finance-list-panel" style={{marginTop: '24px'}}>
-        {/* En-tête officiel imprimable avec nom de l'école */}
-        <div className="finance-print-header" style={{display: 'none', textAlign: 'center', marginBottom: '14px', borderBottom: '2px solid #0f172a', paddingBottom: '10px'}}>
-          <h2 style={{margin: '0 0 4px 0', fontSize: '1.25rem', fontWeight: 800, textTransform: 'uppercase', color: '#0f172a', letterSpacing: '0.5px'}}>
-            {effectiveSchoolInfo?.school_name || settingsData?.school_name || 'ÉTABLISSEMENT SCOLAIRE'}
-          </h2>
-          <div style={{fontSize: '0.85rem', color: '#334155', display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap'}}>
-            {settingsData?.academic_year && <span>Année Scolaire : <strong>{settingsData.academic_year}</strong></span>}
-            <span>Date d'édition : <strong>{new Date().toLocaleDateString('fr-FR')}</strong></span>
-            {financeClassFilter !== 'all' && <span>Classe : <strong>{classesData.find(c => c.id === financeClassFilter)?.name}</strong></span>}
-            {financeStatusFilter !== 'all' && <span>Statut : <strong>{financeStatusFilter}</strong></span>}
+        {/* En-tête officiel imprimable avec nom et logo de l'école */}
+        <div className="finance-print-header" style={{display: 'none', marginBottom: '16px', borderBottom: '2px solid #0f172a', paddingBottom: '12px'}}>
+          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px'}}>
+            <div style={{width: '75px', height: '75px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+              <img 
+                src={effectiveSchoolInfo?.logo_url || '/logo-coran.jpg'} 
+                alt="Logo École" 
+                style={{maxWidth: '75px', maxHeight: '75px', objectFit: 'contain', borderRadius: '6px'}} 
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo-coran.jpg'; }}
+              />
+            </div>
+            <div style={{flex: 1, textAlign: 'center'}}>
+              <h2 style={{margin: '0 0 4px 0', fontSize: '1.3rem', fontWeight: 800, textTransform: 'uppercase', color: '#0f172a', letterSpacing: '0.5px'}}>
+                {effectiveSchoolInfo?.school_name || settingsData?.school_name || 'ÉTABLISSEMENT SCOLAIRE'}
+              </h2>
+              {effectiveSchoolInfo?.address && (
+                <div style={{fontSize: '0.82rem', color: '#475569', marginBottom: '4px'}}>
+                  {effectiveSchoolInfo.address} {effectiveSchoolInfo.phone ? `• Tél: ${effectiveSchoolInfo.phone}` : ''}
+                </div>
+              )}
+              <div style={{fontSize: '0.85rem', color: '#334155', display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap'}}>
+                {settingsData?.academic_year && <span>Année Scolaire : <strong>{settingsData.academic_year}</strong></span>}
+                <span>Date d'édition : <strong>{new Date().toLocaleDateString('fr-FR')}</strong></span>
+                {financeClassFilter !== 'all' && <span>Classe : <strong>{classesData.find(c => c.id === financeClassFilter)?.name}</strong></span>}
+                {financeStatusFilter !== 'all' && <span>Statut : <strong>{financeStatusFilter}</strong></span>}
+              </div>
+            </div>
+            <div style={{width: '75px', height: '75px', flexShrink: 0}}></div>
           </div>
         </div>
 
@@ -7259,21 +7354,6 @@ function App() {
       </>
     );
   }
-
-  const currentSchoolObj = adminSchools?.find((s: any) => s.id === currentSchoolId) || subdomainSchool;
-  const effectiveSchoolInfo = {
-    ...currentSchoolObj,
-    ...settingsData,
-    school_name: settingsData?.school_name || currentSchoolObj?.name || "COLLEGE CONFESSIONNELLE CHERIFLA DIVO",
-    school_name_ar: settingsData?.school_name_ar || currentSchoolObj?.name_ar || "",
-    name: settingsData?.school_name || currentSchoolObj?.name || "COLLEGE CONFESSIONNELLE CHERIFLA DIVO",
-    logo_url: settingsData?.logo_url || currentSchoolObj?.logo_url || '/logo-coran.jpg',
-    phone: settingsData?.phone || currentSchoolObj?.phone || "00 00 00 00 00",
-    address: settingsData?.address || currentSchoolObj?.address || "Divo",
-    academic_year: settingsData?.academic_year || `${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`,
-    director_name: settingsData?.director_name || "La Direction",
-    cashier_name: settingsData?.cashier_name || "La Caissière"
-  };
 
   return (
     <>
@@ -9843,6 +9923,26 @@ function App() {
                         )}
                       </div>
                       <div style={{marginBottom: '24px'}} className="printable-schedule-wrapper">
+                        {/* En-tête imprimable avec logo */}
+                        <div className="schedule-student-print-header" style={{display: 'none', marginBottom: '16px', borderBottom: '2px solid #0f172a', paddingBottom: '10px'}}>
+                          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px'}}>
+                            <img 
+                              src={effectiveSchoolInfo?.logo_url || '/logo-coran.jpg'} 
+                              alt="Logo École" 
+                              style={{maxWidth: '65px', maxHeight: '65px', objectFit: 'contain', borderRadius: '6px'}} 
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo-coran.jpg'; }}
+                            />
+                            <div style={{textAlign: 'center', flex: 1}}>
+                              <h2 style={{margin: '0 0 2px 0', fontSize: '1.2rem', fontWeight: 800, textTransform: 'uppercase', color: '#0f172a'}}>
+                                {effectiveSchoolInfo?.school_name || settingsData?.school_name || 'ÉTABLISSEMENT SCOLAIRE'}
+                              </h2>
+                              <div style={{fontSize: '0.85rem', color: '#475569'}}>
+                                Emploi du Temps — Classe : <strong>{selectedStudent.classes?.name}</strong> | Année : <strong>{effectiveSchoolInfo?.academic_year || '2025-2026'}</strong>
+                              </div>
+                            </div>
+                            <div style={{width: '65px'}}></div>
+                          </div>
+                        </div>
                         {schedulesData.filter(s => s.class_id === selectedStudent.class_id).length > 0 ? (
                           <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px'}}>
                             {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'].map(day => {
