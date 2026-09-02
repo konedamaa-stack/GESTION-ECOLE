@@ -132,6 +132,22 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
   defaultApptDate.setMonth(defaultApptDate.getMonth() + 2);
   const nextAppt = formatDate(invoice?.next_appointment || defaultApptDate.toISOString());
 
+  // Détermination intelligente du titre du caissier (Le Caissier / La Caissière / أمين الصندوق / أمينة الصندوق)
+  const isMaleCashier = (() => {
+    if (schoolInfo?.cashier_title) {
+      return schoolInfo.cashier_title.toLowerCase().includes('caissier') && !schoolInfo.cashier_title.toLowerCase().includes('caissière');
+    }
+    const cashierName = (schoolInfo?.cashier_name || '').toLowerCase();
+    if (cashierName.startsWith('mr') || cashierName.includes('monsieur') || cashierName.includes('m.') || cashierName.includes('alassane') || cashierName.includes('camara')) return true;
+    const schoolNameStr = (schoolInfo?.school_name || schoolInfo?.name || '').toLowerCase();
+    if (schoolNameStr.includes('راية') || schoolNameStr.includes('raya')) return true;
+    return false;
+  })();
+
+  const cashierLabel = isAr 
+    ? (isMaleCashier ? 'أمين الصندوق' : 'أمينة الصندوق') 
+    : (isMaleCashier ? 'Le Caissier' : (schoolInfo?.cashier_title || 'La Caissière'));
+
   return (
     <div className="small-receipt-container" style={{
       width: '100%',
@@ -239,7 +255,7 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
 
       {/* Footer */}
       <div style={{ textAlign: 'center', marginTop: '15px', fontSize: '11px' }}>
-        <div style={{ marginBottom: '4px', textDecoration: 'underline', fontWeight: 'bold' }}>{isAr ? 'أمينة الصندوق' : 'La Caissière'}</div>
+        <div style={{ marginBottom: '4px', textDecoration: 'underline', fontWeight: 'bold' }}>{cashierLabel}</div>
         <div style={{ marginBottom: '25px', fontSize: '10px' }}>{schoolInfo?.cashier_name || (isAr ? 'الإدارة / الصندوق' : 'La Caisse')}</div>
         <div style={{ fontWeight: 'bold' }}>{isAr ? 'شكراً لثقتكم!' : 'Merci de Votre confiance!'}</div>
         <div style={{ marginTop: '4px' }}>{isAr ? ('موعدنا القادم يوم: ' + nextAppt) : ('Rendez-vous le: ' + nextAppt)}</div>

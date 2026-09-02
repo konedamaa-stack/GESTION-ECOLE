@@ -131,6 +131,22 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
   defaultApptDate.setMonth(defaultApptDate.getMonth() + 2);
   const nextAppt = formatDate(invoice?.next_appointment || defaultApptDate.toISOString());
 
+  // Détermination intelligente du titre du caissier (Le Caissier / La Caissière / أمين الصندوق / أمينة الصندوق)
+  const isMaleCashier = (() => {
+    if (schoolInfo?.cashier_title) {
+      return schoolInfo.cashier_title.toLowerCase().includes('caissier') && !schoolInfo.cashier_title.toLowerCase().includes('caissière');
+    }
+    const cashierName = (schoolInfo?.cashier_name || '').toLowerCase();
+    if (cashierName.startsWith('mr') || cashierName.includes('monsieur') || cashierName.includes('m.') || cashierName.includes('alassane') || cashierName.includes('camara')) return true;
+    const schoolNameStr = (schoolInfo?.school_name || schoolInfo?.name || '').toLowerCase();
+    if (schoolNameStr.includes('راية') || schoolNameStr.includes('raya')) return true;
+    return false;
+  })();
+
+  const cashierLabel = isAr 
+    ? (isMaleCashier ? 'أمين الصندوق' : 'أمينة الصندوق') 
+    : (isMaleCashier ? 'Le Caissier' : (schoolInfo?.cashier_title || 'La Caissière'));
+
   return (
     <div className="receipt-container" style={{
       width: '100%',
@@ -231,7 +247,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
               <td style={{ textAlign: isAr ? 'right' : 'left', paddingBottom: '2px' }}>{formatCurrency(reste)}</td>
               <td style={{ textAlign: 'center', paddingBottom: '2px' }}></td>
               <td colSpan={2} style={{ textAlign: 'center', paddingTop: '8px' }}>
-                <div style={{ textDecoration: 'underline' }}>{isAr ? 'أمينة الصندوق' : 'La Caissière'}</div>
+                <div style={{ textDecoration: 'underline' }}>{cashierLabel}</div>
                 <div style={{ marginTop: '20px', fontWeight: 'bold' }}>{schoolInfo?.cashier_name || (isAr ? 'الإدارة / الصندوق' : "La Caisse")}</div>
               </td>
             </tr>

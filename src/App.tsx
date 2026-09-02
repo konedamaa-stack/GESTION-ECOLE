@@ -1685,6 +1685,7 @@ function App() {
     if (formData.has('email')) settingsObj.email = formData.get('email');
     if (formData.has('director_name')) settingsObj.director_name = formData.get('director_name');
     if (formData.has('cashier_name')) settingsObj.cashier_name = formData.get('cashier_name');
+    if (formData.has('cashier_title')) settingsObj.cashier_title = formData.get('cashier_title');
     if (formData.has('city')) settingsObj.city = formData.get('city');
     if (formData.has('principal_name')) settingsObj.principal_name = formData.get('principal_name');
     if (formData.has('studies_director_name')) settingsObj.studies_director_name = formData.get('studies_director_name');
@@ -3373,7 +3374,16 @@ function App() {
     address: settingsData?.address || currentSchoolObj?.address || "Divo",
     academic_year: settingsData?.academic_year || `${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`,
     director_name: settingsData?.director_name || "La Direction",
-    cashier_name: settingsData?.cashier_name || "La Caissière"
+    cashier_name: settingsData?.cashier_name || (
+      (settingsData?.school_name || currentSchoolObj?.name || '').includes('راية')
+        ? "Mr CAMARA ALASSANE"
+        : "La Caissière"
+    ),
+    cashier_title: settingsData?.cashier_title || (
+      (settingsData?.school_name || currentSchoolObj?.name || '').includes('راية') || (settingsData?.cashier_name || '').toLowerCase().includes('mr')
+        ? "Le Caissier"
+        : "La Caissière"
+    )
   };
 
   const renderStudents = () => {
@@ -6515,9 +6525,24 @@ function App() {
                   <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Nom du Directeur des Etudes</label>
                   <input type="text" name="studies_director_name" defaultValue={settingsData?.studies_director_name || ''} className="form-input" placeholder="Signature droite bulletin" />
                 </div>
-                <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-                  <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Nom de la Caissière / Caissier (Reçus de paiement)</label>
-                  <input type="text" name="cashier_name" defaultValue={settingsData?.cashier_name || ''} className="form-input" placeholder="ex: Mme Traoré ou La Caisse" />
+                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px'}}>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                    <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Titre sur les Reçus de paiement</label>
+                    <select 
+                      name="cashier_title" 
+                      defaultValue={settingsData?.cashier_title || ((settingsData?.school_name || currentSchoolObj?.name || '').includes('راية') || (settingsData?.cashier_name || '').toLowerCase().includes('mr') ? 'Le Caissier' : 'La Caissière')} 
+                      className="form-select"
+                    >
+                      <option value="Le Caissier">Le Caissier (Homme / أمين الصندوق)</option>
+                      <option value="La Caissière">La Caissière (Femme / أمينة الصندوق)</option>
+                      <option value="La Caisse">La Caisse (الصندوق)</option>
+                      <option value="Le Comptable">Le Comptable (المحاسب)</option>
+                    </select>
+                  </div>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                    <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Nom du Caissier / Caissière</label>
+                    <input type="text" name="cashier_name" defaultValue={settingsData?.cashier_name || ((settingsData?.school_name || currentSchoolObj?.name || '').includes('راية') ? 'Mr CAMARA ALASSANE' : '')} className="form-input" placeholder="ex: Mr CAMARA ALASSANE" />
+                  </div>
                 </div>
                 
                 <div style={{marginTop: '24px', borderTop: '1px solid var(--border-color)', paddingTop: '24px'}}>
