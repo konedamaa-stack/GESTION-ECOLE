@@ -3396,21 +3396,25 @@ function App() {
           <p className="page-subtitle">{t('admin.students.subtitle', 'Annuaire complet, dossiers scolaires et suivi des absences.')}</p>
         </div>
         <div className="header-actions" style={{display: 'flex', gap: '12px'}}>
-          <button className="btn btn-outline" onClick={() => setActiveModal('absence')} style={{color: 'var(--warning-color)', borderColor: 'var(--warning-color)'}}>
-            <Icons.Activity /> {t('admin.students.btn_absence', 'Signaler Absence')}
-          </button>
-          <button className="btn btn-outline" onClick={() => setActiveModal('import')}><Icons.Download /> {t('admin.students.btn_import', 'Importer')}</button>
-          <button className="btn btn-primary" onClick={() => {
-            if (currentSchoolPlan === 'Standard' && studentsData.length >= 20) {
-              if (window.confirm("Limite de la version Standard atteinte (20 élèves max).\n\nVoulez-vous contacter l'administrateur sur WhatsApp pour passer en version Pro ?")) {
-                window.open("https://wa.me/2250505617743?text=" + encodeURIComponent("Bonjour, j'ai atteint la limite d'élèves sur mon établissement et je souhaite passer à la version Pro."), "_blank");
-              }
-              return;
-            }
-            setActiveModal('student');
-          }}>
-            <Icons.Plus /> {t('admin.students.btn_enroll', 'Inscrire')}
-          </button>
+          {currentAdminRole !== 'Supervisor' && (
+            <>
+              <button className="btn btn-outline" onClick={() => setActiveModal('absence')} style={{color: 'var(--warning-color)', borderColor: 'var(--warning-color)'}}>
+                <Icons.Activity /> {t('admin.students.btn_absence', 'Signaler Absence')}
+              </button>
+              <button className="btn btn-outline" onClick={() => setActiveModal('import')}><Icons.Download /> {t('admin.students.btn_import', 'Importer')}</button>
+              <button className="btn btn-primary" onClick={() => {
+                if (currentSchoolPlan === 'Standard' && studentsData.length >= 20) {
+                  if (window.confirm("Limite de la version Standard atteinte (20 élèves max).\n\nVoulez-vous contacter l'administrateur sur WhatsApp pour passer en version Pro ?")) {
+                    window.open("https://wa.me/2250505617743?text=" + encodeURIComponent("Bonjour, j'ai atteint la limite d'élèves sur mon établissement et je souhaite passer à la version Pro."), "_blank");
+                  }
+                  return;
+                }
+                setActiveModal('student');
+              }}>
+                <Icons.Plus /> {t('admin.students.btn_enroll', 'Inscrire')}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -3642,30 +3646,34 @@ function App() {
                   </div>
                 </td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
-                  <button 
-                    className="btn btn-primary" 
-                    title="Encaisser les frais de scolarité" 
-                    style={{padding: '6px 12px', marginRight: '8px', background: '#10b981', borderColor: '#10b981', color: 'white', fontWeight: 600}} 
-                    onClick={() => { 
-                      setPreselectedStudentId(row.id); 
-                      setActiveModal('payment'); 
-                    }}
-                  >
-                    💳 Encaisser
-                  </button>
-                  <button className="btn btn-outline" title="Réinscrire" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--accent-color)', borderColor: 'var(--accent-color)'}} onClick={() => { 
-                    const studentInvoices = invoicesData.filter(inv => inv.student_id === row.id);
-                    const studentPaye = studentInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
-                    const studentTotal = Number(row.tuition_fee) || (row.affecte === 'Affecté' ? Number(row.classes?.tuition_fee_affecte) : Number(row.classes?.tuition_fee)) || 0;
-                    const studentReste = Math.max(0, studentTotal - studentPaye);
-                    if (studentReste > 0) {
-                      alert(`Impossible de réinscrire cet élève. Il a un reste de scolarité non payé de ${studentReste} CFA. Veuillez d'abord solder sa scolarité.`);
-                    } else {
-                      setEditEntity(row); setActiveModal('reinscription'); 
-                    }
-                  }}><Icons.RefreshCw /></button>
-                  <button className="btn btn-outline" title="Modifier" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('student'); }}>✏️</button>
-                  <button className="btn btn-outline" title="Supprimer" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--error-color)', borderColor: 'var(--error-color)'}} onClick={() => handleDeleteStudent(row.id)}>🗑️</button>
+                  {currentAdminRole !== 'Supervisor' && (
+                    <>
+                      <button 
+                        className="btn btn-primary" 
+                        title="Encaisser les frais de scolarité" 
+                        style={{padding: '6px 12px', marginRight: '8px', background: '#10b981', borderColor: '#10b981', color: 'white', fontWeight: 600}} 
+                        onClick={() => { 
+                          setPreselectedStudentId(row.id); 
+                          setActiveModal('payment'); 
+                        }}
+                      >
+                        💳 Encaisser
+                      </button>
+                      <button className="btn btn-outline" title="Réinscrire" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--accent-color)', borderColor: 'var(--accent-color)'}} onClick={() => { 
+                        const studentInvoices = invoicesData.filter(inv => inv.student_id === row.id);
+                        const studentPaye = studentInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+                        const studentTotal = Number(row.tuition_fee) || (row.affecte === 'Affecté' ? Number(row.classes?.tuition_fee_affecte) : Number(row.classes?.tuition_fee)) || 0;
+                        const studentReste = Math.max(0, studentTotal - studentPaye);
+                        if (studentReste > 0) {
+                          alert(`Impossible de réinscrire cet élève. Il a un reste de scolarité non payé de ${studentReste} CFA. Veuillez d'abord solder sa scolarité.`);
+                        } else {
+                          setEditEntity(row); setActiveModal('reinscription'); 
+                        }
+                      }}><Icons.RefreshCw /></button>
+                      <button className="btn btn-outline" title="Modifier" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('student'); }}>✏️</button>
+                      <button className="btn btn-outline" title="Supprimer" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--error-color)', borderColor: 'var(--error-color)'}} onClick={() => handleDeleteStudent(row.id)}>🗑️</button>
+                    </>
+                  )}
                   <button className="btn btn-outline" title="Bulletin" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--success-color)', borderColor: 'var(--success-color)'}} onClick={() => { 
                     if(row.class_id) {
                       loadBulletinData(row.class_id, '1er Trimestre', row.id);
@@ -5045,12 +5053,16 @@ function App() {
           <p className="page-subtitle">{t('admin.parents.subtitle', "Annuaire des tuteurs légaux, contacts d'urgence et accès ENT.")}</p>
         </div>
         <div style={{display: 'flex', gap: '12px'}}>
-          <button className="btn btn-primary" onClick={() => setActiveModal('parent')}>
-            <Icons.Plus /> {t('admin.parents.btn_add', 'Ajouter un Parent')}
-          </button>
-          <button className="btn btn-outline" onClick={() => setActiveModal('message')}>
-            <Icons.Mail /> {t('admin.parents.btn_msg', 'Envoyer un message')}
-          </button>
+          {currentAdminRole !== 'Supervisor' && (
+            <>
+              <button className="btn btn-primary" onClick={() => setActiveModal('parent')}>
+                <Icons.Plus /> {t('admin.parents.btn_add', 'Ajouter un Parent')}
+              </button>
+              <button className="btn btn-outline" onClick={() => setActiveModal('message')}>
+                <Icons.Mail /> {t('admin.parents.btn_msg', 'Envoyer un message')}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -5094,7 +5106,9 @@ function App() {
                         <span style={{ textDecoration: 'underline' }}>{row.student_parents.map((sp: any) => sp.students?.first_name + ' ' + sp.students?.last_name).filter(Boolean).join(', ')}</span>
                       </div>
                     ) : (
-                      <span className="badge" style={{ background: '#fee2e2', color: '#ef4444', textDecoration: 'none' }}>➕ Lier un enfant</span>
+                      <span className="badge" style={{ background: '#fee2e2', color: '#ef4444', textDecoration: 'none' }}>
+                        {currentAdminRole === 'Supervisor' ? 'Aucun enfant' : '➕ Lier un enfant'}
+                      </span>
                     )}
                   </button>
                 </td>
@@ -5103,8 +5117,12 @@ function App() {
                 <td style={{padding: '16px 0'}}>{row.email ? 'Actif' : 'Non configuré'}</td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
                   <button className="btn btn-primary" style={{padding: '6px 12px', marginRight: '8px', fontSize: '0.85rem'}} onClick={() => { setEditEntity(row); setActiveModal('parent_children'); }}>👨‍👩‍👧‍👦 Enfants ({row.student_parents?.length || 0})</button>
-                  <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px', fontSize: '0.85rem'}} onClick={() => { setEditEntity(row); setActiveModal('parent'); }}>✏️ Modifier</button>
-                  <button className="btn btn-outline" title="Supprimer" style={{padding: '6px 12px', fontSize: '0.85rem', color: 'var(--error-color)', borderColor: 'var(--error-color)'}} onClick={() => handleDeleteParent(row.id)}>🗑️ Supprimer</button>
+                  {currentAdminRole !== 'Supervisor' && (
+                    <>
+                      <button className="btn btn-outline" style={{padding: '6px 12px', marginRight: '8px', fontSize: '0.85rem'}} onClick={() => { setEditEntity(row); setActiveModal('parent'); }}>✏️ Modifier</button>
+                      <button className="btn btn-outline" title="Supprimer" style={{padding: '6px 12px', fontSize: '0.85rem', color: 'var(--error-color)', borderColor: 'var(--error-color)'}} onClick={() => handleDeleteParent(row.id)}>🗑️ Supprimer</button>
+                    </>
+                  )}
                 </td>
               </tr>
             )) : (
@@ -5479,9 +5497,11 @@ function App() {
           <h1 className="page-title">{t('admin.finance.title', 'Comptabilité & Scolarité')}</h1>
           <p className="page-subtitle">{t('admin.finance.subtitle', 'Suivi des paiements, encaissements et relances de frais de scolarité.')}</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setActiveModal('payment')}>
-          <Icons.Plus /> {t('admin.finance.btn_add', 'Enregistrer un Paiement')}
-        </button>
+        {currentAdminRole !== 'Supervisor' && (
+          <button className="btn btn-primary" onClick={() => setActiveModal('payment')}>
+            <Icons.Plus /> {t('admin.finance.btn_add', 'Enregistrer un Paiement')}
+          </button>
+        )}
       </div>
 
       {/* Sous-navigation Comptabilité : Scolarité Générale vs Frais Annexes */}
@@ -5548,6 +5568,7 @@ function App() {
             classFraisList={classFraisAnnexesData}
             students={studentsData}
             invoices={invoicesData}
+            userRole={currentAdminRole}
             onRefresh={() => {
               fetchFraisAnnexes();
               fetchClassFraisAnnexes();
@@ -5742,11 +5763,11 @@ function App() {
                                 <td style={{padding: '10px 16px'}}>
                                   <span className={`badge ${st.status === 'Soldé' ? 'badge-success' : 'badge-warning'}`}>{st.status}</span>
                                 </td>
-                                <td style={{padding: '10px 16px', textAlign: 'right'}}>
-                                  {st.status !== 'Soldé' && (
-                                    <button className="btn btn-primary" style={{padding: '4px 12px', fontSize: '0.8rem', height: 'auto', minHeight: 'auto'}} onClick={(e) => { e.stopPropagation(); setPreselectedStudentId(st.id); setActiveModal('payment'); }}>Encaisser</button>
-                                  )}
-                                </td>
+                                  <td style={{padding: '10px 16px', textAlign: 'right'}}>
+                                    {st.status !== 'Soldé' && currentAdminRole !== 'Supervisor' && (
+                                      <button className="btn btn-primary" style={{padding: '4px 12px', fontSize: '0.8rem', height: 'auto', minHeight: 'auto'}} onClick={(e) => { e.stopPropagation(); setPreselectedStudentId(st.id); setActiveModal('payment'); }}>Encaisser</button>
+                                    )}
+                                  </td>
                               </tr>
                             ))}
                             {row.studentsDetails.length === 0 && (
@@ -9029,9 +9050,11 @@ function App() {
                                 Matricule: {sp.students?.matricule} {sp.students?.classes?.name ? `• Classe: ${sp.students.classes.name}` : ''}
                               </span>
                             </div>
-                            <button className="btn" style={{backgroundColor: '#fee2e2', color: '#ef4444', padding: '6px 12px', fontSize: '0.85rem', cursor: 'pointer', borderRadius: '6px', border: 'none'}} onClick={() => handleRemoveChild(sp.student_id, parentId)}>
-                              Retirer
-                            </button>
+                            {currentAdminRole !== 'Supervisor' && (
+                              <button className="btn" style={{backgroundColor: '#fee2e2', color: '#ef4444', padding: '6px 12px', fontSize: '0.85rem', cursor: 'pointer', borderRadius: '6px', border: 'none'}} onClick={() => handleRemoveChild(sp.student_id, parentId)}>
+                                Retirer
+                              </button>
+                            )}
                           </li>
                         ))}
                       </ul>
@@ -9040,6 +9063,7 @@ function App() {
                     )}
 
                     {/* Add Another Child Form */}
+                    {currentAdminRole !== 'Supervisor' && (
                     <div style={{ marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
                       <label style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '10px', display: 'block', color: 'var(--primary-color)' }}>
                         ➕ Ajouter un autre enfant à ce parent :
@@ -9109,6 +9133,7 @@ function App() {
                         </div>
                       </div>
                     </div>
+                    )}
                     <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
                       <button type="button" className="btn btn-outline" onClick={closeModal}>Fermer</button>
                     </div>
@@ -10072,7 +10097,9 @@ function App() {
                     <div>
                       <div style={{display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>
                         <h3 style={{fontSize: '1.1rem', margin: 0}}>Historique des Paiements</h3>
-                        <button className="btn btn-primary" onClick={() => { setPreselectedStudentId(selectedStudent.id); setActiveModal('payment'); }}>+ Enregistrer un paiement</button>
+                        {currentAdminRole !== 'Supervisor' && (
+                          <button className="btn btn-primary" onClick={() => { setPreselectedStudentId(selectedStudent.id); setActiveModal('payment'); }}>+ Enregistrer un paiement</button>
+                        )}
                       </div>
                       <div style={{marginBottom: '24px'}}>
                         {isEditingTuition ? (
@@ -10296,19 +10323,21 @@ function App() {
                                 <span style={{fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px'}}>
                                   Scolarité Totale
                                 </span>
-                                <button 
-                                  type="button" 
-                                  className="btn btn-outline" 
-                                  style={{padding: '3px 10px', fontSize: '0.75rem', borderRadius: '6px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--primary-color)', borderColor: 'rgba(59, 130, 246, 0.3)', background: 'rgba(59, 130, 246, 0.05)'}}
-                                  onClick={() => {
-                                    setCustomTuitionVal(hasCustomTuition ? String(selectedStudent.tuition_fee) : String(studentTotal));
-                                    setCustomPayeVal(String(studentPaye));
-                                    setIsEditingTuition(true);
-                                  }}
-                                  title="Modifier le montant de la scolarité totale"
-                                >
-                                  ✏️ Modifier
-                                </button>
+                                {currentAdminRole !== 'Supervisor' && (
+                                  <button 
+                                    type="button" 
+                                    className="btn btn-outline" 
+                                    style={{padding: '3px 10px', fontSize: '0.75rem', borderRadius: '6px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--primary-color)', borderColor: 'rgba(59, 130, 246, 0.3)', background: 'rgba(59, 130, 246, 0.05)'}}
+                                    onClick={() => {
+                                      setCustomTuitionVal(hasCustomTuition ? String(selectedStudent.tuition_fee) : String(studentTotal));
+                                      setCustomPayeVal(String(studentPaye));
+                                      setIsEditingTuition(true);
+                                    }}
+                                    title="Modifier le montant de la scolarité totale"
+                                  >
+                                    ✏️ Modifier
+                                  </button>
+                                )}
                               </div>
                               <div>
                                 <div style={{fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2}}>
@@ -10334,19 +10363,21 @@ function App() {
                                 <span style={{fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px'}}>
                                   Total Payé
                                 </span>
-                                <button 
-                                  type="button" 
-                                  className="btn btn-outline" 
-                                  style={{padding: '3px 10px', fontSize: '0.75rem', borderRadius: '6px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--success-color)', borderColor: 'rgba(16, 185, 129, 0.3)', background: 'rgba(16, 185, 129, 0.05)'}}
-                                  onClick={() => {
-                                    setCustomTuitionVal(hasCustomTuition ? String(selectedStudent.tuition_fee) : String(studentTotal));
-                                    setCustomPayeVal(String(studentPaye));
-                                    setIsEditingTuition(true);
-                                  }}
-                                  title="Modifier le montant total payé"
-                                >
-                                  ✏️ Modifier
-                                </button>
+                                {currentAdminRole !== 'Supervisor' && (
+                                  <button 
+                                    type="button" 
+                                    className="btn btn-outline" 
+                                    style={{padding: '3px 10px', fontSize: '0.75rem', borderRadius: '6px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--success-color)', borderColor: 'rgba(16, 185, 129, 0.3)', background: 'rgba(16, 185, 129, 0.05)'}}
+                                    onClick={() => {
+                                      setCustomTuitionVal(hasCustomTuition ? String(selectedStudent.tuition_fee) : String(studentTotal));
+                                      setCustomPayeVal(String(studentPaye));
+                                      setIsEditingTuition(true);
+                                    }}
+                                    title="Modifier le montant total payé"
+                                  >
+                                    ✏️ Modifier
+                                  </button>
+                                )}
                               </div>
                               <div>
                                 <div style={{fontSize: '1.4rem', fontWeight: 800, color: 'var(--success-color)', lineHeight: 1.2}}>
@@ -10371,19 +10402,21 @@ function App() {
                                 <span style={{fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px'}}>
                                   Reste à Payer
                                 </span>
-                                <button 
-                                  type="button" 
-                                  className="btn btn-outline" 
-                                  style={{padding: '3px 10px', fontSize: '0.75rem', borderRadius: '6px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', color: studentReste > 0 ? 'var(--danger-color)' : 'var(--success-color)', borderColor: studentReste > 0 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)', background: studentReste > 0 ? 'rgba(239, 68, 68, 0.05)' : 'rgba(16, 185, 129, 0.05)'}}
-                                  onClick={() => {
-                                    setCustomTuitionVal(hasCustomTuition ? String(selectedStudent.tuition_fee) : String(studentTotal));
-                                    setCustomPayeVal(String(studentPaye));
-                                    setIsEditingTuition(true);
-                                  }}
-                                  title="Modifier le reste à payer"
-                                >
-                                  ✏️ Modifier
-                                </button>
+                                {currentAdminRole !== 'Supervisor' && (
+                                  <button 
+                                    type="button" 
+                                    className="btn btn-outline" 
+                                    style={{padding: '3px 10px', fontSize: '0.75rem', borderRadius: '6px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', color: studentReste > 0 ? 'var(--danger-color)' : 'var(--success-color)', borderColor: studentReste > 0 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)', background: studentReste > 0 ? 'rgba(239, 68, 68, 0.05)' : 'rgba(16, 185, 129, 0.05)'}}
+                                    onClick={() => {
+                                      setCustomTuitionVal(hasCustomTuition ? String(selectedStudent.tuition_fee) : String(studentTotal));
+                                      setCustomPayeVal(String(studentPaye));
+                                      setIsEditingTuition(true);
+                                    }}
+                                    title="Modifier le reste à payer"
+                                  >
+                                    ✏️ Modifier
+                                  </button>
+                                )}
                               </div>
                               <div>
                                 <div style={{fontSize: '1.4rem', fontWeight: 800, color: studentReste > 0 ? 'var(--danger-color)' : 'var(--success-color)', lineHeight: 1.2}}>

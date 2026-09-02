@@ -31,6 +31,7 @@ interface FraisAnnexesManagerProps {
   classFraisList: ClassFraisAnnexe[];
   students?: any[];
   invoices?: any[];
+  userRole?: string;
   onRefresh: () => void;
 }
 
@@ -42,8 +43,10 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
   classFraisList = [],
   students = [],
   invoices = [],
+  userRole,
   onRefresh,
 }) => {
+  const isSupervisor = userRole === 'Supervisor';
   const [activeView, setActiveView] = useState<'bilan_global' | 'by_class' | 'global' | 'matrix'>('bilan_global');
   const [selectedClassId, setSelectedClassId] = useState<string>(classes.length > 0 ? classes[0].id : '');
 
@@ -101,6 +104,10 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
   }, [selectedClassId, fraisList, classFraisList]);
 
   const openCreateModal = () => {
+    if (isSupervisor) {
+      alert("Action non autorisée : Le rôle Superviseur est limité à la lecture et à l'impression.");
+      return;
+    }
     setEditingFrais(null);
     setName('');
     setAmount('');
@@ -111,6 +118,10 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
   };
 
   const openEditModal = (frais: FraisAnnexe) => {
+    if (isSupervisor) {
+      alert("Action non autorisée : Le rôle Superviseur est limité à la lecture et à l'impression.");
+      return;
+    }
     setEditingFrais(frais);
     setName(frais.name);
     setAmount(frais.amount);
@@ -178,6 +189,10 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
   };
 
   const handleDelete = async (id: string, fraisName: string) => {
+    if (isSupervisor) {
+      alert("Action non autorisée : Le rôle Superviseur est limité à la lecture et à l'impression.");
+      return;
+    }
     if (!window.confirm(`Supprimer définitivement le frais "${fraisName}" et tous ses tarifs associés ?`)) return;
     try {
       // Supprimer d'abord les liaisons par classe pour éviter les blocages de clé étrangère
@@ -192,7 +207,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
   };
 
   const handleMoveUp = async (index: number) => {
-    if (index <= 0) return;
+    if (isSupervisor || index <= 0) return;
     const current = sortedFrais[index];
     const prev = sortedFrais[index - 1];
 
@@ -212,7 +227,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
   };
 
   const handleMoveDown = async (index: number) => {
-    if (index >= sortedFrais.length - 1) return;
+    if (isSupervisor || index >= sortedFrais.length - 1) return;
     const current = sortedFrais[index];
     const next = sortedFrais[index + 1];
 
@@ -232,7 +247,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
   };
 
   const handleInitDefaultPacks = async () => {
-    if (!schoolId) return;
+    if (isSupervisor || !schoolId) return;
     setLoading(true);
     try {
       const defaultPacks = [
@@ -253,7 +268,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
   };
 
   const handleSaveClassPrices = async () => {
-    if (!selectedClassId || !schoolId) return;
+    if (isSupervisor || !selectedClassId || !schoolId) return;
     setLoading(true);
     setErrorMsg(null);
     try {
@@ -431,7 +446,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
   };
 
   const executeValidateFraisAnnexes = async (target: 'all' | string) => {
-    if (!schoolId) return;
+    if (isSupervisor || !schoolId) return;
     setIsValidating(true);
     try {
       const targetStudents = target === 'all'
@@ -541,14 +556,16 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
         </div>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            className="btn btn-outline"
-            onClick={() => setShowValidateModal(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, borderColor: '#10b981', color: '#047857', background: '#ecfdf5' }}
-          >
-            <span>⚡</span> Tout Valider (Soldé)
-          </button>
+          {!isSupervisor && (
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => setShowValidateModal(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, borderColor: '#10b981', color: '#047857', background: '#ecfdf5' }}
+            >
+              <span>⚡</span> Tout Valider (Soldé)
+            </button>
+          )}
 
           <button
             type="button"
@@ -559,21 +576,23 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
             <span>🖨️</span> Imprimer les Frais Annexes
           </button>
 
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={openCreateModal}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontWeight: 600,
-              padding: '8px 16px',
-              borderRadius: '8px',
-            }}
-          >
-            <span>➕</span> Nouveau Frais Annexe
-          </button>
+          {!isSupervisor && (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={openCreateModal}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontWeight: 600,
+                padding: '8px 16px',
+                borderRadius: '8px',
+              }}
+            >
+              <span>➕</span> Nouveau Frais Annexe
+            </button>
+          )}
         </div>
       </div>
 
@@ -1069,7 +1088,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
                   </select>
                 </div>
 
-                {selectedClassObj && (
+                {selectedClassObj && !isSupervisor && (
                   <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
                     <button
                       type="button"
@@ -1195,7 +1214,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
                                 type="number"
                                 className="form-input"
                                 value={curVal}
-                                disabled={!isActive}
+                                disabled={!isActive || isSupervisor}
                                 onChange={(e) => {
                                   const val = e.target.value === '' ? 0 : Number(e.target.value);
                                   setClassAmounts((prev) => ({ ...prev, [frais.id]: val }));
@@ -1217,10 +1236,11 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
                             <input
                               type="checkbox"
                               checked={isActive}
+                              disabled={isSupervisor}
                               onChange={(e) => {
                                 setClassActives((prev) => ({ ...prev, [frais.id]: e.target.checked }));
                               }}
-                              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                              style={{ width: '18px', height: '18px', cursor: isSupervisor ? 'default' : 'pointer' }}
                             />
                           </td>
 
@@ -1246,7 +1266,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
                 </table>
               </div>
 
-              {selectedClassObj && (
+              {selectedClassObj && !isSupervisor && (
                 <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
                   <button
                     type="button"
@@ -1405,48 +1425,54 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
                       </td>
 
                       <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(item)}
-                            title="Modifier ce frais"
-                            style={{
-                              background: '#eff6ff',
-                              border: '1px solid #bfdbfe',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              padding: '5px 10px',
-                              color: '#2563eb',
-                              fontSize: '0.82rem',
-                              fontWeight: 600,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}
-                          >
-                            <span>✏️</span> Modifier
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(item.id, item.name)}
-                            title="Supprimer ce frais"
-                            style={{
-                              background: '#fef2f2',
-                              border: '1px solid #fecaca',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              padding: '5px 10px',
-                              color: '#dc2626',
-                              fontSize: '0.82rem',
-                              fontWeight: 600,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}
-                          >
-                            <span>🗑️</span> Supprimer
-                          </button>
-                        </div>
+                        {isSupervisor ? (
+                          <span style={{ fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic' }}>
+                            Lecture seule
+                          </span>
+                        ) : (
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(item)}
+                              title="Modifier ce frais"
+                              style={{
+                                background: '#eff6ff',
+                                border: '1px solid #bfdbfe',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                padding: '5px 10px',
+                                color: '#2563eb',
+                                fontSize: '0.82rem',
+                                fontWeight: 600,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              <span>✏️</span> Modifier
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(item.id, item.name)}
+                              title="Supprimer ce frais"
+                              style={{
+                                background: '#fef2f2',
+                                border: '1px solid #fecaca',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                padding: '5px 10px',
+                                color: '#dc2626',
+                                fontSize: '0.82rem',
+                                fontWeight: 600,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              <span>🗑️</span> Supprimer
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
