@@ -6503,9 +6503,6 @@ function App() {
             <li className={`nav-item ${activeSettingsTab === 'security' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('security')} style={{marginBottom: '4px'}}>
               <Icons.Shield /> {t('admin.settings.tab_security', 'Sécurité & Accès')}
             </li>
-            <li className={`nav-item ${activeSettingsTab === 'database' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('database')} style={{marginBottom: '4px'}}>
-              <Icons.Database /> {t('admin.settings.tab_database', 'Base de Données')}
-            </li>
             <li className={`nav-item ${activeSettingsTab === 'frais_annexes' ? 'active' : ''}`} onClick={() => setActiveSettingsTab('frais_annexes')} style={{marginBottom: '4px'}}>
               <Icons.CreditCard /> Frais Annexes (Bulletins, Tricots...)
             </li>
@@ -7193,37 +7190,6 @@ function App() {
                   </div>
                   <button onClick={() => alert("Tous les autres appareils ont été déconnectés avec succès.")} className="btn btn-outline" style={{color: 'var(--danger-color)', borderColor: 'var(--danger-color)'}}>
                     Déconnecter tous les autres appareils
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeSettingsTab === 'database' && (
-            <div>
-              <h3 className="panel-title" style={{marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px'}}>{t('admin.settings.db_title', 'Connexion Base de Données (Supabase)')}</h3>
-              <div style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
-                <div style={{padding: '16px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--accent-color)', display: 'flex', alignItems: 'center', gap: '12px'}}>
-                  <Icons.CheckCircle />
-                  <div>
-                    <div style={{fontWeight: 600, color: 'var(--accent-color)'}}>{t('admin.settings.db_connected', 'Connecté à Supabase')} (Projet: xyz-sgpro)</div>
-                    <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)'}}>{t('admin.settings.db_sync', 'Dernière synchronisation : il y a 2 minutes')}</div>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>{t('admin.settings.db_url', 'URL du Projet')}</label>
-                  <input type="text" defaultValue="https://xyzabcdef.supabase.co" disabled className="form-input" style={{opacity: 0.7}} />
-                </div>
-                <div className="form-group">
-                  <label>{t('admin.settings.db_key', 'Clé API (Anon)')}</label>
-                  <input type="password" defaultValue="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." disabled className="form-input" style={{opacity: 0.7}} />
-                </div>
-                <div style={{display: 'flex', gap: '12px', marginTop: '10px'}}>
-                  <button className="btn btn-primary" onClick={() => alert("Sauvegarde en cours...")}>
-                    <Icons.Download /> {t('admin.settings.db_btn_sync', 'Forcer la sauvegarde')}
-                  </button>
-                  <button className="btn btn-outline" style={{color: 'var(--danger-color)', borderColor: 'var(--danger-color)'}}>
-                    {t('admin.settings.db_btn_reset', 'Réinitialiser la connexion')}
                   </button>
                 </div>
               </div>
