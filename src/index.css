@@ -10,13 +10,49 @@
   --accent-color: #10b981;
   --danger-color: #ef4444;
   --warning-color: #f59e0b;
+  --sidebar-bg: #ffffff;
+  --sidebar-text: #1e293b;
+  --sidebar-text-hover: #0f172a;
+  --sidebar-border: #e2e8f0;
+  --header-bg: rgba(255, 255, 255, 0.85);
+  --card-bg: #ffffff;
+  --input-bg: #ffffff;
+  --input-border: #cbd5e1;
+  --table-header-bg: #f8fafc;
+  --table-row-hover: #f1f5f9;
   
-  --font-main: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Cairo', Arial, sans-serif;
   
   --sidebar-width: 240px;
   --header-height: 60px;
   
   --transition-speed: 0.2s;
+}
+
+/* Antigravity Dark Theme (Noir comme Antigravity) */
+:root[data-theme="dark"], html[data-theme="dark"], body.dark-mode, [data-theme="dark"] {
+  --bg-color: #0b0f19;
+  --surface-color: #111827;
+  --surface-color-hover: #1b2438;
+  --border-color: #243049;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --primary-color: #6366f1;
+  --primary-hover: #4f46e5;
+  --accent-color: #10b981;
+  --danger-color: #f87171;
+  --warning-color: #fbbf24;
+  --sidebar-bg: #070a12;
+  --sidebar-text: #e2e8f0;
+  --sidebar-text-hover: #ffffff;
+  --sidebar-border: #1a2334;
+  --header-bg: rgba(7, 10, 18, 0.88);
+  --card-bg: #111827;
+  --input-bg: #090d16;
+  --input-border: #2a3850;
+  --table-header-bg: #161f32;
+  --table-row-hover: #182236;
+  color-scheme: dark;
 }
 
 * {

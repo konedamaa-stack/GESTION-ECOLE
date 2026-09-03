@@ -112,6 +112,24 @@ function App() {
   const [selectedTeacherPayment, setSelectedTeacherPayment] = useState<any>(null);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [isQuickStartModalOpen, setIsQuickStartModalOpen] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('sges_theme');
+    return (saved as 'dark' | 'light') || 'dark'; // Dark mode like Antigravity by default
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (theme === 'dark') {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+    localStorage.setItem('sges_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
   // unused honorStudentData
   const [adminSchools, setAdminSchools] = useState<any[]>([]);
   const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
@@ -7532,7 +7550,24 @@ function App() {
                 👑 Retour Portail SaaS
               </button>
             )}
-            <button className="btn btn-outline" style={{padding: '4px 8px'}} onClick={toggleLanguage}>
+            <button 
+              className="btn btn-outline" 
+              style={{
+                padding: '6px 12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                borderRadius: '8px',
+                fontSize: '0.84rem',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }} 
+              onClick={toggleTheme}
+              title={theme === 'dark' ? "Passer en mode clair" : "Passer en mode sombre (Antigravity)"}
+            >
+              {theme === 'dark' ? '☀️ Mode Clair' : '🌙 Mode Sombre'}
+            </button>
+            <button className="btn btn-outline" style={{padding: '6px 12px', borderRadius: '8px', fontSize: '0.84rem', fontWeight: 600}} onClick={toggleLanguage}>
               {i18n.language.startsWith('ar') ? 'Français' : 'العربية'}
             </button>
             <button className="action-btn" onClick={() => alert(t('admin.header.no_notifications', "Vous n'avez pas de nouvelles notifications."))}>
