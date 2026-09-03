@@ -18,8 +18,6 @@ import { DailyReceiptsPrintPreview } from './components/DailyReceiptsPrintPrevie
 import { SalaryReceiptPreview } from './components/SalaryReceiptPreview';
 import { SuperAdminPortal } from './components/SuperAdminPortal';
 import { PasswordRecovery } from './components/PasswordRecovery';
-import { UserSupportModal } from './components/UserSupportModal';
-import { DraggableSupportButton } from './components/DraggableSupportButton';
 import { FraisAnnexesManager } from './components/FraisAnnexesManager';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -110,7 +108,6 @@ function App() {
   const [selectedBulletinTemplate, setSelectedBulletinTemplate] = useState<string>('classic');
   const [activeModalState, setActiveModalState] = useState<string | null>(null);
   const [selectedTeacherPayment, setSelectedTeacherPayment] = useState<any>(null);
-  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [isQuickStartModalOpen, setIsQuickStartModalOpen] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('sges_theme');
@@ -11181,17 +11178,6 @@ function App() {
           </div>
         </div>
       )}
-      {/* Floating & Draggable Support Button */}
-      <DraggableSupportButton onClick={() => setIsSupportModalOpen(true)} />
-
-      {isSupportModalOpen && currentSchoolId && session && (
-        <UserSupportModal 
-          session={session} 
-          schoolId={currentSchoolId} 
-          onClose={() => setIsSupportModalOpen(false)} 
-        />
-      )}
-
       {isQuickStartModalOpen && (
         <QuickStartGuideModal onClose={() => setIsQuickStartModalOpen(false)} />
       )}
