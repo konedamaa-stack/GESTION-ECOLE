@@ -124,6 +124,26 @@ function App() {
     localStorage.setItem('sges_theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    const handleBeforePrint = () => {
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.body.classList.remove('dark-mode');
+    };
+    const handleAfterPrint = () => {
+      const currentTheme = (localStorage.getItem('sges_theme') as 'dark' | 'light') || 'dark';
+      document.documentElement.setAttribute('data-theme', currentTheme);
+      if (currentTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+      }
+    };
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+  }, []);
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
