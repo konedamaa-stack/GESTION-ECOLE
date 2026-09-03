@@ -72,6 +72,7 @@ const Icons = {
   TrendingDown: () => <svg className="stat-icon" style={{color: 'var(--danger-color, #ef4444)', background: 'rgba(239, 68, 68, 0.1)'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6" strokeLinecap="round" strokeLinejoin="round"/><polyline points="17 18 23 18 23 12" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Upload: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" strokeLinecap="round" strokeLinejoin="round"/><polyline points="17 8 12 3 7 8" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="3" x2="12" y2="15" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Printer: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>,
+  Edit: ({ size = 20 }: { size?: number }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>,
   Trash2: ({ size = 20 }: { size?: number }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
 };
 
@@ -6241,62 +6242,68 @@ function App() {
             {selectedClassForGrades ? (
               <div className="panel delay-200">
                 <h3 className="panel-title">{t('admin.grades.panel_title', 'Évaluations existantes')}</h3>
-                <div className="table-responsive">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>{t('admin.grades.col_date', 'Date')}</th>
-                        <th>{t('admin.grades.col_class', 'Classe')}</th>
-                        <th>{t('admin.grades.col_subject', 'Matière')}</th>
-                        <th>{t('admin.grades.col_name', "Nom de l'évaluation")}</th>
-                        <th>Statut</th>
-                        <th>{t('admin.grades.col_max', 'Notes sur')}</th>
-                        <th>{t('admin.grades.col_action', 'Action')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredEvaluations.map(evalu => (
-                        <tr key={evalu.id}>
-                          <td>{new Date(evalu.date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</td>
-                          <td>{evalu.classes?.name}</td>
-                          <td style={{fontWeight: 600}}>{evalu.subject}</td>
-                          <td>{evalu.name}</td>
-                          <td>
-                            {evalu.validation_status === 'pending' ? (
-                              <span className="badge badge-warning">En attente</span>
-                            ) : (
-                              <span className="badge badge-success">Approuvée</span>
-                            )}
-                            {evalu.locked && (
-                              <span className="badge" style={{marginLeft: 4, background: 'var(--danger-color)', color: 'white'}}>🔒</span>
-                            )}
-                          </td>
-                          <td>{formatNum(evalu.max_score)}</td>
-                          <td style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-                            <button className="btn btn-primary" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => startGrading(evalu)}>{t('admin.grades.btn_grade', 'Saisir les notes')}</button>
-                            {selectedClassForGrades === 'validations' && evalu.validation_status === 'pending' && (
-                              <>
-                                <button className="btn btn-success" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => handleValidationAction(evalu.id, 'approved')}>Approuver</button>
-                                <button className="btn btn-danger" style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => handleDeleteEvaluation(evalu.id)}>Supprimer</button>
-                              </>
-                            )}
-                            {evalu.validation_status === 'approved' && (
-                               <button className={`btn ${evalu.locked ? 'btn-outline' : 'btn-danger'}`} style={{padding: '4px 8px', fontSize: '0.8rem'}} onClick={() => handleToggleLock(evalu.id, evalu.locked)}>
-                                 {evalu.locked ? 'Déverrouiller' : 'Clôturer'}
-                               </button>
-                            )}
-                            <button className="btn-icon" onClick={(e) => { e.stopPropagation(); handleDeleteEvaluation(evalu.id); }} style={{color: 'var(--danger-color)', padding: 0}} title={t('admin.delete', 'Supprimer')}>
-                              <Icons.Trash2 size={16} />
-                            </button>
-                          </td>
+                  <div className="table-responsive" style={{ overflowX: 'auto', marginTop: '12px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '850px' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
+                          <th style={{ padding: '12px 14px', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('admin.grades.col_date', 'Date')}</th>
+                          <th style={{ padding: '12px 14px', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('admin.grades.col_class', 'Classe')}</th>
+                          <th style={{ padding: '12px 14px', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('admin.grades.col_subject', 'Matière')}</th>
+                          <th style={{ padding: '12px 14px', fontWeight: 600 }}>{t('admin.grades.col_name', "Nom de l'évaluation")}</th>
+                          <th style={{ padding: '12px 14px', fontWeight: 600, whiteSpace: 'nowrap' }}>Statut</th>
+                          <th style={{ padding: '12px 14px', fontWeight: 600, whiteSpace: 'nowrap', textAlign: 'center' }}>{t('admin.grades.col_max', 'Notes sur')}</th>
+                          <th style={{ padding: '12px 14px', fontWeight: 600, whiteSpace: 'nowrap', textAlign: 'right' }}>{t('admin.grades.col_action', 'Action')}</th>
                         </tr>
-                      ))}
-                      {filteredEvaluations.length === 0 && (
-                        <tr><td colSpan={7} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>{t('admin.grades.empty_state', 'Aucune évaluation trouvée pour ces filtres.')}</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {filteredEvaluations.map(evalu => (
+                          <tr key={evalu.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.15s' }}>
+                            <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', color: '#64748b' }}>{new Date(evalu.date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</td>
+                            <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', fontWeight: 600 }}>{evalu.classes?.name}</td>
+                            <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', fontWeight: 600, color: 'var(--primary-color)' }}>{evalu.subject}</td>
+                            <td style={{ padding: '12px 14px', fontWeight: 500 }}>{evalu.name}</td>
+                            <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                {evalu.validation_status === 'pending' ? (
+                                  <span className="badge badge-warning">En attente</span>
+                                ) : (
+                                  <span className="badge badge-success">Approuvée</span>
+                                )}
+                                {evalu.locked && (
+                                  <span className="badge" style={{ background: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5' }} title="Évaluation clôturée">🔒</span>
+                                )}
+                              </div>
+                            </td>
+                            <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', fontWeight: 700, color: 'var(--text-primary)' }}>{formatNum(evalu.max_score)}</td>
+                            <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'right' }}>
+                              <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
+                                <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.82rem', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '4px' }} onClick={() => startGrading(evalu)}>
+                                  <Icons.Edit size={14} /> {t('admin.grades.btn_grade', 'Saisir les notes')}
+                                </button>
+                                {selectedClassForGrades === 'validations' && evalu.validation_status === 'pending' && (
+                                  <>
+                                    <button className="btn btn-success" style={{ padding: '6px 12px', fontSize: '0.82rem', whiteSpace: 'nowrap' }} onClick={() => handleValidationAction(evalu.id, 'approved')}>Approuver</button>
+                                    <button className="btn btn-danger" style={{ padding: '6px 12px', fontSize: '0.82rem', whiteSpace: 'nowrap' }} onClick={() => handleDeleteEvaluation(evalu.id)}>Supprimer</button>
+                                  </>
+                                )}
+                                {evalu.validation_status === 'approved' && (
+                                  <button className={`btn ${evalu.locked ? 'btn-outline' : 'btn-danger'}`} style={{ padding: '6px 12px', fontSize: '0.82rem', whiteSpace: 'nowrap' }} onClick={() => handleToggleLock(evalu.id, evalu.locked)}>
+                                    {evalu.locked ? '🔓 Déverrouiller' : '🔒 Clôturer'}
+                                  </button>
+                                )}
+                                <button className="btn btn-outline" onClick={(e) => { e.stopPropagation(); handleDeleteEvaluation(evalu.id); }} style={{ color: 'var(--danger-color)', borderColor: '#fca5a5', background: '#fef2f2', padding: '6px 10px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center' }} title={t('admin.delete', 'Supprimer')}>
+                                  <Icons.Trash2 size={15} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredEvaluations.length === 0 && (
+                          <tr><td colSpan={7} style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)' }}>{t('admin.grades.empty_state', 'Aucune évaluation trouvée pour ces filtres.')}</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
               </div>
             ) : (
               <div className="panel delay-200" style={{textAlign: 'center', padding: '64px 20px'}}>
