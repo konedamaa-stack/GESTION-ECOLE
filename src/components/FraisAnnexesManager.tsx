@@ -46,7 +46,20 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
   userRole,
   onRefresh,
 }) => {
-  const isSupervisor = userRole === 'Supervisor';
+  const isSupervisor = (() => {
+    const role = (userRole || '').toLowerCase();
+    if (role.includes('supervis')) return true;
+    const loginRole = (localStorage.getItem('sges_login_role') || '').toLowerCase();
+    if (loginRole.includes('supervis')) return true;
+    try {
+      const empRaw = localStorage.getItem('sges_employee');
+      if (empRaw) {
+        const emp = JSON.parse(empRaw);
+        if ((emp?.role || '').toLowerCase().includes('supervis')) return true;
+      }
+    } catch (e) {}
+    return false;
+  })();
   const [activeView, setActiveView] = useState<'bilan_global' | 'by_class' | 'global' | 'matrix'>('bilan_global');
   const [selectedClassId, setSelectedClassId] = useState<string>(classes.length > 0 ? classes[0].id : '');
 

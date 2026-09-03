@@ -118,8 +118,19 @@ function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [currentSchoolPlan, setCurrentSchoolPlan] = useState<string>('Standard');
-  const [currentAdminRole, setCurrentAdminRole] = useState<string>('Director');
   const [notesSubTab, setNotesSubTab] = useState<'grades' | 'bulletins'>('grades');
+  const [currentAdminRole, setCurrentAdminRole] = useState<string>(() => {
+    const storedRole = localStorage.getItem('sges_login_role');
+    if (storedRole) return storedRole;
+    try {
+      const empRaw = localStorage.getItem('sges_employee');
+      if (empRaw) {
+        const emp = JSON.parse(empRaw);
+        if (emp?.role) return emp.role;
+      }
+    } catch (e) {}
+    return 'Director';
+  });
 
   const displayedUserName = (() => {
     if (employeeSession) {
@@ -7289,6 +7300,7 @@ function App() {
                 classFraisList={classFraisAnnexesData}
                 students={studentsData}
                 invoices={invoicesData}
+                userRole={currentAdminRole}
                 onRefresh={() => {
                   fetchFraisAnnexes();
                   fetchClassFraisAnnexes();
@@ -7462,7 +7474,7 @@ function App() {
             </>
           )}
 
-          {(currentAdminRole === 'Director' || currentAdminRole === 'Supervisor') && (
+          {currentAdminRole === 'Director' && (
             <>
               <li className={`nav-item ${activeTab === 'rh' ? 'active' : ''}`} onClick={() => { setActiveTab('rh'); setIsMobileMenuOpen(false); }}>
                 <Icons.Briefcase /> {t('admin.sidebar.rh', 'RH & Admin')}
