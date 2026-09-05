@@ -101,12 +101,35 @@ export const DailyReceiptsPrintPreview: React.FC<DailyReceiptsPrintPreviewProps>
     <div className="daily-receipts-report-container" style={{
       maxWidth: '900px',
       margin: '0 auto',
-      padding: '30px',
+      padding: '24px 28px',
       backgroundColor: 'white',
       color: '#0f172a',
       fontFamily: '"Inter", "Segoe UI", sans-serif',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+      boxSizing: 'border-box'
     }}>
+      <style>{`
+        @page {
+          size: A4 portrait;
+          margin: 8mm 10mm;
+        }
+        @media print {
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .daily-receipts-report-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+          }
+        }
+      `}</style>
       {/* 1. Header with School Info */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #e2e8f0', paddingBottom: '16px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
