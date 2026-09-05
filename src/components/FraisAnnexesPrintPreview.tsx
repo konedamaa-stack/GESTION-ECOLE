@@ -26,6 +26,10 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
   selectedClassId,
   onClose,
 }) => {
+  const [pageOrientation, setPageOrientation] = React.useState<'landscape' | 'portrait'>(
+    printMode === 'by_category' ? 'portrait' : 'landscape'
+  );
+
   useEffect(() => {
     // Fermeture par la touche Échap
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -124,7 +128,7 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
     >
       <style>{`
         @page {
-          size: ${printMode === 'by_category' ? 'A4 portrait' : 'A4 landscape'};
+          size: ${pageOrientation};
           margin: 6mm 8mm;
         }
 
@@ -210,14 +214,63 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '1.3rem' }}>🖨️</span>
+          <span style={{ fontSize: '1.4rem' }}>🖨️</span>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '0.98rem', color: '#1e3a8a' }}>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#1e3a8a' }}>
               Aperçu avant impression : Frais Annexes
             </div>
-            <div style={{ fontSize: '0.76rem', color: '#64748b' }}>
-              Format automatique : <strong>{printMode === 'by_category' ? 'Portrait A4' : 'Paysage A4 (Recommandé pour grand tableau)'}</strong> • Cliquez sur <strong>« Fermer »</strong> ou <strong>Échap</strong> pour quitter
+            <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+              Format actif : <strong>{pageOrientation === 'landscape' ? '🖼️ Paysage A4 (Recommandé - Évite la superposition)' : '📄 Portrait A4'}</strong>
             </div>
+          </div>
+        </div>
+
+        {/* Boutons de sélection du Format / Orientation */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#475569' }}>Format :</span>
+          <div style={{ display: 'flex', background: '#f1f5f9', padding: '3px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+            <button
+              type="button"
+              onClick={() => setPageOrientation('landscape')}
+              style={{
+                padding: '6px 14px',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                background: pageOrientation === 'landscape' ? '#2563eb' : 'transparent',
+                color: pageOrientation === 'landscape' ? '#ffffff' : '#475569',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.15s',
+                boxShadow: pageOrientation === 'landscape' ? '0 2px 4px rgba(37, 99, 235, 0.25)' : 'none'
+              }}
+            >
+              <span>🖼️</span> Paysage (Recommandé)
+            </button>
+            <button
+              type="button"
+              onClick={() => setPageOrientation('portrait')}
+              style={{
+                padding: '6px 14px',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                background: pageOrientation === 'portrait' ? '#2563eb' : 'transparent',
+                color: pageOrientation === 'portrait' ? '#ffffff' : '#475569',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.15s',
+                boxShadow: pageOrientation === 'portrait' ? '0 2px 4px rgba(37, 99, 235, 0.25)' : 'none'
+              }}
+            >
+              <span>📄</span> Portrait
+            </button>
           </div>
         </div>
 
@@ -237,9 +290,10 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
+              boxShadow: '0 2px 6px rgba(37, 99, 235, 0.3)'
             }}
           >
-            <span>🖨️</span> Imprimer / Enregistrer en PDF
+            <span>🖨️</span> Imprimer en {pageOrientation === 'landscape' ? 'Paysage' : 'Portrait'}
           </button>
           <button
             type="button"
@@ -266,14 +320,15 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
       <div 
         className="print-document-container"
         style={{ 
-          maxWidth: printMode === 'by_category' ? '920px' : '1180px', 
+          maxWidth: pageOrientation === 'landscape' ? '1400px' : '960px', 
           width: '100%',
           margin: '0 auto', 
           background: '#ffffff',
           borderRadius: '8px',
-          padding: '24px 28px',
+          padding: '28px 36px',
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          overflowX: 'auto'
         }}
       >
         {/* Header with School Details */}
@@ -364,33 +419,34 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
             <table
               style={{
                 width: '100%',
+                minWidth: pageOrientation === 'landscape' ? '1200px' : '100%',
                 borderCollapse: 'collapse',
-                fontSize: '0.78rem',
+                fontSize: '0.82rem',
                 border: '1px solid #cbd5e1',
               }}
             >
               <thead>
                 <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #94a3b8' }}>
-                  <th style={{ padding: '6px 4px', border: '1px solid #cbd5e1', textAlign: 'left', fontSize: '0.75rem' }}>Classe</th>
-                  <th style={{ padding: '6px 4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.75rem', width: '38px' }}>Eff.</th>
+                  <th style={{ padding: '8px 8px', border: '1px solid #cbd5e1', textAlign: 'left', minWidth: '160px', fontSize: '0.78rem' }}>Classe</th>
+                  <th style={{ padding: '8px 4px', border: '1px solid #cbd5e1', textAlign: 'center', minWidth: '45px', fontSize: '0.78rem' }}>Eff.</th>
                   {sortedFrais.map((f) => (
-                    <th key={f.id} style={{ padding: '6px 4px', border: '1px solid #cbd5e1', textAlign: 'right', fontSize: '0.73rem' }}>
+                    <th key={f.id} style={{ padding: '8px 6px', border: '1px solid #cbd5e1', textAlign: 'right', minWidth: '70px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
                       {f.name}
                     </th>
                   ))}
-                  <th style={{ padding: '6px 4px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#e2e8f0', fontSize: '0.75rem' }}>
+                  <th style={{ padding: '8px 6px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#e2e8f0', minWidth: '85px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
                     Forfait/Él.
                   </th>
-                  <th style={{ padding: '6px 4px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#dbeafe', fontSize: '0.75rem' }}>
+                  <th style={{ padding: '8px 6px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#dbeafe', minWidth: '92px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
                     Total Annexe
                   </th>
-                  <th style={{ padding: '6px 4px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#d1fae5', fontSize: '0.75rem' }}>
+                  <th style={{ padding: '8px 6px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#d1fae5', minWidth: '92px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
                     Encaissé
                   </th>
-                  <th style={{ padding: '6px 4px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#fee2e2', fontSize: '0.75rem' }}>
+                  <th style={{ padding: '8px 6px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#fee2e2', minWidth: '80px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
                     Reste
                   </th>
-                  <th style={{ padding: '6px 4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.75rem', width: '42px' }}>Taux</th>
+                  <th style={{ padding: '8px 4px', border: '1px solid #cbd5e1', textAlign: 'center', minWidth: '50px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>Taux</th>
                 </tr>
               </thead>
               <tbody>
@@ -408,30 +464,31 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
 
                   return (
                     <tr key={cls.id} style={{ borderBottom: '1px solid #cbd5e1' }}>
-                      <td style={{ padding: '5px 6px', border: '1px solid #cbd5e1', fontWeight: 700 }}>
-                        {cls.name} <span style={{ fontSize: '0.7rem', color: '#64748b' }}>({cls.level})</span>
+                      <td style={{ padding: '7px 8px', border: '1px solid #cbd5e1', fontWeight: 700, minWidth: '160px', lineHeight: 1.4 }}>
+                        <div style={{ color: '#0f172a', fontSize: '0.86rem' }}>{cls.name}</div>
+                        <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>({cls.level})</div>
                       </td>
-                      <td style={{ padding: '5px 4px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
+                      <td style={{ padding: '7px 4px', border: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 600 }}>
                         {classStudentsCount}
                       </td>
                       {categories.map((c) => (
-                        <td key={c.fraisId} style={{ padding: '5px 4px', border: '1px solid #cbd5e1', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <td key={c.fraisId} style={{ padding: '7px 6px', border: '1px solid #cbd5e1', textAlign: 'right', whiteSpace: 'nowrap' }}>
                           {c.unit === 0 ? '—' : `${formatNum(c.unit)} F`}
                         </td>
                       ))}
-                      <td style={{ padding: '5px 4px', border: '1px solid #cbd5e1', textAlign: 'right', fontWeight: 700, background: '#f8fafc', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '7px 6px', border: '1px solid #cbd5e1', textAlign: 'right', fontWeight: 700, background: '#f8fafc', whiteSpace: 'nowrap' }}>
                         {formatNum(forfaitEleve)} F
                       </td>
-                      <td style={{ padding: '5px 4px', border: '1px solid #cbd5e1', textAlign: 'right', fontWeight: 700, background: '#eff6ff', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '7px 6px', border: '1px solid #cbd5e1', textAlign: 'right', fontWeight: 700, background: '#eff6ff', whiteSpace: 'nowrap' }}>
                         {formatNum(totalAttendu)} F
                       </td>
-                      <td style={{ padding: '5px 4px', border: '1px solid #cbd5e1', textAlign: 'right', fontWeight: 700, background: '#f0fdf4', color: '#047857', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '7px 6px', border: '1px solid #cbd5e1', textAlign: 'right', fontWeight: 700, background: '#f0fdf4', color: '#047857', whiteSpace: 'nowrap' }}>
                         {formatNum(totalEncaisse)} F
                       </td>
-                      <td style={{ padding: '5px 4px', border: '1px solid #cbd5e1', textAlign: 'right', fontWeight: 700, background: '#fef2f2', color: '#b91c1c', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '7px 6px', border: '1px solid #cbd5e1', textAlign: 'right', fontWeight: 700, background: '#fef2f2', color: '#b91c1c', whiteSpace: 'nowrap' }}>
                         {formatNum(reste)} F
                       </td>
-                      <td style={{ padding: '5px 4px', border: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700 }}>
+                      <td style={{ padding: '7px 4px', border: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 700 }}>
                         {taux}%
                       </td>
                     </tr>
@@ -453,8 +510,8 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
 
                   return (
                     <tr style={{ background: '#f1f5f9', borderTop: '2px solid #0f172a', fontWeight: 800 }}>
-                      <td style={{ padding: '6px 6px', border: '1px solid #cbd5e1' }}>TOTAL ÉCOLE</td>
-                      <td style={{ padding: '6px 4px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
+                      <td style={{ padding: '8px 8px', border: '1px solid #cbd5e1' }}>TOTAL ÉCOLE</td>
+                      <td style={{ padding: '8px 4px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
                         {students.length}
                       </td>
                       {sortedFrais.map((f) => {
@@ -463,22 +520,22 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
                           return acc + getFeeForClass(cls.id, f.id, f.amount) * cnt;
                         }, 0);
                         return (
-                          <td key={f.id} style={{ padding: '6px 4px', border: '1px solid #cbd5e1', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <td key={f.id} style={{ padding: '8px 6px', border: '1px solid #cbd5e1', textAlign: 'right', whiteSpace: 'nowrap' }}>
                             {formatNum(sumFrais)} F
                           </td>
                         );
                       })}
-                      <td style={{ padding: '6px 4px', border: '1px solid #cbd5e1', textAlign: 'right' }}>—</td>
-                      <td style={{ padding: '6px 4px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#dbeafe', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '8px 6px', border: '1px solid #cbd5e1', textAlign: 'right' }}>—</td>
+                      <td style={{ padding: '8px 6px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#dbeafe', whiteSpace: 'nowrap' }}>
                         {formatNum(totalAttenduAll)} F
                       </td>
-                      <td style={{ padding: '6px 4px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#d1fae5', color: '#065f46', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '8px 6px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#d1fae5', color: '#065f46', whiteSpace: 'nowrap' }}>
                         {formatNum(totalEncaisseAll)} F
                       </td>
-                      <td style={{ padding: '6px 4px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#fee2e2', color: '#991b1b', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '8px 6px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#fee2e2', color: '#991b1b', whiteSpace: 'nowrap' }}>
                         {formatNum(resteAll)} F
                       </td>
-                      <td style={{ padding: '6px 4px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
+                      <td style={{ padding: '8px 4px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
                         {tauxAll}%
                       </td>
                     </tr>
