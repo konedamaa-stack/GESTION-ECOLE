@@ -26,9 +26,36 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
   selectedClassId,
   onClose,
 }) => {
+  const [currentMode, setCurrentMode] = React.useState<'global' | 'by_category' | 'by_class'>(printMode);
+  const [currentCategoryId, setCurrentCategoryId] = React.useState<string>(
+    selectedCategoryId || (fraisList.length > 0 ? fraisList[0].id : '')
+  );
+  const [currentClassId, setCurrentClassId] = React.useState<string>(
+    selectedClassId || (classes.length > 0 ? classes[0].id : '')
+  );
+
   const [pageOrientation, setPageOrientation] = React.useState<'landscape' | 'portrait'>(
     printMode === 'by_category' ? 'portrait' : 'landscape'
   );
+
+  React.useEffect(() => {
+    if (printMode) {
+      setCurrentMode(printMode);
+      setPageOrientation(printMode === 'by_category' ? 'portrait' : 'landscape');
+    }
+  }, [printMode]);
+
+  React.useEffect(() => {
+    if (selectedCategoryId) {
+      setCurrentCategoryId(selectedCategoryId);
+    }
+  }, [selectedCategoryId]);
+
+  React.useEffect(() => {
+    if (selectedClassId) {
+      setCurrentClassId(selectedClassId);
+    }
+  }, [selectedClassId]);
 
   useEffect(() => {
     // Fermeture par la touche Échap
@@ -40,12 +67,7 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
 
     window.addEventListener('keydown', handleKeyDown);
 
-    const timer = setTimeout(() => {
-      window.print();
-    }, 500);
-
     return () => {
-      clearTimeout(timer);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);
@@ -93,8 +115,8 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
       .reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
   };
 
-  const selectedCategoryObj = sortedFrais.find((f) => f.id === selectedCategoryId);
-  const selectedClassObj = classes.find((c) => c.id === selectedClassId);
+  const selectedCategoryObj = sortedFrais.find((f) => f.id === currentCategoryId) || sortedFrais[0];
+  const selectedClassObj = classes.find((c) => c.id === currentClassId) || classes[0];
 
   // Student specific calculations for 'by_class' mode
   const classStudents = selectedClassObj
@@ -217,15 +239,144 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
           <span style={{ fontSize: '1.4rem' }}>🖨️</span>
           <div>
             <div style={{ fontWeight: 700, fontSize: '1rem', color: '#1e3a8a' }}>
-              Aperçu avant impression : Frais Annexes
+              Aperçu & Impression des Frais Annexes
             </div>
             <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
-              Format actif : <strong>{pageOrientation === 'landscape' ? '🖼️ Paysage A4 (Recommandé - Évite la superposition)' : '📄 Portrait A4'}</strong>
+              Rapport actif : <strong>{currentMode === 'global' ? '📊 Bilan Global (Toutes les classes)' : currentMode === 'by_category' ? `🏷️ Par Catégorie (${selectedCategoryObj?.name})` : `🏫 Par Classe (${selectedClassObj?.name})`}</strong>
             </div>
           </div>
         </div>
 
-        {/* Boutons de sélection du Format / Orientation */}
+        {/* 1. SÉLECTEUR DE TYPE DE RAPPORT (Bilan Global / Par Catégorie / Par Classe) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#475569' }}>Type de rapport :</span>
+          <div style={{ display: 'flex', background: '#f1f5f9', padding: '3px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentMode('global');
+                setPageOrientation('landscape');
+              }}
+              style={{
+                padding: '6px 12px',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                background: currentMode === 'global' ? '#2563eb' : 'transparent',
+                color: currentMode === 'global' ? '#ffffff' : '#475569',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.15s',
+                boxShadow: currentMode === 'global' ? '0 2px 4px rgba(37, 99, 235, 0.25)' : 'none'
+              }}
+            >
+              <span>📊</span> Bilan Global
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentMode('by_category');
+                setPageOrientation('portrait');
+              }}
+              style={{
+                padding: '6px 12px',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                background: currentMode === 'by_category' ? '#2563eb' : 'transparent',
+                color: currentMode === 'by_category' ? '#ffffff' : '#475569',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.15s',
+                boxShadow: currentMode === 'by_category' ? '0 2px 4px rgba(37, 99, 235, 0.25)' : 'none'
+              }}
+            >
+              <span>🏷️</span> Par Catégorie
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentMode('by_class');
+                setPageOrientation('landscape');
+              }}
+              style={{
+                padding: '6px 12px',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                background: currentMode === 'by_class' ? '#2563eb' : 'transparent',
+                color: currentMode === 'by_class' ? '#ffffff' : '#475569',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.15s',
+                boxShadow: currentMode === 'by_class' ? '0 2px 4px rgba(37, 99, 235, 0.25)' : 'none'
+              }}
+            >
+              <span>🏫</span> Par Classe
+            </button>
+          </div>
+
+          {/* Menu déroulant contextuel : Choix de la Catégorie */}
+          {currentMode === 'by_category' && (
+            <select
+              value={currentCategoryId}
+              onChange={(e) => setCurrentCategoryId(e.target.value)}
+              style={{
+                padding: '6px 12px',
+                fontSize: '0.84rem',
+                fontWeight: 700,
+                borderRadius: '6px',
+                border: '1.5px solid #2563eb',
+                background: '#eff6ff',
+                color: '#1e40af',
+                cursor: 'pointer',
+                boxShadow: '0 1px 3px rgba(37,99,235,0.2)'
+              }}
+            >
+              {sortedFrais.map((f) => (
+                <option key={f.id} value={f.id}>
+                  🏷️ {f.name} ({formatNum(f.amount)} F)
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Menu déroulant contextuel : Choix de la Classe */}
+          {currentMode === 'by_class' && (
+            <select
+              value={currentClassId}
+              onChange={(e) => setCurrentClassId(e.target.value)}
+              style={{
+                padding: '6px 12px',
+                fontSize: '0.84rem',
+                fontWeight: 700,
+                borderRadius: '6px',
+                border: '1.5px solid #2563eb',
+                background: '#eff6ff',
+                color: '#1e40af',
+                cursor: 'pointer',
+                boxShadow: '0 1px 3px rgba(37,99,235,0.2)'
+              }}
+            >
+              {classes.map((cls) => (
+                <option key={cls.id} value={cls.id}>
+                  🏫 {cls.name} ({cls.level})
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        {/* 2. Boutons de sélection du Format / Orientation */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#475569' }}>Format :</span>
           <div style={{ display: 'flex', background: '#f1f5f9', padding: '3px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
@@ -233,8 +384,8 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
               type="button"
               onClick={() => setPageOrientation('landscape')}
               style={{
-                padding: '6px 14px',
-                fontSize: '0.82rem',
+                padding: '6px 12px',
+                fontSize: '0.8rem',
                 fontWeight: 700,
                 borderRadius: '6px',
                 border: 'none',
@@ -243,19 +394,19 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
                 color: pageOrientation === 'landscape' ? '#ffffff' : '#475569',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '5px',
                 transition: 'all 0.15s',
                 boxShadow: pageOrientation === 'landscape' ? '0 2px 4px rgba(37, 99, 235, 0.25)' : 'none'
               }}
             >
-              <span>🖼️</span> Paysage (Recommandé)
+              <span>🖼️</span> Paysage
             </button>
             <button
               type="button"
               onClick={() => setPageOrientation('portrait')}
               style={{
-                padding: '6px 14px',
-                fontSize: '0.82rem',
+                padding: '6px 12px',
+                fontSize: '0.8rem',
                 fontWeight: 700,
                 borderRadius: '6px',
                 border: 'none',
@@ -264,7 +415,7 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
                 color: pageOrientation === 'portrait' ? '#ffffff' : '#475569',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '5px',
                 transition: 'all 0.15s',
                 boxShadow: pageOrientation === 'portrait' ? '0 2px 4px rgba(37, 99, 235, 0.25)' : 'none'
               }}
@@ -402,19 +553,19 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
               color: '#0f172a',
             }}
           >
-            {printMode === 'global' && "BILAN FINANCIER GLOBAL DES FRAIS ANNEXES"}
-            {printMode === 'by_category' && `ÉTAT DE RECOUVREMENT : ${(selectedCategoryObj?.name || 'FRAIS ANNEXE').toUpperCase()}`}
-            {printMode === 'by_class' && `FICHE NOMINATIVE DES FRAIS ANNEXES — CLASSE DE ${(selectedClassObj?.name || '').toUpperCase()}`}
+            {currentMode === 'global' && "BILAN FINANCIER GLOBAL DES FRAIS ANNEXES"}
+            {currentMode === 'by_category' && `ÉTAT DE RECOUVREMENT : ${(selectedCategoryObj?.name || 'FRAIS ANNEXE').toUpperCase()}`}
+            {currentMode === 'by_class' && `FICHE NOMINATIVE DES FRAIS ANNEXES — CLASSE DE ${(selectedClassObj?.name || '').toUpperCase()}`}
           </h3>
           <div style={{ fontSize: '0.86rem', color: '#64748b' }}>
-            {printMode === 'global' && "Récapitulatif par classe et par catégorie (attendu, encaissé et reste à percevoir)"}
-            {printMode === 'by_category' && `Suivi spécifique pour toutes les classes de l'établissement`}
-            {printMode === 'by_class' && `Effectif : ${classStudents.length} élèves • Année Scolaire en cours`}
+            {currentMode === 'global' && "Récapitulatif par classe et par catégorie (attendu, encaissé et reste à percevoir)"}
+            {currentMode === 'by_category' && `Suivi spécifique pour toutes les classes de l'établissement`}
+            {currentMode === 'by_class' && `Effectif : ${classStudents.length} élèves • Année Scolaire en cours`}
           </div>
         </div>
 
         {/* 1. MODE: GLOBAL REPORT */}
-        {printMode === 'global' && (
+        {currentMode === 'global' && (
           <div>
             <table
               style={{
@@ -547,7 +698,7 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
         )}
 
         {/* 2. MODE: BY CATEGORY REPORT */}
-        {printMode === 'by_category' && selectedCategoryObj && (
+        {currentMode === 'by_category' && selectedCategoryObj && (
           <div>
             <table
               style={{
@@ -653,7 +804,7 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
         )}
 
         {/* 3. MODE: BY CLASS NOMINATIVE REPORT */}
-        {printMode === 'by_class' && selectedClassObj && (() => {
+        {currentMode === 'by_class' && selectedClassObj && (() => {
           const classForfaitPerStudent = sortedFrais.reduce((sum, f) => sum + getFeeForClass(selectedClassObj.id, f.id, f.amount), 0);
           const classTotalAttendu = classForfaitPerStudent * classStudents.length;
           const classTotalPaid = classStudents.reduce((sum, st) => {
