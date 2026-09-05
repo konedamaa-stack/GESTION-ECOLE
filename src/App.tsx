@@ -296,7 +296,7 @@ function App() {
   const [invoiceSearchQuery, setInvoiceSearchQuery] = useState('');
   const [invoiceDateFilter, setInvoiceDateFilter] = useState<string>('');
   const [invoiceStartDateFilter, setInvoiceStartDateFilter] = useState<string>('');
-  const [invoiceEndDateFilter, setInvoiceEndDateFilter] = useState<string>('');
+  const [invoiceEndDateFilter, setInvoiceEndDateFilter] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [invoicePaymentMethodFilter, setInvoicePaymentMethodFilter] = useState<string>('all');
   const [parentSearchQuery, setParentSearchQuery] = useState('');
   const [financeStatusFilter, setFinanceStatusFilter] = useState('all');
