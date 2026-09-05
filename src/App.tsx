@@ -295,6 +295,8 @@ function App() {
   const [selectedHonorStudent, setSelectedHonorStudent] = useState<any | null>(null);
   const [invoiceSearchQuery, setInvoiceSearchQuery] = useState('');
   const [invoiceDateFilter, setInvoiceDateFilter] = useState<string>('');
+  const [invoiceStartDateFilter, setInvoiceStartDateFilter] = useState<string>('');
+  const [invoiceEndDateFilter, setInvoiceEndDateFilter] = useState<string>('');
   const [invoicePaymentMethodFilter, setInvoicePaymentMethodFilter] = useState<string>('all');
   const [parentSearchQuery, setParentSearchQuery] = useState('');
   const [financeStatusFilter, setFinanceStatusFilter] = useState('all');
@@ -5522,7 +5524,15 @@ function App() {
         if (!matchNum && !matchFirst && !matchLast && !matchMat && !matchMotif) return false;
       }
 
-      if (invoiceDateFilter) {
+      if (invoiceStartDateFilter) {
+        const invDate = (inv.issue_date || inv.created_at || '').split('T')[0];
+        if (invDate < invoiceStartDateFilter) return false;
+      }
+      if (invoiceEndDateFilter) {
+        const invDate = (inv.issue_date || inv.created_at || '').split('T')[0];
+        if (invDate > invoiceEndDateFilter) return false;
+      }
+      if (!invoiceStartDateFilter && !invoiceEndDateFilter && invoiceDateFilter) {
         const invDate = (inv.issue_date || inv.created_at || '').split('T')[0];
         if (invDate !== invoiceDateFilter) return false;
       }
@@ -5539,69 +5549,185 @@ function App() {
 
     return (
     <div className="animate-fade-in">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">{t('admin.finance.title', 'Comptabilité & Scolarité')}</h1>
-          <p className="page-subtitle">{t('admin.finance.subtitle', 'Suivi des paiements, encaissements et relances de frais de scolarité.')}</p>
+      {/* Header moderne Comptabilité & Scolarité */}
+      <div
+        className="compta-hero-header hide-print"
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '16px',
+          marginBottom: '20px',
+          padding: '18px 24px',
+          background: 'var(--surface-color, #ffffff)',
+          borderRadius: '16px',
+          border: '1px solid var(--border-color, #e2e8f0)',
+          boxShadow: '0 4px 20px -4px rgba(0, 0, 0, 0.05)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '14px',
+              background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ffffff',
+              fontSize: '1.45rem',
+              boxShadow: '0 8px 16px -4px rgba(79, 70, 229, 0.35)',
+              flexShrink: 0,
+            }}
+          >
+            💳
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <h1
+                className="page-title"
+                style={{
+                  margin: 0,
+                  fontSize: '1.35rem',
+                  fontWeight: 800,
+                  color: 'var(--text-primary, #0f172a)',
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                {t('admin.finance.title', 'Comptabilité & Scolarité')}
+              </h1>
+              <span
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  padding: '3px 8px',
+                  borderRadius: '20px',
+                  background: 'rgba(79, 70, 229, 0.1)',
+                  color: '#4f46e5',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                Gestion Financière
+              </span>
+            </div>
+            <p
+              className="page-subtitle"
+              style={{
+                margin: '3px 0 0 0',
+                fontSize: '0.88rem',
+                color: 'var(--text-secondary, #64748b)',
+              }}
+            >
+              {t('admin.finance.subtitle', 'Suivi des paiements, encaissements et relances de frais de scolarité.')}
+            </p>
+          </div>
         </div>
+
         {currentAdminRole !== 'Supervisor' && (
-          <button className="btn btn-primary" onClick={() => setActiveModal('payment')}>
+          <button
+            className="btn btn-primary"
+            onClick={() => setActiveModal('payment')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '11px 22px',
+              borderRadius: '12px',
+              fontWeight: 700,
+              fontSize: '0.92rem',
+              background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)',
+              border: 'none',
+              color: '#ffffff',
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(79, 70, 229, 0.35)',
+              transition: 'all 0.2s ease',
+            }}
+          >
             <Icons.Plus /> {t('admin.finance.btn_add', 'Enregistrer un Paiement')}
           </button>
         )}
       </div>
 
-      {/* Sous-navigation Comptabilité : Scolarité Générale vs Frais Annexes */}
+      {/* Sous-navigation Comptabilité : Segmented Control Moderne */}
       <div
         className="compta-subtabs hide-print"
         style={{
           display: 'flex',
-          gap: '12px',
+          alignItems: 'center',
+          gap: '8px',
           marginBottom: '24px',
-          borderBottom: '2px solid var(--border-color, #e2e8f0)',
-          paddingBottom: '2px',
+          background: 'var(--surface-color-hover, #f1f5f9)',
+          padding: '5px',
+          borderRadius: '14px',
+          border: '1px solid var(--border-color, #e2e8f0)',
+          width: 'fit-content',
+          maxWidth: '100%',
+          overflowX: 'auto',
+          boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.04)',
         }}
       >
         <button
           type="button"
           onClick={() => setComptaActiveTab('scolarite')}
           style={{
-            padding: '10px 22px',
-            background: 'transparent',
-            border: 'none',
-            borderBottom: comptaActiveTab === 'scolarite' ? '3px solid var(--primary-color, #2563eb)' : '3px solid transparent',
-            color: comptaActiveTab === 'scolarite' ? 'var(--primary-color, #2563eb)' : '#0f172a',
-            fontWeight: 700,
-            fontSize: '1rem',
+            padding: '9px 18px',
+            borderRadius: '10px',
+            border: comptaActiveTab === 'scolarite' ? '1px solid rgba(0, 0, 0, 0.06)' : '1px solid transparent',
+            background: comptaActiveTab === 'scolarite' ? 'var(--surface-color, #ffffff)' : 'transparent',
+            color: comptaActiveTab === 'scolarite' ? 'var(--primary-color, #4f46e5)' : 'var(--text-secondary, #64748b)',
+            fontWeight: comptaActiveTab === 'scolarite' ? 750 : 600,
+            fontSize: '0.92rem',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            transition: 'all 0.15s ease',
+            boxShadow: comptaActiveTab === 'scolarite' ? '0 3px 10px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)' : 'none',
+            transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
+            whiteSpace: 'nowrap',
           }}
         >
-          <span>🎓</span> Scolarité & Écolages
+          <span style={{ fontSize: '1.15rem' }}>🎓</span>
+          <span>Scolarité & Écolages</span>
         </button>
 
         <button
           type="button"
           onClick={() => setComptaActiveTab('frais_annexes')}
           style={{
-            padding: '10px 22px',
-            background: 'transparent',
-            border: 'none',
-            borderBottom: comptaActiveTab === 'frais_annexes' ? '3px solid var(--primary-color, #2563eb)' : '3px solid transparent',
-            color: comptaActiveTab === 'frais_annexes' ? 'var(--primary-color, #2563eb)' : '#0f172a',
-            fontWeight: 700,
-            fontSize: '1rem',
+            padding: '9px 18px',
+            borderRadius: '10px',
+            border: comptaActiveTab === 'frais_annexes' ? '1px solid rgba(0, 0, 0, 0.06)' : '1px solid transparent',
+            background: comptaActiveTab === 'frais_annexes' ? 'var(--surface-color, #ffffff)' : 'transparent',
+            color: comptaActiveTab === 'frais_annexes' ? 'var(--primary-color, #4f46e5)' : 'var(--text-secondary, #64748b)',
+            fontWeight: comptaActiveTab === 'frais_annexes' ? 750 : 600,
+            fontSize: '0.92rem',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            transition: 'all 0.15s ease',
+            boxShadow: comptaActiveTab === 'frais_annexes' ? '0 3px 10px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)' : 'none',
+            transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
+            whiteSpace: 'nowrap',
           }}
         >
-          <span>💳</span> Frais Annexes (Bulletins, Tricots...)
+          <span style={{ fontSize: '1.15rem' }}>💳</span>
+          <span>Frais Annexes</span>
+          <span
+            style={{
+              fontSize: '0.74rem',
+              fontWeight: 600,
+              padding: '2px 7px',
+              borderRadius: '6px',
+              background: comptaActiveTab === 'frais_annexes' ? 'rgba(79, 70, 229, 0.1)' : 'var(--surface-color, #ffffff)',
+              color: comptaActiveTab === 'frais_annexes' ? '#4f46e5' : '#64748b',
+              marginLeft: '2px',
+            }}
+          >
+            Bulletins, Tenues...
+          </span>
         </button>
       </div>
 
@@ -6012,16 +6138,74 @@ function App() {
               />
             </div>
 
-            {/* Date Picker Input */}
-            <div style={{display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '4px 8px'}}>
-              <span style={{fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600}}>📅 Date :</span>
-              <input 
-                type="date" 
-                value={invoiceDateFilter} 
-                onChange={e => setInvoiceDateFilter(e.target.value)} 
-                className="form-input" 
-                style={{padding: '4px 8px', fontSize: '0.85rem', border: 'none', background: 'transparent', outline: 'none'}} 
-              />
+            {/* Date Range Picker (Date Début & Date Fin) */}
+            <div 
+              style={{
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px', 
+                backgroundColor: 'var(--surface-color)', 
+                border: '1px solid var(--border-color)', 
+                borderRadius: '10px', 
+                padding: '4px 10px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+              }}
+            >
+              <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+                <span style={{fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 700}}>📅 Du :</span>
+                <input 
+                  type="date" 
+                  value={invoiceStartDateFilter} 
+                  onChange={e => {
+                    setInvoiceStartDateFilter(e.target.value);
+                    setInvoiceDateFilter('');
+                  }} 
+                  className="form-input" 
+                  style={{padding: '4px 6px', fontSize: '0.84rem', border: 'none', background: 'transparent', outline: 'none', cursor: 'pointer'}} 
+                  title="Date de début"
+                />
+              </div>
+
+              <span style={{color: 'var(--border-color)', fontWeight: 300}}>|</span>
+
+              <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+                <span style={{fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 700}}>Au :</span>
+                <input 
+                  type="date" 
+                  value={invoiceEndDateFilter} 
+                  onChange={e => {
+                    setInvoiceEndDateFilter(e.target.value);
+                    setInvoiceDateFilter('');
+                  }} 
+                  className="form-input" 
+                  style={{padding: '4px 6px', fontSize: '0.84rem', border: 'none', background: 'transparent', outline: 'none', cursor: 'pointer'}} 
+                  title="Date de fin"
+                />
+              </div>
+
+              {(invoiceStartDateFilter || invoiceEndDateFilter) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInvoiceStartDateFilter('');
+                    setInvoiceEndDateFilter('');
+                    setInvoiceDateFilter('');
+                  }}
+                  title="Effacer la période"
+                  style={{
+                    background: 'var(--surface-color-hover, #f1f5f9)',
+                    border: 'none',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
             {/* Payment Method Filter */}
@@ -6044,34 +6228,107 @@ function App() {
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', padding: '12px 16px', background: 'var(--surface-color-hover)', borderRadius: '8px', marginTop: '16px'}}>
           <div style={{display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap'}}>
             <span style={{fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600}}>Raccourcis :</span>
+            
+            {/* Aujourd'hui */}
             <button 
               type="button" 
               className="btn btn-outline" 
-              style={{padding: '4px 10px', fontSize: '0.8rem', background: invoiceDateFilter === new Date().toISOString().split('T')[0] ? 'var(--primary-color)' : 'transparent', color: invoiceDateFilter === new Date().toISOString().split('T')[0] ? 'white' : 'var(--text-color)', borderColor: invoiceDateFilter === new Date().toISOString().split('T')[0] ? 'var(--primary-color)' : 'var(--border-color)'}}
-              onClick={() => setInvoiceDateFilter(new Date().toISOString().split('T')[0])}
+              style={{
+                padding: '4px 10px', 
+                fontSize: '0.8rem', 
+                background: (invoiceStartDateFilter === new Date().toISOString().split('T')[0] && invoiceEndDateFilter === new Date().toISOString().split('T')[0]) ? 'var(--primary-color)' : 'transparent', 
+                color: (invoiceStartDateFilter === new Date().toISOString().split('T')[0] && invoiceEndDateFilter === new Date().toISOString().split('T')[0]) ? 'white' : 'var(--text-color)', 
+                borderColor: (invoiceStartDateFilter === new Date().toISOString().split('T')[0] && invoiceEndDateFilter === new Date().toISOString().split('T')[0]) ? 'var(--primary-color)' : 'var(--border-color)'
+              }}
+              onClick={() => {
+                const today = new Date().toISOString().split('T')[0];
+                setInvoiceStartDateFilter(today);
+                setInvoiceEndDateFilter(today);
+                setInvoiceDateFilter('');
+              }}
             >
               Aujourd'hui ({new Date().toLocaleDateString('fr-FR', {day: '2-digit', month: '2-digit'})})
             </button>
+
+            {/* Hier */}
             <button 
               type="button" 
               className="btn btn-outline" 
-              style={{padding: '4px 10px', fontSize: '0.8rem', background: (() => { const y = new Date(); y.setDate(y.getDate() - 1); return invoiceDateFilter === y.toISOString().split('T')[0]; })() ? 'var(--primary-color)' : 'transparent', color: (() => { const y = new Date(); y.setDate(y.getDate() - 1); return invoiceDateFilter === y.toISOString().split('T')[0]; })() ? 'white' : 'var(--text-color)', borderColor: (() => { const y = new Date(); y.setDate(y.getDate() - 1); return invoiceDateFilter === y.toISOString().split('T')[0]; })() ? 'var(--primary-color)' : 'var(--border-color)'}}
+              style={{
+                padding: '4px 10px', 
+                fontSize: '0.8rem', 
+                background: (() => { 
+                  const y = new Date(); y.setDate(y.getDate() - 1); const yStr = y.toISOString().split('T')[0];
+                  return (invoiceStartDateFilter === yStr && invoiceEndDateFilter === yStr); 
+                })() ? 'var(--primary-color)' : 'transparent', 
+                color: (() => { 
+                  const y = new Date(); y.setDate(y.getDate() - 1); const yStr = y.toISOString().split('T')[0];
+                  return (invoiceStartDateFilter === yStr && invoiceEndDateFilter === yStr); 
+                })() ? 'white' : 'var(--text-color)', 
+                borderColor: (() => { 
+                  const y = new Date(); y.setDate(y.getDate() - 1); const yStr = y.toISOString().split('T')[0];
+                  return (invoiceStartDateFilter === yStr && invoiceEndDateFilter === yStr); 
+                })() ? 'var(--primary-color)' : 'var(--border-color)'
+              }}
               onClick={() => {
                 const y = new Date();
                 y.setDate(y.getDate() - 1);
-                setInvoiceDateFilter(y.toISOString().split('T')[0]);
+                const yStr = y.toISOString().split('T')[0];
+                setInvoiceStartDateFilter(yStr);
+                setInvoiceEndDateFilter(yStr);
+                setInvoiceDateFilter('');
               }}
             >
               Hier
             </button>
-            {invoiceDateFilter && (
+
+            {/* Cette semaine */}
+            <button 
+              type="button" 
+              className="btn btn-outline" 
+              style={{padding: '4px 10px', fontSize: '0.8rem'}}
+              onClick={() => {
+                const now = new Date();
+                const day = now.getDay();
+                const diffToMonday = day === 0 ? -6 : 1 - day;
+                const monday = new Date(now);
+                monday.setDate(now.getDate() + diffToMonday);
+                setInvoiceStartDateFilter(monday.toISOString().split('T')[0]);
+                setInvoiceEndDateFilter(now.toISOString().split('T')[0]);
+                setInvoiceDateFilter('');
+              }}
+            >
+              Cette semaine
+            </button>
+
+            {/* Ce mois */}
+            <button 
+              type="button" 
+              className="btn btn-outline" 
+              style={{padding: '4px 10px', fontSize: '0.8rem'}}
+              onClick={() => {
+                const now = new Date();
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                setInvoiceStartDateFilter(firstDay.toISOString().split('T')[0]);
+                setInvoiceEndDateFilter(now.toISOString().split('T')[0]);
+                setInvoiceDateFilter('');
+              }}
+            >
+              Ce mois
+            </button>
+
+            {(invoiceStartDateFilter || invoiceEndDateFilter || invoiceDateFilter) && (
               <button 
                 type="button" 
                 className="btn btn-outline" 
                 style={{padding: '4px 10px', fontSize: '0.8rem', color: 'var(--primary-color)'}}
-                onClick={() => setInvoiceDateFilter('')}
+                onClick={() => {
+                  setInvoiceStartDateFilter('');
+                  setInvoiceEndDateFilter('');
+                  setInvoiceDateFilter('');
+                }}
               >
-                ✕ Effacer date (Voir tout)
+                ✕ Effacer filtre (Voir tout)
               </button>
             )}
           </div>
@@ -6080,7 +6337,24 @@ function App() {
           <div style={{display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap'}}>
             <div style={{display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '6px 12px', borderRadius: '8px'}}>
               <span style={{fontSize: '0.85rem', color: 'var(--success-color)', fontWeight: 600}}>
-                {invoiceDateFilter ? `Recette du ${new Date(invoiceDateFilter).toLocaleDateString('fr-FR')} :` : 'Total Recette :'}
+                {(() => {
+                  if (invoiceStartDateFilter && invoiceEndDateFilter) {
+                    if (invoiceStartDateFilter === invoiceEndDateFilter) {
+                      return `Recette du ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')} :`;
+                    }
+                    return `Recette du ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')} au ${new Date(invoiceEndDateFilter).toLocaleDateString('fr-FR')} :`;
+                  }
+                  if (invoiceStartDateFilter) {
+                    return `Recette depuis le ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')} :`;
+                  }
+                  if (invoiceEndDateFilter) {
+                    return `Recette jusqu'au ${new Date(invoiceEndDateFilter).toLocaleDateString('fr-FR')} :`;
+                  }
+                  if (invoiceDateFilter) {
+                    return `Recette du ${new Date(invoiceDateFilter).toLocaleDateString('fr-FR')} :`;
+                  }
+                  return 'Total Recette (Toutes dates) :';
+                })()}
               </span>
               <strong style={{fontSize: '1.05rem', color: 'var(--success-color)'}}>
                 {formatNum(filteredInvoicesTotal)} F CFA
@@ -6097,7 +6371,7 @@ function App() {
               onClick={() => setActiveModal('daily_receipts_print')}
               title="Imprimer le journal de caisse / rapport de recette pour cette sélection"
             >
-              🖨️ Imprimer la Recette {invoiceDateFilter ? 'du Jour' : ''}
+              🖨️ Imprimer la Recette {(invoiceStartDateFilter || invoiceEndDateFilter || invoiceDateFilter) ? 'de la Période' : 'Globale'}
             </button>
           </div>
         </div>
@@ -6177,7 +6451,23 @@ function App() {
                   <div style={{fontSize: '2rem', marginBottom: '8px'}}>📭</div>
                   <div style={{fontWeight: 600, fontSize: '0.95rem'}}>Aucun versement trouvé pour les critères sélectionnés.</div>
                   <p style={{fontSize: '0.85rem', marginTop: '4px'}}>
-                    {invoiceDateFilter ? `Aucun encaissement n'a été enregistré à la date du ${new Date(invoiceDateFilter).toLocaleDateString('fr-FR')}.` : "Aucun paiement enregistré pour l'instant."}
+                    {(() => {
+                      if (invoiceStartDateFilter && invoiceEndDateFilter) {
+                        return invoiceStartDateFilter === invoiceEndDateFilter
+                          ? `Aucun encaissement n'a été enregistré à la date du ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')}.`
+                          : `Aucun encaissement n'a été enregistré pour la période du ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')} au ${new Date(invoiceEndDateFilter).toLocaleDateString('fr-FR')}.`;
+                      }
+                      if (invoiceStartDateFilter) {
+                        return `Aucun encaissement enregistré depuis le ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')}.`;
+                      }
+                      if (invoiceEndDateFilter) {
+                        return `Aucun encaissement enregistré jusqu'au ${new Date(invoiceEndDateFilter).toLocaleDateString('fr-FR')}.`;
+                      }
+                      if (invoiceDateFilter) {
+                        return `Aucun encaissement n'a été enregistré à la date du ${new Date(invoiceDateFilter).toLocaleDateString('fr-FR')}.`;
+                      }
+                      return "Aucun paiement enregistré pour l'instant.";
+                    })()}
                   </p>
                 </td>
               </tr>
@@ -9506,7 +9796,17 @@ function App() {
         {activeModal === 'daily_receipts_print' && (
           <div className="modal-content fade-in" style={{maxWidth: '1200px', width: '98%'}} onClick={e => e.stopPropagation()}>
             <div className="modal-header hide-print">
-              <h3>🖨️ Aperçu du Journal des Versements / Recette ({invoiceDateFilter ? `Date : ${new Date(invoiceDateFilter).toLocaleDateString('fr-FR')}` : 'Toutes les dates'})</h3>
+              <h3>🖨️ Aperçu du Journal des Versements / Recette ({(() => {
+                if (invoiceStartDateFilter && invoiceEndDateFilter) {
+                  return invoiceStartDateFilter === invoiceEndDateFilter
+                    ? `Date : ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')}`
+                    : `Période du ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')} au ${new Date(invoiceEndDateFilter).toLocaleDateString('fr-FR')}`;
+                }
+                if (invoiceStartDateFilter) return `À partir du ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')}`;
+                if (invoiceEndDateFilter) return `Jusqu'au ${new Date(invoiceEndDateFilter).toLocaleDateString('fr-FR')}`;
+                if (invoiceDateFilter) return `Date : ${new Date(invoiceDateFilter).toLocaleDateString('fr-FR')}`;
+                return 'Toutes les dates';
+              })()})</h3>
               <div style={{display: 'flex', gap: '12px'}}>
                 <button className="btn btn-primary" onClick={() => window.print()} style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
                   <Icons.Printer /> Imprimer la recette
@@ -9527,7 +9827,15 @@ function App() {
                       const matchMotif = (inv.motif || '').toLowerCase().includes(q);
                       if (!matchNum && !matchFirst && !matchLast && !matchMat && !matchMotif) return false;
                     }
-                    if (invoiceDateFilter) {
+                    if (invoiceStartDateFilter) {
+                      const invDate = (inv.issue_date || inv.created_at || '').split('T')[0];
+                      if (invDate < invoiceStartDateFilter) return false;
+                    }
+                    if (invoiceEndDateFilter) {
+                      const invDate = (inv.issue_date || inv.created_at || '').split('T')[0];
+                      if (invDate > invoiceEndDateFilter) return false;
+                    }
+                    if (!invoiceStartDateFilter && !invoiceEndDateFilter && invoiceDateFilter) {
                       const invDate = (inv.issue_date || inv.created_at || '').split('T')[0];
                       if (invDate !== invoiceDateFilter) return false;
                     }
@@ -9538,7 +9846,9 @@ function App() {
                     return true;
                   }).sort((a: any, b: any) => new Date(b.issue_date || 0).getTime() - new Date(a.issue_date || 0).getTime())
                 }
-                selectedDate={invoiceDateFilter}
+                selectedDate={invoiceStartDateFilter === invoiceEndDateFilter ? invoiceStartDateFilter : (invoiceDateFilter || '')}
+                startDate={invoiceStartDateFilter}
+                endDate={invoiceEndDateFilter}
                 schoolInfo={effectiveSchoolInfo}
                 paymentMethodFilter={invoicePaymentMethodFilter}
               />

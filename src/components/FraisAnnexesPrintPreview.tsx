@@ -82,7 +82,9 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
         if (motifName) {
           return matchesFraisMotif(inv.motif, motifName);
         }
-        return sortedFrais.some((f) => matchesFraisMotif(inv.motif, f.name));
+        return sortedFrais
+          .filter((f) => getFeeForClass(classId, f.id, f.amount) > 0)
+          .some((f) => matchesFraisMotif(inv.motif, f.name));
       })
       .reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
   };
@@ -326,7 +328,7 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
                     Forfait/Él.
                   </th>
                   <th style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#dbeafe' }}>
-                    Attendu
+                    Total Annexe
                   </th>
                   <th style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'right', background: '#d1fae5' }}>
                     Encaissé
@@ -544,7 +546,9 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
           const classForfaitPerStudent = sortedFrais.reduce((sum, f) => sum + getFeeForClass(selectedClassObj.id, f.id, f.amount), 0);
           const classTotalAttendu = classForfaitPerStudent * classStudents.length;
           const classTotalPaid = classStudents.reduce((sum, st) => {
-            return sum + sortedFrais.reduce((fsum, f) => fsum + getStudentFeePaid(st.id, f.name), 0);
+            return sum + sortedFrais
+              .filter((f) => getFeeForClass(selectedClassObj.id, f.id, f.amount) > 0)
+              .reduce((fsum, f) => fsum + getStudentFeePaid(st.id, f.name), 0);
           }, 0);
           const classTotalReste = Math.max(0, classTotalAttendu - classTotalPaid);
 
@@ -600,7 +604,9 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
                       });
 
                       const totalRequired = feesState.reduce((sum, fs) => sum + fs.required, 0);
-                      const totalPaid = feesState.reduce((sum, fs) => sum + fs.paid, 0);
+                      const totalPaid = feesState
+                        .filter((fs) => fs.required > 0)
+                        .reduce((sum, fs) => sum + fs.paid, 0);
                       const reste = Math.max(0, totalRequired - totalPaid);
                       const isSolde = reste <= 0;
 

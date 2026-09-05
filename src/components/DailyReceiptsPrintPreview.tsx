@@ -2,7 +2,9 @@ import React, { useEffect } from 'react';
 
 interface DailyReceiptsPrintPreviewProps {
   invoices: any[];
-  selectedDate: string;
+  selectedDate?: string;
+  startDate?: string;
+  endDate?: string;
   schoolInfo: any;
   paymentMethodFilter?: string;
 }
@@ -10,6 +12,8 @@ interface DailyReceiptsPrintPreviewProps {
 export const DailyReceiptsPrintPreview: React.FC<DailyReceiptsPrintPreviewProps> = ({
   invoices,
   selectedDate,
+  startDate,
+  endDate,
   schoolInfo,
   paymentMethodFilter = 'all'
 }) => {
@@ -24,16 +28,30 @@ export const DailyReceiptsPrintPreview: React.FC<DailyReceiptsPrintPreviewProps>
     return new Intl.NumberFormat('fr-FR').format(amount) + ' F CFA';
   };
 
-  const formatDateDisplay = (dateString: string) => {
-    if (!dateString) return "Toutes les dates";
-    const d = new Date(dateString);
-    if (isNaN(d.getTime())) return dateString;
-    return d.toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    });
+  const formatDateDisplay = () => {
+    const s = startDate || selectedDate;
+    const e = endDate;
+    if (!s && !e) return "Toutes les dates";
+
+    const formatSingle = (dtStr: string) => {
+      const d = new Date(dtStr);
+      if (isNaN(d.getTime())) return dtStr;
+      return d.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
+    };
+
+    if (s && e) {
+      if (s === e) {
+        return `Le ${formatSingle(s)}`;
+      }
+      return `Du ${formatSingle(s)} au ${formatSingle(e)}`;
+    }
+    if (s) return `À partir du ${formatSingle(s)}`;
+    if (e) return `Jusqu'au ${formatSingle(e)}`;
+    return "Toutes les dates";
   };
 
   const totalAmount = invoices.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
@@ -116,7 +134,7 @@ export const DailyReceiptsPrintPreview: React.FC<DailyReceiptsPrintPreviewProps>
           </div>
           <div style={{ fontSize: '18px', fontWeight: 800, color: '#14532d', display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'capitalize' }}>
             <span>📅</span>
-            <span>{selectedDate ? formatDateDisplay(selectedDate) : "Toutes les dates"}</span>
+            <span>{formatDateDisplay()}</span>
           </div>
           {paymentMethodFilter !== 'all' && (
             <div style={{ fontSize: '12px', color: '#166534', marginTop: '2px' }}>

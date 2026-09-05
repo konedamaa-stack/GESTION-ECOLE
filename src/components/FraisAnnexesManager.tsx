@@ -388,8 +388,10 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
         if (motifName) {
           return matchesFraisMotif(inv.motif, motifName);
         }
-        // Match any frais annexe name
-        return sortedFrais.some((f) => matchesFraisMotif(inv.motif, f.name));
+        // Match only active frais annexe for this class
+        return sortedFrais
+          .filter((f) => getFeeForClass(classId, f.id, f.amount) > 0)
+          .some((f) => matchesFraisMotif(inv.motif, f.name));
       })
       .reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
   };
@@ -402,7 +404,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
     const categories = sortedFrais.map((frais) => {
       const unitAmount = getFeeForClass(cls.id, frais.id, frais.amount);
       const totalAttendu = unitAmount * classStudentsCount;
-      const totalEncaisse = getCollectedForClass(cls.id, frais.name);
+      const totalEncaisse = unitAmount > 0 ? getCollectedForClass(cls.id, frais.name) : 0;
       const reste = Math.max(0, totalAttendu - totalEncaisse);
       return {
         fraisId: frais.id,
@@ -416,7 +418,9 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
 
     const totalForfaitParEleve = categories.reduce((sum, c) => sum + c.unitAmount, 0);
     const totalClasseAttendu = totalForfaitParEleve * classStudentsCount;
-    const totalClasseEncaisse = getCollectedForClass(cls.id);
+    const totalClasseEncaisse = categories
+      .filter((c) => c.unitAmount > 0)
+      .reduce((sum, c) => sum + c.totalEncaisse, 0);
     const totalClasseReste = Math.max(0, totalClasseAttendu - totalClasseEncaisse);
     const taux = totalClasseAttendu > 0 ? Math.min(100, Math.round((totalClasseEncaisse / totalClasseAttendu) * 100)) : 0;
 
@@ -873,7 +877,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
                       Forfait / Élève
                     </th>
                     <th style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 700, background: '#eff6ff', color: '#1d4ed8' }}>
-                      Total Attendu
+                      Total Annexe
                     </th>
                     <th style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 700, background: '#ecfdf5', color: '#065f46' }}>
                       Total Encaissé
