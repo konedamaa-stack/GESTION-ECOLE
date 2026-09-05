@@ -298,6 +298,7 @@ function App() {
   const [invoiceStartDateFilter, setInvoiceStartDateFilter] = useState<string>('');
   const [invoiceEndDateFilter, setInvoiceEndDateFilter] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [invoicePaymentMethodFilter, setInvoicePaymentMethodFilter] = useState<string>('all');
+  const [invoiceCategoryFilter, setInvoiceCategoryFilter] = useState<'all' | 'scolarite' | 'annexes'>('all');
   const [parentSearchQuery, setParentSearchQuery] = useState('');
   const [financeStatusFilter, setFinanceStatusFilter] = useState('all');
   const [financeClassFilter, setFinanceClassFilter] = useState('all');
@@ -1110,9 +1111,9 @@ function App() {
   // Helper global pour distinguer les factures de Frais Annexes des factures de scolarité
   const isFraisAnnexeInvoice = (inv: any) => {
     if (!inv) return false;
-    if (inv.invoice_number && String(inv.invoice_number).includes('FAC-ANNEXE')) return true;
     const m = (inv.motif || '').toLowerCase().trim();
     if (m.includes('scolarité') || m.includes('scolarite')) return false;
+    if (inv.invoice_number && String(inv.invoice_number).includes('FAC-ANNEXE')) return true;
     return (
       (fraisAnnexesData || []).some((f: any) => m.includes(f.name.toLowerCase().trim())) ||
       m.includes('bulletin') ||
@@ -1121,6 +1122,13 @@ function App() {
       m.includes('macaron') ||
       m.includes('badge') ||
       m.includes('assurance') ||
+      m.includes('entretien') ||
+      m.includes('ceremonie') ||
+      m.includes('compo') ||
+      m.includes('carte scolaire') ||
+      m.includes('relevè') ||
+      m.includes('releve') ||
+      m.includes('inscription') ||
       m.includes('annexe')
     );
   };
@@ -5542,6 +5550,9 @@ function App() {
         if (method !== invoicePaymentMethodFilter) return false;
       }
 
+      if (invoiceCategoryFilter === 'scolarite' && isFraisAnnexeInvoice(inv)) return false;
+      if (invoiceCategoryFilter === 'annexes' && !isFraisAnnexeInvoice(inv)) return false;
+
       return true;
     }).sort((a: any, b: any) => new Date(b.issue_date || 0).getTime() - new Date(a.issue_date || 0).getTime());
 
@@ -6213,13 +6224,33 @@ function App() {
               className="form-select" 
               value={invoicePaymentMethodFilter} 
               onChange={e => setInvoicePaymentMethodFilter(e.target.value)}
-              style={{width: '140px', padding: '6px 10px', fontSize: '0.85rem'}}
+              style={{width: '130px', padding: '6px 10px', fontSize: '0.85rem'}}
             >
               <option value="all">Tous modes</option>
               <option value="Espèces">💵 Espèces</option>
               <option value="Mobile Money">📱 Mobile Money</option>
               <option value="Virement">🏦 Virement</option>
               <option value="Chèque">🧾 Chèque</option>
+            </select>
+
+            {/* Type / Catégorie Filter (Scolarité vs Frais Annexes) */}
+            <select 
+              className="form-select" 
+              value={invoiceCategoryFilter} 
+              onChange={e => setInvoiceCategoryFilter(e.target.value as any)}
+              style={{
+                width: '185px', 
+                padding: '6px 10px', 
+                fontSize: '0.85rem', 
+                fontWeight: 600,
+                color: invoiceCategoryFilter === 'scolarite' ? '#2563eb' : invoiceCategoryFilter === 'annexes' ? '#7c3aed' : 'var(--text-color)',
+                borderColor: invoiceCategoryFilter !== 'all' ? 'var(--primary-color)' : 'var(--border-color)',
+                background: invoiceCategoryFilter !== 'all' ? 'var(--surface-color-hover)' : 'transparent'
+              }}
+            >
+              <option value="all">📁 Tout (Scolarité + Annexes)</option>
+              <option value="scolarite">🎓 Scolarité uniquement</option>
+              <option value="annexes">💳 Frais Annexes uniquement</option>
             </select>
           </div>
         </div>
@@ -6338,22 +6369,23 @@ function App() {
             <div style={{display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '6px 12px', borderRadius: '8px'}}>
               <span style={{fontSize: '0.85rem', color: 'var(--success-color)', fontWeight: 600}}>
                 {(() => {
+                  const catLabel = invoiceCategoryFilter === 'scolarite' ? ' Scolarité' : invoiceCategoryFilter === 'annexes' ? ' Frais Annexes' : '';
                   if (invoiceStartDateFilter && invoiceEndDateFilter) {
                     if (invoiceStartDateFilter === invoiceEndDateFilter) {
-                      return `Recette du ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')} :`;
+                      return `Recette${catLabel} du ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')} :`;
                     }
-                    return `Recette du ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')} au ${new Date(invoiceEndDateFilter).toLocaleDateString('fr-FR')} :`;
+                    return `Recette${catLabel} du ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')} au ${new Date(invoiceEndDateFilter).toLocaleDateString('fr-FR')} :`;
                   }
                   if (invoiceStartDateFilter) {
-                    return `Recette depuis le ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')} :`;
+                    return `Recette${catLabel} depuis le ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')} :`;
                   }
                   if (invoiceEndDateFilter) {
-                    return `Recette jusqu'au ${new Date(invoiceEndDateFilter).toLocaleDateString('fr-FR')} :`;
+                    return `Recette${catLabel} jusqu'au ${new Date(invoiceEndDateFilter).toLocaleDateString('fr-FR')} :`;
                   }
                   if (invoiceDateFilter) {
-                    return `Recette du ${new Date(invoiceDateFilter).toLocaleDateString('fr-FR')} :`;
+                    return `Recette${catLabel} du ${new Date(invoiceDateFilter).toLocaleDateString('fr-FR')} :`;
                   }
-                  return 'Total Recette (Toutes dates) :';
+                  return `Total Recette${catLabel} (Toutes dates) :`;
                 })()}
               </span>
               <strong style={{fontSize: '1.05rem', color: 'var(--success-color)'}}>
@@ -6371,7 +6403,7 @@ function App() {
               onClick={() => setActiveModal('daily_receipts_print')}
               title="Imprimer le journal de caisse / rapport de recette pour cette sélection"
             >
-              🖨️ Imprimer la Recette {(invoiceStartDateFilter || invoiceEndDateFilter || invoiceDateFilter) ? 'de la Période' : 'Globale'}
+              🖨️ Imprimer la Recette {invoiceCategoryFilter === 'scolarite' ? 'Scolarité' : invoiceCategoryFilter === 'annexes' ? 'Frais Annexes' : (invoiceStartDateFilter || invoiceEndDateFilter || invoiceDateFilter ? 'de la Période' : 'Globale')}
             </button>
           </div>
         </div>
@@ -9795,18 +9827,79 @@ function App() {
 
         {activeModal === 'daily_receipts_print' && (
           <div className="modal-content fade-in" style={{maxWidth: '1200px', width: '98%'}} onClick={e => e.stopPropagation()}>
-            <div className="modal-header hide-print">
-              <h3>🖨️ Aperçu du Journal des Versements / Recette ({(() => {
-                if (invoiceStartDateFilter && invoiceEndDateFilter) {
-                  return invoiceStartDateFilter === invoiceEndDateFilter
-                    ? `Date : ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')}`
-                    : `Période du ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')} au ${new Date(invoiceEndDateFilter).toLocaleDateString('fr-FR')}`;
-                }
-                if (invoiceStartDateFilter) return `À partir du ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')}`;
-                if (invoiceEndDateFilter) return `Jusqu'au ${new Date(invoiceEndDateFilter).toLocaleDateString('fr-FR')}`;
-                if (invoiceDateFilter) return `Date : ${new Date(invoiceDateFilter).toLocaleDateString('fr-FR')}`;
-                return 'Toutes les dates';
-              })()})</h3>
+            <div className="modal-header hide-print" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'}}>
+              <div>
+                <h3 style={{margin: 0}}>🖨️ Aperçu du Journal des Versements / Recette</h3>
+                <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '2px'}}>
+                  {(() => {
+                    if (invoiceStartDateFilter && invoiceEndDateFilter) {
+                      return invoiceStartDateFilter === invoiceEndDateFilter
+                        ? `Date : ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')}`
+                        : `Période du ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')} au ${new Date(invoiceEndDateFilter).toLocaleDateString('fr-FR')}`;
+                    }
+                    if (invoiceStartDateFilter) return `À partir du ${new Date(invoiceStartDateFilter).toLocaleDateString('fr-FR')}`;
+                    if (invoiceEndDateFilter) return `Jusqu'au ${new Date(invoiceEndDateFilter).toLocaleDateString('fr-FR')}`;
+                    if (invoiceDateFilter) return `Date : ${new Date(invoiceDateFilter).toLocaleDateString('fr-FR')}`;
+                    return 'Toutes les dates';
+                  })()}
+                </div>
+              </div>
+
+              {/* Filtre interactif Scolarité vs Frais Annexes directement dans l'aperçu */}
+              <div style={{display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--surface-color-hover)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-color)'}}>
+                <button
+                  type="button"
+                  style={{
+                    padding: '5px 12px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: invoiceCategoryFilter === 'all' ? 'var(--primary-color)' : 'transparent',
+                    color: invoiceCategoryFilter === 'all' ? 'white' : 'var(--text-color)',
+                    transition: 'all 0.15s'
+                  }}
+                  onClick={() => setInvoiceCategoryFilter('all')}
+                >
+                  📁 Tout
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    padding: '5px 12px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: invoiceCategoryFilter === 'scolarite' ? '#2563eb' : 'transparent',
+                    color: invoiceCategoryFilter === 'scolarite' ? 'white' : 'var(--text-color)',
+                    transition: 'all 0.15s'
+                  }}
+                  onClick={() => setInvoiceCategoryFilter('scolarite')}
+                >
+                  🎓 Scolarité uniquement
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    padding: '5px 12px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: invoiceCategoryFilter === 'annexes' ? '#7c3aed' : 'transparent',
+                    color: invoiceCategoryFilter === 'annexes' ? 'white' : 'var(--text-color)',
+                    transition: 'all 0.15s'
+                  }}
+                  onClick={() => setInvoiceCategoryFilter('annexes')}
+                >
+                  💳 Frais Annexes uniquement
+                </button>
+              </div>
+
               <div style={{display: 'flex', gap: '12px'}}>
                 <button className="btn btn-primary" onClick={() => window.print()} style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
                   <Icons.Printer /> Imprimer la recette
@@ -9843,6 +9936,8 @@ function App() {
                       const method = inv.payment_method || 'Espèces';
                       if (method !== invoicePaymentMethodFilter) return false;
                     }
+                    if (invoiceCategoryFilter === 'scolarite' && isFraisAnnexeInvoice(inv)) return false;
+                    if (invoiceCategoryFilter === 'annexes' && !isFraisAnnexeInvoice(inv)) return false;
                     return true;
                   }).sort((a: any, b: any) => new Date(b.issue_date || 0).getTime() - new Date(a.issue_date || 0).getTime())
                 }
@@ -9851,6 +9946,7 @@ function App() {
                 endDate={invoiceEndDateFilter}
                 schoolInfo={effectiveSchoolInfo}
                 paymentMethodFilter={invoicePaymentMethodFilter}
+                categoryFilter={invoiceCategoryFilter}
               />
             </div>
           </div>

@@ -7,6 +7,7 @@ interface DailyReceiptsPrintPreviewProps {
   endDate?: string;
   schoolInfo: any;
   paymentMethodFilter?: string;
+  categoryFilter?: 'all' | 'scolarite' | 'annexes';
 }
 
 export const DailyReceiptsPrintPreview: React.FC<DailyReceiptsPrintPreviewProps> = ({
@@ -15,7 +16,8 @@ export const DailyReceiptsPrintPreview: React.FC<DailyReceiptsPrintPreviewProps>
   startDate,
   endDate,
   schoolInfo,
-  paymentMethodFilter = 'all'
+  paymentMethodFilter = 'all',
+  categoryFilter = 'all'
 }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -55,6 +57,34 @@ export const DailyReceiptsPrintPreview: React.FC<DailyReceiptsPrintPreviewProps>
   };
 
   const totalAmount = invoices.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+  // Helper to distinguish Frais Annexes vs Scolarité
+  const isAnnexe = (inv: any) => {
+    const m = (inv.motif || '').toLowerCase().trim();
+    if (m.includes('scolarité') || m.includes('scolarite')) return false;
+    if (inv.invoice_number && String(inv.invoice_number).includes('FAC-ANNEXE')) return true;
+    return (
+      m.includes('bulletin') ||
+      m.includes('tricot') ||
+      m.includes('polo') ||
+      m.includes('macaron') ||
+      m.includes('badge') ||
+      m.includes('assurance') ||
+      m.includes('entretien') ||
+      m.includes('ceremonie') ||
+      m.includes('compo') ||
+      m.includes('carte scolaire') ||
+      m.includes('relevè') ||
+      m.includes('releve') ||
+      m.includes('inscription') ||
+      m.includes('annexe')
+    );
+  };
+
+  const scolariteInvoices = invoices.filter(inv => !isAnnexe(inv));
+  const annexesInvoices = invoices.filter(inv => isAnnexe(inv));
+  const scolariteTotal = scolariteInvoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+  const annexesTotal = annexesInvoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
 
   // Group by payment method
   const methodStats: Record<string, { count: number; total: number }> = {};
@@ -121,7 +151,7 @@ export const DailyReceiptsPrintPreview: React.FC<DailyReceiptsPrintPreviewProps>
         border: '1.5px solid #86efac', 
         borderRadius: '10px', 
         padding: '14px 20px', 
-        marginBottom: '20px',
+        marginBottom: '16px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -130,17 +160,28 @@ export const DailyReceiptsPrintPreview: React.FC<DailyReceiptsPrintPreviewProps>
       }}>
         <div>
           <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#166534', fontWeight: 700, letterSpacing: '0.5px' }}>
-            JOURNAL DE CAISSE / RECETTE DES VERSEMENTS
+            {categoryFilter === 'scolarite' 
+              ? 'JOURNAL DES ENCAISSEMENTS - FRAIS DE SCOLARITÉ'
+              : categoryFilter === 'annexes'
+              ? 'JOURNAL DES ENCAISSEMENTS - FRAIS ANNEXES'
+              : 'JOURNAL DE CAISSE / RECETTE DES VERSEMENTS'}
           </div>
           <div style={{ fontSize: '18px', fontWeight: 800, color: '#14532d', display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'capitalize' }}>
             <span>📅</span>
             <span>{formatDateDisplay()}</span>
           </div>
-          {paymentMethodFilter !== 'all' && (
-            <div style={{ fontSize: '12px', color: '#166534', marginTop: '2px' }}>
-              Mode de paiement : <strong>{paymentMethodFilter}</strong>
-            </div>
-          )}
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '2px', fontSize: '12px', color: '#166534' }}>
+            {categoryFilter !== 'all' && (
+              <div>
+                Type : <strong>{categoryFilter === 'scolarite' ? '🎓 Scolarité uniquement' : '💳 Frais Annexes uniquement'}</strong>
+              </div>
+            )}
+            {paymentMethodFilter !== 'all' && (
+              <div>
+                Mode : <strong>{paymentMethodFilter}</strong>
+              </div>
+            )}
+          </div>
         </div>
 
         <div style={{ textAlign: 'right' }}>
@@ -153,6 +194,50 @@ export const DailyReceiptsPrintPreview: React.FC<DailyReceiptsPrintPreviewProps>
           </div>
         </div>
       </div>
+
+      {/* 2.bis Category Summary (Scolarité vs Frais Annexes) when in global view */}
+      {categoryFilter === 'all' && (scolariteTotal > 0 || annexesTotal > 0) && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '12px',
+          marginBottom: '16px'
+        }}>
+          <div style={{
+            backgroundColor: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            borderRadius: '8px',
+            padding: '10px 14px'
+          }}>
+            <div style={{ fontSize: '11px', color: '#1d4ed8', fontWeight: 700, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span>🎓</span> Frais de Scolarité
+            </div>
+            <div style={{ fontSize: '16px', fontWeight: 800, color: '#1e40af', marginTop: '3px' }}>
+              {formatCurrency(scolariteTotal)}
+            </div>
+            <div style={{ fontSize: '11px', color: '#3b82f6' }}>
+              {scolariteInvoices.length} reçu{scolariteInvoices.length > 1 ? 's' : ''} de scolarité
+            </div>
+          </div>
+
+          <div style={{
+            backgroundColor: '#faf5ff',
+            border: '1px solid #e9d5ff',
+            borderRadius: '8px',
+            padding: '10px 14px'
+          }}>
+            <div style={{ fontSize: '11px', color: '#7e22ce', fontWeight: 700, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span>💳</span> Frais Annexes
+            </div>
+            <div style={{ fontSize: '16px', fontWeight: 800, color: '#6b21a8', marginTop: '3px' }}>
+              {formatCurrency(annexesTotal)}
+            </div>
+            <div style={{ fontSize: '11px', color: '#9333ea' }}>
+              {annexesInvoices.length} reçu{annexesInvoices.length > 1 ? 's' : ''} de frais annexes
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 3. Payment Methods Breakdown Cards */}
       {Object.keys(methodStats).length > 0 && (
@@ -167,12 +252,12 @@ export const DailyReceiptsPrintPreview: React.FC<DailyReceiptsPrintPreviewProps>
               backgroundColor: '#f8fafc',
               border: '1px solid #e2e8f0',
               borderRadius: '8px',
-              padding: '10px 14px'
+              padding: '8px 12px'
             }}>
               <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>
                 💳 {method}
               </div>
-              <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
+              <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
                 {formatCurrency(stats.total)}
               </div>
               <div style={{ fontSize: '11px', color: '#94a3b8' }}>
@@ -194,10 +279,10 @@ export const DailyReceiptsPrintPreview: React.FC<DailyReceiptsPrintPreviewProps>
           <tr style={{ backgroundColor: '#10b981', color: 'white', textAlign: 'left' }}>
             <th style={{ padding: '8px 10px', width: '5%', textAlign: 'center' }}>#</th>
             <th style={{ padding: '8px 10px', width: '15%' }}>N° Reçu</th>
-            <th style={{ padding: '8px 10px', width: '28%' }}>Élève & Matricule</th>
-            <th style={{ padding: '8px 10px', width: '14%' }}>Classe</th>
-            <th style={{ padding: '8px 10px', width: '18%' }}>Motif</th>
-            <th style={{ padding: '8px 10px', width: '10%' }}>Mode</th>
+            <th style={{ padding: '8px 10px', width: '26%' }}>Élève & Matricule</th>
+            <th style={{ padding: '8px 10px', width: '13%' }}>Classe</th>
+            <th style={{ padding: '8px 10px', width: '23%' }}>Type & Motif</th>
+            <th style={{ padding: '8px 10px', width: '8%' }}>Mode</th>
             <th style={{ padding: '8px 10px', width: '10%', textAlign: 'right' }}>Montant</th>
           </tr>
         </thead>
@@ -209,6 +294,7 @@ export const DailyReceiptsPrintPreview: React.FC<DailyReceiptsPrintPreviewProps>
                 : 'Élève';
               const matricule = inv.students?.matricule || '-';
               const className = inv.students?.classes?.name || 'N/A';
+              const isAnn = isAnnexe(inv);
 
               return (
                 <tr key={inv.id || index} style={{
@@ -227,7 +313,22 @@ export const DailyReceiptsPrintPreview: React.FC<DailyReceiptsPrintPreviewProps>
                     {className}
                   </td>
                   <td style={{ padding: '8px 10px', color: '#334155' }}>
-                    {inv.motif || 'Scolarité'}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <span style={{
+                        fontSize: '9.5px',
+                        padding: '1px 5px',
+                        borderRadius: '4px',
+                        fontWeight: 700,
+                        backgroundColor: isAnn ? '#ede9fe' : '#dbeafe',
+                        color: isAnn ? '#6d28d9' : '#1d4ed8',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {isAnn ? '💳 ANNEXE' : '🎓 SCOLARITÉ'}
+                      </span>
+                      <span style={{ fontSize: '11.5px', fontWeight: 500 }}>
+                        {inv.motif || (isAnn ? 'Frais annexe' : 'Scolarité')}
+                      </span>
+                    </div>
                   </td>
                   <td style={{ padding: '8px 10px' }}>
                     <span style={{
