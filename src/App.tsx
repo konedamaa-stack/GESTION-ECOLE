@@ -1797,7 +1797,15 @@ function App() {
     }
   };
 
-  const closeModal = () => { setActiveModal(null); setPreselectedStudentId(null); setEditEntity(null); setIsEditingTuition(false); setNewExpenseInlineCategory(false); };
+  const closeModal = () => { 
+    setActiveModal(null); 
+    setPreselectedStudentId(null); 
+    setEditEntity(null); 
+    setIsEditingTuition(false); 
+    setNewExpenseInlineCategory(false);
+    setRegistrationClassId('');
+    setRegistrationPaymentAmount('');
+  };
 
   const handleCreateSchool = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -2321,6 +2329,21 @@ function App() {
           gender: formData.get('gender') || 'Masculin',
           location: formData.get('location')
         };
+
+        const regAmount = Number(formData.get('reg_fee_amount')) || 0;
+        const studentClassId = (formData.get('class_id') as string) || (student.class_id as string) || '';
+        const totalAnnexes = studentClassId ? getTotalClassFraisAnnexes(studentClassId) : 0;
+
+        // VÉRIFICATION STRICTE : Impossible d'inscrire si le premier versement ne couvre pas les frais annexes
+        if (totalAnnexes > 0 && regAmount < totalAnnexes) {
+          alert(`⛔ INSCRIPTION IMPOSSIBLE !\n\nLe montant versé (${formatNum(regAmount)} F CFA) ne couvre pas la totalité des frais annexes obligatoires pour cette classe (${formatNum(totalAnnexes)} F CFA).\n\nLe premier versement doit obligatoirement être d'au moins ${formatNum(totalAnnexes)} F CFA.\nIl manque encore ${formatNum(totalAnnexes - regAmount)} F CFA.`);
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = "Valider l'inscription complète";
+          }
+          return;
+        }
+
         const { data: studentData, error: studentError } = await supabase.from('students').insert([{...student, school_id: currentSchoolId}]).select();
         if (studentError) throw studentError;
         
@@ -2401,10 +2424,8 @@ function App() {
         }
 
         let createdInvoice = null;
-        const regAmount = Number(formData.get('reg_fee_amount')) || 0;
         const regMethod = (formData.get('reg_fee_method') as string) || 'Espèces';
         const regStatus = (formData.get('reg_fee_status') as string) || 'Payée';
-        const studentClassId = (formData.get('class_id') as string) || (student.class_id as string) || '';
 
         if (regAmount > 0) {
           const createdInvoices = await distributePaymentAnnexesThenScolarite(
@@ -3473,6 +3494,10 @@ function App() {
                   }
                   return;
                 }
+                const defaultClassId = classesData.length > 0 ? classesData[0].id : '';
+                setRegistrationClassId(defaultClassId);
+                const defaultAnnexes = defaultClassId ? getTotalClassFraisAnnexes(defaultClassId) : 0;
+                setRegistrationPaymentAmount(defaultAnnexes);
                 setActiveModal('student');
               }}>
                 <Icons.Plus /> {t('admin.students.btn_enroll', 'Inscrire')}
@@ -8143,7 +8168,15 @@ function App() {
               {/* Quick Create Menu */}
               {activeModal === 'quickCreate' && (
                 <div className="form-grid">
-                  <div className="creation-card" onClick={() => { closeModal(); setActiveTab('students'); setActiveModal('student'); }}>
+                  <div className="creation-card" onClick={() => { 
+                    closeModal(); 
+                    setActiveTab('students'); 
+                    const defaultClassId = classesData.length > 0 ? classesData[0].id : '';
+                    setRegistrationClassId(defaultClassId);
+                    const defaultAnnexes = defaultClassId ? getTotalClassFraisAnnexes(defaultClassId) : 0;
+                    setRegistrationPaymentAmount(defaultAnnexes);
+                    setActiveModal('student'); 
+                  }}>
                     <div className="creation-icon"><Icons.UserPlus /></div>
                     <div><h4>{t('admin.modals.quick_student_title', 'Nouvel Élève')}</h4><p>{t('admin.modals.quick_student_desc', 'Inscrire un étudiant.')}</p></div>
                   </div>
@@ -8871,7 +8904,7 @@ function App() {
                         name="class_id" 
                         className="form-select" 
                         required 
-                        defaultValue={registrationClassId || editEntity?.class_id || ""}
+                        value={registrationClassId || editEntity?.class_id || (classesData.length > 0 ? classesData[0].id : '')}
                         onChange={(e) => {
                           const newClassId = e.target.value;
                           setRegistrationClassId(newClassId);
@@ -8964,9 +8997,12 @@ function App() {
                     const targetClassId = registrationClassId || (classesData.length > 0 ? classesData[0].id : '');
                     const classFeesBreakdown = getClassFraisAnnexesBreakdown(targetClassId);
                     const totalAnnexes = classFeesBreakdown.reduce((sum, item) => sum + item.amount, 0);
-                    const currentPayment = typeof registrationPaymentAmount === 'number' ? registrationPaymentAmount : totalAnnexes;
-                    const partAnnexes = Math.min(totalAnnexes, currentPayment);
-                    const partScolarite = Math.max(0, currentPayment - totalAnnexes);
+                    const numericPayment = registrationPaymentAmount !== '' ? Number(registrationPaymentAmount) : totalAnnexes;
+                    const isCovered = totalAnnexes === 0 || (registrationPaymentAmount !== '' && Number(registrationPaymentAmount) >= totalAnnexes);
+                    const isUnderpaid = totalAnnexes > 0 && !isCovered;
+                    const deficit = Math.max(0, totalAnnexes - numericPayment);
+                    const partAnnexes = Math.min(totalAnnexes, numericPayment);
+                    const partScolarite = Math.max(0, numericPayment - totalAnnexes);
 
                     return (
                       <>
@@ -8978,9 +9014,9 @@ function App() {
                         <div style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '14px 16px', marginBottom: '16px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
                             <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#1e293b' }}>
-                              📋 Frais Annexes de la classe (payés directement à l'inscription) :
+                              📋 Frais Annexes obligatoires de la classe :
                             </div>
-                            <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#2563eb', background: '#eff6ff', padding: '3px 10px', borderRadius: '14px', border: '1px solid #bfdbfe' }}>
+                            <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#2563eb', background: '#eff6ff', padding: '4px 12px', borderRadius: '14px', border: '1.5px solid #bfdbfe' }}>
                               Total Frais Annexes : {formatNum(totalAnnexes)} F CFA
                             </div>
                           </div>
@@ -8995,33 +9031,65 @@ function App() {
                               </div>
                             ))}
                             {classFeesBreakdown.length === 0 && (
-                              <div style={{ color: '#64748b', fontStyle: 'italic' }}>Aucun frais annexe configuré.</div>
+                              <div style={{ color: '#64748b', fontStyle: 'italic' }}>Aucun frais annexe configuré pour cette classe.</div>
                             )}
                           </div>
                         </div>
 
                         {/* Champ Montant versé */}
                         <div className="form-group">
-                          <label style={{ fontWeight: 600 }}>Montant total versé par le parent à l'inscription (F CFA)</label>
+                          <label style={{ fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span>Montant total versé par le parent à l'inscription (F CFA) *</span>
+                            {totalAnnexes > 0 && (
+                              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: isCovered ? '#059669' : '#dc2626' }}>
+                                {isCovered ? `✅ Couvre les frais annexes` : `⚠️ Minimum exigé : ${formatNum(totalAnnexes)} F`}
+                              </span>
+                            )}
+                          </label>
                           <input 
                             type="number" 
                             name="reg_fee_amount" 
                             className="form-input" 
                             required 
-                            placeholder={`Ex: ${totalAnnexes || 50000}`}
+                            min={totalAnnexes}
+                            placeholder={`Minimum obligatoire : ${totalAnnexes} F CFA`}
                             value={registrationPaymentAmount !== '' ? registrationPaymentAmount : ''}
                             onChange={(e) => setRegistrationPaymentAmount(e.target.value !== '' ? Number(e.target.value) : '')}
-                            style={{ fontSize: '1.05rem', fontWeight: 700, borderColor: '#2563eb' }}
+                            style={{ 
+                              fontSize: '1.1rem', 
+                              fontWeight: 700, 
+                              borderColor: isUnderpaid ? '#ef4444' : '#2563eb',
+                              backgroundColor: isUnderpaid ? '#fef2f2' : '#ffffff',
+                              boxShadow: isUnderpaid ? '0 0 0 3px rgba(239, 68, 68, 0.2)' : 'none'
+                            }}
                           />
                           
-                          {/* Message de répartition en temps réel */}
-                          <div style={{ marginTop: '8px', padding: '10px 14px', borderRadius: '8px', background: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: '0.86rem', color: '#166534' }}>
-                            <strong>⚡ Répartition automatique du versement :</strong>
-                            <div style={{ display: 'flex', gap: '16px', marginTop: '4px', flexWrap: 'wrap' }}>
-                              <span>✅ <strong>{formatNum(partAnnexes)} F</strong> pour solder les Frais Annexes</span>
-                              <span>✅ <strong>{formatNum(partScolarite)} F</strong> versés en acompte sur la Scolarité</span>
+                          {/* Messages de validation et de répartition */}
+                          {isUnderpaid ? (
+                            <div style={{ marginTop: '10px', padding: '14px 16px', borderRadius: '10px', background: '#fef2f2', border: '2px solid #ef4444', color: '#991b1b', lineHeight: 1.5 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, fontSize: '0.98rem', color: '#dc2626' }}>
+                                <span style={{ fontSize: '1.25rem' }}>⛔</span>
+                                <span>INSCRIPTION IMPOSSIBLE : Versement insuffisant</span>
+                              </div>
+                              <div style={{ marginTop: '6px', fontSize: '0.88rem' }}>
+                                Le montant saisi (<strong>{formatNum(numericPayment)} F CFA</strong>) ne couvre pas l'intégralité des frais annexes obligatoires de cette classe (<strong>{formatNum(totalAnnexes)} F CFA</strong>).
+                              </div>
+                              <div style={{ marginTop: '8px', padding: '8px 12px', background: '#ffffff', borderRadius: '6px', border: '1px dashed #dc2626', fontWeight: 700, fontSize: '0.9rem', color: '#b91c1c' }}>
+                                👉 Manquant : <u>{formatNum(deficit)} F CFA</u> — Le 1er versement doit être au moins de <strong>{formatNum(totalAnnexes)} F CFA</strong> pour autoriser l'inscription.
+                              </div>
                             </div>
-                          </div>
+                          ) : (
+                            <div style={{ marginTop: '10px', padding: '10px 14px', borderRadius: '8px', background: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: '0.86rem', color: '#166534' }}>
+                              <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span>✅</span>
+                                <span>Montant valide — Répartition automatique :</span>
+                              </strong>
+                              <div style={{ display: 'flex', gap: '16px', marginTop: '6px', flexWrap: 'wrap' }}>
+                                <span>🔹 <strong>{formatNum(partAnnexes)} F</strong> pour solder 100% des Frais Annexes</span>
+                                <span>🔹 <strong>{formatNum(partScolarite)} F</strong> versés en acompte sur la Scolarité</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         <div className="form-grid">
@@ -9047,7 +9115,37 @@ function App() {
                   })()}
                   <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
-                    <button type="submit" className="btn btn-primary">{editEntity ? 'Mettre à jour' : t('admin.modals.complete_registration', "Valider l'inscription complète")}</button>
+                    <button 
+                      type="submit" 
+                      className="btn btn-primary"
+                      disabled={!editEntity && (() => {
+                        const targetClassId = registrationClassId || (classesData.length > 0 ? classesData[0].id : '');
+                        const totalAnnexes = getTotalClassFraisAnnexes(targetClassId);
+                        const numericPayment = registrationPaymentAmount !== '' ? Number(registrationPaymentAmount) : totalAnnexes;
+                        return totalAnnexes > 0 && numericPayment < totalAnnexes;
+                      })()}
+                      style={(!editEntity && (() => {
+                        const targetClassId = registrationClassId || (classesData.length > 0 ? classesData[0].id : '');
+                        const totalAnnexes = getTotalClassFraisAnnexes(targetClassId);
+                        const numericPayment = registrationPaymentAmount !== '' ? Number(registrationPaymentAmount) : totalAnnexes;
+                        return totalAnnexes > 0 && numericPayment < totalAnnexes;
+                      })()) ? {
+                        opacity: 0.55,
+                        cursor: 'not-allowed',
+                        background: '#dc2626',
+                        borderColor: '#dc2626'
+                      } : {}}
+                    >
+                      {editEntity ? 'Mettre à jour' : (() => {
+                        const targetClassId = registrationClassId || (classesData.length > 0 ? classesData[0].id : '');
+                        const totalAnnexes = getTotalClassFraisAnnexes(targetClassId);
+                        const numericPayment = registrationPaymentAmount !== '' ? Number(registrationPaymentAmount) : totalAnnexes;
+                        if (totalAnnexes > 0 && numericPayment < totalAnnexes) {
+                          return `⛔ Versement insuffisant (Manque ${formatNum(totalAnnexes - numericPayment)} F)`;
+                        }
+                        return t('admin.modals.complete_registration', "Valider l'inscription complète");
+                      })()}
+                    </button>
                   </div>
                 </form>
               )}
