@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { FraisAnnexesPrintPreview } from './FraisAnnexesPrintPreview';
+import { sortClassesList } from '../utils/classSort';
 
 export interface FraisAnnexe {
   id: string;
@@ -92,6 +93,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
 
   // Sorted list by display_order
   const sortedFrais = [...fraisList].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+  const sortedClasses = React.useMemo(() => sortClassesList(classes), [classes]);
 
   // Initialize class amounts whenever selectedClassId changes
   React.useEffect(() => {
@@ -397,7 +399,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
   };
 
   // Calculate Global Totals for Bilan
-  const classBreakdowns = classes.map((cls) => {
+  const classBreakdowns = sortedClasses.map((cls) => {
     const classStudentsCount = students.filter((s) => s.class_id === cls.id).length;
 
     // Per category breakdown for this class
@@ -1097,7 +1099,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
                     onChange={(e) => setSelectedClassId(e.target.value)}
                     style={{ padding: '8px 12px', minWidth: '180px', fontWeight: 600 }}
                   >
-                    {classes.map((cls) => (
+                    {sortedClasses.map((cls) => (
                       <option key={cls.id} value={cls.id}>
                         {cls.name} ({cls.level})
                       </option>
@@ -1521,7 +1523,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
               </tr>
             </thead>
             <tbody>
-              {classes.map((cls) => (
+              {sortedClasses.map((cls) => (
                 <tr key={cls.id} style={{ borderBottom: '1px solid var(--border-color, #e2e8f0)' }}>
                   <td style={{ padding: '12px 14px', fontWeight: 600, position: 'sticky', left: 0, background: '#fff' }}>
                     {cls.name} <span style={{ fontSize: '0.75rem', color: '#64748b' }}>({cls.level})</span>
@@ -1855,7 +1857,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
                       onChange={(e) => setPrintClassId(e.target.value)}
                       style={{ width: '100%', padding: '7px 10px', fontSize: '0.88rem', borderRadius: '6px', marginTop: '4px' }}
                     >
-                      {classes.map((cls) => (
+                      {sortedClasses.map((cls) => (
                         <option key={cls.id} value={cls.id}>
                           {cls.name} ({cls.level})
                         </option>
@@ -1996,7 +1998,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
                         onChange={(e) => setValidateTargetClassId(e.target.value)}
                         style={{ marginTop: '8px', width: '100%', padding: '6px 10px', fontSize: '0.86rem' }}
                       >
-                        {classes.map((cls) => (
+                        {sortedClasses.map((cls) => (
                           <option key={cls.id} value={cls.id}>
                             {cls.name} ({students.filter((s: any) => s.class_id === cls.id).length} élèves)
                           </option>

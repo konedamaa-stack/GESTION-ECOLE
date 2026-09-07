@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { sortClassesList } from '../utils/classSort';
 
 interface FraisAnnexesPrintPreviewProps {
   schoolInfo: any;
@@ -77,6 +78,7 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
   };
 
   const sortedFrais = [...fraisList].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+  const sortedClasses = React.useMemo(() => sortClassesList(classes), [classes]);
 
   const getFeeForClass = (classId: string, fraisId: string, defaultAmount: number) => {
     const override = classFraisList.find((cf) => cf.class_id === classId && cf.frais_annexe_id === fraisId);
@@ -116,7 +118,7 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
   };
 
   const selectedCategoryObj = sortedFrais.find((f) => f.id === currentCategoryId) || sortedFrais[0];
-  const selectedClassObj = classes.find((c) => c.id === currentClassId) || classes[0];
+  const selectedClassObj = sortedClasses.find((c) => c.id === currentClassId) || sortedClasses[0];
 
   // Student specific calculations for 'by_class' mode
   const classStudents = selectedClassObj
@@ -367,7 +369,7 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
                 boxShadow: '0 1px 3px rgba(37,99,235,0.2)'
               }}
             >
-              {classes.map((cls) => (
+              {sortedClasses.map((cls) => (
                 <option key={cls.id} value={cls.id}>
                   🏫 {cls.name} ({cls.level})
                 </option>
@@ -601,7 +603,7 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
                 </tr>
               </thead>
               <tbody>
-                {classes.map((cls) => {
+                {sortedClasses.map((cls) => {
                   const classStudentsCount = students.filter((s) => s.class_id === cls.id).length;
                   const categories = sortedFrais.map((frais) => {
                     const unit = getFeeForClass(cls.id, frais.id, frais.amount);
@@ -650,7 +652,7 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
                 {(() => {
                   let totalAttenduAll = 0;
                   let totalEncaisseAll = 0;
-                  classes.forEach((cls) => {
+                  sortedClasses.forEach((cls) => {
                     const cnt = students.filter((s) => s.class_id === cls.id).length;
                     const forfait = sortedFrais.reduce((sum, f) => sum + getFeeForClass(cls.id, f.id, f.amount), 0);
                     totalAttenduAll += forfait * cnt;
@@ -728,7 +730,7 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
                 </tr>
               </thead>
               <tbody>
-                {classes.map((cls) => {
+                {sortedClasses.map((cls) => {
                   const cnt = students.filter((s) => s.class_id === cls.id).length;
                   const unitPrice = getFeeForClass(cls.id, selectedCategoryObj.id, selectedCategoryObj.amount);
                   const totalAttendu = unitPrice * cnt;
@@ -767,7 +769,7 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
                 {(() => {
                   let grandAttendu = 0;
                   let grandEncaisse = 0;
-                  classes.forEach((cls) => {
+                  sortedClasses.forEach((cls) => {
                     const cnt = students.filter((s) => s.class_id === cls.id).length;
                     const unit = getFeeForClass(cls.id, selectedCategoryObj.id, selectedCategoryObj.amount);
                     grandAttendu += unit * cnt;

@@ -26,6 +26,7 @@ import { QuickStartGuideModal } from './components/QuickStartGuideModal';
 import { IdleTimeoutManager } from './components/IdleTimeoutManager';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { getSubdomain, slugifySubdomain, getSchoolUrl } from './utils/subdomain';
+import { sortClassesList } from './utils/classSort';
 import { sanitizeText, sanitizeAmount, sanitizeFormData, sanitizeObject } from './lib/security';
 import { 
   Skeleton, 
@@ -1043,8 +1044,13 @@ function App() {
     if (data) setStudentsData(data);
   };
   const fetchClasses = async () => {
-    const { data } = await supabase.from('classes').select('*').eq('school_id', currentSchoolId);
-    if (data) setClassesData(data);
+    const { data } = await supabase
+      .from('classes')
+      .select('*')
+      .eq('school_id', currentSchoolId)
+      .order('display_order', { ascending: true })
+      .order('name', { ascending: true });
+    if (data) setClassesData(sortClassesList(data));
   };
   const fetchFraisAnnexes = async () => {
     if (!currentSchoolId) return;
@@ -2080,7 +2086,8 @@ function App() {
           tuition_fee_affecte: sanitizeAmount(safeData.tuition_fee_affecte, 0),
           next_class_id: nextClassIdStr ? nextClassIdStr : null,
           principal_teacher_id: principalTeacherIdStr ? principalTeacherIdStr : null,
-          annexe_id: annexeIdStr ? annexeIdStr : null
+          annexe_id: annexeIdStr ? annexeIdStr : null,
+          display_order: safeData.display_order ? Number(safeData.display_order) : (editEntity?.display_order || 0)
         });
 
         if (editEntity) {
@@ -8358,6 +8365,11 @@ function App() {
                       ))}
                     </select>
                     <small style={{color: 'var(--text-secondary)'}}>Ce professeur aura le droit de consulter et générer les bulletins complets de cette classe.</small>
+                  </div>
+                  <div className="form-group">
+                    <label>Ordre d'affichage (Menus déroulants & listes)</label>
+                    <input type="number" name="display_order" className="form-input" placeholder="Ex: 1, 2, 3..." defaultValue={editEntity?.display_order || ''} />
+                    <small style={{color: 'var(--text-secondary)'}}>Définit la position dans les menus déroulants (1 pour le premier rang).</small>
                   </div>
                   <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
