@@ -299,7 +299,7 @@ function App() {
   const [invoiceStartDateFilter, setInvoiceStartDateFilter] = useState<string>('');
   const [invoiceEndDateFilter, setInvoiceEndDateFilter] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [invoicePaymentMethodFilter, setInvoicePaymentMethodFilter] = useState<string>('all');
-  const [invoiceCategoryFilter, setInvoiceCategoryFilter] = useState<'all' | 'scolarite' | 'annexes'>('all');
+  const [invoiceCategoryFilter, setInvoiceCategoryFilter] = useState<'all' | 'scolarite' | 'annexes'>('scolarite');
   const [parentSearchQuery, setParentSearchQuery] = useState('');
   const [financeStatusFilter, setFinanceStatusFilter] = useState('all');
   const [financeClassFilter, setFinanceClassFilter] = useState('all');
@@ -6255,9 +6255,9 @@ function App() {
                 background: invoiceCategoryFilter !== 'all' ? 'var(--surface-color-hover)' : 'transparent'
               }}
             >
-              <option value="all">📁 Tout (Scolarité + Annexes)</option>
               <option value="scolarite">🎓 Scolarité uniquement</option>
               <option value="annexes">💳 Frais Annexes uniquement</option>
+              <option value="all">📁 Tout (Scolarité + Annexes)</option>
             </select>
           </div>
         </div>
@@ -6364,6 +6364,7 @@ function App() {
                   setInvoiceStartDateFilter('');
                   setInvoiceEndDateFilter('');
                   setInvoiceDateFilter('');
+                  setInvoiceCategoryFilter('scolarite');
                 }}
               >
                 ✕ Effacer filtre (Voir tout)
@@ -6430,7 +6431,7 @@ function App() {
           </thead>
           <tbody>
             {filteredInvoices.length > 0 ? filteredInvoices.map((row, i) => {
-                const studentInvs = invoicesData.filter(inv => inv.student_id === row.student_id);
+                const studentInvs = invoicesData.filter(inv => inv.student_id === row.student_id && !isFraisAnnexeInvoice(inv));
                 let verse = 0;
                 studentInvs.forEach(inv => { if(inv.status === 'Payée') verse += Number(inv.amount); });
                 const studentTotal = Number(row.students?.tuition_fee) || (row.students?.affecte === 'Affecté' ? Number(row.students?.classes?.tuition_fee_affecte) : Number(row.students?.classes?.tuition_fee)) || 0;
@@ -9868,23 +9869,6 @@ function App() {
                     borderRadius: '6px',
                     border: 'none',
                     cursor: 'pointer',
-                    background: invoiceCategoryFilter === 'all' ? 'var(--primary-color)' : 'transparent',
-                    color: invoiceCategoryFilter === 'all' ? 'white' : 'var(--text-color)',
-                    transition: 'all 0.15s'
-                  }}
-                  onClick={() => setInvoiceCategoryFilter('all')}
-                >
-                  📁 Tout
-                </button>
-                <button
-                  type="button"
-                  style={{
-                    padding: '5px 12px',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    borderRadius: '6px',
-                    border: 'none',
-                    cursor: 'pointer',
                     background: invoiceCategoryFilter === 'scolarite' ? '#2563eb' : 'transparent',
                     color: invoiceCategoryFilter === 'scolarite' ? 'white' : 'var(--text-color)',
                     transition: 'all 0.15s'
@@ -9909,6 +9893,23 @@ function App() {
                   onClick={() => setInvoiceCategoryFilter('annexes')}
                 >
                   💳 Frais Annexes uniquement
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    padding: '5px 12px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: invoiceCategoryFilter === 'all' ? 'var(--primary-color)' : 'transparent',
+                    color: invoiceCategoryFilter === 'all' ? 'white' : 'var(--text-color)',
+                    transition: 'all 0.15s'
+                  }}
+                  onClick={() => setInvoiceCategoryFilter('all')}
+                >
+                  📁 Tout
                 </button>
               </div>
 
