@@ -114,6 +114,16 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
   const receiptNo = invoice?.id ? invoice.id.split('-')[0].toUpperCase() : "-";
   const matricule = student?.matricule || "-";
   
+  // Mention Affecté / Non affecté
+  const rawAffecte = student?.affecte || invoice?.students?.affecte || '';
+  const isAffecte = rawAffecte && (
+    rawAffecte === 'Affecté' || 
+    (String(rawAffecte).toLowerCase().includes('affect') && !String(rawAffecte).toLowerCase().includes('non'))
+  );
+  const affecteLabel = isAr 
+    ? (isAffecte ? 'موجّه (AFFECTÉ)' : 'غير موجّه (NON AFFECTÉ)') 
+    : (isAffecte ? 'AFFECTÉ' : 'NON AFFECTÉ');
+  
   // Calculs financiers
   const scolarite = Number(student?.tuition_fee) || (student?.affecte === 'Affecté' ? Number(student?.classes?.tuition_fee_affecte) : Number(student?.classes?.tuition_fee)) || Number(invoice?.amount) || 0;
   const versementScolarite = invoice?.paid_amount !== undefined ? Number(invoice.paid_amount) : (Number(invoice?.amount) || 0);
@@ -158,8 +168,27 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
       color: 'black',
       fontFamily: isAr ? "'Traditional Arabic', 'Cairo', 'Tajawal', serif" : '"Courier New", Courier, monospace',
       fontSize: isAr ? '14px' : '12px',
-      lineHeight: '1.4'
+      lineHeight: '1.4',
+      position: 'relative'
     }} dir={isAr ? 'rtl' : 'ltr'}>
+      {/* Mention AFFECTÉ / NON AFFECTÉ en haut à droite */}
+      <div style={{
+        position: 'absolute',
+        top: '8px',
+        right: '8px',
+        border: '1.5px solid black',
+        padding: '2px 5px',
+        fontSize: '9px',
+        fontWeight: 800,
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px',
+        backgroundColor: isAffecte ? '#eff6ff' : '#f8fafc',
+        color: 'black',
+        whiteSpace: 'nowrap'
+      }}>
+        {affecteLabel}
+      </div>
+
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '10px' }}>
         <div style={{ width: '55px', height: '55px', margin: '0 auto 6px' }}>
@@ -199,9 +228,21 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
           <span>{isAr ? 'التلميذ(ة):' : 'Élève:'}</span>
           <span style={{ fontWeight: 'bold' }}>{studentName}</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: isAr ? 'row-reverse' : 'row', justifyContent: 'space-between', marginBottom: '4px' }}>
+        <div style={{ display: 'flex', flexDirection: isAr ? 'row-reverse' : 'row', justifyContent: 'space-between', marginBottom: '4px', alignItems: 'center' }}>
           <span>{isAr ? 'القسم:' : 'Classe:'}</span>
-          <span style={{ fontWeight: 'bold' }}>{classNameFr}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontWeight: 'bold' }}>{classNameFr}</span>
+            <span style={{
+              border: '1px solid black',
+              padding: '1px 4px',
+              borderRadius: '3px',
+              fontSize: '9px',
+              fontWeight: 800,
+              textTransform: 'uppercase'
+            }}>
+              {affecteLabel}
+            </span>
+          </div>
         </div>
         <div style={{ display: 'flex', flexDirection: isAr ? 'row-reverse' : 'row', justifyContent: 'space-between' }}>
           <span>{isAr ? 'ولي الأمر:' : 'Parent:'}</span>

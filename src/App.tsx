@@ -659,6 +659,7 @@ function App() {
   }, [activeModal, editEntity]);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [preselectedStudentId, setPreselectedStudentId] = useState<string | null>(null);
+  const [prefilledPaymentAmount, setPrefilledPaymentAmount] = useState<number | string>('');
   const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
   const [parentsData, setParentsData] = useState<any[]>([]);
   const [showSuperAdmin, setShowSuperAdmin] = useState(() => localStorage.getItem('sges_super_admin_mode') === 'true');
@@ -1797,7 +1798,7 @@ function App() {
     }
   };
 
-  const closeModal = () => { setActiveModal(null); setPreselectedStudentId(null); setEditEntity(null); setIsEditingTuition(false); setNewExpenseInlineCategory(false); setRegistrationPaymentAmount(''); setRegistrationClassId(''); };
+  const closeModal = () => { setActiveModal(null); setPreselectedStudentId(null); setPrefilledPaymentAmount(''); setEditEntity(null); setIsEditingTuition(false); setNewExpenseInlineCategory(false); setRegistrationPaymentAmount(''); setRegistrationClassId(''); };
 
   const handleCreateSchool = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -5966,7 +5967,7 @@ function App() {
                                 </td>
                                   <td style={{padding: '10px 16px', textAlign: 'right'}}>
                                     {st.status !== 'Soldé' && currentAdminRole !== 'Supervisor' && (
-                                      <button className="btn btn-primary" style={{padding: '4px 12px', fontSize: '0.8rem', height: 'auto', minHeight: 'auto'}} onClick={(e) => { e.stopPropagation(); setPreselectedStudentId(st.id); setActiveModal('payment'); }}>Encaisser</button>
+                                      <button className="btn btn-primary" style={{padding: '4px 12px', fontSize: '0.8rem', height: 'auto', minHeight: 'auto'}} onClick={(e) => { e.stopPropagation(); setPreselectedStudentId(st.id); if (st.nonPaye > 0) setPrefilledPaymentAmount(st.nonPaye); else setPrefilledPaymentAmount(''); setActiveModal('payment'); }}>Encaisser</button>
                                     )}
                                   </td>
                               </tr>
@@ -6070,6 +6071,29 @@ function App() {
               </svg>
               Imprimer
             </button>
+            {currentAdminRole !== 'Supervisor' && (
+              <button 
+                className="btn btn-primary" 
+                onClick={() => {
+                  setPreselectedStudentId(null);
+                  setPrefilledPaymentAmount('');
+                  setActiveModal('payment');
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#10b981',
+                  borderColor: '#10b981',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap'
+                }}
+                title="Encaisser un paiement"
+              >
+                💳 Encaisser
+              </button>
+            )}
           </div>
         </div>
         
@@ -6084,6 +6108,7 @@ function App() {
               <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'right', color: 'var(--success-color)', whiteSpace: 'nowrap'}}>Payé</th>
               <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'right', color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>Reste à Payer</th>
               <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'center'}}>Statut</th>
+              <th className="hide-print" style={{padding: '12px 14px 12px 8px', fontWeight: 700, textAlign: 'center', width: '120px'}}>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -6123,6 +6148,40 @@ function App() {
                       <td style={{padding: '12px 8px', textAlign: 'center'}}>
                         <span className={`badge ${st.status === 'Soldé' ? 'badge-success' : 'badge-warning'}`}>{st.status}</span>
                       </td>
+                      <td className="hide-print" style={{padding: '8px 14px 8px 8px', textAlign: 'center', whiteSpace: 'nowrap'}}>
+                        {currentAdminRole !== 'Supervisor' && (
+                          <button 
+                            className={`btn ${st.status !== 'Soldé' ? 'btn-primary' : 'btn-outline'}`}
+                            style={{
+                              padding: '5px 12px',
+                              fontSize: '0.8rem',
+                              height: 'auto',
+                              minHeight: 'auto',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              borderRadius: '6px',
+                              fontWeight: st.status !== 'Soldé' ? 700 : 500,
+                              background: st.status !== 'Soldé' ? '#10b981' : undefined,
+                              borderColor: st.status !== 'Soldé' ? '#10b981' : undefined,
+                              color: st.status !== 'Soldé' ? '#ffffff' : undefined
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreselectedStudentId(st.id);
+                              if (st.nonPaye > 0) {
+                                setPrefilledPaymentAmount(st.nonPaye);
+                              } else {
+                                setPrefilledPaymentAmount('');
+                              }
+                              setActiveModal('payment');
+                            }}
+                            title="Encaisser un versement pour cet élève"
+                          >
+                            💳 Encaisser
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                   {filteredStudents.length > 0 && (
@@ -6132,6 +6191,7 @@ function App() {
                       <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 800, color: 'var(--success-color)', whiteSpace: 'nowrap'}}>{formatNum(totalPaye)} F</td>
                       <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 800, color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>{formatNum(totalReste)} F</td>
                       <td></td>
+                      <td className="hide-print"></td>
                     </tr>
                   )}
                 </>
@@ -8554,7 +8614,7 @@ function App() {
 
               {/* Payment Form */}
               {activeModal === 'payment' && (
-                <form onSubmit={handleFormSubmit}>
+                <form key={`${preselectedStudentId || 'new'}-${prefilledPaymentAmount || 'empty'}`} onSubmit={handleFormSubmit}>
                   <div className="form-group">
                     <label>{t('admin.modals.student_select', 'Élève')}</label>
                     <input 
@@ -8710,7 +8770,14 @@ function App() {
                   </div>
                   <div className="form-group">
                     <label>{t('admin.modals.amount', 'Montant (F)')}</label>
-                    <input type="number" name="amount" className="form-input" placeholder="Ex: 25000" required />
+                    <input 
+                      type="number" 
+                      name="amount" 
+                      className="form-input" 
+                      placeholder="Ex: 25000" 
+                      defaultValue={prefilledPaymentAmount || ""} 
+                      required 
+                    />
                   </div>
                   <div className="form-group">
                     <label>{t('admin.modals.payment_method', 'Mode de paiement')}</label>
@@ -8721,7 +8788,7 @@ function App() {
                     </select>
                   </div>
                   <div style={{marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
-                    <button type="button" className="btn btn-outline" onClick={() => { setPreselectedStudentId(null); closeModal(); }}>{t('admin.modals.cancel', 'Annuler')}</button>
+                    <button type="button" className="btn btn-outline" onClick={() => { setPreselectedStudentId(null); setPrefilledPaymentAmount(''); closeModal(); }}>{t('admin.modals.cancel', 'Annuler')}</button>
                     <button type="submit" className="btn btn-primary">{t('admin.modals.submit_payment', 'Encaisser & Voir Reçu')}</button>
                   </div>
                 </form>

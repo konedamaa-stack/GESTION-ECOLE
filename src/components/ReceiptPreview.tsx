@@ -113,6 +113,16 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
   const receiptNo = invoice?.id ? invoice.id.split('-')[0].toUpperCase() : "-";
   const matricule = student?.matricule || "-";
   
+  // Mention Affecté / Non affecté
+  const rawAffecte = student?.affecte || invoice?.students?.affecte || '';
+  const isAffecte = rawAffecte && (
+    rawAffecte === 'Affecté' || 
+    (String(rawAffecte).toLowerCase().includes('affect') && !String(rawAffecte).toLowerCase().includes('non'))
+  );
+  const affecteLabel = isAr 
+    ? (isAffecte ? 'موجّه (AFFECTÉ)' : 'غير موجّه (NON AFFECTÉ)') 
+    : (isAffecte ? 'AFFECTÉ' : 'NON AFFECTÉ');
+  
   // Calculs financiers
   const scolarite = Number(student?.tuition_fee) || (student?.affecte === 'Affecté' ? Number(student?.classes?.tuition_fee_affecte) : Number(student?.classes?.tuition_fee)) || Number(invoice?.amount) || 0;
   const versementScolarite = invoice?.paid_amount !== undefined ? Number(invoice.paid_amount) : (Number(invoice?.amount) || 0);
@@ -166,8 +176,8 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
       }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-          <div style={{ width: '85px', height: '85px' }}>
-            <img src={schoolInfo?.logo_url || '/logo-coran.jpg'} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          <div style={{ width: '100px', height: '85px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+            <img src={schoolInfo?.logo_url || '/logo-coran.jpg'} alt="Logo" style={{ width: '85px', height: '85px', objectFit: 'contain' }} />
           </div>
           <div style={{ textAlign: 'center', flex: 1, padding: '0 5px', lineHeight: '1.2' }}>
             <div style={{ fontSize: isAr ? '20px' : '16px', textTransform: 'uppercase', fontWeight: 'bold' }}>{schoolName}</div>
@@ -176,7 +186,23 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
             </div>
             <div style={{ fontSize: '12px' }}>{isAr ? 'الهاتف:' : 'CEL:'} {schoolPhone}</div>
           </div>
-          <div style={{ width: '60px' }}></div>
+          <div style={{ width: '110px', display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start', height: '85px' }}>
+            <span style={{
+              border: '2px solid black',
+              padding: '4px 10px',
+              borderRadius: '4px',
+              fontSize: isAr ? '13px' : '12px',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              letterSpacing: '0.8px',
+              backgroundColor: isAffecte ? '#eff6ff' : '#f8fafc',
+              color: 'black',
+              whiteSpace: 'nowrap',
+              textAlign: 'center'
+            }}>
+              {affecteLabel}
+            </span>
+          </div>
         </div>
 
         {/* Row 1: Année Scolaire etc. */}
@@ -185,7 +211,20 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
             <span>{isAr ? 'السنة الدراسية:' : 'Année Scolaire:'}</span>
             <span>{academicYear}</span>
           </div>
-          <div>{isAr ? 'القسم:' : 'Classe:'} {classNameFr}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>{isAr ? 'القسم:' : 'Classe:'} {classNameFr}</span>
+            <span style={{
+              border: '1.5px solid black',
+              padding: '1px 6px',
+              borderRadius: '3px',
+              fontSize: '11px',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}>
+              {affecteLabel}
+            </span>
+          </div>
         </div>
 
         {/* Rows wrapper for table layout for exact alignment */}

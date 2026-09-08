@@ -845,8 +845,13 @@ html {
     visibility: visible !important;
   }
   
-  body.print-finance-list .finance-filters {
+  body.print-finance-list .finance-filters,
+  body.print-finance-list #finance-list-panel .hide-print,
+  body.print-finance-list .hide-print,
+  body.print-finance-class-summary #finance-class-summary-panel .hide-print,
+  body.print-finance-class-summary .hide-print {
     display: none !important;
+    visibility: hidden !important;
   }
   
   body.print-finance-list #finance-list-panel .panel-header,
