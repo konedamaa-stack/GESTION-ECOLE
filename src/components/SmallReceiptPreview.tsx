@@ -228,21 +228,9 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
           <span>{isAr ? 'التلميذ(ة):' : 'Élève:'}</span>
           <span style={{ fontWeight: 'bold' }}>{studentName}</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: isAr ? 'row-reverse' : 'row', justifyContent: 'space-between', marginBottom: '4px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: isAr ? 'row-reverse' : 'row', justifyContent: 'space-between', marginBottom: '4px' }}>
           <span>{isAr ? 'القسم:' : 'Classe:'}</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontWeight: 'bold' }}>{classNameFr}</span>
-            <span style={{
-              border: '1px solid black',
-              padding: '1px 4px',
-              borderRadius: '3px',
-              fontSize: '9px',
-              fontWeight: 800,
-              textTransform: 'uppercase'
-            }}>
-              {affecteLabel}
-            </span>
-          </div>
+          <span style={{ fontWeight: 'bold' }}>{classNameFr}</span>
         </div>
         <div style={{ display: 'flex', flexDirection: isAr ? 'row-reverse' : 'row', justifyContent: 'space-between' }}>
           <span>{isAr ? 'ولي الأمر:' : 'Parent:'}</span>

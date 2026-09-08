@@ -211,20 +211,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
             <span>{isAr ? 'السنة الدراسية:' : 'Année Scolaire:'}</span>
             <span>{academicYear}</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>{isAr ? 'القسم:' : 'Classe:'} {classNameFr}</span>
-            <span style={{
-              border: '1.5px solid black',
-              padding: '1px 6px',
-              borderRadius: '3px',
-              fontSize: '11px',
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}>
-              {affecteLabel}
-            </span>
-          </div>
+          <div>{isAr ? 'القسم:' : 'Classe:'} {classNameFr}</div>
         </div>
 
         {/* Rows wrapper for table layout for exact alignment */}
