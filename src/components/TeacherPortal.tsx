@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BulletinPreview } from './BulletinPreview';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
+import { sortClassesList } from '../utils/classSort';
 import { applyThemeSettings } from '../lib/theme';
 import { sanitizeText, sanitizeAmount, sanitizeObject } from '../lib/security';
 import { SkeletonStatGrid, SkeletonTable } from './SkeletonLoader';
@@ -66,7 +67,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     try {
       // Fetch all classes
       const { data: classes } = await supabase.from('classes').select('*').eq('school_id', session.school_id);
-      if (classes) setClassesData(classes);
+      if (classes) setClassesData(sortClassesList(classes));
 
       // Fetch evaluations for this school
       const { data: evaluations } = await supabase.from('evaluations')

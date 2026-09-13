@@ -16,11 +16,13 @@ export const getPedagogicalRank = (name?: string, level?: string): number => {
   const n = (name || '').toLowerCase().trim();
   const l = (level || '').toLowerCase().trim();
 
-  // 1. Maternelle / التحضيري / Crèche / Petite/Moyenne/Grande section
+  // 1. Maternelle / التحضيري / روضة الأطفال / Crèche / Petite/Moyenne/Grande section
   if (
     n.includes('تحضيري') ||
     n.includes('روضة') ||
     n.includes('روض') ||
+    n.includes('اطفال') ||
+    n.includes('أطفال') ||
     n.includes('maternelle') ||
     n.includes('garderie') ||
     n.includes('crèche') ||
@@ -36,106 +38,101 @@ export const getPedagogicalRank = (name?: string, level?: string): number => {
     return 10;
   }
 
-  // 2. Primaire / الإبتدائي
-  // Premier / الأول / الاول / CI / CP1 / CP
+  // 2. Cycles en arabe explicites (الابتدائي / المتوسط أو الإعدادي / الثانوي)
+  // Primaire en arabe : الابتدائي
+  if (n.includes('ابتدائي') || n.includes('إبتدائي') || n.includes('ابتدائ')) {
+    if (n.includes('اول') || n.includes('أول') || n.includes('1')) return 20;
+    if (n.includes('ثاني') || n.includes('ثان') || n.includes('2')) return 22;
+    if (n.includes('ثالث') || n.includes('3')) return 24;
+    if (n.includes('رابع') || n.includes('4')) return 26;
+    if (n.includes('خامس') || n.includes('5')) return 28;
+    if (n.includes('سادس') || n.includes('6')) return 30;
+    return 20;
+  }
+
+  // Collège / Moyen en arabe : المتوسط / الإعدادي
+  if (n.includes('متوسط') || n.includes('إعدادي') || n.includes('اعدادي') || n.includes('اعداد')) {
+    if (n.includes('اول') || n.includes('أول') || n.includes('1')) {
+      if (n.includes('أ') || n.includes(' أ') || n.includes('a')) return 40;
+      if (n.includes('ب') || n.includes(' ب') || n.includes('b')) return 41;
+      if (n.includes('ج') || n.includes(' ج') || n.includes('c')) return 42;
+      return 40;
+    }
+    if (n.includes('ثاني') || n.includes('ثان') || n.includes('2')) return 44;
+    if (n.includes('ثالث') || n.includes('3')) return 46;
+    if (n.includes('رابع') || n.includes('4')) return 48;
+    return 40;
+  }
+
+  // Lycée / Secondaire en arabe : الثانوي
+  if (n.includes('ثانوي') || n.includes('ثانوية')) {
+    if (n.includes('اول') || n.includes('أول') || n.includes('1') || n.includes('عاشر')) return 60;
+    if (n.includes('ثاني') || n.includes('ثان') || n.includes('2') || n.includes('حادي')) return 62;
+    if (n.includes('ثالث') || n.includes('3') || n.includes('ثاني عشر') || n.includes('بكالوريا')) return 64;
+    return 60;
+  }
+
+  // 3. Primaire en français / CI, CP, CE, CM
   if (
-    n.includes('اول') ||
-    n.includes('أول') ||
     n.includes('ci') ||
     n.includes('cp1') ||
     (n.includes('cp') && !n.includes('cp2'))
   ) {
     return 20;
   }
-
-  // Deuxième / الثاني / CP2
-  if (n.includes('ثاني') || n.includes('ثان') || n.includes('cp2')) {
+  if (n.includes('cp2')) {
+    return 22;
+  }
+  if (n.includes('ce1')) {
+    return 24;
+  }
+  if (n.includes('ce2')) {
+    return 26;
+  }
+  if (n.includes('cm1')) {
+    return 28;
+  }
+  if (n.includes('cm2')) {
     return 30;
   }
 
-  // Troisième / الثالث / CE1
-  if (n.includes('ثالث') || n.includes('ce1')) {
+  // 4. Collège en français / 6ème, 5ème, 4ème, 3ème
+  if (n.includes('6è') || n.includes('6e') || n.includes('6eme') || n.includes('6ème')) {
     return 40;
   }
-
-  // Quatrième / الرابع / CE2
-  if (n.includes('رابع') || n.includes('ce2')) {
-    return 50;
+  if (n.includes('5è') || n.includes('5e') || n.includes('5eme') || n.includes('5ème')) {
+    return 44;
+  }
+  if (n.includes('4è') || n.includes('4e') || n.includes('4eme') || n.includes('4ème')) {
+    return 46;
+  }
+  if (n.includes('3è') || n.includes('3e') || n.includes('3eme') || n.includes('3ème')) {
+    return 48;
   }
 
-  // Cinquième / الخامس / CM1
-  if (n.includes('خامس') || n.includes('cm1')) {
+  // 5. Lycée en français / 2nde, 1ère, Terminale
+  if (n.includes('2nd') || n.includes('2nde') || n.includes('seconde')) {
     return 60;
   }
-
-  // Sixième Primaire / السادس الابتدائي / CM2
-  if (
-    (n.includes('سادس') && (n.includes('ابتدائي') || n.includes('إبتدائي') || l === 'primaire')) ||
-    n.includes('cm2')
-  ) {
-    return 70;
+  if (n.includes('1er') || n.includes('1ère') || n.includes('1ere') || n.includes('premiere')) {
+    return 62;
+  }
+  if (n.includes('tle') || n.includes('term') || n.includes('terminale')) {
+    return 64;
   }
 
-  // 3. Collège / إعدادي / متوسط
-  // 6ème / السادس إعدادي
-  if (
-    n.includes('6è') ||
-    n.includes('6e') ||
-    n.includes('6eme') ||
-    n.includes('6ème') ||
-    (n.includes('سادس') && (n.includes('إعدادي') || n.includes('اعدادي') || n.includes('متوسط') || l === 'collège'))
-  ) {
-    return 80;
-  }
+  // 6. Détection générique par niveau
+  if (l === 'primaire') return 25;
+  if (l === 'collège' || l === 'college') return 45;
+  if (l === 'lycée' || l === 'lycee') return 63;
 
-  // 5ème / الخامس إعدادي
-  if (
-    n.includes('5è') ||
-    n.includes('5e') ||
-    n.includes('5eme') ||
-    n.includes('5ème') ||
-    (n.includes('خامس') && (n.includes('إعدادي') || n.includes('اعدادي') || n.includes('متوسط')))
-  ) {
-    return 90;
-  }
-
-  // 4ème / الرابع إعدادي
-  if (
-    n.includes('4è') ||
-    n.includes('4e') ||
-    n.includes('4eme') ||
-    n.includes('4ème') ||
-    (n.includes('رابع') && (n.includes('إعدادي') || n.includes('اعدادي') || n.includes('متوسط')))
-  ) {
-    return 100;
-  }
-
-  // 3ème / الثالث إعدادي
-  if (
-    n.includes('3è') ||
-    n.includes('3e') ||
-    n.includes('3eme') ||
-    n.includes('3ème') ||
-    (n.includes('ثالث') && (n.includes('إعدادي') || n.includes('اعدادي') || n.includes('متوسط')))
-  ) {
-    return 110;
-  }
-
-  // 4. Lycée / ثانوي
-  // 2nde / Seconde / العاشر
-  if (n.includes('2nd') || n.includes('2nde') || n.includes('seconde') || n.includes('عاشر')) {
-    return 120;
-  }
-
-  // 1ère / Première / الحادي عشر
-  if (n.includes('1er') || n.includes('1ère') || n.includes('1ere') || n.includes('premiere') || n.includes('حادي عشر')) {
-    return 130;
-  }
-
-  // Terminale / Tle / الثاني عشر / البكالوريا
-  if (n.includes('tle') || n.includes('term') || n.includes('terminale') || n.includes('ثاني عشر') || n.includes('بكالوريا')) {
-    return 140;
-  }
+  // 7. Mots-clés ordinaux génériques sans cycle spécifié
+  if (n.includes('اول') || n.includes('أول')) return 20;
+  if (n.includes('ثاني') || n.includes('ثان')) return 22;
+  if (n.includes('ثالث')) return 24;
+  if (n.includes('رابع')) return 26;
+  if (n.includes('خامس')) return 28;
+  if (n.includes('سادس')) return 30;
 
   return 999;
 };
