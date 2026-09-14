@@ -1328,8 +1328,8 @@ function App() {
     if (!collabLogin || !collabPassword || !currentSchoolId) return;
 
     const parts = (collabName || collabLogin).trim().split(' ');
-    const firstName = parts[0];
-    const lastName = parts.slice(1).join(' ') || 'Collaborateur';
+    const firstName = (parts[0] || '').trim().toUpperCase();
+    const lastName = (parts.slice(1).join(' ') || 'Collaborateur').trim().toUpperCase();
 
     try {
       const { error } = await supabase.from('employees').insert([{
@@ -2208,8 +2208,8 @@ function App() {
 
         if (editEntity) {
           const studentUpdate: any = {
-            first_name: formData.get('first_name'),
-            last_name: formData.get('last_name'),
+            first_name: (formData.get('first_name') as string || '').trim().toUpperCase(),
+            last_name: (formData.get('last_name') as string || '').trim().toUpperCase(),
             class_id: formData.get('class_id'),
             birth_date: formData.get('birth_date'),
             status: formData.get('status') || 'Inscrit',
@@ -2227,15 +2227,15 @@ function App() {
           if (error) throw error;
 
           // Process parent info on student edit
-          const pLastName = (formData.get('parent_last_name') as string || '').trim();
-          const pFirstName = (formData.get('parent_first_name') as string || '').trim();
+          const pLastName = (formData.get('parent_last_name') as string || '').trim().toUpperCase();
+          const pFirstName = (formData.get('parent_first_name') as string || '').trim().toUpperCase();
           const pPhone = (formData.get('parent_phone') as string || '').trim();
           const pEmail = (formData.get('parent_email') as string || '').trim();
           const pLocation = (formData.get('parent_location') as string || '').trim();
 
           if (pLastName || pFirstName || pPhone || pEmail || pLocation) {
-            const finalLastName = pLastName || (formData.get('last_name') as string || 'Parent');
-            const finalFirstName = pFirstName || 'Tuteur';
+            const finalLastName = (pLastName || (formData.get('last_name') as string || 'Parent')).trim().toUpperCase();
+            const finalFirstName = (pFirstName || 'Tuteur').trim().toUpperCase();
 
             // Check if student already has a linked parent
             const { data: existingLinks } = await supabase
@@ -2319,8 +2319,8 @@ function App() {
         const matricule = rawMatricule || generateStudentMatricule();
         const password = formData.get('password') || 'passer123';
         const student = {
-          first_name: formData.get('first_name'),
-          last_name: formData.get('last_name'),
+          first_name: (formData.get('first_name') as string || '').trim().toUpperCase(),
+          last_name: (formData.get('last_name') as string || '').trim().toUpperCase(),
           matricule: matricule,
           class_id: formData.get('class_id'),
           birth_date: formData.get('birth_date'),
@@ -2338,16 +2338,16 @@ function App() {
         const newStudentId = studentData[0].id;
 
         // Robust Parent Handling
-        const pLastName = (formData.get('parent_last_name') as string || '').trim();
-        const pFirstName = (formData.get('parent_first_name') as string || '').trim();
+        const pLastName = (formData.get('parent_last_name') as string || '').trim().toUpperCase();
+        const pFirstName = (formData.get('parent_first_name') as string || '').trim().toUpperCase();
         const pPhone = (formData.get('parent_phone') as string || '').trim();
         const pEmail = (formData.get('parent_email') as string || '').trim();
         const pLocation = (formData.get('parent_location') as string || '').trim();
 
         let parentObj: any = null;
         if (pLastName || pFirstName || pPhone || pEmail || pLocation) {
-          const finalLastName = pLastName || (formData.get('last_name') as string || 'Parent');
-          const finalFirstName = pFirstName || 'Tuteur';
+          const finalLastName = (pLastName || (formData.get('last_name') as string || 'Parent')).trim().toUpperCase();
+          const finalFirstName = (pFirstName || 'Tuteur').trim().toUpperCase();
 
           // Check if parent already exists in school
           let existingParentId: string | null = null;
@@ -2478,8 +2478,8 @@ function App() {
       else if (activeModal === 'teacher') {
         if (editEntity) {
           const teacherUpdate: any = {
-            first_name: formData.get('first_name'),
-            last_name: formData.get('last_name'),
+            first_name: (formData.get('first_name') as string || '').trim().toUpperCase(),
+            last_name: (formData.get('last_name') as string || '').trim().toUpperCase(),
             subject: formData.getAll('subject').join(', '),
             phone: formData.get('phone'),
             email: formData.get('email')
@@ -2496,8 +2496,8 @@ function App() {
         const password = formData.get('password') || Math.random().toString(36).slice(-8);
 
         const teacher = {
-          first_name: formData.get('first_name'),
-          last_name: formData.get('last_name'),
+          first_name: (formData.get('first_name') as string || '').trim().toUpperCase(),
+          last_name: (formData.get('last_name') as string || '').trim().toUpperCase(),
           subject: formData.getAll('subject').join(', '),
           phone: formData.get('phone'),
           email: formData.get('email'),
@@ -2512,8 +2512,8 @@ function App() {
       else if (activeModal === 'employee') {
         if (editEntity) {
           const employeeUpdate: any = {
-            first_name: formData.get('first_name'),
-            last_name: formData.get('last_name'),
+            first_name: (formData.get('first_name') as string || '').trim().toUpperCase(),
+            last_name: (formData.get('last_name') as string || '').trim().toUpperCase(),
             role: formData.get('role'),
             phone: formData.get('phone'),
             email: formData.get('email'),
@@ -2526,8 +2526,8 @@ function App() {
           alert("Coordonnées de l'employé mises à jour avec succès !");
         } else {
           const employee = {
-            first_name: formData.get('first_name'),
-            last_name: formData.get('last_name'),
+            first_name: (formData.get('first_name') as string || '').trim().toUpperCase(),
+            last_name: (formData.get('last_name') as string || '').trim().toUpperCase(),
             role: formData.get('role'),
             phone: formData.get('phone'),
             email: formData.get('email'),
@@ -2759,8 +2759,8 @@ function App() {
 
         if (editEntity) {
           const parentUpdate = {
-            first_name: formData.get('first_name'),
-            last_name: formData.get('last_name'),
+            first_name: (formData.get('first_name') as string || '').trim().toUpperCase(),
+            last_name: (formData.get('last_name') as string || '').trim().toUpperCase(),
             phone: formData.get('phone'),
             email: formData.get('email'),
             location: formData.get('location'),
@@ -2770,8 +2770,8 @@ function App() {
           if (error) throw error;
         } else {
           const parent = {
-            first_name: formData.get('first_name'),
-            last_name: formData.get('last_name'),
+            first_name: (formData.get('first_name') as string || '').trim().toUpperCase(),
+            last_name: (formData.get('last_name') as string || '').trim().toUpperCase(),
             phone: formData.get('phone'),
             email: formData.get('email'),
             school_id: currentSchoolId,
@@ -3677,7 +3677,7 @@ function App() {
                       </div>
                     )}
                     <div style={{cursor: 'pointer', color: 'var(--primary-color)'}} onClick={() => { setSelectedStudent(row); setActiveModal('studentDossier'); }}>
-                      {row.first_name} {row.last_name}
+                      {row.first_name?.toUpperCase()} {row.last_name?.toUpperCase()}
                     </div>
                   </div>
                 </td>
@@ -9234,8 +9234,8 @@ function App() {
                       for (let i = 1; i < lines.length; i++) {
                         if (!lines[i].trim()) continue;
                         const cols = lines[i].split(/,|;/).map(c => c.trim().replace(/["']/g, ''));
-                        const finalNom = idxNom !== -1 ? cols[idxNom] : null;
-                        const finalPrenom = idxPrenom !== -1 ? cols[idxPrenom] : null;
+                        const finalNom = idxNom !== -1 && cols[idxNom] ? cols[idxNom].trim().toUpperCase() : null;
+                        const finalPrenom = idxPrenom !== -1 && cols[idxPrenom] ? cols[idxPrenom].trim().toUpperCase() : null;
 
                         if (!finalNom || !finalPrenom) continue;
 
@@ -9262,8 +9262,8 @@ function App() {
                         }
 
                         const matricule = (idxMatricule !== -1 && cols[idxMatricule] && cols[idxMatricule].trim()) ? cols[idxMatricule].trim().toUpperCase() : generateStudentMatricule();
-                        const parentNom = (idxParentNom !== -1 && cols[idxParentNom]) ? cols[idxParentNom] : null;
-                        const parentPrenom = (idxParentPrenom !== -1 && cols[idxParentPrenom]) ? cols[idxParentPrenom] : null;
+                        const parentNom = (idxParentNom !== -1 && cols[idxParentNom]) ? cols[idxParentNom].trim().toUpperCase() : null;
+                        const parentPrenom = (idxParentPrenom !== -1 && cols[idxParentPrenom]) ? cols[idxParentPrenom].trim().toUpperCase() : null;
                         const parentPhone = (idxParentPhone !== -1 && cols[idxParentPhone]) ? cols[idxParentPhone] : null;
                         const parentLocation = (idxParentLocation !== -1 && cols[idxParentLocation]) ? cols[idxParentLocation] : null;
 
@@ -10438,7 +10438,7 @@ function App() {
                       {selectedStudent.first_name[0]}{selectedStudent.last_name[0]}
                     </div>
                     <div>
-                      <h2 style={{margin: 0, fontSize: '1.5rem'}}>{selectedStudent.first_name} {selectedStudent.last_name}</h2>
+                      <h2 style={{margin: 0, fontSize: '1.5rem'}}>{selectedStudent.first_name?.toUpperCase()} {selectedStudent.last_name?.toUpperCase()}</h2>
                       <p style={{margin: '4px 0 0', color: 'var(--text-secondary)'}}>Matricule: {selectedStudent.matricule}</p>
                       <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', flexWrap: 'nowrap'}}>
                         <span className={`badge ${selectedStudent.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`} style={{whiteSpace: 'nowrap'}}>

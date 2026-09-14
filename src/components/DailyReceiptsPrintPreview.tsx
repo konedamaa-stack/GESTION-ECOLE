@@ -313,8 +313,8 @@ export const DailyReceiptsPrintPreview: React.FC<DailyReceiptsPrintPreviewProps>
           {invoices && invoices.length > 0 ? (
             invoices.map((inv: any, index: number) => {
               const studentName = inv.students 
-                ? `${inv.students.last_name || ''} ${inv.students.first_name || ''}`.trim() 
-                : 'Élève';
+                ? `${inv.students.last_name || ''} ${inv.students.first_name || ''}`.trim().toUpperCase() 
+                : 'ÉLÈVE';
               const matricule = inv.students?.matricule || '-';
               const className = inv.students?.classes?.name || 'N/A';
               const isAnn = isAnnexe(inv);

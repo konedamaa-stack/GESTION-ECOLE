@@ -69,7 +69,7 @@ export const TeacherReceiptPreview: React.FC<TeacherReceiptPreviewProps> = ({ pa
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
               <p style={{ margin: '0 0 8px 0', color: '#64748b', fontSize: '14px' }}>Nom et Prénom</p>
-              <p style={{ margin: '0', fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{teacher.first_name} {teacher.last_name}</p>
+              <p style={{ margin: '0', fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{teacher.first_name?.toUpperCase()} {teacher.last_name?.toUpperCase()}</p>
             </div>
             <div>
               <p style={{ margin: '0 0 8px 0', color: '#64748b', fontSize: '14px' }}>Matière</p>

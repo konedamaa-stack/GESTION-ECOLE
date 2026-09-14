@@ -69,7 +69,7 @@ export const SalaryReceiptPreview: React.FC<SalaryReceiptPreviewProps> = ({ paym
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
               <p style={{ margin: '0 0 8px 0', color: '#64748b', fontSize: '14px' }}>Nom et Prénom</p>
-              <p style={{ margin: '0', fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{employee.first_name} {employee.last_name}</p>
+              <p style={{ margin: '0', fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{employee.first_name?.toUpperCase()} {employee.last_name?.toUpperCase()}</p>
             </div>
             <div>
               <p style={{ margin: '0 0 8px 0', color: '#64748b', fontSize: '14px' }}>Rôle / Fonction</p>

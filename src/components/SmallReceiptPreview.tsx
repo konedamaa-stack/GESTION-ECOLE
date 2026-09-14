@@ -134,9 +134,9 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
   const totalPaid = Math.max(0, scolarite - reste);
 
   const paymentDate = formatDate(invoice?.paid_at || new Date().toISOString());
-  const studentName = student ? `${student.first_name} ${student.last_name}` : "Nom de l'élève";
+  const studentName = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim().toUpperCase() : "NOM DE L'ÉLÈVE";
   const parentObj = student?.student_parents && student.student_parents.length > 0 ? student.student_parents[0].parents : null;
-  const parentName = parentObj ? `${parentObj.first_name} ${parentObj.last_name}` : (student?.parent_name || "-");
+  const parentName = parentObj ? `${parentObj.first_name || ''} ${parentObj.last_name || ''}`.trim().toUpperCase() : (student?.parent_name ? String(student.parent_name).trim().toUpperCase() : "-");
   const isSoldé = reste <= 0;
   let defaultApptDate = new Date(invoice?.paid_at || new Date());
   defaultApptDate.setMonth(defaultApptDate.getMonth() + 2);

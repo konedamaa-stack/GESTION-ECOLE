@@ -1419,3 +1419,11 @@ html {
   align-items: center;
   gap: 16px;
 }
+
+/* Force uppercase appearance on name inputs */
+input[name="first_name"],
+input[name="last_name"],
+input[name="parent_first_name"],
+input[name="parent_last_name"] {
+  text-transform: uppercase;
+}

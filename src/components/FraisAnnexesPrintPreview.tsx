@@ -883,7 +883,7 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
                             {st.matricule}
                           </td>
                           <td style={{ padding: '5px 6px', border: '1px solid #cbd5e1', fontWeight: 600 }}>
-                            {st.first_name} {st.last_name}
+                            {st.first_name?.toUpperCase()} {st.last_name?.toUpperCase()}
                           </td>
 
                           {/* Résultat financier pour chaque frais de l'élève */}
