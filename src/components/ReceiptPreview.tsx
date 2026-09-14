@@ -15,8 +15,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
   student, 
   schoolInfo, 
   studentReste = 0,
-  invoicesData = [],
-  onClose
+  invoicesData = []
 }) => {
   const { i18n } = useTranslation();
   const isAr = i18n.language.startsWith('ar');
@@ -28,22 +27,14 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
   };
 
   useEffect(() => {
-    const handleAfterPrint = () => {
-      if (onClose) {
-        onClose();
-      }
-    };
-    window.addEventListener('afterprint', handleAfterPrint);
-
     const timer = setTimeout(() => {
       window.print();
     }, 500);
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener('afterprint', handleAfterPrint);
     };
-  }, [onClose]);
+  }, []);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR').format(amount) + ' F';

@@ -1156,7 +1156,8 @@ function App() {
     const existingInvoices = invoicesData.filter((inv: any) => inv.student_id === studentId);
 
     // 1. Payer tous les Frais Annexes de la classe en priorité
-    for (const item of breakdown) {
+    for (let i = 0; i < breakdown.length; i++) {
+      const item = breakdown[i];
       if (item.amount <= 0) continue;
       const alreadyPaid = existingInvoices
         .filter((inv: any) => (inv.motif || '').toLowerCase().includes(item.frais.name.toLowerCase()))
@@ -1171,7 +1172,7 @@ function App() {
           motif: item.frais.name,
           payment_method: paymentMethod,
           status: status,
-          invoice_number: 'FAC-ANNEXE-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
+          invoice_number: `FAC-ANNEXE-${new Date().getFullYear()}-${Date.now()}-${i}-${Math.floor(10000 + Math.random() * 90000)}`,
           school_id: currentSchoolId
         });
         remaining -= payNow;
@@ -1186,7 +1187,7 @@ function App() {
         motif: 'Frais de scolarité (1er versement)',
         payment_method: paymentMethod,
         status: status,
-        invoice_number: 'FAC-SCO-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
+        invoice_number: `FAC-SCO-${new Date().getFullYear()}-${Date.now()}-${Math.floor(10000 + Math.random() * 90000)}`,
         school_id: currentSchoolId
       });
     }
@@ -2061,6 +2062,7 @@ function App() {
   const handleFormSubmit = async (e: any) => {
     e.preventDefault();
     const submitBtn = e.nativeEvent?.submitter;
+    const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
     if (submitBtn) {
       if (submitBtn.disabled) return;
       submitBtn.disabled = true;
@@ -2149,7 +2151,7 @@ function App() {
               motif: scoTotal > 0 ? "Frais de scolarité (1er versement)" : "Frais de réinscription (Frais Annexes)",
               payment_method: regMethod,
               status: regStatus,
-              invoice_number: (scoInv || createdInvoices[0]).invoice_number || ('FAC-REC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000)),
+              invoice_number: (scoInv || createdInvoices[0]).invoice_number || (`FAC-REC-${new Date().getFullYear()}-${Date.now()}-${Math.floor(10000 + Math.random() * 90000)}`),
               id: (scoInv || createdInvoices[0]).id || 'temp-id',
               issue_date: new Date().toISOString()
             };
@@ -2170,7 +2172,7 @@ function App() {
             motif: "Frais de réinscription (Frais Annexes)",
             payment_method: regMethod,
             status: regStatus,
-            invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
+            invoice_number: `FAC-${new Date().getFullYear()}-${Date.now()}-${Math.floor(10000 + Math.random() * 90000)}`,
             id: 'temp-id',
             issue_date: new Date().toISOString()
           });
@@ -2442,7 +2444,7 @@ function App() {
               motif: scoTotal > 0 ? "Frais de scolarité (1er versement)" : "Frais d'inscription (Frais Annexes)",
               payment_method: regMethod,
               status: regStatus,
-              invoice_number: (scoInv || createdInvoices[0]).invoice_number || ('FAC-REC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000)),
+              invoice_number: (scoInv || createdInvoices[0]).invoice_number || (`FAC-REC-${new Date().getFullYear()}-${Date.now()}-${Math.floor(10000 + Math.random() * 90000)}`),
               id: (scoInv || createdInvoices[0]).id || 'temp-id',
               issue_date: new Date().toISOString()
             };
@@ -2464,7 +2466,7 @@ function App() {
             motif: "Frais d'inscription (Frais Annexes)",
             payment_method: regMethod,
             status: regStatus,
-            invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
+            invoice_number: `FAC-${new Date().getFullYear()}-${Date.now()}-${Math.floor(10000 + Math.random() * 90000)}`,
             id: 'temp-id',
             issue_date: new Date().toISOString()
           });
@@ -2597,7 +2599,7 @@ function App() {
               motif: scoTotal > 0 ? "Frais de scolarité (1er versement)" : "Frais d'inscription (Frais Annexes)",
               payment_method: paymentMethod,
               status: 'Payée',
-              invoice_number: (scoInv || createdInvoices[0]).invoice_number || ('FAC-REC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000)),
+              invoice_number: (scoInv || createdInvoices[0]).invoice_number || (`FAC-REC-${new Date().getFullYear()}-${Date.now()}-${Math.floor(10000 + Math.random() * 90000)}`),
               id: (scoInv || createdInvoices[0]).id || 'temp-id',
               issue_date: new Date().toISOString()
             });
@@ -2639,7 +2641,7 @@ function App() {
           motif: motif,
           payment_method: paymentMethod,
           status: 'Payée',
-          invoice_number: 'FAC-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 10000),
+          invoice_number: `FAC-${new Date().getFullYear()}-${Date.now()}-${Math.floor(10000 + Math.random() * 90000)}`,
         };
         const { data: newInvoice, error } = await supabase.from('invoices').insert([{...invoice, school_id: currentSchoolId}]).select();
         if (error) throw error;
@@ -2809,6 +2811,11 @@ function App() {
       closeModal();
     } catch (error: any) {
       alert("Erreur: " + error.message);
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        if (originalBtnText) submitBtn.innerHTML = originalBtnText;
+      }
     }
   };
 
@@ -8905,7 +8912,7 @@ function App() {
 
               {/* Student Form */}
               {activeModal === 'student' && (
-                <form onSubmit={handleFormSubmit}>
+                <form onSubmit={handleFormSubmit} key={editEntity ? `edit-${editEntity.id}` : 'create-student'}>
                   <h3 style={{marginBottom: '16px', color: 'var(--primary-color)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>{t('admin.modals.student_info', "1. Informations de l'Élève")}</h3>
                   <div className="form-grid">
                     <div className="form-group">
@@ -8937,7 +8944,7 @@ function App() {
                   <div className="form-grid">
                     <div className="form-group">
                       <label>Matricule (optionnel)</label>
-                      <input type="text" name="matricule" className="form-input" placeholder="Ex: 84920153K (8 chiffres + 1 lettre si vide)" defaultValue={editEntity?.matricule || ""} />
+                      <input type="text" name="matricule" className="form-input" placeholder="Ex: 84920153K (automatique si vide)" defaultValue={editEntity?.matricule || ""} />
                     </div>
                     <div className="form-group">
                       <label>{t('admin.modals.birth_date', 'Date de Naissance')}</label>
@@ -8949,12 +8956,12 @@ function App() {
                         name="class_id" 
                         className="form-select" 
                         required 
-                        defaultValue={registrationClassId || editEntity?.class_id || ""}
+                        value={registrationClassId || editEntity?.class_id || ""}
                         onChange={(e) => {
                           const newClassId = e.target.value;
                           setRegistrationClassId(newClassId);
                           const totalAnnexes = getTotalClassFraisAnnexes(newClassId);
-                          setRegistrationPaymentAmount(totalAnnexes);
+                          setRegistrationPaymentAmount(totalAnnexes > 0 ? totalAnnexes : '');
                         }}
                       >
                         <option value="">Choisir une classe...</option>
@@ -10170,12 +10177,30 @@ function App() {
                     </div>
                   ) : (
                     <>
-                      <div className="print-controls" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                        <div style={{color: 'var(--text-secondary)'}}>
+                      <div className="print-controls" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'}}>
+                        <div style={{color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
                           Veuillez vérifier les informations avant impression.
                         </div>
-                        <div>
-                          <button className="btn btn-primary" onClick={() => window.print()}><Icons.Download /> Imprimer / PDF</button>
+                        <div style={{display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap'}}>
+                          <button className="btn btn-outline" onClick={closeModal} title="Fermer cette fenêtre">
+                            <Icons.X /> Fermer le reçu
+                          </button>
+                          <button 
+                            className="btn btn-success" 
+                            style={{background: '#10b981', color: 'white', borderColor: '#10b981', display: 'flex', alignItems: 'center', gap: '6px'}} 
+                            onClick={() => { 
+                              closeModal(); 
+                              setTimeout(() => {
+                                setActiveTab('students');
+                                setActiveModal('student');
+                              }, 60);
+                            }}
+                          >
+                            <Icons.UserPlus /> Inscrire un autre élève
+                          </button>
+                          <button className="btn btn-primary" onClick={() => window.print()}>
+                            <Icons.Download /> Imprimer / PDF
+                          </button>
                         </div>
                       </div>
                       
@@ -10215,12 +10240,30 @@ function App() {
                     </div>
                   ) : (
                     <>
-                      <div className="print-controls" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                        <div style={{color: 'var(--text-secondary)'}}>
-                          Veuillez vérifier les informations avant impression.
+                      <div className="print-controls" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px'}}>
+                        <div style={{color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
+                          Aperçu Ticket de Caisse (Format 80mm).
                         </div>
-                        <div>
-                          <button className="btn btn-primary" onClick={() => window.print()}><Icons.Download /> Imprimer / PDF</button>
+                        <div style={{display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap'}}>
+                          <button className="btn btn-outline" onClick={closeModal} title="Fermer cette fenêtre">
+                            <Icons.X /> Fermer le reçu
+                          </button>
+                          <button 
+                            className="btn btn-success" 
+                            style={{background: '#10b981', color: 'white', borderColor: '#10b981', display: 'flex', alignItems: 'center', gap: '6px'}} 
+                            onClick={() => { 
+                              closeModal(); 
+                              setTimeout(() => {
+                                setActiveTab('students');
+                                setActiveModal('student');
+                              }, 60);
+                            }}
+                          >
+                            <Icons.UserPlus /> Inscrire un autre élève
+                          </button>
+                          <button className="btn btn-primary" onClick={() => window.print()}>
+                            <Icons.Download /> Imprimer / PDF
+                          </button>
                         </div>
                       </div>
                       
