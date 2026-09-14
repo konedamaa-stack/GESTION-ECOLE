@@ -9920,7 +9920,10 @@ function App() {
           <div className="modal-content fade-in" style={{maxWidth: '1600px', width: '98%'}} onClick={e => e.stopPropagation()}>
             <div className="modal-header hide-print">
               <h3>Aperçu du Reçu (Dépense)</h3>
-              <div style={{display: 'flex', gap: '12px'}}>
+              <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+                <button className="btn btn-outline" onClick={closeModal}>
+                  <Icons.X /> Fermer
+                </button>
                 <button className="btn btn-primary" onClick={() => window.print()}>
                   <Icons.Printer /> Imprimer le reçu
                 </button>
@@ -10107,7 +10110,10 @@ function App() {
           <div className="modal-content fade-in" style={{maxWidth: '1600px', width: '98%'}} onClick={e => e.stopPropagation()}>
             <div className="modal-header hide-print">
               <h3>Aperçu du Reçu de Salaire (Employé)</h3>
-              <div style={{display: 'flex', gap: '12px'}}>
+              <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+                <button className="btn btn-outline" onClick={closeModal}>
+                  <Icons.X /> Fermer
+                </button>
                 <button className="btn btn-primary" onClick={() => window.print()}>
                   <Icons.Printer /> Imprimer le reçu
                 </button>
@@ -10130,7 +10136,10 @@ function App() {
           <div className="modal-content fade-in" style={{maxWidth: '1600px', width: '98%'}} onClick={e => e.stopPropagation()}>
             <div className="modal-header hide-print">
               <h3>Aperçu du Reçu (Professeur)</h3>
-              <div style={{display: 'flex', gap: '12px'}}>
+              <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+                <button className="btn btn-outline" onClick={closeModal}>
+                  <Icons.X /> Fermer
+                </button>
                 <button className="btn btn-primary" onClick={() => window.print()}>
                   <Icons.Printer /> Imprimer le reçu
                 </button>
@@ -10891,7 +10900,7 @@ function App() {
                                         motif: 'Frais de scolarité',
                                         payment_method: 'Espèces',
                                         status: 'Payée',
-                                        invoice_number: 'REC-' + new Date().getFullYear() + '-' + Math.floor(1000 + Math.random() * 9000),
+                                        invoice_number: `REC-${new Date().getFullYear()}-${Date.now()}-${Math.floor(10000 + Math.random() * 90000)}`,
                                       }]);
                                       if (invErr) throw invErr;
                                     } else if (delta < 0) {

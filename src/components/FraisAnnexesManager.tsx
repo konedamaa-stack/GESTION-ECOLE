@@ -501,7 +501,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
               motif: frais.name,
               payment_method: 'Espèces',
               status: 'Payée',
-              invoice_number: 'FAC-ANNEXE-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 100000),
+              invoice_number: `FAC-ANNEXE-${new Date().getFullYear()}-${Date.now()}-${invoicePayloads.length}-${Math.floor(10000 + Math.random() * 90000)}`,
             });
           }
         }
