@@ -261,7 +261,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
             )}
 
             <tr>
-              <td style={{ textAlign: isAr ? 'left' : 'right', paddingLeft: isAr ? '5px' : '0', paddingRight: isAr ? '0' : '5px', paddingBottom: '2px' }}>{isAr ? 'إجمالي المدفوع:' : 'Total versé:'}</td>
+              <td style={{ textAlign: isAr ? 'left' : 'right', paddingLeft: isAr ? '5px' : '0', paddingRight: isAr ? '0' : '5px', paddingBottom: '2px' }}>{isAr ? 'إجمالي المصاريف المسددة:' : 'Total versé scolarité:'}</td>
               <td style={{ textAlign: isAr ? 'right' : 'left', paddingBottom: '2px' }}>{formatCurrency(totalPaid)}</td>
               <td style={{ textAlign: 'center', paddingBottom: '2px' }}></td>
               <td colSpan={2} style={{ textAlign: 'center', paddingTop: '4px', paddingBottom: '2px' }}>
@@ -269,7 +269,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
               </td>
             </tr>
             <tr>
-              <td style={{ textAlign: isAr ? 'left' : 'right', paddingLeft: isAr ? '5px' : '0', paddingRight: isAr ? '0' : '5px', paddingBottom: '2px' }}>{isAr ? 'المتبقي:' : 'Reste:'}</td>
+              <td style={{ textAlign: isAr ? 'left' : 'right', paddingLeft: isAr ? '5px' : '0', paddingRight: isAr ? '0' : '5px', paddingBottom: '2px' }}>{isAr ? 'المتبقي من المصاريف:' : 'Reste scolarité:'}</td>
               <td style={{ textAlign: isAr ? 'right' : 'left', paddingBottom: '2px' }}>{formatCurrency(reste)}</td>
               <td style={{ textAlign: 'center', paddingBottom: '2px' }}></td>
               <td colSpan={2} style={{ textAlign: 'center', paddingTop: '8px' }}>
