@@ -11842,25 +11842,30 @@ function App() {
             <th>Sexe</th>
             <th>Classe</th>
             <th>Affectation</th>
-            <th>Statut</th>
-            <th>Reste à payer</th>
+            <th>Nom du Parent</th>
+            <th>Contact Parent</th>
           </tr>
         </thead>
         <tbody>
           {filteredStudents.map((row, i) => {
-            const studentInvoices = invoicesData.filter(inv => inv.student_id === row.id);
-            const studentPaye = studentInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
-            const studentTotal = Number(row.tuition_fee) || (row.affecte === 'Affecté' ? Number(row.classes?.tuition_fee_affecte) : Number(row.classes?.tuition_fee)) || 0;
-            const studentReste = Math.max(0, studentTotal - studentPaye);
+            const parentsList = row.student_parents && row.student_parents.length > 0 
+              ? row.student_parents.map((sp: any) => sp.parents).filter(Boolean) 
+              : [];
+            const parentName = parentsList.length > 0 
+              ? parentsList.map((p: any) => `${p.first_name || ''} ${p.last_name || ''}`.trim().toUpperCase()).filter(Boolean).join(' / ')
+              : (row.parent_name ? String(row.parent_name).trim().toUpperCase() : '-');
+            const parentContact = parentsList.length > 0
+              ? parentsList.map((p: any) => p.phone).filter(Boolean).join(' / ') || '-'
+              : (row.parent_phone || row.phone || '-');
             return (
               <tr key={i}>
                 <td style={{ fontFamily: 'monospace' }}>{row.matricule}</td>
-                <td>{row.first_name} {row.last_name}</td>
+                <td style={{ fontWeight: 600 }}>{row.first_name ? `${row.first_name} ${row.last_name || ''}`.trim().toUpperCase() : (row.last_name ? String(row.last_name).toUpperCase() : '')}</td>
                 <td>{row.gender || 'Masculin'}</td>
                 <td>{row.classes?.name || 'Non assigné'}</td>
                 <td>{row.affecte || 'Non affecté'}</td>
-                <td>{row.status || 'Inscrit'}</td>
-                <td>{studentReste === 0 ? 'Soldé' : `${formatNum(studentReste)} F`}</td>
+                <td>{parentName}</td>
+                <td style={{ fontFamily: 'monospace' }}>{parentContact}</td>
               </tr>
             );
           })}
