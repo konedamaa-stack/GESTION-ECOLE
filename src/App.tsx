@@ -27,6 +27,7 @@ import { IdleTimeoutManager } from './components/IdleTimeoutManager';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { getSubdomain, slugifySubdomain, getSchoolUrl } from './utils/subdomain';
 import { sortClassesList } from './utils/classSort';
+import { formatPhoneNumber } from './utils/formatPhone';
 import { sanitizeText, sanitizeAmount, sanitizeFormData, sanitizeObject } from './lib/security';
 import { 
   Skeleton, 
@@ -4998,7 +4999,7 @@ function App() {
                 <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)', background: 'white', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '6px'}}>
                   <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
                     <span>📞</span>
-                    <span style={{fontWeight: 600, color: 'var(--text-primary)'}}>{staff.phone || 'Aucun numéro'}</span>
+                    <span style={{fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'monospace'}}>{staff.phone ? formatPhoneNumber(staff.phone) : 'Aucun numéro'}</span>
                   </div>
                   <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
                     <span>✉️</span>
@@ -5195,7 +5196,7 @@ function App() {
                   </button>
                 </td>
                 <td style={{padding: '16px 0'}}>{row.location || '-'}</td>
-                <td style={{padding: '16px 0'}}>{row.phone || '-'}</td>
+                <td style={{padding: '16px 0', fontFamily: 'monospace'}}>{formatPhoneNumber(row.phone)}</td>
                 <td style={{padding: '16px 0'}}>{row.email ? 'Actif' : 'Non configuré'}</td>
                 <td style={{padding: '16px 0', textAlign: 'right'}}>
                   <button className="btn btn-primary" style={{padding: '6px 12px', marginRight: '8px', fontSize: '0.85rem'}} onClick={() => { setEditEntity(row); setActiveModal('parent_children'); }}>👨‍👩‍👧‍👦 Enfants ({row.student_parents?.length || 0})</button>
@@ -11854,9 +11855,10 @@ function App() {
             const parentName = parentsList.length > 0 
               ? parentsList.map((p: any) => `${p.first_name || ''} ${p.last_name || ''}`.trim().toUpperCase()).filter(Boolean).join(' / ')
               : (row.parent_name ? String(row.parent_name).trim().toUpperCase() : '-');
-            const parentContact = parentsList.length > 0
+            const rawPhone = parentsList.length > 0
               ? parentsList.map((p: any) => p.phone).filter(Boolean).join(' / ') || '-'
               : (row.parent_phone || row.phone || '-');
+            const parentContact = formatPhoneNumber(rawPhone);
             return (
               <tr key={i}>
                 <td style={{ fontFamily: 'monospace' }}>{row.matricule}</td>
@@ -11865,7 +11867,7 @@ function App() {
                 <td>{row.classes?.name || 'Non assigné'}</td>
                 <td>{row.affecte || 'Non affecté'}</td>
                 <td>{parentName}</td>
-                <td style={{ fontFamily: 'monospace' }}>{parentContact}</td>
+                <td style={{ fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{parentContact}</td>
               </tr>
             );
           })}

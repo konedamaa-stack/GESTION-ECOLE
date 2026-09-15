@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { formatPhoneNumber } from '../utils/formatPhone';
 
 interface ReceiptPreviewProps {
   invoice?: any;
@@ -97,8 +98,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
 
   // Extracting data or falling back to mock data similar to the image
   const schoolName = schoolInfo?.school_name || schoolInfo?.name || "ÉTABLISSEMENT SCOLAIRE";
-  let schoolPhone = schoolInfo?.phone || "00 00 00 00 00";
-  schoolPhone = schoolPhone.replace(/^(cel|tel|tél|téléphone|phone)[:.\s]+/i, '');
+  let schoolPhone = formatPhoneNumber(schoolInfo?.phone || "00 00 00 00 00");
   const academicYear = schoolInfo?.academic_year || new Date().getFullYear() + " / " + (new Date().getFullYear() + 1);
   const classNameFr = student?.class?.name || student?.classes?.name || "-";
   const receiptNo = invoice?.id ? invoice.id.split('-')[0].toUpperCase() : "-";
