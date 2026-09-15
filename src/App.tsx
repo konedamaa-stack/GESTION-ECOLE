@@ -540,6 +540,7 @@ function App() {
   const [comptaActiveTab, setComptaActiveTab] = useState<'scolarite' | 'frais_annexes'>('scolarite');
   const [registrationClassId, setRegistrationClassId] = useState<string>('');
   const [registrationPaymentAmount, setRegistrationPaymentAmount] = useState<number | ''>('');
+  const [registrationAffecte, setRegistrationAffecte] = useState<string>('Non affecté');
   const [teachersData, setTeachersData] = useState<any[]>([]);
   const [employeesData, setEmployeesData] = useState<any[]>([]);
   const [expensesData, setExpensesData] = useState<any[]>([]);
@@ -879,6 +880,23 @@ function App() {
     return new Intl.NumberFormat(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR', { useGrouping: true }).format(parsed);
   };
 
+  const isStudentExempt = (s: any): boolean => {
+    if (!s) return false;
+    const aff = String(s.affecte || '').toLowerCase().trim();
+    return aff.includes('exonér') || aff.includes('exoner') || aff.includes('favori') || aff.includes('prise en charge');
+  };
+
+  const getStudentTuitionTotal = (s: any, cls?: any): number => {
+    if (!s) return 0;
+    if (isStudentExempt(s)) return 0;
+    if (s.tuition_fee !== null && s.tuition_fee !== undefined && s.tuition_fee !== '') {
+      const fee = Number(s.tuition_fee);
+      if (!isNaN(fee)) return fee;
+    }
+    const targetClass = cls || s.classes;
+    return s.affecte === 'Affecté' ? Number(targetClass?.tuition_fee_affecte || 0) : Number(targetClass?.tuition_fee || 0);
+  };
+
   useEffect(() => {
     document.documentElement.dir = i18n.language.startsWith('ar') ? 'rtl' : 'ltr';
     document.documentElement.lang = i18n.language;
@@ -900,6 +918,16 @@ function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (activeModal === 'student') {
+      if (editEntity) {
+        setRegistrationAffecte(editEntity.affecte || 'Non affecté');
+      } else {
+        setRegistrationAffecte('Non affecté');
+      }
+    }
+  }, [activeModal, editEntity]);
 
   useEffect(() => {
     if (studentSession) {
@@ -2216,7 +2244,7 @@ function App() {
             class_id: formData.get('class_id'),
             birth_date: formData.get('birth_date'),
             status: formData.get('status') || 'Inscrit',
-            tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : null,
+            tuition_fee: formData.get('affecte') === 'Exonéré' ? 0 : (formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : null),
             photo_url: photoUrl,
             affecte: formData.get('affecte') || 'Non affecté',
             gender: formData.get('gender') || 'Masculin',
@@ -2240,61 +2268,34 @@ function App() {
             const finalLastName = (pLastName || (formData.get('last_name') as string || 'Parent')).trim().toUpperCase();
             const finalFirstName = (pFirstName || 'Tuteur').trim().toUpperCase();
 
-            // Check if student already has a linked parent
-            const { data: existingLinks } = await supabase
+            const { data: currentStudentParents } = await supabase
               .from('student_parents')
               .select('parent_id')
-              .eq('student_id', editEntity.id);
+              .eq('student_id', editEntity.id)
+              .limit(1);
 
-            if (existingLinks && existingLinks.length > 0) {
-              const currentParentId = existingLinks[0].parent_id;
+            if (currentStudentParents && currentStudentParents.length > 0) {
               await supabase.from('parents').update({
                 first_name: finalFirstName,
                 last_name: finalLastName,
                 phone: pPhone || null,
                 email: pEmail || null,
                 location: pLocation || null
-              }).eq('id', currentParentId);
+              }).eq('id', currentStudentParents[0].parent_id);
             } else {
-              // Check if parent already exists in school by phone or name
-              let existingParentId = null;
-              if (pPhone) {
-                const { data: byPhone } = await supabase
-                  .from('parents')
-                  .select('id')
-                  .eq('school_id', currentSchoolId)
-                  .eq('phone', pPhone)
-                  .limit(1);
-                if (byPhone && byPhone.length > 0) existingParentId = byPhone[0].id;
-              }
-              if (!existingParentId && finalLastName && finalFirstName) {
-                const { data: byName } = await supabase
-                  .from('parents')
-                  .select('id')
-                  .eq('school_id', currentSchoolId)
-                  .ilike('first_name', finalFirstName)
-                  .ilike('last_name', finalLastName)
-                  .limit(1);
-                if (byName && byName.length > 0) existingParentId = byName[0].id;
-              }
-
-              if (!existingParentId) {
-                const { data: newP } = await supabase.from('parents').insert([{
-                  first_name: finalFirstName,
-                  last_name: finalLastName,
-                  phone: pPhone || null,
-                  email: pEmail || null,
-                  location: pLocation || null,
-                  password: 'passer123',
-                  school_id: currentSchoolId
-                }]).select();
-                if (newP && newP.length > 0) existingParentId = newP[0].id;
-              }
-
-              if (existingParentId) {
+              const { data: newParent, error: pErr } = await supabase.from('parents').insert([{
+                first_name: finalFirstName,
+                last_name: finalLastName,
+                phone: pPhone || null,
+                email: pEmail || null,
+                location: pLocation || null,
+                school_id: currentSchoolId,
+                password: 'passer123'
+              }]).select();
+              if (!pErr && newParent && newParent.length > 0) {
                 await supabase.from('student_parents').insert([{
                   student_id: editEntity.id,
-                  parent_id: existingParentId,
+                  parent_id: newParent[0].id,
                   relation_type: 'Parent'
                 }]);
               }
@@ -2309,11 +2310,13 @@ function App() {
         }
 
         const targetClassId = (formData.get('class_id') as string) || '';
-        const regAmount = Number(formData.get('reg_fee_amount')) || 0;
+        const affecteVal = (formData.get('affecte') as string) || 'Non affecté';
+        const isExempt = affecteVal === 'Exonéré' || affecteVal.toLowerCase().includes('exonér') || affecteVal.toLowerCase().includes('favori');
+        const regAmount = isExempt ? 0 : (Number(formData.get('reg_fee_amount')) || 0);
         const classFeesBreakdown = getClassFraisAnnexesBreakdown(targetClassId);
-        const totalAnnexes = classFeesBreakdown.reduce((sum, item) => sum + item.amount, 0);
+        const totalAnnexes = isExempt ? 0 : classFeesBreakdown.reduce((sum, item) => sum + item.amount, 0);
 
-        if (totalAnnexes > 0 && regAmount < totalAnnexes) {
+        if (!isExempt && totalAnnexes > 0 && regAmount < totalAnnexes) {
           alert(`Entrez la scolarité ! Le versement saisi (${formatNum(regAmount)} F CFA) ne couvre pas l'intégralité des frais annexes obligatoires de cette classe (${formatNum(totalAnnexes)} F CFA).\n\nVeuillez entrer un montant suffisant pour couvrir les annexes et commencer la scolarité, sinon veuillez annuler l'inscription.`);
           return;
         }
@@ -2329,9 +2332,9 @@ function App() {
           birth_date: formData.get('birth_date'),
           email: formData.get('email'),
           password: password,
-          tuition_fee: formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : null,
+          tuition_fee: isExempt ? 0 : (formData.get('tuition_fee') ? parseInt(formData.get('tuition_fee') as string) : null),
           photo_url: photoUrl,
-          affecte: formData.get('affecte') || 'Non affecté',
+          affecte: affecteVal,
           gender: formData.get('gender') || 'Masculin',
           location: formData.get('location')
         };
@@ -2454,7 +2457,41 @@ function App() {
 
         fetchStudents();
         fetchParents();
-        if (regAmount > 0) {
+        if (isExempt) {
+          const { data: freeInvData } = await supabase.from('invoices').insert([{
+            student_id: newStudentId,
+            amount: 0,
+            paid_amount: 0,
+            frais_annexes_amount: 0,
+            total_amount_given: 0,
+            motif: "Inscription (Élève Exonéré - Prise en charge)",
+            payment_method: 'Exonéré',
+            status: 'Payée',
+            invoice_number: `FAC-EXO-${new Date().getFullYear()}-${Date.now()}-${Math.floor(10000 + Math.random() * 90000)}`,
+            school_id: currentSchoolId,
+            paid_at: new Date().toISOString()
+          }]).select();
+
+          fetchInvoices();
+          const clsForReceipt = classesData.find(c => c.id === student.class_id);
+          const freeInv = freeInvData && freeInvData.length > 0 ? freeInvData[0] : null;
+          setSelectedStudent({ ...student, id: newStudentId, classes: clsForReceipt, student_parents: parentObj ? [{ parents: parentObj }] : [] });
+          setSelectedInvoice(freeInv || {
+            student_id: newStudentId,
+            amount: 0,
+            paid_amount: 0,
+            frais_annexes_amount: 0,
+            total_amount_given: 0,
+            motif: "Inscription (Élève Exonéré - Prise en charge)",
+            payment_method: 'Exonéré',
+            status: 'Payée',
+            invoice_number: `FAC-EXO-${new Date().getFullYear()}-${Date.now()}-${Math.floor(10000 + Math.random() * 90000)}`,
+            id: 'temp-id',
+            issue_date: new Date().toISOString()
+          });
+          setActiveModal('receipt_preview');
+          return;
+        } else if (regAmount > 0) {
           fetchInvoices();
           const clsForReceipt = classesData.find(c => c.id === student.class_id);
           setSelectedStudent({ ...student, id: newStudentId, classes: clsForReceipt, student_parents: parentObj ? [{ parents: parentObj }] : [] });
@@ -2625,9 +2662,13 @@ function App() {
         const isFraisAnnexePayment = fraisAnnexesData.some((f: any) => (motif || '').toLowerCase().includes(f.name.toLowerCase()));
 
         if (student && !isFraisAnnexePayment) {
+            if (isStudentExempt(student)) {
+                alert(`Cet élève est Exonéré (prise en charge totale). Sa scolarité est de 0 F CFA.`);
+                return;
+            }
             const studentInvoices = invoicesData.filter((inv: any) => inv.student_id === studentId && !fraisAnnexesData.some((f: any) => (inv.motif || '').toLowerCase().includes(f.name.toLowerCase()) && !(inv.motif || '').toLowerCase().includes('scolarité')));
             const studentPaye = studentInvoices.filter((inv: any) => inv.status === 'Payée').reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
-            const studentTotal = Number(student.tuition_fee) || (student.affecte === 'Affecté' ? Number(student.classes?.tuition_fee_affecte) : Number(student.classes?.tuition_fee)) || 0;
+            const studentTotal = getStudentTuitionTotal(student, student.classes);
             const studentReste = Math.max(0, studentTotal - studentPaye);
 
             if (studentTotal > 0 && amount > studentReste) {
@@ -3070,7 +3111,7 @@ function App() {
     // 1. Calculs Précis Scolarité
     const scolariteTotalAttendu = (classesData || []).reduce((sumCls, cls) => {
       const classStudents = (studentsData || []).filter(s => s.class_id === cls.id);
-      return sumCls + classStudents.reduce((sumS, s) => sumS + (Number(s.tuition_fee) || (s.affecte === 'Affecté' ? Number(cls.tuition_fee_affecte) : Number(cls.tuition_fee)) || 0), 0);
+      return sumCls + classStudents.reduce((sumS, s) => sumS + getStudentTuitionTotal(s, cls), 0);
     }, 0);
 
     const scolariteTotalEncaisse = (invoicesData || [])
@@ -3082,7 +3123,7 @@ function App() {
 
     // 2. Calculs Précis Frais Annexes
     const annexesTotalAttendu = (classesData || []).reduce((sumCls, cls) => {
-      const classStudentsCount = (studentsData || []).filter(s => s.class_id === cls.id).length;
+      const classStudentsCount = (studentsData || []).filter(s => s.class_id === cls.id && !isStudentExempt(s)).length;
       const classForfait = (fraisAnnexesData || []).reduce((sumF, f) => {
         return sumF + getClassFeeAmount(cls.id, f);
       }, 0);
@@ -3426,14 +3467,15 @@ function App() {
     else if (selectedClassFilter === 'assigned') matchClass = !!s.class_id;
     else matchClass = s.class_id === selectedClassFilter;
     const matchStatus = selectedStatusFilter === 'all' || (s.status || 'Inscrit') === selectedStatusFilter;
-    const matchAffecte = selectedAffecteFilter === 'all' || (s.affecte || 'Non affecté') === selectedAffecteFilter;
+    const matchAffecte = selectedAffecteFilter === 'all' 
+      || (selectedAffecteFilter === 'Exonéré' ? isStudentExempt(s) : (s.affecte || 'Non affecté') === selectedAffecteFilter);
     
     let matchPayment = true;
     if (selectedPaymentFilter !== 'all') {
       const studentInvoices = invoicesData.filter(inv => inv.student_id === s.id);
       const studentPaye = studentInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
-      const studentTotal = Number(s.tuition_fee) || (s.affecte === 'Affecté' ? Number(s.classes?.tuition_fee_affecte) : Number(s.classes?.tuition_fee)) || 0;
-      const studentReste = Math.max(0, studentTotal - studentPaye);
+      const studentTotal = getStudentTuitionTotal(s, s.classes);
+      const studentReste = isStudentExempt(s) ? 0 : Math.max(0, studentTotal - studentPaye);
       const isSolde = studentReste <= 0;
       if (selectedPaymentFilter === 'soldes') {
         matchPayment = isSolde;
@@ -3625,6 +3667,7 @@ function App() {
               <option value="all">Tous (Affectation)</option>
               <option value="Affecté">Affectés (État)</option>
               <option value="Non affecté">Non affectés (Privé)</option>
+              <option value="Exonéré">⭐ Exonérés (Personnel / Boursier)</option>
             </select>
             <select 
               className="form-select" 
@@ -3719,12 +3762,24 @@ function App() {
                         whiteSpace: 'nowrap', 
                         letterSpacing: '0.02em',
                         textTransform: 'uppercase',
-                        background: row.affecte === 'Affecté' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(107, 114, 128, 0.15)', 
-                        color: row.affecte === 'Affecté' ? '#2563eb' : '#4b5563',
-                        border: row.affecte === 'Affecté' ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(107, 114, 128, 0.3)'
+                        background: isStudentExempt(row)
+                          ? 'rgba(16, 185, 129, 0.18)'
+                          : row.affecte === 'Affecté' 
+                            ? 'rgba(59, 130, 246, 0.15)' 
+                            : 'rgba(107, 114, 128, 0.15)', 
+                        color: isStudentExempt(row)
+                          ? '#047857'
+                          : row.affecte === 'Affecté' 
+                            ? '#2563eb' 
+                            : '#4b5563',
+                        border: isStudentExempt(row)
+                          ? '1px solid #10b981'
+                          : row.affecte === 'Affecté' 
+                            ? '1px solid rgba(59, 130, 246, 0.3)' 
+                            : '1px solid rgba(107, 114, 128, 0.3)'
                       }}
                     >
-                      {row.affecte || 'Non affecté'}
+                      {isStudentExempt(row) ? '⭐ Exonéré' : (row.affecte || 'Non affecté')}
                     </span>
                   </div>
                 </td>
@@ -3745,8 +3800,8 @@ function App() {
                       <button className="btn btn-outline" title="Réinscrire" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--accent-color)', borderColor: 'var(--accent-color)'}} onClick={() => { 
                         const studentInvoices = invoicesData.filter(inv => inv.student_id === row.id);
                         const studentPaye = studentInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
-                        const studentTotal = Number(row.tuition_fee) || (row.affecte === 'Affecté' ? Number(row.classes?.tuition_fee_affecte) : Number(row.classes?.tuition_fee)) || 0;
-                        const studentReste = Math.max(0, studentTotal - studentPaye);
+                        const studentTotal = getStudentTuitionTotal(row, row.classes);
+                        const studentReste = isStudentExempt(row) ? 0 : Math.max(0, studentTotal - studentPaye);
                         if (studentReste > 0) {
                           alert(`Impossible de réinscrire cet élève. Il a un reste de scolarité non payé de ${studentReste} CFA. Veuillez d'abord solder sa scolarité.`);
                         } else {
@@ -5509,7 +5564,7 @@ function App() {
       const classInvoices = (invoicesData || []).filter(inv => classStudentsIds.includes(inv.student_id));
       
       const paye = classInvoices.filter(inv => inv.status === 'Payée' && !isFraisAnnexeInvoice(inv)).reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
-      const total = classStudents.reduce((sum, s) => sum + (Number(s.tuition_fee) || (s.affecte === 'Affecté' ? Number(cls.tuition_fee_affecte) : Number(cls.tuition_fee)) || 0), 0);
+      const total = classStudents.reduce((sum, s) => sum + getStudentTuitionTotal(s, cls), 0);
       const nonPaye = Math.max(0, total - paye);
       
       return {
@@ -5522,8 +5577,8 @@ function App() {
         studentsDetails: classStudents.map(s => {
           const sInvoices = classInvoices.filter(inv => inv.student_id === s.id && inv.status === 'Payée' && !isFraisAnnexeInvoice(inv));
           const sPaye = sInvoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
-          const sTotal = Number(s.tuition_fee) || (s.affecte === 'Affecté' ? Number(cls.tuition_fee_affecte) : Number(cls.tuition_fee)) || 0;
-          const sNonPaye = Math.max(0, sTotal - sPaye);
+          const sTotal = getStudentTuitionTotal(s, cls);
+          const sNonPaye = isStudentExempt(s) ? 0 : Math.max(0, sTotal - sPaye);
           const sortedInvs = [...sInvoices].sort((a, b) => new Date(b.paid_at || b.issue_date || 0).getTime() - new Date(a.paid_at || a.issue_date || 0).getTime());
           const lastPaymentDate = sortedInvs.length > 0 ? (sortedInvs[0].paid_at || sortedInvs[0].issue_date) : null;
 
@@ -5534,7 +5589,7 @@ function App() {
             paye: sPaye,
             total: sTotal,
             nonPaye: sNonPaye,
-            status: sNonPaye <= 0 ? 'Soldé' : 'Non soldé',
+            status: isStudentExempt(s) ? 'Exonéré' : (sNonPaye <= 0 ? 'Soldé' : 'Non soldé'),
             lastPaymentDate: lastPaymentDate
           };
         }).sort((a, b) => a.name.localeCompare(b.name))
@@ -6036,7 +6091,7 @@ function App() {
           <h3 className="panel-title finance-print-title" style={{textTransform: 'uppercase', fontSize: '1.1rem', fontWeight: 800}}>
             {(() => {
               if (financeStatusFilter === 'all' && financeClassFilter === 'all') return 'SUIVI DES PAIEMENTS PAR ÉLÈVE';
-              const statusPart = financeStatusFilter === 'all' ? '' : (financeStatusFilter === 'Soldé' ? 'SOLDE' : 'NON SOLDE');
+              const statusPart = financeStatusFilter === 'all' ? '' : (financeStatusFilter === 'Soldé' ? 'SOLDE' : financeStatusFilter === 'Exonéré' ? 'EXONÉRÉS' : 'NON SOLDE');
               const classPart = financeClassFilter === 'all' ? '' : 'DE CLASSE ' + (classesData.find(c => c.id === financeClassFilter)?.name || '').toUpperCase();
               return `LA LISTE DES ELEVES ${statusPart} ${classPart}`.replace(/\s+/g, ' ').trim();
             })()}
@@ -6051,6 +6106,7 @@ function App() {
               <option value="all">Tous les statuts</option>
               <option value="Soldé">Soldé</option>
               <option value="Non soldé">Non soldé</option>
+              <option value="Exonéré">⭐ Exonérés</option>
             </select>
             <select 
               className="form-select" 
@@ -6154,10 +6210,10 @@ function App() {
                       <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: 'var(--success-color)', whiteSpace: 'nowrap'}}>{formatNum(st.paye)} F</td>
                       <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>{formatNum(st.nonPaye)} F</td>
                       <td style={{padding: '12px 8px', textAlign: 'center'}}>
-                        <span className={`badge ${st.status === 'Soldé' ? 'badge-success' : 'badge-warning'}`}>{st.status}</span>
+                        <span className={`badge ${st.status === 'Soldé' || st.status === 'Exonéré' ? 'badge-success' : 'badge-warning'}`}>{st.status === 'Exonéré' ? '⭐ Exonéré' : st.status}</span>
                       </td>
                       <td className="hide-print" style={{padding: '8px 14px 8px 8px', textAlign: 'center', whiteSpace: 'nowrap'}}>
-                        {currentAdminRole !== 'Supervisor' && (
+                        {currentAdminRole !== 'Supervisor' && st.status !== 'Exonéré' && (
                           <button 
                             className={`btn ${st.status !== 'Soldé' ? 'btn-primary' : 'btn-outline'}`}
                             style={{
@@ -6509,11 +6565,12 @@ function App() {
           </thead>
           <tbody>
             {filteredInvoices.length > 0 ? filteredInvoices.map((row, i) => {
+                const isExempt = isStudentExempt(row.students);
                 const studentInvs = invoicesData.filter(inv => inv.student_id === row.student_id && !isFraisAnnexeInvoice(inv));
                 let verse = 0;
                 studentInvs.forEach(inv => { if(inv.status === 'Payée') verse += Number(inv.amount); });
-                const studentTotal = Number(row.students?.tuition_fee) || (row.students?.affecte === 'Affecté' ? Number(row.students?.classes?.tuition_fee_affecte) : Number(row.students?.classes?.tuition_fee)) || 0;
-                let reste = Math.max(0, studentTotal - verse);
+                const studentTotal = getStudentTuitionTotal(row.students, row.students?.classes);
+                let reste = isExempt ? 0 : Math.max(0, studentTotal - verse);
                 return (
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
                 <td style={{padding: '16px 0', fontFamily: 'monospace', fontWeight: 500, color: 'var(--primary-color)'}}>{row.invoice_number}</td>
@@ -6530,7 +6587,11 @@ function App() {
                 <td style={{padding: '16px 0'}}>
                   <div style={{fontWeight: 'bold', color: 'var(--success-color)'}}>{formatNum(row.amount)} F</div>
                   <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px'}}>
-                    Total versé: {formatNum(verse)} <br/> Reste: <span style={{color: reste > 0 ? '#e74c3c' : '#2ecc71', fontWeight: 600}}>{formatNum(reste)}</span>
+                    {isExempt ? (
+                      <span style={{color: '#059669', fontWeight: 700}}>⭐ Exonéré (Reste: 0 F)</span>
+                    ) : (
+                      <>Total versé: {formatNum(verse)} <br/> Reste: <span style={{color: reste > 0 ? '#e74c3c' : '#2ecc71', fontWeight: 600}}>{formatNum(reste)}</span></>
+                    )}
                   </div>
                 </td>
                 <td style={{padding: '16px 0', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{new Date(row.issue_date).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR')}</td>
@@ -8975,14 +9036,27 @@ function App() {
                   <div className="form-grid" style={{marginTop: '16px'}}>
                     <div className="form-group">
                       <label>Type d'élève (Affectation)</label>
-                      <select name="affecte" className="form-select" required defaultValue={editEntity?.affecte || "Non affecté"}>
+                      <select 
+                        name="affecte" 
+                        className="form-select" 
+                        required 
+                        value={registrationAffecte}
+                        onChange={(e) => setRegistrationAffecte(e.target.value)}
+                      >
                         <option value="Non affecté">Non affecté (Privé)</option>
                         <option value="Affecté">Affecté (Par l'État)</option>
+                        <option value="Exonéré">⭐ Exonéré (Enfant du personnel / Boursier)</option>
                       </select>
                     </div>
                     <div className="form-group">
                       <label>Scolarité personnalisée (Optionnel, F)</label>
-                      <input type="number" name="tuition_fee" className="form-input" placeholder="Laisser vide pour utiliser le tarif de la classe" defaultValue={editEntity?.tuition_fee || ""} />
+                      {registrationAffecte === 'Exonéré' ? (
+                        <div style={{ padding: '8px 12px', background: '#ecfdf5', borderRadius: '6px', border: '1px solid #10b981', color: '#047857', fontWeight: 700, fontSize: '0.88rem', height: '42px', display: 'flex', alignItems: 'center' }}>
+                          🎁 0 F CFA (Exonération totale)
+                        </div>
+                      ) : (
+                        <input type="number" name="tuition_fee" className="form-input" placeholder="Laisser vide pour utiliser le tarif de la classe" defaultValue={editEntity?.tuition_fee || ""} />
+                      )}
                     </div>
                     <div className="form-group">
                       <label>{t('admin.modals.password_default', 'Mot de passe (par défaut: passer123)')}</label>
@@ -9046,7 +9120,25 @@ function App() {
                     </div>
                   </div>
 
-                  {!editEntity && (() => {
+                  {!editEntity && (registrationAffecte === 'Exonéré' ? (
+                    <div style={{ marginTop: '24px', padding: '18px 20px', borderRadius: '12px', background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)', border: '2px solid #10b981', color: '#065f46' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.1rem', fontWeight: 800 }}>
+                        <span style={{ fontSize: '1.5rem' }}>⭐</span>
+                        <span>Élève Exonéré / Privilégié (Enfant du personnel / Directeur / Boursier)</span>
+                      </div>
+                      <div style={{ marginTop: '10px', fontSize: '0.92rem', lineHeight: 1.6, color: '#047857' }}>
+                        Cet élève bénéficie d'une <strong>prise en charge intégrale (0 F CFA)</strong> :
+                        <ul style={{ margin: '6px 0 0 20px', padding: 0 }}>
+                          <li><strong>Frais Annexes :</strong> 0 F CFA (Exempté / Non facturés)</li>
+                          <li><strong>Scolarité :</strong> 0 F CFA (Exempté / 100% prise en charge)</li>
+                        </ul>
+                        Un reçu d'inscription officiel gratuit (0 F CFA, Statut: <em>EXONÉRÉ - PRISE EN CHARGE</em>) sera généré automatiquement à la validation.
+                      </div>
+                      <input type="hidden" name="reg_fee_amount" value="0" />
+                      <input type="hidden" name="reg_fee_method" value="Exonéré" />
+                      <input type="hidden" name="reg_fee_status" value="Payée" />
+                    </div>
+                  ) : (() => {
                     const targetClassId = registrationClassId || (classesData.length > 0 ? classesData[0].id : '');
                     const classFeesBreakdown = getClassFraisAnnexesBreakdown(targetClassId);
                     const totalAnnexes = classFeesBreakdown.reduce((sum, item) => sum + item.amount, 0);
@@ -9162,13 +9254,13 @@ function App() {
                         </div>
                       </>
                     );
-                  })()}
+                  })())}
                   <div style={{marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
                     <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
                     <button 
                       type="submit" 
                       className="btn btn-primary"
-                      style={(!editEntity && (() => {
+                      style={(!editEntity && registrationAffecte !== 'Exonéré' && (() => {
                         const targetClassId = registrationClassId || (classesData.length > 0 ? classesData[0].id : '');
                         const totalAnnexes = getTotalClassFraisAnnexes(targetClassId);
                         const numericPayment = registrationPaymentAmount !== '' ? Number(registrationPaymentAmount) : totalAnnexes;
@@ -9176,9 +9268,15 @@ function App() {
                       })()) ? {
                         background: '#dc2626',
                         borderColor: '#dc2626'
-                      } : {}}
+                      } : (registrationAffecte === 'Exonéré' ? {
+                        background: '#059669',
+                        borderColor: '#059669'
+                      } : {})}
                     >
                       {editEntity ? 'Mettre à jour' : (() => {
+                        if (registrationAffecte === 'Exonéré') {
+                          return '⭐ Valider l\'inscription (Élève Exonéré)';
+                        }
                         const targetClassId = registrationClassId || (classesData.length > 0 ? classesData[0].id : '');
                         const totalAnnexes = getTotalClassFraisAnnexes(targetClassId);
                         const numericPayment = registrationPaymentAmount !== '' ? Number(registrationPaymentAmount) : totalAnnexes;
@@ -9658,8 +9756,8 @@ function App() {
 
                 const realResteTotal = (editEntity.student_parents || []).reduce((sum: number, sp: any) => {
                   const student = studentsData?.find(s => s.id === sp.student_id);
-                  if (!student) return sum;
-                  const studentTotal = Number(student.tuition_fee) || Number(student.classes?.tuition_fee) || 0;
+                  if (!student || isStudentExempt(student)) return sum;
+                  const studentTotal = getStudentTuitionTotal(student, student.classes);
                   const studentInvs = invoicesData?.filter(inv => inv.student_id === student.id) || [];
                   const studentPaye = studentInvs.reduce((acc, inv) => {
                     if (inv.status === 'Payée') return acc + (Number(inv.paid_amount !== undefined && inv.paid_amount !== null ? inv.paid_amount : inv.amount) || 0);
@@ -10221,16 +10319,17 @@ function App() {
                             student={selectedStudent}
                             invoicesData={invoicesData}
                             schoolInfo={effectiveSchoolInfo}
-                                                          studentReste={
-                                (() => {
-                                  const total = Number(selectedStudent.tuition_fee) || (selectedStudent.affecte === 'Affecté' ? Number(selectedStudent.classes?.tuition_fee_affecte) : Number(selectedStudent.classes?.tuition_fee)) || 0;
-                                  let paye = invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée' && !isFraisAnnexeInvoice(inv)).reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
-                                  if (selectedInvoice && selectedInvoice.status === 'Payée' && !isFraisAnnexeInvoice(selectedInvoice) && !invoicesData.some((i: any) => i.id === selectedInvoice.id)) {
-                                    paye += Number(selectedInvoice.amount) || 0;
-                                  }
-                                  return Math.max(0, total - paye);
-                                })()
-                              }
+                            studentReste={
+                              (() => {
+                                if (isStudentExempt(selectedStudent)) return 0;
+                                const total = getStudentTuitionTotal(selectedStudent, selectedStudent.classes);
+                                let paye = invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée' && !isFraisAnnexeInvoice(inv)).reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
+                                if (selectedInvoice && selectedInvoice.status === 'Payée' && !isFraisAnnexeInvoice(selectedInvoice) && !invoicesData.some((i: any) => i.id === selectedInvoice.id)) {
+                                  paye += Number(selectedInvoice.amount) || 0;
+                                }
+                                return Math.max(0, total - paye);
+                              })()
+                            }
                             onClose={closeModal}
                           />
                         </div>
@@ -10286,7 +10385,8 @@ function App() {
                             schoolInfo={effectiveSchoolInfo}
                             studentReste={
                                 (() => {
-                                  const total = Number(selectedStudent.tuition_fee) || (selectedStudent.affecte === 'Affecté' ? Number(selectedStudent.classes?.tuition_fee_affecte) : Number(selectedStudent.classes?.tuition_fee)) || 0;
+                                  if (isStudentExempt(selectedStudent)) return 0;
+                                  const total = getStudentTuitionTotal(selectedStudent, selectedStudent.classes);
                                   let paye = invoicesData.filter((inv: any) => inv.student_id === selectedStudent.id && inv.status === 'Payée' && !isFraisAnnexeInvoice(inv)).reduce((sum: number, inv: any) => sum + (Number(inv.amount) || 0), 0);
                                   if (selectedInvoice && selectedInvoice.status === 'Payée' && !isFraisAnnexeInvoice(selectedInvoice) && !invoicesData.some((i: any) => i.id === selectedInvoice.id)) {
                                     paye += Number(selectedInvoice.amount) || 0;
@@ -10725,19 +10825,20 @@ function App() {
                   )}
 
                   {activeDossierTab === 'finances' && (() => {
+                    const isExempt = isStudentExempt(selectedStudent);
                     const studentInvoices = invoicesData.filter(inv => inv.student_id === selectedStudent.id && !isFraisAnnexeInvoice(inv));
                     const studentPaye = studentInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
-                    const studentTotal = Number(selectedStudent.tuition_fee) || (selectedStudent.affecte === 'Affecté' ? Number(selectedStudent.classes?.tuition_fee_affecte) : Number(selectedStudent.classes?.tuition_fee)) || 0;
+                    const studentTotal = getStudentTuitionTotal(selectedStudent, selectedStudent.classes);
                     const defaultClassFee = selectedStudent.affecte === 'Affecté' ? Number(selectedStudent.classes?.tuition_fee_affecte || 0) : Number(selectedStudent.classes?.tuition_fee || 0);
-                    const hasCustomTuition = selectedStudent.tuition_fee !== null && selectedStudent.tuition_fee !== undefined && selectedStudent.tuition_fee !== '';
-                    const studentReste = Math.max(0, studentTotal - studentPaye);
+                    const hasCustomTuition = !isExempt && selectedStudent.tuition_fee !== null && selectedStudent.tuition_fee !== undefined && selectedStudent.tuition_fee !== '';
+                    const studentReste = isExempt ? 0 : Math.max(0, studentTotal - studentPaye);
                     const totalAnnexesPayees = invoicesData.filter(inv => inv.student_id === selectedStudent.id && inv.status === 'Payée' && isFraisAnnexeInvoice(inv)).reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
 
                     return (
                     <div>
                       <div style={{display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px'}}>
                         <h3 style={{fontSize: '1.1rem', margin: 0}}>Historique des Paiements</h3>
-                        {currentAdminRole !== 'Supervisor' && (
+                        {currentAdminRole !== 'Supervisor' && !isExempt && (
                           <button className="btn btn-primary" onClick={() => { setPreselectedStudentId(selectedStudent.id); setActiveModal('payment'); }}>+ Enregistrer un paiement</button>
                         )}
                       </div>
@@ -10983,8 +11084,8 @@ function App() {
                                 <div style={{fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2}}>
                                   {formatNum(studentTotal)} <span style={{fontSize: '0.95rem', fontWeight: 600}}>F</span>
                                 </div>
-                                <div style={{fontSize: '0.78rem', color: hasCustomTuition ? 'var(--primary-color)' : 'var(--text-secondary)', marginTop: '6px', fontWeight: 500}}>
-                                  {hasCustomTuition ? '• Montant personnalisé' : '• Tarif standard classe'}
+                                <div style={{fontSize: '0.78rem', color: isExempt ? '#059669' : (hasCustomTuition ? 'var(--primary-color)' : 'var(--text-secondary)'), marginTop: '6px', fontWeight: isExempt ? 700 : 500}}>
+                                  {isExempt ? '⭐ Élève Exonéré (Prise en charge)' : (hasCustomTuition ? '• Montant personnalisé' : '• Tarif standard classe')}
                                 </div>
                               </div>
                             </div>
@@ -11865,7 +11966,7 @@ function App() {
                 <td style={{ fontWeight: 600 }}>{row.first_name ? `${row.first_name} ${row.last_name || ''}`.trim().toUpperCase() : (row.last_name ? String(row.last_name).toUpperCase() : '')}</td>
                 <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>{row.gender || 'Masculin'}</td>
                 <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>{row.classes?.name || 'Non assigné'}</td>
-                <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>{row.affecte || 'Non affecté'}</td>
+                <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>{isStudentExempt(row) ? '⭐ Exonéré' : (row.affecte || 'Non affecté')}</td>
                 <td>{parentName}</td>
                 <td style={{ fontFamily: 'monospace', whiteSpace: 'nowrap', textAlign: 'center', letterSpacing: '0.5px' }}>{parentContact}</td>
               </tr>

@@ -400,7 +400,7 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
 
   // Calculate Global Totals for Bilan
   const classBreakdowns = sortedClasses.map((cls) => {
-    const classStudentsCount = students.filter((s) => s.class_id === cls.id).length;
+    const classStudentsCount = students.filter((s) => s.class_id === cls.id && s.affecte !== 'Exonéré' && !String(s.affecte || '').toLowerCase().includes('exonér')).length;
 
     // Per category breakdown for this class
     const categories = sortedFrais.map((frais) => {
@@ -468,9 +468,10 @@ export const FraisAnnexesManager: React.FC<FraisAnnexesManagerProps> = ({
     if (isSupervisor || !schoolId) return;
     setIsValidating(true);
     try {
-      const targetStudents = target === 'all'
+      const targetStudents = (target === 'all'
         ? students
-        : students.filter((s: any) => s.class_id === target);
+        : students.filter((s: any) => s.class_id === target)
+      ).filter((s: any) => s.affecte !== 'Exonéré' && !String(s.affecte || '').toLowerCase().includes('exonér'));
 
       if (targetStudents.length === 0) {
         alert("Aucun élève trouvé pour cette sélection.");

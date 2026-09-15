@@ -104,30 +104,43 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
   const receiptNo = invoice?.id ? invoice.id.split('-')[0].toUpperCase() : "-";
   const matricule = student?.matricule || "-";
   
-  // Mention Affecté / Non affecté
+  // Mention Affecté / Non affecté / Exonéré
   const rawAffecte = student?.affecte || invoice?.students?.affecte || '';
-  const isAffecte = rawAffecte && (
+  const isExonere = Boolean(rawAffecte && (
+    rawAffecte === 'Exonéré' || 
+    rawAffecte === 'Exonere' || 
+    String(rawAffecte).toLowerCase().includes('exonér') ||
+    String(rawAffecte).toLowerCase().includes('favori') ||
+    String(rawAffecte).toLowerCase().includes('prise en charge')
+  ));
+  const isAffecte = !isExonere && Boolean(rawAffecte && (
     rawAffecte === 'Affecté' || 
     (String(rawAffecte).toLowerCase().includes('affect') && !String(rawAffecte).toLowerCase().includes('non'))
-  );
+  ));
   const affecteLabel = isAr 
-    ? (isAffecte ? 'موجّه (AFFECTÉ)' : 'غير موجّه (NON AFFECTÉ)') 
-    : (isAffecte ? 'AFFECTÉ' : 'NON AFFECTÉ');
+    ? (isExonere ? 'معفى (تكفّل)' : isAffecte ? 'موجّه (AFFECTÉ)' : 'غير موجّه (NON AFFECTÉ)') 
+    : (isExonere ? 'EXONÉRÉ (PRISE EN CHARGE)' : isAffecte ? 'AFFECTÉ' : 'NON AFFECTÉ');
   
   // Calculs financiers
-  const scolarite = Number(student?.tuition_fee) || (student?.affecte === 'Affecté' ? Number(student?.classes?.tuition_fee_affecte) : Number(student?.classes?.tuition_fee)) || Number(invoice?.amount) || 0;
-  const versementScolarite = invoice?.paid_amount !== undefined ? Number(invoice.paid_amount) : (Number(invoice?.amount) || 0);
-  const totalDonneAuCaissier = isFirstInstallment && fraisAnnexesTotal > 0
-    ? (invoice?.total_amount_given !== undefined ? Number(invoice.total_amount_given) : (versementScolarite + fraisAnnexesTotal))
-    : versementScolarite;
-  const reste = studentReste !== undefined ? Number(studentReste) : 0;
-  const totalPaid = Math.max(0, scolarite - reste);
+  const scolarite = isExonere 
+    ? 0 
+    : (student?.tuition_fee !== null && student?.tuition_fee !== undefined && student?.tuition_fee !== ''
+        ? Number(student.tuition_fee)
+        : (isAffecte ? Number(student?.classes?.tuition_fee_affecte || 0) : Number(student?.classes?.tuition_fee || 0)));
+  const versementScolarite = isExonere ? 0 : (invoice?.paid_amount !== undefined ? Number(invoice.paid_amount) : (Number(invoice?.amount) || 0));
+  const totalDonneAuCaissier = isExonere 
+    ? 0 
+    : (isFirstInstallment && fraisAnnexesTotal > 0
+        ? (invoice?.total_amount_given !== undefined ? Number(invoice.total_amount_given) : (versementScolarite + fraisAnnexesTotal))
+        : versementScolarite);
+  const reste = isExonere ? 0 : (studentReste !== undefined ? Number(studentReste) : 0);
+  const totalPaid = isExonere ? 0 : Math.max(0, scolarite - reste);
   
   const paymentDate = formatDate(invoice?.paid_at || new Date().toISOString());
   const studentName = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim().toUpperCase() : "NOM DE L'ÉLÈVE";
   const parentObj = student?.student_parents && student.student_parents.length > 0 ? student.student_parents[0].parents : null;
   const parentName = parentObj ? `${parentObj.first_name || ''} ${parentObj.last_name || ''}`.trim().toUpperCase() : (student?.parent_name ? String(student.parent_name).trim().toUpperCase() : "-");
-  const isSoldé = reste <= 0;
+  const isSoldé = isExonere || reste <= 0;
   let defaultApptDate = new Date(invoice?.paid_at || new Date());
   defaultApptDate.setMonth(defaultApptDate.getMonth() + 2);
   const nextAppt = formatDate(invoice?.next_appointment || defaultApptDate.toISOString());
