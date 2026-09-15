@@ -11838,13 +11838,13 @@ function App() {
       <table>
         <thead>
           <tr>
-            <th>Matricule</th>
+            <th style={{ width: '65px', textAlign: 'center', whiteSpace: 'nowrap' }}>Matricule</th>
             <th>Nom & Prénom</th>
-            <th>Sexe</th>
-            <th>Classe</th>
-            <th>Affectation</th>
+            <th style={{ width: '55px', textAlign: 'center', whiteSpace: 'nowrap' }}>Sexe</th>
+            <th style={{ width: '90px', textAlign: 'center', whiteSpace: 'nowrap' }}>Classe</th>
+            <th style={{ width: '85px', textAlign: 'center', whiteSpace: 'nowrap' }}>Affectation</th>
             <th>Nom du Parent</th>
-            <th>Contact Parent</th>
+            <th style={{ width: '120px', textAlign: 'center', whiteSpace: 'nowrap' }}>Contact Parent</th>
           </tr>
         </thead>
         <tbody>
@@ -11856,18 +11856,18 @@ function App() {
               ? parentsList.map((p: any) => `${p.first_name || ''} ${p.last_name || ''}`.trim().toUpperCase()).filter(Boolean).join(' / ')
               : (row.parent_name ? String(row.parent_name).trim().toUpperCase() : '-');
             const rawPhone = parentsList.length > 0
-              ? parentsList.map((p: any) => p.phone).filter(Boolean).join(' / ') || '-'
+              ? (parentsList.find((p: any) => p?.phone)?.phone || parentsList[0]?.phone || '-')
               : (row.parent_phone || row.phone || '-');
             const parentContact = formatPhoneNumber(rawPhone);
             return (
               <tr key={i}>
-                <td style={{ fontFamily: 'monospace' }}>{row.matricule}</td>
+                <td style={{ fontFamily: 'monospace', textAlign: 'center', whiteSpace: 'nowrap' }}>{row.matricule}</td>
                 <td style={{ fontWeight: 600 }}>{row.first_name ? `${row.first_name} ${row.last_name || ''}`.trim().toUpperCase() : (row.last_name ? String(row.last_name).toUpperCase() : '')}</td>
-                <td>{row.gender || 'Masculin'}</td>
-                <td>{row.classes?.name || 'Non assigné'}</td>
-                <td>{row.affecte || 'Non affecté'}</td>
+                <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>{row.gender || 'Masculin'}</td>
+                <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>{row.classes?.name || 'Non assigné'}</td>
+                <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>{row.affecte || 'Non affecté'}</td>
                 <td>{parentName}</td>
-                <td style={{ fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{parentContact}</td>
+                <td style={{ fontFamily: 'monospace', whiteSpace: 'nowrap', textAlign: 'center', letterSpacing: '0.5px' }}>{parentContact}</td>
               </tr>
             );
           })}

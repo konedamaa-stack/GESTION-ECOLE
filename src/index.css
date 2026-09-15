@@ -1188,14 +1188,16 @@ html {
   body.print-student-list .print-only-student-list-container table {
     width: 100% !important;
     border-collapse: collapse !important;
+    table-layout: auto !important;
   }
   body.print-student-list .print-only-student-list-container th,
   body.print-student-list .print-only-student-list-container td {
     border: 1px solid #cbd5e1 !important;
-    padding: 6px 8px !important;
+    padding: 5px 6px !important;
     text-align: left !important;
     font-size: 10px !important;
     color: black !important;
+    vertical-align: middle !important;
   }
   body.print-student-list .print-only-student-list-container th {
     background-color: #f1f5f9 !important;
