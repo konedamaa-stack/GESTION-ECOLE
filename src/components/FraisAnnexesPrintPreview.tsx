@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { sortClassesList } from '../utils/classSort';
+import { sortStudentsList } from '../utils/studentSort';
 
 interface FraisAnnexesPrintPreviewProps {
   schoolInfo: any;
@@ -122,7 +123,7 @@ export const FraisAnnexesPrintPreview: React.FC<FraisAnnexesPrintPreviewProps> =
 
   // Student specific calculations for 'by_class' mode
   const classStudents = selectedClassObj
-    ? students.filter((s) => s.class_id === selectedClassObj.id).sort((a, b) => (a.last_name || '').localeCompare(b.last_name || ''))
+    ? sortStudentsList(students.filter((s) => s.class_id === selectedClassObj.id))
     : [];
 
   const getStudentFeePaid = (studentId: string, motifName: string) => {

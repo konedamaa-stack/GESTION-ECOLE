@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useTranslation } from 'react-i18next';
+import { sortStudentsList } from '../utils/studentSort';
 import { applyThemeSettings } from '../lib/theme';
 import { BulletinPreview } from './BulletinPreview';
 import { ReceiptPreview } from './ReceiptPreview';
@@ -83,7 +84,7 @@ export default function StudentPortal({ student, onLogout }: { student: any; onL
           .eq('parent_id', parentData.id);
         
         if (links && links.length > 0) {
-          children = links.map((l: any) => l.students).filter(Boolean);
+          children = sortStudentsList(links.map((l: any) => l.students).filter(Boolean));
         }
       }
 

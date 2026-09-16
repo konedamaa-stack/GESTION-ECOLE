@@ -3,6 +3,7 @@ import { BulletinPreview } from './BulletinPreview';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { sortClassesList } from '../utils/classSort';
+import { sortStudentsList } from '../utils/studentSort';
 import { applyThemeSettings } from '../lib/theme';
 import { sanitizeText, sanitizeAmount, sanitizeObject } from '../lib/security';
 import { SkeletonStatGrid, SkeletonTable } from './SkeletonLoader';
@@ -80,8 +81,13 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
       }
 
       // Fetch students
-      const { data: students } = await supabase.from('students').select('*').eq('school_id', session.school_id);
-      if (students) setStudentsData(students);
+      const { data: students } = await supabase
+        .from('students')
+        .select('*')
+        .eq('school_id', session.school_id)
+        .order('last_name', { ascending: true })
+        .order('first_name', { ascending: true });
+      if (students) setStudentsData(sortStudentsList(students));
 
       // Fetch school settings
       const { data: set } = await supabase.from('school_settings').select('*').eq('school_id', session.school_id).limit(1).single();
@@ -243,8 +249,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
     doc.text(`Date : ${formattedDate}`, pageWidth - 60, 42);
 
     // Table Data Construction
-    const classStudents = studentsData.filter(s => s.class_id === selectedEvaluation.class_id)
-      .sort((a, b) => (a.last_name || '').localeCompare(b.last_name || ''));
+    const classStudents = sortStudentsList(studentsData.filter(s => s.class_id === selectedEvaluation.class_id));
 
     const tableData: any[] = [];
     let sumScores = 0;

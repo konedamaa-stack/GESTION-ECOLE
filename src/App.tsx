@@ -27,6 +27,7 @@ import { IdleTimeoutManager } from './components/IdleTimeoutManager';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { getSubdomain, slugifySubdomain, getSchoolUrl } from './utils/subdomain';
 import { sortClassesList } from './utils/classSort';
+import { sortStudentsList } from './utils/studentSort';
 import { formatPhoneNumber } from './utils/formatPhone';
 import { sanitizeText, sanitizeAmount, sanitizeFormData, sanitizeObject } from './lib/security';
 import { 
@@ -293,6 +294,7 @@ function App() {
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('Inscrit');
   const [selectedAffecteFilter, setSelectedAffecteFilter] = useState('all');
   const [selectedPaymentFilter, setSelectedPaymentFilter] = useState('all');
+  const [studentSortDirection, setStudentSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showHonorRollPanel, setShowHonorRollPanel] = useState(false);
   const [selectedHonorStudent, setSelectedHonorStudent] = useState<any | null>(null);
   const [invoiceSearchQuery, setInvoiceSearchQuery] = useState('');
@@ -1070,8 +1072,13 @@ function App() {
   }, [activeModal, selectedStudent]);
 
   const fetchStudents = async () => {
-    const { data } = await supabase.from('students').select(`*, classes ( name, tuition_fee, tuition_fee_affecte ), student_parents(parent_id, relation_type, parents(id, first_name, last_name, phone, email, location))`).eq('school_id', currentSchoolId);
-    if (data) setStudentsData(data);
+    const { data } = await supabase
+      .from('students')
+      .select(`*, classes ( name, tuition_fee, tuition_fee_affecte ), student_parents(parent_id, relation_type, parents(id, first_name, last_name, phone, email, location))`)
+      .eq('school_id', currentSchoolId)
+      .order('first_name', { ascending: true })
+      .order('last_name', { ascending: true });
+    if (data) setStudentsData(sortStudentsList(data, 'asc'));
   };
   const fetchClasses = async () => {
     const { data } = await supabase
@@ -3459,7 +3466,7 @@ function App() {
     );
   };
 
-  const filteredStudents = studentsData.filter(s => {
+  const filteredStudents = sortStudentsList(studentsData.filter(s => {
     const matchQuery = (s.first_name + ' ' + s.last_name + ' ' + s.matricule).toLowerCase().includes(searchQuery.toLowerCase());
     let matchClass = false;
     if (selectedClassFilter === 'all') matchClass = true;
@@ -3485,7 +3492,7 @@ function App() {
     }
 
     return matchQuery && matchClass && matchStatus && matchAffecte && matchPayment;
-  });
+  }), studentSortDirection);
 
   const currentSchoolObj = adminSchools?.find((s: any) => s.id === currentSchoolId) || subdomainSchool;
   const effectiveSchoolInfo = {
@@ -3623,6 +3630,7 @@ function App() {
             {' • '}{
               selectedAffecteFilter === 'all' ? 'Tous (Affecté & Non affecté)' : selectedAffecteFilter
             }
+            {' • '}Ordre alphabétique ({studentSortDirection === 'asc' ? 'A → Z' : 'Z → A'})
           </div>
           <div className="student-filters" style={{display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap'}}>
             <button 
@@ -3645,6 +3653,16 @@ function App() {
                 <rect x="6" y="14" width="12" height="8"></rect>
               </svg>
               Imprimer
+            </button>
+            <button 
+              type="button"
+              className="btn btn-outline"
+              onClick={() => setStudentSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+              title={studentSortDirection === 'asc' ? "Trier de Z à A" : "Trier de A à Z"}
+              style={{padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600}}
+            >
+              <span>🔤</span>
+              <span>{studentSortDirection === 'asc' ? 'A → Z (Nom)' : 'Z → A (Nom)'}</span>
             </button>
             <select 
               className="form-select" 
@@ -3708,7 +3726,26 @@ function App() {
           <thead>
             <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.students.col_matricule', 'Matricule')}</th>
-              <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.students.col_name', 'Nom & Prénom')}</th>
+              <th 
+                style={{padding: '12px 0', fontWeight: 600, cursor: 'pointer', userSelect: 'none'}}
+                onClick={() => setStudentSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                title="Cliquer pour basculer le tri A-Z / Z-A"
+              >
+                <div style={{display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)'}}>
+                  <span>{t('admin.students.col_name', 'Nom & Prénom')}</span>
+                  <span style={{
+                    fontSize: '0.72rem', 
+                    padding: '2px 8px', 
+                    background: 'rgba(59, 130, 246, 0.12)', 
+                    color: 'var(--primary-color)', 
+                    borderRadius: '12px',
+                    fontWeight: 700,
+                    border: '1px solid rgba(59, 130, 246, 0.25)'
+                  }}>
+                    {studentSortDirection === 'asc' ? 'A → Z ▲' : 'Z → A ▼'}
+                  </span>
+                </div>
+              </th>
               <th style={{padding: '12px 0', fontWeight: 500}}>{t('admin.students.col_class', 'Classe')}</th>
               <th style={{padding: '12px 0', fontWeight: 500, minWidth: '190px'}}>{t('admin.students.col_status', 'Statut')}</th>
               <th style={{padding: '12px 0', fontWeight: 500, textAlign: 'right'}}>{t('admin.students.col_actions', 'Actions')}</th>
@@ -3728,7 +3765,7 @@ function App() {
                       </div>
                     )}
                     <div style={{cursor: 'pointer', color: 'var(--primary-color)'}} onClick={() => { setSelectedStudent(row); setActiveModal('studentDossier'); }}>
-                      {row.first_name?.toUpperCase()} {row.last_name?.toUpperCase()}
+                      {row.first_name ? `${row.first_name} ${row.last_name || ''}`.trim().toUpperCase() : (row.last_name ? String(row.last_name).toUpperCase() : '')}
                     </div>
                   </div>
                 </td>
