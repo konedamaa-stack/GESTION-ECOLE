@@ -1344,9 +1344,37 @@ function App() {
     e.preventDefault();
     if (!inviteEmail || !currentSchoolId) return;
     
+    const cleanEmail = inviteEmail.trim().toLowerCase();
+
+    // Contrôle anti-doublon d'invitation
+    const { data: existingInv } = await supabase
+      .from('admin_invitations')
+      .select('id, email, role')
+      .eq('school_id', currentSchoolId)
+      .eq('email', cleanEmail)
+      .limit(1);
+
+    if (existingInv && existingInv.length > 0) {
+      alert(`⛔ Une invitation active existe déjà pour "${cleanEmail}" avec le rôle ${existingInv[0].role}.`);
+      return;
+    }
+
+    // Contrôle anti-doublon avec les collaborateurs existants
+    const { data: existingEmp } = await supabase
+      .from('employees')
+      .select('id, first_name, last_name, role')
+      .eq('school_id', currentSchoolId)
+      .eq('email', cleanEmail)
+      .limit(1);
+
+    if (existingEmp && existingEmp.length > 0) {
+      alert(`⛔ Un collaborateur existe déjà avec cet email : ${existingEmp[0].first_name} ${existingEmp[0].last_name} (${existingEmp[0].role}).`);
+      return;
+    }
+
     const { error } = await supabase.from('admin_invitations').insert([{
       school_id: currentSchoolId,
-      email: inviteEmail,
+      email: cleanEmail,
       role: inviteRole,
       invited_by: session?.user.id
     }]);
@@ -1364,22 +1392,75 @@ function App() {
     e.preventDefault();
     if (!collabLogin || !collabPassword || !currentSchoolId) return;
 
+    const cleanLogin = collabLogin.trim().toLowerCase();
     const parts = (collabName || collabLogin).trim().split(' ');
     const firstName = (parts[0] || '').trim().toUpperCase();
     const lastName = (parts.slice(1).join(' ') || 'Collaborateur').trim().toUpperCase();
+
+    // 1. Contrôle anti-doublon sur l'identifiant / login
+    const { data: existingLogin } = await supabase
+      .from('employees')
+      .select('id, first_name, last_name, role')
+      .eq('school_id', currentSchoolId)
+      .eq('email', cleanLogin)
+      .limit(1);
+
+    if (existingLogin && existingLogin.length > 0) {
+      alert(`⛔ Impossible de créer ce compte (Doublon d'identifiant détecté) !\n\nL'identifiant "${collabLogin}" est déjà attribué à : ${existingLogin[0].first_name} ${existingLogin[0].last_name} (${existingLogin[0].role}).\n\nVeuillez choisir un identifiant différent.`);
+      return;
+    }
+
+    // 2. Contrôle anti-doublon sur le Nom & Prénom
+    if (collabName.trim()) {
+      const { data: existingName } = await supabase
+        .from('employees')
+        .select('id, first_name, last_name, role, email')
+        .eq('school_id', currentSchoolId)
+        .ilike('first_name', firstName)
+        .ilike('last_name', lastName)
+        .limit(1);
+
+      if (existingName && existingName.length > 0) {
+        if (!window.confirm(`⚠️ Attention : Un compte collaborateur existe déjà pour "${firstName} ${lastName}" (Rôle: ${existingName[0].role}, Login: ${existingName[0].email}).\n\nÊtes-vous sûr de vouloir créer un compte supplémentaire ?`)) {
+          return;
+        }
+      }
+    }
+
+    // 3. Règle du Directeur Unique : Avertissement si un Directeur existe déjà
+    if (inviteRole === 'Director') {
+      const { data: existingDirectors } = await supabase
+        .from('employees')
+        .select('id, first_name, last_name, email')
+        .eq('school_id', currentSchoolId)
+        .eq('role', 'Director');
+
+      if (existingDirectors && existingDirectors.length > 0) {
+        const dNames = existingDirectors.map((d: any) => `${d.first_name} ${d.last_name} (${d.email})`).join(', ');
+        if (!window.confirm(`⚠️ Attention : Un compte Directeur existe déjà dans cet établissement :\n${dNames}\n\nPour éviter les doublons de direction, il est fortement conseillé de choisir Secrétaire, Comptable ou Superviseur.\n\nSouhaitez-vous vraiment ajouter un autre Directeur ?`)) {
+          return;
+        }
+      }
+    }
 
     try {
       const { error } = await supabase.from('employees').insert([{
         school_id: currentSchoolId,
         first_name: firstName,
         last_name: lastName,
-        email: collabLogin.trim().toLowerCase(),
+        email: cleanLogin,
         password: collabPassword,
         role: inviteRole,
         status: 'Actif'
       }]);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505' || error.message.includes('unique')) {
+          alert(`⛔ Erreur doublon : Un compte avec cet identifiant (${collabLogin}) existe déjà dans la base de données.`);
+          return;
+        }
+        throw error;
+      }
 
       alert(`Collaborateur créé avec succès !\n\nIdentifiant (Login) : ${collabLogin}\nMot de passe : ${collabPassword}\nRôle : ${inviteRole}`);
       setCollabName('');
@@ -2572,18 +2653,58 @@ function App() {
           if (error) throw error;
           alert("Coordonnées de l'employé mises à jour avec succès !");
         } else {
+          const cleanEmail = (formData.get('email') as string || '').trim().toLowerCase();
+          const fName = (formData.get('first_name') as string || '').trim().toUpperCase();
+          const lName = (formData.get('last_name') as string || '').trim().toUpperCase();
+
+          if (cleanEmail) {
+            const { data: existingEmail } = await supabase
+              .from('employees')
+              .select('id, first_name, last_name, role')
+              .eq('school_id', currentSchoolId)
+              .eq('email', cleanEmail)
+              .limit(1);
+
+            if (existingEmail && existingEmail.length > 0) {
+              alert(`⛔ Impossible d'ajouter cet employé : L'email "${cleanEmail}" est déjà attribué à ${existingEmail[0].first_name} ${existingEmail[0].last_name} (${existingEmail[0].role}).`);
+              return;
+            }
+          }
+
+          if (fName && lName) {
+            const { data: existingFullName } = await supabase
+              .from('employees')
+              .select('id, role, email')
+              .eq('school_id', currentSchoolId)
+              .ilike('first_name', fName)
+              .ilike('last_name', lName)
+              .limit(1);
+
+            if (existingFullName && existingFullName.length > 0) {
+              if (!window.confirm(`⚠️ Attention : Un employé nommé "${fName} ${lName}" (${existingFullName[0].role}) existe déjà dans cet établissement.\n\nConfirmez-vous l'ajout de cet homonyme ?`)) {
+                return;
+              }
+            }
+          }
+
           const employee = {
-            first_name: (formData.get('first_name') as string || '').trim().toUpperCase(),
-            last_name: (formData.get('last_name') as string || '').trim().toUpperCase(),
+            first_name: fName,
+            last_name: lName,
             role: formData.get('role'),
             phone: formData.get('phone'),
-            email: formData.get('email'),
+            email: cleanEmail || null,
             status: formData.get('status') || 'Actif',
             hire_date: formData.get('hire_date') || null,
             password: formData.get('password') || 'passer123'
           };
           const { error } = await supabase.from('employees').insert([{...employee, school_id: currentSchoolId}]);
-          if (error) throw error;
+          if (error) {
+            if (error.code === '23505' || error.message.includes('unique')) {
+              alert(`⛔ Erreur doublon : Un employé avec cet identifiant ou email existe déjà.`);
+              return;
+            }
+            throw error;
+          }
           alert("L'employé a été ajouté avec succès !");
         }
         fetchEmployees();
