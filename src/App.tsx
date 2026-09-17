@@ -2409,12 +2409,46 @@ function App() {
           return;
         }
 
+        const candidateFn = (formData.get('first_name') as string || '').trim().toUpperCase();
+        const candidateLn = (formData.get('last_name') as string || '').trim().toUpperCase();
+
+        // 1. Contrôle anti-doublon d'élèves (Nom & Prénom identiques dans le même établissement)
+        if (candidateFn && candidateLn) {
+          const { data: existingStudents } = await supabase
+            .from('students')
+            .select('id, matricule, first_name, last_name, classes(name)')
+            .eq('school_id', currentSchoolId)
+            .ilike('first_name', candidateFn)
+            .ilike('last_name', candidateLn);
+
+          if (existingStudents && existingStudents.length > 0) {
+            const listStr = existingStudents.map((s: any) => `• ${s.first_name} ${s.last_name} - Matricule: ${s.matricule} (Classe: ${s.classes?.name || 'Sans classe'})`).join('\n');
+            if (!window.confirm(`⚠️ ATTENTION : DOUBLON DE NOM & PRÉNOM DÉTECTÉ !\n\nUn ou plusieurs élèves portent déjà exactement ce nom dans votre établissement :\n\n${listStr}\n\nS'agit-il d'un véritable homonyme (un autre élève différent) ?\n\n• Cliquez sur "OK" pour forcer l'inscription de cet élève homonyme.\n• Cliquez sur "Annuler" pour éviter d'enregistrer un doublon inutile.`)) {
+              return;
+            }
+          }
+        }
+
         const rawMatricule = formData.get('matricule') ? (formData.get('matricule') as string).trim().toUpperCase() : '';
+        if (rawMatricule) {
+          const { data: existingMat } = await supabase
+            .from('students')
+            .select('id, first_name, last_name')
+            .eq('school_id', currentSchoolId)
+            .eq('matricule', rawMatricule)
+            .limit(1);
+
+          if (existingMat && existingMat.length > 0) {
+            alert(`⛔ Erreur Matricule : Le matricule "${rawMatricule}" est déjà attribué à ${existingMat[0].first_name} ${existingMat[0].last_name}.`);
+            return;
+          }
+        }
+
         const matricule = rawMatricule || generateStudentMatricule();
         const password = formData.get('password') || 'passer123';
         const student = {
-          first_name: (formData.get('first_name') as string || '').trim().toUpperCase(),
-          last_name: (formData.get('last_name') as string || '').trim().toUpperCase(),
+          first_name: candidateFn,
+          last_name: candidateLn,
           matricule: matricule,
           class_id: formData.get('class_id'),
           birth_date: formData.get('birth_date'),
