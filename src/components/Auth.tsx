@@ -705,7 +705,7 @@ export default function Auth({
               {(currentSchool?.name || 'S').charAt(0).toUpperCase()}
             </span>
           )}
-          <span style={{ color: '#059669', fontWeight: 800, fontSize: '1.35rem', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+          <span style={{ color: '#7B3F00', fontWeight: 800, fontSize: '1.35rem', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
             {currentSchool?.name || 'GESTION ETABLISSEMENT SCOLAIRE'}
           </span>
         </a>
@@ -767,12 +767,12 @@ export default function Auth({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '10px',
-                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.15) 100%)',
-                border: '1.5px solid rgba(16, 185, 129, 0.25)',
+                background: 'linear-gradient(135deg, rgba(160, 82, 45, 0.12) 0%, rgba(123, 63, 0, 0.18) 100%)',
+                border: '1.5px solid rgba(123, 63, 0, 0.25)',
                 padding: '10px 22px',
                 borderRadius: '30px',
                 marginBottom: '16px',
-                boxShadow: '0 2px 10px rgba(16, 185, 129, 0.08)',
+                boxShadow: '0 2px 10px rgba(123, 63, 0, 0.08)',
                 maxWidth: '100%'
               }}>
                 {currentSchool.logo_url ? (
@@ -785,7 +785,7 @@ export default function Auth({
                   <span style={{ fontSize: '1.25rem' }}>🏫</span>
                 )}
                 <span style={{ 
-                  color: '#065f46', 
+                  color: '#7B3F00', 
                   fontWeight: 800, 
                   fontSize: '1.18rem',
                   letterSpacing: '0.02em',

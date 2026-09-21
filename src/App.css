@@ -737,8 +737,8 @@
 
   [data-theme="dark"] .sidebar,
   body.dark-mode .sidebar {
-    background-color: #070a12 !important;
-    border-right: 1px solid #1a2334 !important;
+    background-color: #4a2317 !important;
+    border-right: 1px solid #5c2f1f !important;
     box-shadow: 2px 0 20px rgba(0, 0, 0, 0.5) !important;
   }
 

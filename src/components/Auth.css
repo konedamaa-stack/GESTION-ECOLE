@@ -32,7 +32,7 @@
 .auth-header-logo {
   font-size: 1.25rem;
   font-weight: 800;
-  color: #059669;
+  color: #7B3F00;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -40,7 +40,7 @@
 }
 
 .auth-header-logo-badge {
-  background: #059669;
+  background: #7B3F00;
   color: white;
   padding: 4px 10px;
   border-radius: 8px;
@@ -62,11 +62,11 @@
 }
 
 .auth-header-link:hover {
-  color: #059669;
+  color: #7B3F00;
 }
 
 .auth-header-btn {
-  background: #059669;
+  background: #7B3F00;
   color: white;
   border: none;
   padding: 8px 18px;
@@ -75,11 +75,11 @@
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+  box-shadow: 0 4px 12px rgba(123, 63, 0, 0.25);
 }
 
 .auth-header-btn:hover {
-  background: #047857;
+  background: #5C2D0A;
   transform: translateY(-1px);
 }
 
@@ -104,10 +104,10 @@
   }
 }
 
-/* Left Green Banner Panel */
+/* Left Brown Banner Panel */
 .auth-split-left {
   flex: 1;
-  background: linear-gradient(145deg, #10b981 0%, #059669 60%, #047857 100%);
+  background: linear-gradient(145deg, #A0522D 0%, #7B3F00 60%, #5C2D0A 100%);
   color: #ffffff;
   padding: 48px 40px;
   display: flex;
@@ -186,7 +186,7 @@
 
 .auth-pill-outline-btn:hover {
   background: #ffffff;
-  color: #059669;
+  color: #7B3F00;
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
@@ -249,7 +249,7 @@
   line-height: 1.2;
 }
 
-/* Inputs with Light Green Background */
+/* Inputs with Light Brown Background */
 .blue-input-group {
   display: flex;
   flex-direction: column;
@@ -264,8 +264,8 @@
 }
 
 .blue-input {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: #fdf5f0;
+  border: 1px solid #e8c9b0;
   color: #1e293b;
   padding: 13px 16px;
   border-radius: 10px;
@@ -276,8 +276,8 @@
 
 .blue-input:focus {
   background: #ffffff;
-  border-color: #059669;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  border-color: #7B3F00;
+  box-shadow: 0 0 0 3px rgba(123, 63, 0, 0.2);
 }
 
 .blue-input-password-wrapper {
@@ -306,7 +306,7 @@
 }
 
 .eye-toggle-btn:hover {
-  color: #059669;
+  color: #7B3F00;
 }
 
 /* Form Actions (Connexion Pill + Retour Link) */
@@ -319,7 +319,7 @@
 }
 
 .auth-pill-primary-btn {
-  background: #059669;
+  background: #7B3F00;
   color: #ffffff;
   border: none;
   padding: 12px 36px;
@@ -328,13 +328,13 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.25s ease;
-  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.3);
+  box-shadow: 0 4px 14px rgba(123, 63, 0, 0.3);
 }
 
 .auth-pill-primary-btn:hover {
-  background: #047857;
+  background: #5C2D0A;
   transform: translateY(-2px);
-  box-shadow: 0 8px 18px rgba(5, 150, 105, 0.4);
+  box-shadow: 0 8px 18px rgba(123, 63, 0, 0.4);
 }
 
 .auth-pill-primary-btn:disabled {
@@ -356,11 +356,11 @@
 }
 
 .auth-retour-link:hover {
-  color: #059669;
+  color: #7B3F00;
 }
 
 .auth-forgot-link {
-  color: #059669;
+  color: #7B3F00;
   font-size: 0.9rem;
   font-weight: 500;
   text-decoration: none;
@@ -409,14 +409,14 @@
 .role-8-card:hover {
   transform: translateY(-2px);
   background: #ffffff;
-  border-color: #10b981;
-  box-shadow: 0 6px 14px rgba(16, 185, 129, 0.15);
+  border-color: #A0522D;
+  box-shadow: 0 6px 14px rgba(160, 82, 45, 0.15);
 }
 
 .role-8-card.active {
   background: #ffffff;
-  border-color: #059669;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+  border-color: #7B3F00;
+  box-shadow: 0 0 0 2px rgba(123, 63, 0, 0.25);
 }
 
 .role-8-card-icon-wrapper {
@@ -449,9 +449,9 @@
 }
 
 .auth-success {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #16a34a;
+  background: #fdf5f0;
+  border: 1px solid #e8c9b0;
+  color: #7B3F00;
   padding: 10px 14px;
   border-radius: 10px;
   font-size: 0.88rem;
