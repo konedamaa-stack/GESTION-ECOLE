@@ -1072,13 +1072,33 @@ function App() {
   }, [activeModal, selectedStudent]);
 
   const fetchStudents = async () => {
-    const { data } = await supabase
-      .from('students')
-      .select(`*, classes ( name, tuition_fee, tuition_fee_affecte ), student_parents(parent_id, relation_type, parents(id, first_name, last_name, phone, email, location))`)
-      .eq('school_id', currentSchoolId)
-      .order('first_name', { ascending: true })
-      .order('last_name', { ascending: true });
-    if (data) setStudentsData(sortStudentsList(data, 'asc'));
+    if (!currentSchoolId) return;
+    try {
+      let allStudents: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('students')
+          .select(`*, classes ( name, tuition_fee, tuition_fee_affecte ), student_parents(parent_id, relation_type, parents(id, first_name, last_name, phone, email, location))`)
+          .eq('school_id', currentSchoolId)
+          .order('first_name', { ascending: true })
+          .order('last_name', { ascending: true })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (error) {
+          console.error("Erreur lors de la récupération des élèves:", error);
+          break;
+        }
+        if (!data || data.length === 0) break;
+        allStudents = allStudents.concat(data);
+        if (data.length < pageSize) break;
+        page++;
+      }
+      setStudentsData(sortStudentsList(allStudents, 'asc'));
+    } catch (err) {
+      console.error("Exception fetchStudents:", err);
+    }
   };
   const fetchClasses = async () => {
     const { data } = await supabase
@@ -1245,12 +1265,53 @@ function App() {
     if (data) setEmployeesData(data);
   };
   const fetchInvoices = async () => {
-    const { data } = await supabase.from('invoices').select(`*, students ( *, classes ( name, tuition_fee, tuition_fee_affecte ), student_parents ( parent_id, relation_type, parents ( id, first_name, last_name, phone, email, location ) ) )`).eq('school_id', currentSchoolId);
-    if (data) setInvoicesData(data);
+    if (!currentSchoolId) return;
+    try {
+      let allInvoices: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('invoices')
+          .select(`*, students ( *, classes ( name, tuition_fee, tuition_fee_affecte ), student_parents ( parent_id, relation_type, parents ( id, first_name, last_name, phone, email, location ) ) )`)
+          .eq('school_id', currentSchoolId)
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (error) {
+          console.error("Erreur lors de la récupération des factures:", error);
+          break;
+        }
+        if (!data || data.length === 0) break;
+        allInvoices = allInvoices.concat(data);
+        if (data.length < pageSize) break;
+        page++;
+      }
+      setInvoicesData(allInvoices);
+    } catch (err) {
+      console.error("Exception fetchInvoices:", err);
+    }
   };
   const fetchAbsences = async () => {
-    const { data } = await supabase.from('absences').select(`*, students ( first_name, last_name, classes(name) )`).eq('school_id', currentSchoolId);
-    if (data) setAbsencesData(data);
+    if (!currentSchoolId) return;
+    try {
+      let allAbsences: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('absences')
+          .select(`*, students ( first_name, last_name, classes(name) )`)
+          .eq('school_id', currentSchoolId)
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (error || !data || data.length === 0) break;
+        allAbsences = allAbsences.concat(data);
+        if (data.length < pageSize) break;
+        page++;
+      }
+      setAbsencesData(allAbsences);
+    } catch (err) {
+      console.error("Exception fetchAbsences:", err);
+    }
   };
   const fetchSchedules = async () => {
     const { data } = await supabase.from('schedules').select(`*, classes(name), teachers(first_name, last_name)`).eq('school_id', currentSchoolId);
@@ -1258,8 +1319,25 @@ function App() {
   };
   const fetchParents = async () => {
     if (!currentSchoolId) return;
-    const { data } = await supabase.from('parents').select(`*, student_parents(student_id, parent_id, relation_type, students(*, classes(name)))`).eq('school_id', currentSchoolId);
-    if (data) setParentsData(data);
+    try {
+      let allParents: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('parents')
+          .select(`*, student_parents(student_id, parent_id, relation_type, students(*, classes(name)))`)
+          .eq('school_id', currentSchoolId)
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (error || !data || data.length === 0) break;
+        allParents = allParents.concat(data);
+        if (data.length < pageSize) break;
+        page++;
+      }
+      setParentsData(allParents);
+    } catch (err) {
+      console.error("Exception fetchParents:", err);
+    }
   };
 
   const handleDeleteSchedule = async (id: string) => {
@@ -1646,12 +1724,27 @@ function App() {
     if (data) setStudentDocumentsData(data);
   };
   const fetchEvaluations = async () => {
-    const { data } = await supabase
-      .from('evaluations')
-      .select(`*, classes(name)`)
-      .eq('school_id', currentSchoolId)
-      .order('date', { ascending: false });
-    if (data) setEvaluationsData(data);
+    if (!currentSchoolId) return;
+    try {
+      let allEvals: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('evaluations')
+          .select(`*, classes(name)`)
+          .eq('school_id', currentSchoolId)
+          .order('date', { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (error || !data || data.length === 0) break;
+        allEvals = allEvals.concat(data);
+        if (data.length < pageSize) break;
+        page++;
+      }
+      setEvaluationsData(allEvals);
+    } catch (err) {
+      console.error("Exception fetchEvaluations:", err);
+    }
   };
 
   const handleDeleteEvaluation = async (evaluationId: string) => {
@@ -1702,14 +1795,22 @@ function App() {
   const fetchExpenses = async () => {
     if (!currentSchoolId) return;
     try {
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*')
-        .eq('school_id', currentSchoolId)
-        .order('payment_date', { ascending: false });
-
-      if (error) throw error;
-      setExpensesData(data || []);
+      let allExpenses: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('expenses')
+          .select('*')
+          .eq('school_id', currentSchoolId)
+          .order('payment_date', { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (error || !data || data.length === 0) break;
+        allExpenses = allExpenses.concat(data);
+        if (data.length < pageSize) break;
+        page++;
+      }
+      setExpensesData(allExpenses);
     } catch (err: any) {
       console.error('Error fetching expenses:', err);
     }
@@ -5910,29 +6011,67 @@ function App() {
           </div>
         </div>
 
-        {currentAdminRole !== 'Supervisor' && (
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <button
-            className="btn btn-primary"
-            onClick={() => setActiveModal('payment')}
+            className="btn btn-outline"
+            onClick={async () => {
+              setIsAppLoading(true);
+              try {
+                await Promise.all([
+                  fetchInvoices(),
+                  fetchStudents(),
+                  fetchClasses(),
+                  fetchFraisAnnexes(),
+                  fetchClassFraisAnnexes(),
+                  fetchExpenses(),
+                  fetchLoans(),
+                  fetchTeacherPayments(),
+                  fetchEmployeePayments()
+                ]);
+              } finally {
+                setIsAppLoading(false);
+              }
+            }}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '8px',
-              padding: '11px 22px',
+              padding: '11px 18px',
               borderRadius: '12px',
-              fontWeight: 700,
+              fontWeight: 600,
               fontSize: '0.92rem',
-              background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)',
-              border: 'none',
-              color: '#ffffff',
               cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(79, 70, 229, 0.35)',
-              transition: 'all 0.2s ease',
+              background: 'var(--surface-color, #ffffff)',
             }}
+            title="Rafraîchir toutes les données financières et scolarité"
           >
-            <Icons.Plus /> {t('admin.finance.btn_add', 'Enregistrer un Paiement')}
+            <span style={{ fontSize: '1.1rem' }}>🔄</span> Actualiser
           </button>
-        )}
+
+          {currentAdminRole !== 'Supervisor' && (
+            <button
+              className="btn btn-primary"
+              onClick={() => setActiveModal('payment')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '11px 22px',
+                borderRadius: '12px',
+                fontWeight: 700,
+                fontSize: '0.92rem',
+                background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)',
+                border: 'none',
+                color: '#ffffff',
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(79, 70, 229, 0.35)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Icons.Plus /> {t('admin.finance.btn_add', 'Enregistrer un Paiement')}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Sous-navigation Comptabilité : Segmented Control Moderne */}
