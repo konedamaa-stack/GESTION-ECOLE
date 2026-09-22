@@ -1178,6 +1178,10 @@ function App() {
     const m = (inv.motif || '').toLowerCase().trim();
     if (m.includes('scolarité') || m.includes('scolarite')) return false;
     if (inv.invoice_number && String(inv.invoice_number).includes('FAC-ANNEXE')) return true;
+    
+    // Si l'établissement n'a configuré aucun frais annexe, toutes les factures comptent dans la scolarité
+    if (!fraisAnnexesData || fraisAnnexesData.length === 0) return false;
+
     return (
       (fraisAnnexesData || []).some((f: any) => m.includes(f.name.toLowerCase().trim())) ||
       m.includes('bulletin') ||
@@ -1192,7 +1196,6 @@ function App() {
       m.includes('carte scolaire') ||
       m.includes('relevè') ||
       m.includes('releve') ||
-      m.includes('inscription') ||
       m.includes('annexe')
     );
   };
