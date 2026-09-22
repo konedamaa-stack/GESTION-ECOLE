@@ -5997,6 +5997,20 @@ function App() {
               >
                 Gestion Financière
               </span>
+              <span
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  padding: '3px 8px',
+                  borderRadius: '20px',
+                  background: 'rgba(16, 185, 129, 0.12)',
+                  color: '#10b981',
+                  letterSpacing: '0.5px',
+                }}
+                title="Nombre total de factures chargées"
+              >
+                📊 {invoicesData?.length || 0} Factures
+              </span>
             </div>
             <p
               className="page-subtitle"
