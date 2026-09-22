@@ -705,7 +705,7 @@ export default function Auth({
               {(currentSchool?.name || 'S').charAt(0).toUpperCase()}
             </span>
           )}
-          <span style={{ color: '#7B3F00', fontWeight: 800, fontSize: '1.35rem', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+          <span style={{ color: '#1E8449', fontWeight: 800, fontSize: '1.35rem', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
             {currentSchool?.name || 'GESTION ETABLISSEMENT SCOLAIRE'}
           </span>
         </a>

@@ -665,6 +665,7 @@ function App() {
   const [preselectedStudentId, setPreselectedStudentId] = useState<string | null>(null);
   const [prefilledPaymentAmount, setPrefilledPaymentAmount] = useState<number | string>('');
   const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
+  const [classListCollapsed, setClassListCollapsed] = useState(false);
   const [parentsData, setParentsData] = useState<any[]>([]);
   const [showSuperAdmin, setShowSuperAdmin] = useState(() => localStorage.getItem('sges_super_admin_mode') === 'true');
   const [isSuperAdminFlow, setIsSuperAdminFlow] = useState(false);
@@ -6306,7 +6307,18 @@ function App() {
         </div>
 
         <div className="panel-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-          <h3 className="panel-title finance-class-print-title">{t('admin.finance.panel_class_title', 'Récapitulatif par Classe')}</h3>
+          <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+            <h3 className="panel-title finance-class-print-title" style={{margin: 0}}>{t('admin.finance.panel_class_title', 'Récapitulatif par Classe')}</h3>
+            <button
+              className="btn btn-outline"
+              style={{padding: '4px 12px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '6px'}}
+              onClick={() => setClassListCollapsed(v => !v)}
+              title={classListCollapsed ? 'Déplier la liste' : 'Plier la liste'}
+            >
+              <Icons.ChevronDown style={{transform: classListCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.25s', fontSize: '1rem'}} />
+              {classListCollapsed ? 'Déplier' : 'Plier'}
+            </button>
+          </div>
           <button className="btn btn-outline" onClick={() => {
             document.body.classList.add('print-finance-class-summary');
             window.print();
@@ -6315,7 +6327,7 @@ function App() {
             <Icons.Printer /> {t('admin.finance.print', 'Imprimer')}
           </button>
         </div>
-        <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
+        {!classListCollapsed && <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
           <thead>
             <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
               <th style={{padding: '12px 0', fontWeight: 500}}>Classe</th>
@@ -6395,7 +6407,7 @@ function App() {
               <tr><td colSpan={6} style={{textAlign: 'center', padding: '24px 0', color: 'var(--text-secondary)'}}>Aucune donnée disponible.</td></tr>
             )}
           </tbody>
-        </table>
+        </table>}
       </div>
 
 
