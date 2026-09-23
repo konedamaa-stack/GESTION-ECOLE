@@ -767,12 +767,12 @@ export default function Auth({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '10px',
-                background: 'linear-gradient(135deg, rgba(160, 82, 45, 0.12) 0%, rgba(123, 63, 0, 0.18) 100%)',
-                border: '1.5px solid rgba(123, 63, 0, 0.25)',
+                background: 'linear-gradient(135deg, rgba(39, 174, 96, 0.12) 0%, rgba(30, 132, 73, 0.18) 100%)',
+                border: '1.5px solid rgba(30, 132, 73, 0.25)',
                 padding: '10px 22px',
                 borderRadius: '30px',
                 marginBottom: '16px',
-                boxShadow: '0 2px 10px rgba(123, 63, 0, 0.08)',
+                boxShadow: '0 2px 10px rgba(30, 132, 73, 0.08)',
                 maxWidth: '100%'
               }}>
                 {currentSchool.logo_url ? (
@@ -785,7 +785,7 @@ export default function Auth({
                   <span style={{ fontSize: '1.25rem' }}>🏫</span>
                 )}
                 <span style={{ 
-                  color: '#7B3F00', 
+                  color: '#1E8449', 
                   fontWeight: 800, 
                   fontSize: '1.18rem',
                   letterSpacing: '0.02em',
