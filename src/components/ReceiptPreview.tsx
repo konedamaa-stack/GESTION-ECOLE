@@ -120,6 +120,16 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
   const affecteLabel = isAr 
     ? (isExonere ? 'معفى (تكفّل)' : isAffecte ? 'موجّه (AFFECTÉ)' : 'غير موجّه (NON AFFECTÉ)') 
     : (isExonere ? 'EXONÉRÉ (PRISE EN CHARGE)' : isAffecte ? 'AFFECTÉ' : 'NON AFFECTÉ');
+
+  // Suppression de la mention "AFFECTÉ / NON AFFECTÉ" UNIQUEMENT pour KADY COLLABORATEUR
+  const isKadySchool = 
+    schoolInfo?.school_id === 'a340e59e-7465-4a76-b8f3-43b204e3411d' || 
+    student?.school_id === 'a340e59e-7465-4a76-b8f3-43b204e3411d' ||
+    invoice?.school_id === 'a340e59e-7465-4a76-b8f3-43b204e3411d' ||
+    String(schoolInfo?.director_name || '').toUpperCase().includes('KADY') ||
+    String(schoolInfo?.cashier_name || '').toUpperCase().includes('KADY') ||
+    String(schoolInfo?.school_name || schoolInfo?.name || '').toUpperCase().includes('ECOLE CONFESSIONNELLE');
+  const showAffecteBadge = isExonere || (!isKadySchool && schoolInfo?.show_affecte_receipt !== false);
   
   // Calculs financiers
   const scolarite = isExonere 
@@ -191,21 +201,23 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
             <div style={{ fontSize: '12px' }}>{isAr ? 'الهاتف:' : 'CEL:'} {schoolPhone}</div>
           </div>
           <div style={{ width: '110px', display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start', height: '85px' }}>
-            <span style={{
-              border: '2px solid black',
-              padding: '4px 10px',
-              borderRadius: '4px',
-              fontSize: isAr ? '13px' : '12px',
-              fontWeight: 900,
-              textTransform: 'uppercase',
-              letterSpacing: '0.8px',
-              backgroundColor: isAffecte ? '#eff6ff' : '#f8fafc',
-              color: 'black',
-              whiteSpace: 'nowrap',
-              textAlign: 'center'
-            }}>
-              {affecteLabel}
-            </span>
+            {showAffecteBadge && (
+              <span style={{
+                border: '2px solid black',
+                padding: '4px 10px',
+                borderRadius: '4px',
+                fontSize: isAr ? '13px' : '12px',
+                fontWeight: 900,
+                textTransform: 'uppercase',
+                letterSpacing: '0.8px',
+                backgroundColor: isAffecte ? '#eff6ff' : '#f8fafc',
+                color: 'black',
+                whiteSpace: 'nowrap',
+                textAlign: 'center'
+              }}>
+                {affecteLabel}
+              </span>
+            )}
           </div>
         </div>
 

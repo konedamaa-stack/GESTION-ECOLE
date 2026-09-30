@@ -1979,6 +1979,9 @@ function App() {
     if (formData.has('primary_color')) settingsObj.primary_color = formData.get('primary_color');
     if (formData.has('accent_color')) settingsObj.accent_color = formData.get('accent_color');
     if (formData.has('font_main')) settingsObj.font_main = formData.get('font_main');
+    if (activeSettingsTab === 'general' || !activeSettingsTab) {
+      settingsObj.show_affecte_receipt = formData.get('show_affecte_receipt') === 'on';
+    }
 
     if (formData.has('bulletin_template')) settingsObj.bulletin_template = formData.get('bulletin_template') || selectedBulletinTemplate || 'classic';
     if (formData.has('bulletin_title')) settingsObj.bulletin_title = formData.get('bulletin_title') || 'BULLETIN TRIMESTRIEL DE NOTES';
@@ -3775,7 +3778,10 @@ function App() {
       (settingsData?.school_name || currentSchoolObj?.name || '').includes('راية') || (settingsData?.cashier_name || '').toLowerCase().includes('mr')
         ? "Le Caissier"
         : "La Caissière"
-    )
+    ),
+    show_affecte_receipt: settingsData?.show_affecte_receipt !== undefined 
+      ? settingsData.show_affecte_receipt 
+      : (currentSchoolId === 'a340e59e-7465-4a76-b8f3-43b204e3411d' || (currentSchoolObj?.name || '').includes('ECOLE') ? false : true)
   };
 
   const renderStudents = () => {
@@ -7443,6 +7449,19 @@ function App() {
                     <label style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Nom du Caissier / Caissière</label>
                     <input type="text" name="cashier_name" defaultValue={settingsData?.cashier_name || ((settingsData?.school_name || currentSchoolObj?.name || '').includes('راية') ? 'Mr CAMARA ALASSANE' : '')} className="form-input" placeholder="ex: Mr CAMARA ALASSANE" />
                   </div>
+                </div>
+
+                <div style={{display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', background: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)', marginTop: '4px'}}>
+                  <input 
+                    type="checkbox" 
+                    id="show_affecte_receipt" 
+                    name="show_affecte_receipt" 
+                    defaultChecked={settingsData?.show_affecte_receipt !== undefined ? Boolean(settingsData.show_affecte_receipt) : (currentSchoolId !== 'a340e59e-7465-4a76-b8f3-43b204e3411d' && !(currentSchoolObj?.name || '').includes('ECOLE'))} 
+                    style={{width: '18px', height: '18px', cursor: 'pointer'}}
+                  />
+                  <label htmlFor="show_affecte_receipt" style={{fontSize: '0.9rem', cursor: 'pointer', fontWeight: 500}}>
+                    Afficher la mention "AFFECTÉ / NON AFFECTÉ" sur les reçus de paiement
+                  </label>
                 </div>
                 
                 <div style={{marginTop: '24px', borderTop: '1px solid var(--border-color)', paddingTop: '24px'}}>

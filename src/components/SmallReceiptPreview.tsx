@@ -121,6 +121,16 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
   const affecteLabel = isAr 
     ? (isExonere ? 'معفى (تكفّل)' : isAffecte ? 'موجّه (AFFECTÉ)' : 'غير موجّه (NON AFFECTÉ)') 
     : (isExonere ? 'EXONÉRÉ (PRISE EN CHARGE)' : isAffecte ? 'AFFECTÉ' : 'NON AFFECTÉ');
+
+  // Suppression de la mention "AFFECTÉ / NON AFFECTÉ" UNIQUEMENT pour KADY COLLABORATEUR
+  const isKadySchool = 
+    schoolInfo?.school_id === 'a340e59e-7465-4a76-b8f3-43b204e3411d' || 
+    student?.school_id === 'a340e59e-7465-4a76-b8f3-43b204e3411d' ||
+    invoice?.school_id === 'a340e59e-7465-4a76-b8f3-43b204e3411d' ||
+    String(schoolInfo?.director_name || '').toUpperCase().includes('KADY') ||
+    String(schoolInfo?.cashier_name || '').toUpperCase().includes('KADY') ||
+    String(schoolInfo?.school_name || schoolInfo?.name || '').toUpperCase().includes('ECOLE CONFESSIONNELLE');
+  const showAffecteBadge = isExonere || (!isKadySchool && schoolInfo?.show_affecte_receipt !== false);
   
   // Calculs financiers
   const scolarite = isExonere 
@@ -176,22 +186,24 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
       position: 'relative'
     }} dir={isAr ? 'rtl' : 'ltr'}>
       {/* Mention AFFECTÉ / NON AFFECTÉ en haut à droite */}
-      <div style={{
-        position: 'absolute',
-        top: '8px',
-        right: '8px',
-        border: '1.5px solid black',
-        padding: '2px 5px',
-        fontSize: '9px',
-        fontWeight: 800,
-        textTransform: 'uppercase',
-        letterSpacing: '0.5px',
-        backgroundColor: isAffecte ? '#eff6ff' : '#f8fafc',
-        color: 'black',
-        whiteSpace: 'nowrap'
-      }}>
-        {affecteLabel}
-      </div>
+      {showAffecteBadge && (
+        <div style={{
+          position: 'absolute',
+          top: '8px',
+          right: '8px',
+          border: '1.5px solid black',
+          padding: '2px 5px',
+          fontSize: '9px',
+          fontWeight: 800,
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+          backgroundColor: isAffecte ? '#eff6ff' : '#f8fafc',
+          color: 'black',
+          whiteSpace: 'nowrap'
+        }}>
+          {affecteLabel}
+        </div>
+      )}
 
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '10px' }}>
