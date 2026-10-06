@@ -6622,20 +6622,18 @@ function App() {
         </div>
         
         <div style={{width: '100%', overflowX: 'auto', marginTop: '16px'}}>
-          <table style={{width: '100%', borderCollapse: 'collapse', minWidth: '960px'}}>
+          <table style={{width: '100%', borderCollapse: 'collapse'}}>
             <thead>
               <tr style={{borderBottom: '2px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
-                <th style={{padding: '10px 8px 10px 12px', fontWeight: 700, width: '85px', whiteSpace: 'nowrap'}}>Matricule</th>
-                <th style={{padding: '10px 6px', fontWeight: 700, minWidth: '140px'}}>Élève</th>
-                <th style={{padding: '10px 6px', fontWeight: 700, minWidth: '120px'}}>Parent</th>
-                <th style={{padding: '10px 6px', fontWeight: 700, width: '110px', whiteSpace: 'nowrap'}}>Contact</th>
-                <th style={{padding: '10px 6px', fontWeight: 700, width: '80px', whiteSpace: 'nowrap'}}>Classe</th>
-                <th style={{padding: '10px 6px', fontWeight: 700, width: '100px', textAlign: 'center', whiteSpace: 'nowrap'}}>Date Paie.</th>
-                <th style={{padding: '10px 6px', fontWeight: 700, width: '85px', textAlign: 'right', whiteSpace: 'nowrap'}}>Attendu</th>
-                <th style={{padding: '10px 6px', fontWeight: 700, width: '85px', textAlign: 'right', color: 'var(--success-color)', whiteSpace: 'nowrap'}}>Avance</th>
-                <th style={{padding: '10px 6px', fontWeight: 700, width: '85px', textAlign: 'right', color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>Reste</th>
-                <th style={{padding: '10px 6px', fontWeight: 700, width: '90px', textAlign: 'center', whiteSpace: 'nowrap'}}>Statut</th>
-                <th className="hide-print" style={{padding: '10px 10px 10px 6px', fontWeight: 700, textAlign: 'center', width: '95px', whiteSpace: 'nowrap'}}>Action</th>
+                <th style={{padding: '12px 10px 12px 14px', fontWeight: 700, width: '90px', whiteSpace: 'nowrap'}}>Matricule</th>
+                <th style={{padding: '12px 8px', fontWeight: 700}}>Élève</th>
+                <th style={{padding: '12px 8px', fontWeight: 700}}>Parent</th>
+                <th style={{padding: '12px 8px', fontWeight: 700, whiteSpace: 'nowrap'}}>Contact</th>
+                <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap'}}>Attendu</th>
+                <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'right', color: 'var(--success-color)', whiteSpace: 'nowrap'}}>Total Versé</th>
+                <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'right', color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>Reste</th>
+                <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'center'}}>Statut</th>
+                <th className="hide-print" style={{padding: '12px 14px 12px 8px', fontWeight: 700, textAlign: 'center', width: '110px', whiteSpace: 'nowrap'}}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -6647,11 +6645,6 @@ function App() {
                    const matchStatus = financeStatusFilter === 'all' || s.status === financeStatusFilter;
                    return matchClass && matchStatus;
                 }).sort((a, b) => {
-                  if (a.lastPaymentDate && b.lastPaymentDate) {
-                    return new Date(b.lastPaymentDate).getTime() - new Date(a.lastPaymentDate).getTime();
-                  }
-                  if (a.lastPaymentDate) return -1;
-                  if (b.lastPaymentDate) return 1;
                   return a.name.localeCompare(b.name);
                 });
                 
@@ -6679,14 +6672,10 @@ function App() {
                             <span style={{color: 'var(--text-secondary)'}}>-</span>
                           )}
                         </td>
-                        <td style={{padding: '12px 8px', whiteSpace: 'nowrap'}}>{st.className}</td>
-                        <td style={{padding: '12px 6px', textAlign: 'center', color: st.lastPaymentDate ? 'var(--success-color)' : 'var(--text-secondary)', fontWeight: st.lastPaymentDate ? 600 : 400, fontSize: '0.88rem', whiteSpace: 'nowrap'}}>
-                          {st.lastPaymentDate ? new Date(st.lastPaymentDate).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR') : '-'}
-                        </td>
                         <td style={{padding: '12px 8px', textAlign: 'right', whiteSpace: 'nowrap'}}>{formatNum(st.total)} F</td>
                         <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: 'var(--success-color)', whiteSpace: 'nowrap'}}>{formatNum(st.paye)} F</td>
                         <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>{formatNum(st.nonPaye)} F</td>
-                        <td style={{padding: '12px 8px', textAlign: 'center', whiteSpace: 'nowrap'}}>
+                        <td style={{padding: '12px 8px', textAlign: 'center'}}>
                           <span className={`badge ${st.status === 'Soldé' || st.status === 'Exonéré' ? 'badge-success' : 'badge-warning'}`}>{st.status === 'Exonéré' ? '⭐ Exonéré' : st.status}</span>
                         </td>
                         <td className="hide-print" style={{padding: '8px 14px 8px 8px', textAlign: 'center', whiteSpace: 'nowrap'}}>
@@ -6746,7 +6735,7 @@ function App() {
                     ))}
                     {filteredStudents.length > 0 && (
                       <tr className="finance-totals-row" style={{fontWeight: 'bold', borderTop: '2px solid #0f172a', borderBottom: '2px solid #0f172a', background: 'rgba(0,0,0,0.02)'}}>
-                        <td colSpan={6} style={{padding: '12px 10px 12px 14px', textAlign: 'right', paddingRight: '24px', fontWeight: 800}}>TOTAL :</td>
+                        <td colSpan={4} style={{padding: '12px 10px 12px 14px', textAlign: 'right', paddingRight: '24px', fontWeight: 800}}>TOTAL :</td>
                         <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 800, whiteSpace: 'nowrap'}}>{formatNum(totalAttendu)} F</td>
                         <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 800, color: 'var(--success-color)', whiteSpace: 'nowrap'}}>{formatNum(totalPaye)} F</td>
                         <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 800, color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>{formatNum(totalReste)} F</td>
