@@ -6464,7 +6464,7 @@ function App() {
                                <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Parent</th>
                                <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Contact</th>
                                <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Attendu</th>
-                               <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Payé</th>
+                               <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Avance</th>
                                <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Reste</th>
                                <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Statut</th>
                                <th style={{padding: '10px 16px', textAlign: 'right', fontWeight: 500}}>Action</th>
@@ -6622,20 +6622,20 @@ function App() {
         </div>
         
         <div style={{width: '100%', overflowX: 'auto', marginTop: '16px'}}>
-          <table style={{width: '100%', borderCollapse: 'collapse', minWidth: '1080px'}}>
+          <table style={{width: '100%', borderCollapse: 'collapse', minWidth: '960px'}}>
             <thead>
               <tr style={{borderBottom: '2px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
-                <th style={{padding: '12px 10px 12px 14px', fontWeight: 700, width: '85px', whiteSpace: 'nowrap'}}>Matricule</th>
-                <th style={{padding: '12px 8px', fontWeight: 700, minWidth: '150px'}}>Élève</th>
-                <th style={{padding: '12px 8px', fontWeight: 700, minWidth: '130px'}}>Parent</th>
-                <th style={{padding: '12px 8px', fontWeight: 700, width: '120px', whiteSpace: 'nowrap'}}>Contact Parent</th>
-                <th style={{padding: '12px 8px', fontWeight: 700, width: '85px', whiteSpace: 'nowrap'}}>Classe</th>
-                <th style={{padding: '12px 6px', fontWeight: 700, width: '105px', textAlign: 'center', whiteSpace: 'nowrap'}}>Dernier Paiement</th>
-                <th style={{padding: '12px 8px', fontWeight: 700, width: '90px', textAlign: 'right', whiteSpace: 'nowrap'}}>Attendu</th>
-                <th style={{padding: '12px 8px', fontWeight: 700, width: '90px', textAlign: 'right', color: 'var(--success-color)', whiteSpace: 'nowrap'}}>Payé</th>
-                <th style={{padding: '12px 8px', fontWeight: 700, width: '90px', textAlign: 'right', color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>Reste à Payer</th>
-                <th style={{padding: '12px 8px', fontWeight: 700, width: '95px', textAlign: 'center', whiteSpace: 'nowrap'}}>Statut</th>
-                <th className="hide-print" style={{padding: '12px 14px 12px 8px', fontWeight: 700, textAlign: 'center', width: '105px', whiteSpace: 'nowrap'}}>Action</th>
+                <th style={{padding: '10px 8px 10px 12px', fontWeight: 700, width: '85px', whiteSpace: 'nowrap'}}>Matricule</th>
+                <th style={{padding: '10px 6px', fontWeight: 700, minWidth: '140px'}}>Élève</th>
+                <th style={{padding: '10px 6px', fontWeight: 700, minWidth: '120px'}}>Parent</th>
+                <th style={{padding: '10px 6px', fontWeight: 700, width: '110px', whiteSpace: 'nowrap'}}>Contact</th>
+                <th style={{padding: '10px 6px', fontWeight: 700, width: '80px', whiteSpace: 'nowrap'}}>Classe</th>
+                <th style={{padding: '10px 6px', fontWeight: 700, width: '100px', textAlign: 'center', whiteSpace: 'nowrap'}}>Date Paie.</th>
+                <th style={{padding: '10px 6px', fontWeight: 700, width: '85px', textAlign: 'right', whiteSpace: 'nowrap'}}>Attendu</th>
+                <th style={{padding: '10px 6px', fontWeight: 700, width: '85px', textAlign: 'right', color: 'var(--success-color)', whiteSpace: 'nowrap'}}>Avance</th>
+                <th style={{padding: '10px 6px', fontWeight: 700, width: '85px', textAlign: 'right', color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>Reste</th>
+                <th style={{padding: '10px 6px', fontWeight: 700, width: '90px', textAlign: 'center', whiteSpace: 'nowrap'}}>Statut</th>
+                <th className="hide-print" style={{padding: '10px 10px 10px 6px', fontWeight: 700, textAlign: 'center', width: '95px', whiteSpace: 'nowrap'}}>Action</th>
               </tr>
             </thead>
             <tbody>
