@@ -6482,9 +6482,15 @@ function App() {
                                 <td style={{padding: '10px 16px'}}>
                                   <span className={`badge ${st.status === 'Soldé' ? 'badge-success' : 'badge-warning'}`}>{st.status}</span>
                                 </td>
-                                  <td style={{padding: '10px 16px', textAlign: 'right'}}>
-                                    {st.status !== 'Soldé' && currentAdminRole !== 'Supervisor' && (
-                                      <button className="btn btn-primary" style={{padding: '4px 12px', fontSize: '0.8rem', height: 'auto', minHeight: 'auto'}} onClick={(e) => { e.stopPropagation(); setPreselectedStudentId(st.id); if (st.nonPaye > 0) setPrefilledPaymentAmount(st.nonPaye); else setPrefilledPaymentAmount(''); setActiveModal('payment'); }}>Encaisser</button>
+                                  <td style={{padding: '10px 16px', textAlign: 'right', whiteSpace: 'nowrap'}}>
+                                    {currentAdminRole !== 'Supervisor' && (
+                                      st.status === 'Exonéré' ? (
+                                        <span style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>⭐ Exonéré</span>
+                                      ) : (st.nonPaye <= 0 || st.status === 'Soldé') ? (
+                                        <span className="badge badge-success" style={{padding: '4px 8px', fontSize: '0.75rem', background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', borderRadius: '4px'}}>✓ Soldé</span>
+                                      ) : (
+                                        <button className="btn btn-primary" style={{padding: '4px 12px', fontSize: '0.8rem', height: 'auto', minHeight: 'auto'}} onClick={(e) => { e.stopPropagation(); setPreselectedStudentId(st.id); if (st.nonPaye > 0) setPrefilledPaymentAmount(st.nonPaye); else setPrefilledPaymentAmount(''); setActiveModal('payment'); }}>💳 Encaisser</button>
+                                      )
                                     )}
                                   </td>
                               </tr>
@@ -6615,124 +6621,145 @@ function App() {
           </div>
         </div>
         
-        <table style={{width: '100%', borderCollapse: 'collapse', marginTop: '16px'}}>
-          <thead>
-            <tr style={{borderBottom: '2px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
-              <th style={{padding: '12px 10px 12px 14px', fontWeight: 700, width: '90px', whiteSpace: 'nowrap'}}>Matricule</th>
-              <th style={{padding: '12px 8px', fontWeight: 700}}>Élève</th>
-              <th style={{padding: '12px 8px', fontWeight: 700}}>Parent</th>
-              <th style={{padding: '12px 8px', fontWeight: 700, whiteSpace: 'nowrap'}}>Contact Parent</th>
-              <th style={{padding: '12px 8px', fontWeight: 700}}>Classe</th>
-              <th style={{padding: '12px 8px', fontWeight: 700, whiteSpace: 'nowrap'}}>Date Dernier Paiement</th>
-              <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap'}}>Attendu</th>
-              <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'right', color: 'var(--success-color)', whiteSpace: 'nowrap'}}>Payé</th>
-              <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'right', color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>Reste à Payer</th>
-              <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'center'}}>Statut</th>
-              <th className="hide-print" style={{padding: '12px 14px 12px 8px', fontWeight: 700, textAlign: 'center', width: '120px'}}>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(() => {
-              const filteredStudents = scolariteParClasse.flatMap(c => 
-                (c.studentsDetails || []).map(s => ({...s, className: c.className, classId: c.id}))
-              ).filter(s => {
-                 const matchClass = financeClassFilter === 'all' || s.classId === financeClassFilter;
-                 const matchStatus = financeStatusFilter === 'all' || s.status === financeStatusFilter;
-                 return matchClass && matchStatus;
-              }).sort((a, b) => {
-                if (a.lastPaymentDate && b.lastPaymentDate) {
-                  return new Date(b.lastPaymentDate).getTime() - new Date(a.lastPaymentDate).getTime();
-                }
-                if (a.lastPaymentDate) return -1;
-                if (b.lastPaymentDate) return 1;
-                return a.name.localeCompare(b.name);
-              });
-              
-              const totalAttendu = filteredStudents.reduce((sum, st) => sum + (st.total || 0), 0);
-              const totalPaye = filteredStudents.reduce((sum, st) => sum + (st.paye || 0), 0);
-              const totalReste = filteredStudents.reduce((sum, st) => sum + (st.nonPaye || 0), 0);
+        <div style={{width: '100%', overflowX: 'auto', marginTop: '16px'}}>
+          <table style={{width: '100%', borderCollapse: 'collapse', minWidth: '1080px'}}>
+            <thead>
+              <tr style={{borderBottom: '2px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
+                <th style={{padding: '12px 10px 12px 14px', fontWeight: 700, width: '85px', whiteSpace: 'nowrap'}}>Matricule</th>
+                <th style={{padding: '12px 8px', fontWeight: 700, minWidth: '150px'}}>Élève</th>
+                <th style={{padding: '12px 8px', fontWeight: 700, minWidth: '130px'}}>Parent</th>
+                <th style={{padding: '12px 8px', fontWeight: 700, width: '120px', whiteSpace: 'nowrap'}}>Contact Parent</th>
+                <th style={{padding: '12px 8px', fontWeight: 700, width: '85px', whiteSpace: 'nowrap'}}>Classe</th>
+                <th style={{padding: '12px 6px', fontWeight: 700, width: '105px', textAlign: 'center', whiteSpace: 'nowrap'}}>Dernier Paiement</th>
+                <th style={{padding: '12px 8px', fontWeight: 700, width: '90px', textAlign: 'right', whiteSpace: 'nowrap'}}>Attendu</th>
+                <th style={{padding: '12px 8px', fontWeight: 700, width: '90px', textAlign: 'right', color: 'var(--success-color)', whiteSpace: 'nowrap'}}>Payé</th>
+                <th style={{padding: '12px 8px', fontWeight: 700, width: '90px', textAlign: 'right', color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>Reste à Payer</th>
+                <th style={{padding: '12px 8px', fontWeight: 700, width: '95px', textAlign: 'center', whiteSpace: 'nowrap'}}>Statut</th>
+                <th className="hide-print" style={{padding: '12px 14px 12px 8px', fontWeight: 700, textAlign: 'center', width: '105px', whiteSpace: 'nowrap'}}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(() => {
+                const filteredStudents = scolariteParClasse.flatMap(c => 
+                  (c.studentsDetails || []).map(s => ({...s, className: c.className, classId: c.id}))
+                ).filter(s => {
+                   const matchClass = financeClassFilter === 'all' || s.classId === financeClassFilter;
+                   const matchStatus = financeStatusFilter === 'all' || s.status === financeStatusFilter;
+                   return matchClass && matchStatus;
+                }).sort((a, b) => {
+                  if (a.lastPaymentDate && b.lastPaymentDate) {
+                    return new Date(b.lastPaymentDate).getTime() - new Date(a.lastPaymentDate).getTime();
+                  }
+                  if (a.lastPaymentDate) return -1;
+                  if (b.lastPaymentDate) return 1;
+                  return a.name.localeCompare(b.name);
+                });
+                
+                const totalAttendu = filteredStudents.reduce((sum, st) => sum + (st.total || 0), 0);
+                const totalPaye = filteredStudents.reduce((sum, st) => sum + (st.paye || 0), 0);
+                const totalReste = filteredStudents.reduce((sum, st) => sum + (st.nonPaye || 0), 0);
 
-              return (
-                <>
-                  {filteredStudents.map((st, i) => (
-                    <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
-                      <td style={{padding: '12px 10px 12px 14px', fontFamily: 'monospace', fontWeight: 700, color: 'var(--primary-color)', whiteSpace: 'nowrap'}}>{st.matricule}</td>
-                      <td style={{padding: '12px 8px', fontWeight: 600}}>{st.name}</td>
-                      <td style={{padding: '12px 8px', color: 'var(--text-primary)'}}>{st.parentName || '-'}</td>
-                      <td style={{padding: '12px 8px', fontFamily: 'monospace', whiteSpace: 'nowrap', letterSpacing: '0.5px'}}>
-                        {st.parentContact && st.parentContact !== '-' ? (
-                          <a 
-                            href={`tel:${(st.rawPhone || st.parentContact).replace(/\s+/g, '')}`} 
-                            style={{color: 'inherit', textDecoration: 'none'}} 
-                            title="Appeler le parent"
-                          >
-                            {st.parentContact}
-                          </a>
-                        ) : (
-                          <span style={{color: 'var(--text-secondary)'}}>-</span>
-                        )}
-                      </td>
-                      <td style={{padding: '12px 8px'}}>{st.className}</td>
-                      <td style={{padding: '12px 8px', color: st.lastPaymentDate ? 'var(--success-color)' : 'var(--text-secondary)', fontWeight: st.lastPaymentDate ? 600 : 400, fontSize: '0.9rem', whiteSpace: 'nowrap'}}>
-                        {st.lastPaymentDate ? new Date(st.lastPaymentDate).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR') : '-'}
-                      </td>
-                      <td style={{padding: '12px 8px', textAlign: 'right', whiteSpace: 'nowrap'}}>{formatNum(st.total)} F</td>
-                      <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: 'var(--success-color)', whiteSpace: 'nowrap'}}>{formatNum(st.paye)} F</td>
-                      <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>{formatNum(st.nonPaye)} F</td>
-                      <td style={{padding: '12px 8px', textAlign: 'center'}}>
-                        <span className={`badge ${st.status === 'Soldé' || st.status === 'Exonéré' ? 'badge-success' : 'badge-warning'}`}>{st.status === 'Exonéré' ? '⭐ Exonéré' : st.status}</span>
-                      </td>
-                      <td className="hide-print" style={{padding: '8px 14px 8px 8px', textAlign: 'center', whiteSpace: 'nowrap'}}>
-                        {currentAdminRole !== 'Supervisor' && st.status !== 'Exonéré' && (
-                          <button 
-                            className={`btn ${st.status !== 'Soldé' ? 'btn-primary' : 'btn-outline'}`}
-                            style={{
-                              padding: '5px 12px',
-                              fontSize: '0.8rem',
-                              height: 'auto',
-                              minHeight: 'auto',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              borderRadius: '6px',
-                              fontWeight: st.status !== 'Soldé' ? 700 : 500,
-                              background: st.status !== 'Soldé' ? '#10b981' : undefined,
-                              borderColor: st.status !== 'Soldé' ? '#10b981' : undefined,
-                              color: st.status !== 'Soldé' ? '#ffffff' : undefined
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPreselectedStudentId(st.id);
-                              if (st.nonPaye > 0) {
-                                setPrefilledPaymentAmount(st.nonPaye);
-                              } else {
-                                setPrefilledPaymentAmount('');
-                              }
-                              setActiveModal('payment');
-                            }}
-                            title="Encaisser un versement pour cet élève"
-                          >
-                            💳 Encaisser
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredStudents.length > 0 && (
-                    <tr className="finance-totals-row" style={{fontWeight: 'bold', borderTop: '2px solid #0f172a', borderBottom: '2px solid #0f172a', background: 'rgba(0,0,0,0.02)'}}>
-                      <td colSpan={6} style={{padding: '12px 10px 12px 14px', textAlign: 'right', paddingRight: '24px', fontWeight: 800}}>TOTAL :</td>
-                      <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 800, whiteSpace: 'nowrap'}}>{formatNum(totalAttendu)} F</td>
-                      <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 800, color: 'var(--success-color)', whiteSpace: 'nowrap'}}>{formatNum(totalPaye)} F</td>
-                      <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 800, color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>{formatNum(totalReste)} F</td>
-                      <td></td>
-                      <td className="hide-print"></td>
-                    </tr>
-                  )}
-                </>
-              );
-            })()}
-          </tbody>
-        </table>
+                return (
+                  <>
+                    {filteredStudents.map((st, i) => (
+                      <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
+                        <td style={{padding: '12px 10px 12px 14px', fontFamily: 'monospace', fontWeight: 700, color: 'var(--primary-color)', whiteSpace: 'nowrap'}}>{st.matricule}</td>
+                        <td style={{padding: '12px 8px', fontWeight: 600}}>{st.name}</td>
+                        <td style={{padding: '12px 8px', color: 'var(--text-primary)'}}>{st.parentName || '-'}</td>
+                        <td style={{padding: '12px 8px', fontFamily: 'monospace', whiteSpace: 'nowrap', letterSpacing: '0.5px'}}>
+                          {st.parentContact && st.parentContact !== '-' ? (
+                            <a 
+                              href={`tel:${(st.rawPhone || st.parentContact).replace(/\s+/g, '')}`} 
+                              style={{color: 'inherit', textDecoration: 'none'}} 
+                              title="Appeler le parent"
+                            >
+                              {st.parentContact}
+                            </a>
+                          ) : (
+                            <span style={{color: 'var(--text-secondary)'}}>-</span>
+                          )}
+                        </td>
+                        <td style={{padding: '12px 8px', whiteSpace: 'nowrap'}}>{st.className}</td>
+                        <td style={{padding: '12px 6px', textAlign: 'center', color: st.lastPaymentDate ? 'var(--success-color)' : 'var(--text-secondary)', fontWeight: st.lastPaymentDate ? 600 : 400, fontSize: '0.88rem', whiteSpace: 'nowrap'}}>
+                          {st.lastPaymentDate ? new Date(st.lastPaymentDate).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR') : '-'}
+                        </td>
+                        <td style={{padding: '12px 8px', textAlign: 'right', whiteSpace: 'nowrap'}}>{formatNum(st.total)} F</td>
+                        <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: 'var(--success-color)', whiteSpace: 'nowrap'}}>{formatNum(st.paye)} F</td>
+                        <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>{formatNum(st.nonPaye)} F</td>
+                        <td style={{padding: '12px 8px', textAlign: 'center', whiteSpace: 'nowrap'}}>
+                          <span className={`badge ${st.status === 'Soldé' || st.status === 'Exonéré' ? 'badge-success' : 'badge-warning'}`}>{st.status === 'Exonéré' ? '⭐ Exonéré' : st.status}</span>
+                        </td>
+                        <td className="hide-print" style={{padding: '8px 14px 8px 8px', textAlign: 'center', whiteSpace: 'nowrap'}}>
+                          {currentAdminRole !== 'Supervisor' && (
+                            st.status === 'Exonéré' ? (
+                              <span style={{fontSize: '0.82rem', color: 'var(--text-secondary)', fontStyle: 'italic'}}>⭐ Exonéré</span>
+                            ) : (st.nonPaye <= 0 || st.status === 'Soldé') ? (
+                              <span 
+                                className="badge badge-success"
+                                style={{
+                                  padding: '5px 12px',
+                                  fontSize: '0.8rem',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  fontWeight: 700,
+                                  background: '#ecfdf5',
+                                  color: '#059669',
+                                  border: '1px solid #a7f3d0',
+                                  borderRadius: '6px'
+                                }}
+                              >
+                                ✓ Soldé
+                              </span>
+                            ) : (
+                              <button 
+                                className="btn btn-primary"
+                                style={{
+                                  padding: '5px 12px',
+                                  fontSize: '0.8rem',
+                                  height: 'auto',
+                                  minHeight: 'auto',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  borderRadius: '6px',
+                                  fontWeight: 700,
+                                  background: '#10b981',
+                                  borderColor: '#10b981',
+                                  color: '#ffffff',
+                                  cursor: 'pointer'
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPreselectedStudentId(st.id);
+                                  setPrefilledPaymentAmount(st.nonPaye > 0 ? st.nonPaye : '');
+                                  setActiveModal('payment');
+                                }}
+                                title="Encaisser un versement pour cet élève"
+                              >
+                                💳 Encaisser
+                              </button>
+                            )
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredStudents.length > 0 && (
+                      <tr className="finance-totals-row" style={{fontWeight: 'bold', borderTop: '2px solid #0f172a', borderBottom: '2px solid #0f172a', background: 'rgba(0,0,0,0.02)'}}>
+                        <td colSpan={6} style={{padding: '12px 10px 12px 14px', textAlign: 'right', paddingRight: '24px', fontWeight: 800}}>TOTAL :</td>
+                        <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 800, whiteSpace: 'nowrap'}}>{formatNum(totalAttendu)} F</td>
+                        <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 800, color: 'var(--success-color)', whiteSpace: 'nowrap'}}>{formatNum(totalPaye)} F</td>
+                        <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 800, color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>{formatNum(totalReste)} F</td>
+                        <td></td>
+                        <td className="hide-print"></td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })()}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* PANEL: Journal des Transactions & Recette des Versements par Date */}
