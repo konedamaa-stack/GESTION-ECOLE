@@ -525,8 +525,22 @@ function App() {
     const evals = evaluationsData.filter(e => e.class_id === classId && e.period === period && e.validation_status === 'approved');
     const evalIds = evals.map(e => e.id);
     if(evalIds.length > 0) {
-      const { data } = await supabase.from('grades').select('*').in('evaluation_id', evalIds);
-      if(data) setBulletinGrades(data);
+      let allGrades: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('grades')
+          .select('*')
+          .in('evaluation_id', evalIds)
+          .order('id', { ascending: true })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (error || !data || data.length === 0) break;
+        allGrades = allGrades.concat(data);
+        if (data.length < pageSize) break;
+        page++;
+      }
+      setBulletinGrades(allGrades);
     } else {
       setBulletinGrades([]);
     }
@@ -1085,6 +1099,7 @@ function App() {
           .eq('school_id', currentSchoolId)
           .order('first_name', { ascending: true })
           .order('last_name', { ascending: true })
+          .order('id', { ascending: true })
           .range(page * pageSize, (page + 1) * pageSize - 1);
 
         if (error) {
@@ -1122,11 +1137,26 @@ function App() {
   };
   const fetchClassFraisAnnexes = async () => {
     if (!currentSchoolId) return;
-    const { data } = await supabase
-      .from('class_frais_annexes')
-      .select('*')
-      .eq('school_id', currentSchoolId);
-    if (data) setClassFraisAnnexesData(data);
+    try {
+      let allClassFrais: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('class_frais_annexes')
+          .select('*')
+          .eq('school_id', currentSchoolId)
+          .order('id', { ascending: true })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (error || !data || data.length === 0) break;
+        allClassFrais = allClassFrais.concat(data);
+        if (data.length < pageSize) break;
+        page++;
+      }
+      setClassFraisAnnexesData(allClassFrais);
+    } catch (err) {
+      console.error("Exception fetchClassFraisAnnexes:", err);
+    }
   };
 
   const getFraisAmountForStudent = (frais: any, studentId?: string) => {
@@ -1279,6 +1309,8 @@ function App() {
           .from('invoices')
           .select(`*, students ( *, classes ( name, tuition_fee, tuition_fee_affecte ), student_parents ( parent_id, relation_type, parents ( id, first_name, last_name, phone, email, location ) ) )`)
           .eq('school_id', currentSchoolId)
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: true })
           .range(page * pageSize, (page + 1) * pageSize - 1);
 
         if (error) {
@@ -1306,6 +1338,8 @@ function App() {
           .from('absences')
           .select(`*, students ( first_name, last_name, classes(name) )`)
           .eq('school_id', currentSchoolId)
+          .order('date', { ascending: false })
+          .order('id', { ascending: true })
           .range(page * pageSize, (page + 1) * pageSize - 1);
         if (error || !data || data.length === 0) break;
         allAbsences = allAbsences.concat(data);
@@ -1332,6 +1366,8 @@ function App() {
           .from('parents')
           .select(`*, student_parents(student_id, parent_id, relation_type, students(*, classes(name)))`)
           .eq('school_id', currentSchoolId)
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: true })
           .range(page * pageSize, (page + 1) * pageSize - 1);
         if (error || !data || data.length === 0) break;
         allParents = allParents.concat(data);
@@ -1739,6 +1775,7 @@ function App() {
           .select(`*, classes(name)`)
           .eq('school_id', currentSchoolId)
           .order('date', { ascending: false })
+          .order('id', { ascending: true })
           .range(page * pageSize, (page + 1) * pageSize - 1);
         if (error || !data || data.length === 0) break;
         allEvals = allEvals.concat(data);
@@ -1767,16 +1804,46 @@ function App() {
   const fetchTeacherPayments = async () => {
     if (!currentSchoolId) return;
     try {
-      const { data, error } = await supabase.from('teacher_payments').select('*').eq('school_id', currentSchoolId).order('payment_date', { ascending: false });
-      if (!error && data) setTeacherPaymentsData(data);
+      let allTP: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('teacher_payments')
+          .select('*')
+          .eq('school_id', currentSchoolId)
+          .order('payment_date', { ascending: false })
+          .order('id', { ascending: true })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (error || !data || data.length === 0) break;
+        allTP = allTP.concat(data);
+        if (data.length < pageSize) break;
+        page++;
+      }
+      setTeacherPaymentsData(allTP);
     } catch (err) { console.error('Error fetching teacher payments:', err); }
   };
   
   const fetchEmployeePayments = async () => {
     if (!currentSchoolId) return;
     try {
-      const { data, error } = await supabase.from('employee_payments').select('*').eq('school_id', currentSchoolId).order('payment_date', { ascending: false });
-      if (!error && data) setEmployeePaymentsData(data);
+      let allEP: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('employee_payments')
+          .select('*')
+          .eq('school_id', currentSchoolId)
+          .order('payment_date', { ascending: false })
+          .order('id', { ascending: true })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (error || !data || data.length === 0) break;
+        allEP = allEP.concat(data);
+        if (data.length < pageSize) break;
+        page++;
+      }
+      setEmployeePaymentsData(allEP);
     } catch (err) { console.error('Error fetching employee payments:', err); }
   };
 
@@ -1784,13 +1851,23 @@ function App() {
   const fetchLoans = async () => {
     if (!currentSchoolId) return;
     try {
-      const { data, error } = await supabase
-        .from('loans')
-        .select('*')
-        .eq('school_id', currentSchoolId)
-        .order('loan_date', { ascending: false });
-      if (error) throw error;
-      setLoansData(data || []);
+      let allLoans: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('loans')
+          .select('*')
+          .eq('school_id', currentSchoolId)
+          .order('loan_date', { ascending: false })
+          .order('id', { ascending: true })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (error || !data || data.length === 0) break;
+        allLoans = allLoans.concat(data);
+        if (data.length < pageSize) break;
+        page++;
+      }
+      setLoansData(allLoans);
     } catch (err) {
       console.error('Error fetching loans:', err);
     }
@@ -1808,6 +1885,7 @@ function App() {
           .select('*')
           .eq('school_id', currentSchoolId)
           .order('payment_date', { ascending: false })
+          .order('id', { ascending: true })
           .range(page * pageSize, (page + 1) * pageSize - 1);
         if (error || !data || data.length === 0) break;
         allExpenses = allExpenses.concat(data);
@@ -3800,15 +3878,7 @@ function App() {
                 <Icons.Activity /> {t('admin.students.btn_absence', 'Signaler Absence')}
               </button>
               <button className="btn btn-outline" onClick={() => setActiveModal('import')}><Icons.Download /> {t('admin.students.btn_import', 'Importer')}</button>
-              <button className="btn btn-primary" onClick={() => {
-                if (currentSchoolPlan === 'Standard' && studentsData.length >= 20) {
-                  if (window.confirm("Limite de la version Standard atteinte (20 élèves max).\n\nVoulez-vous contacter l'administrateur sur WhatsApp pour passer en version Pro ?")) {
-                    window.open("https://wa.me/2250505617743?text=" + encodeURIComponent("Bonjour, j'ai atteint la limite d'élèves sur mon établissement et je souhaite passer à la version Pro."), "_blank");
-                  }
-                  return;
-                }
-                setActiveModal('student');
-              }}>
+              <button className="btn btn-primary" onClick={() => setActiveModal('student')}>
                 <Icons.Plus /> {t('admin.students.btn_enroll', 'Inscrire')}
               </button>
             </>
@@ -5885,10 +5955,24 @@ function App() {
           const sortedInvs = [...sInvoices].sort((a, b) => new Date(b.paid_at || b.issue_date || 0).getTime() - new Date(a.paid_at || a.issue_date || 0).getTime());
           const lastPaymentDate = sortedInvs.length > 0 ? (sortedInvs[0].paid_at || sortedInvs[0].issue_date) : null;
 
+          const parentsList = s.student_parents && s.student_parents.length > 0 
+            ? s.student_parents.map((sp: any) => sp.parents).filter(Boolean) 
+            : [];
+          const parentName = parentsList.length > 0 
+            ? parentsList.map((p: any) => `${p.first_name || ''} ${p.last_name || ''}`.trim().toUpperCase()).filter(Boolean).join(' / ')
+            : (s.parent_name ? String(s.parent_name).trim().toUpperCase() : '-');
+          const rawPhone = parentsList.length > 0
+            ? (parentsList.find((p: any) => p?.phone)?.phone || parentsList[0]?.phone || '-')
+            : (s.parent_phone || s.phone || '-');
+          const parentContact = formatPhoneNumber(rawPhone);
+
           return {
             id: s.id,
             matricule: s.matricule,
             name: `${s.first_name} ${s.last_name}`,
+            parentName: parentName || '-',
+            parentContact: parentContact || '-',
+            rawPhone: rawPhone && rawPhone !== '-' ? rawPhone : null,
             paye: sPaye,
             total: sTotal,
             nonPaye: sNonPaye,
@@ -6377,6 +6461,8 @@ function App() {
                           <thead>
                              <tr style={{background: '#f1f5f9', borderBottom: '1px solid var(--border-color)'}}>
                                <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Élève</th>
+                               <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Parent</th>
+                               <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Contact</th>
                                <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Attendu</th>
                                <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Payé</th>
                                <th style={{padding: '10px 16px', textAlign: 'left', fontWeight: 500}}>Reste</th>
@@ -6388,6 +6474,8 @@ function App() {
                             {(row.studentsDetails || []).map(st => (
                               <tr key={st.id} style={{borderBottom: '1px solid #f1f5f9'}}>
                                 <td style={{padding: '10px 16px', fontWeight: 500}}>{st.name}</td>
+                                <td style={{padding: '10px 16px'}}>{st.parentName || '-'}</td>
+                                <td style={{padding: '10px 16px', fontFamily: 'monospace', letterSpacing: '0.5px'}}>{st.parentContact || '-'}</td>
                                 <td style={{padding: '10px 16px'}}>{formatNum(st.total)}</td>
                                 <td style={{padding: '10px 16px', color: 'var(--success-color)', fontWeight: 600}}>{formatNum(st.paye)}</td>
                                 <td style={{padding: '10px 16px', color: 'var(--danger-color)', fontWeight: 600}}>{formatNum(st.nonPaye)}</td>
@@ -6402,7 +6490,7 @@ function App() {
                               </tr>
                             ))}
                             {row.studentsDetails.length === 0 && (
-                              <tr><td colSpan={6} style={{padding: '16px', textAlign: 'center', color: 'var(--text-secondary)'}}>Aucun élève dans cette classe.</td></tr>
+                              <tr><td colSpan={8} style={{padding: '16px', textAlign: 'center', color: 'var(--text-secondary)'}}>Aucun élève dans cette classe.</td></tr>
                             )}
                           </tbody>
                         </table>
@@ -6532,6 +6620,8 @@ function App() {
             <tr style={{borderBottom: '2px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
               <th style={{padding: '12px 10px 12px 14px', fontWeight: 700, width: '90px', whiteSpace: 'nowrap'}}>Matricule</th>
               <th style={{padding: '12px 8px', fontWeight: 700}}>Élève</th>
+              <th style={{padding: '12px 8px', fontWeight: 700}}>Parent</th>
+              <th style={{padding: '12px 8px', fontWeight: 700, whiteSpace: 'nowrap'}}>Contact Parent</th>
               <th style={{padding: '12px 8px', fontWeight: 700}}>Classe</th>
               <th style={{padding: '12px 8px', fontWeight: 700, whiteSpace: 'nowrap'}}>Date Dernier Paiement</th>
               <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap'}}>Attendu</th>
@@ -6568,6 +6658,20 @@ function App() {
                     <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
                       <td style={{padding: '12px 10px 12px 14px', fontFamily: 'monospace', fontWeight: 700, color: 'var(--primary-color)', whiteSpace: 'nowrap'}}>{st.matricule}</td>
                       <td style={{padding: '12px 8px', fontWeight: 600}}>{st.name}</td>
+                      <td style={{padding: '12px 8px', color: 'var(--text-primary)'}}>{st.parentName || '-'}</td>
+                      <td style={{padding: '12px 8px', fontFamily: 'monospace', whiteSpace: 'nowrap', letterSpacing: '0.5px'}}>
+                        {st.parentContact && st.parentContact !== '-' ? (
+                          <a 
+                            href={`tel:${(st.rawPhone || st.parentContact).replace(/\s+/g, '')}`} 
+                            style={{color: 'inherit', textDecoration: 'none'}} 
+                            title="Appeler le parent"
+                          >
+                            {st.parentContact}
+                          </a>
+                        ) : (
+                          <span style={{color: 'var(--text-secondary)'}}>-</span>
+                        )}
+                      </td>
                       <td style={{padding: '12px 8px'}}>{st.className}</td>
                       <td style={{padding: '12px 8px', color: st.lastPaymentDate ? 'var(--success-color)' : 'var(--text-secondary)', fontWeight: st.lastPaymentDate ? 600 : 400, fontSize: '0.9rem', whiteSpace: 'nowrap'}}>
                         {st.lastPaymentDate ? new Date(st.lastPaymentDate).toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-EG' : 'fr-FR') : '-'}
@@ -6616,7 +6720,7 @@ function App() {
                   ))}
                   {filteredStudents.length > 0 && (
                     <tr className="finance-totals-row" style={{fontWeight: 'bold', borderTop: '2px solid #0f172a', borderBottom: '2px solid #0f172a', background: 'rgba(0,0,0,0.02)'}}>
-                      <td colSpan={4} style={{padding: '12px 10px 12px 14px', textAlign: 'right', paddingRight: '24px', fontWeight: 800}}>TOTAL :</td>
+                      <td colSpan={6} style={{padding: '12px 10px 12px 14px', textAlign: 'right', paddingRight: '24px', fontWeight: 800}}>TOTAL :</td>
                       <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 800, whiteSpace: 'nowrap'}}>{formatNum(totalAttendu)} F</td>
                       <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 800, color: 'var(--success-color)', whiteSpace: 'nowrap'}}>{formatNum(totalPaye)} F</td>
                       <td style={{padding: '12px 8px', textAlign: 'right', fontWeight: 800, color: 'var(--danger-color)', whiteSpace: 'nowrap'}}>{formatNum(totalReste)} F</td>
@@ -9781,40 +9885,51 @@ function App() {
                         return;
                       }
 
-                      const { data: insertedStudents, error } = await supabase.from('students').upsert(studentsToInsert, { onConflict: 'matricule' }).select();
-                      if (error) throw error;
+                      // Import in chunks of 500 to handle files exceeding 1000 students cleanly
+                      const CHUNK_SIZE = 500;
+                      let totalInsertedCount = 0;
 
-                      if (insertedStudents && insertedStudents.length > 0) {
-                        const parentsToInsert: any[] = [];
-                        insertedStudents.forEach(st => {
-                          const pInfo = parentMappings[st.matricule];
-                          if (pInfo) {
-                            parentsToInsert.push(pInfo);
-                          }
-                        });
+                      for (let cIdx = 0; cIdx < studentsToInsert.length; cIdx += CHUNK_SIZE) {
+                        const chunk = studentsToInsert.slice(cIdx, cIdx + CHUNK_SIZE);
+                        const { data: insertedStudents, error } = await supabase
+                          .from('students')
+                          .upsert(chunk, { onConflict: 'matricule' })
+                          .select();
+                        if (error) throw error;
 
-                        if (parentsToInsert.length > 0) {
-                          const { data: insertedParents, error: parentError } = await supabase.from('parents').insert(parentsToInsert).select();
-                          if (!parentError && insertedParents && insertedParents.length > 0) {
-                            const junctionRows: any[] = [];
-                            for (let k = 0; k < insertedParents.length; k++) {
-                              const pObj = insertedParents[k];
-                              const matchingStudent = insertedStudents.find(st => {
-                                const pInfo = parentMappings[st.matricule];
-                                return pInfo && pInfo.first_name === pObj.first_name && pInfo.last_name === pObj.last_name && pInfo.phone === pObj.phone;
-                              });
+                        if (insertedStudents && insertedStudents.length > 0) {
+                          totalInsertedCount += insertedStudents.length;
+                          const parentsToInsert: any[] = [];
+                          insertedStudents.forEach(st => {
+                            const pInfo = parentMappings[st.matricule];
+                            if (pInfo) {
+                              parentsToInsert.push(pInfo);
+                            }
+                          });
 
-                              if (matchingStudent) {
+                          if (parentsToInsert.length > 0) {
+                            const { data: insertedParents, error: parentError } = await supabase.from('parents').insert(parentsToInsert).select();
+                            if (!parentError && insertedParents && insertedParents.length > 0) {
+                              const junctionRows: any[] = [];
+                              for (let k = 0; k < insertedParents.length; k++) {
+                                const pObj = insertedParents[k];
+                                const matchingStudent = insertedStudents.find(st => {
+                                  const pInfo = parentMappings[st.matricule];
+                                  return pInfo && pInfo.first_name === pObj.first_name && pInfo.last_name === pObj.last_name && pInfo.phone === pObj.phone;
+                                });
+
+                                if (matchingStudent) {
                                   junctionRows.push({
                                     student_id: matchingStudent.id,
                                     parent_id: pObj.id,
                                     relation_type: 'Parent'
                                   });
+                                }
                               }
-                            }
 
-                            if (junctionRows.length > 0) {
-                              await supabase.from('student_parents').insert(junctionRows);
+                              if (junctionRows.length > 0) {
+                                await supabase.from('student_parents').insert(junctionRows);
+                              }
                             }
                           }
                         }

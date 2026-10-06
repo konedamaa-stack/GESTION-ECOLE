@@ -70,31 +70,66 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
       const { data: classes } = await supabase.from('classes').select('*').eq('school_id', session.school_id);
       if (classes) setClassesData(sortClassesList(classes));
 
-      // Fetch evaluations for this school
-      const { data: evaluations } = await supabase.from('evaluations')
-        .select('*, classes(name)')
-        .eq('school_id', session.school_id)
-        .order('date', { ascending: false });
-      if (evaluations) {
-        const uniqueEvals = Array.from(new Map(evaluations.map(ev => [ev.id, ev])).values());
-        setEvaluationsData(uniqueEvals);
+      // Fetch evaluations for this school (paginated)
+      let allEvaluations: any[] = [];
+      let evPage = 0;
+      const evPageSize = 1000;
+      while (true) {
+        const { data: evData, error: evErr } = await supabase.from('evaluations')
+          .select('*, classes(name)')
+          .eq('school_id', session.school_id)
+          .order('date', { ascending: false })
+          .order('id', { ascending: true })
+          .range(evPage * evPageSize, (evPage + 1) * evPageSize - 1);
+        if (evErr || !evData || evData.length === 0) break;
+        allEvaluations = allEvaluations.concat(evData);
+        if (evData.length < evPageSize) break;
+        evPage++;
       }
+      const uniqueEvals = Array.from(new Map(allEvaluations.map(ev => [ev.id, ev])).values());
+      setEvaluationsData(uniqueEvals);
 
-      // Fetch students
-      const { data: students } = await supabase
-        .from('students')
-        .select('*')
-        .eq('school_id', session.school_id)
-        .order('last_name', { ascending: true })
-        .order('first_name', { ascending: true });
-      if (students) setStudentsData(sortStudentsList(students));
+      // Fetch students (paginated)
+      let allStudents: any[] = [];
+      let stPage = 0;
+      const stPageSize = 1000;
+      while (true) {
+        const { data: stData, error: stErr } = await supabase
+          .from('students')
+          .select('*')
+          .eq('school_id', session.school_id)
+          .order('last_name', { ascending: true })
+          .order('first_name', { ascending: true })
+          .order('id', { ascending: true })
+          .range(stPage * stPageSize, (stPage + 1) * stPageSize - 1);
+        if (stErr || !stData || stData.length === 0) break;
+        allStudents = allStudents.concat(stData);
+        if (stData.length < stPageSize) break;
+        stPage++;
+      }
+      setStudentsData(sortStudentsList(allStudents));
 
       // Fetch school settings
       const { data: set } = await supabase.from('school_settings').select('*').eq('school_id', session.school_id).limit(1).single();
       if (set) setSettings(set);
-      // Fetch grades
-      const { data: grades } = await supabase.from('grades').select('*').eq('school_id', session.school_id);
-      if (grades) setGradesData(grades);
+
+      // Fetch grades (paginated)
+      let allGrades: any[] = [];
+      let grPage = 0;
+      const grPageSize = 1000;
+      while (true) {
+        const { data: grData, error: grErr } = await supabase
+          .from('grades')
+          .select('*')
+          .eq('school_id', session.school_id)
+          .order('id', { ascending: true })
+          .range(grPage * grPageSize, (grPage + 1) * grPageSize - 1);
+        if (grErr || !grData || grData.length === 0) break;
+        allGrades = allGrades.concat(grData);
+        if (grData.length < grPageSize) break;
+        grPage++;
+      }
+      setGradesData(allGrades);
       // Fetch schedules for this teacher
       const { data: schedules } = await supabase.from('schedules').select('*').eq('teacher_id', session.id);
       if (schedules) setTeacherSchedules(schedules);
