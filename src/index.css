@@ -10,10 +10,10 @@
   --accent-color: #10b981;
   --danger-color: #ef4444;
   --warning-color: #f59e0b;
-  --sidebar-bg: #145A32;
-  --sidebar-text: #E8F8F0;
+  --sidebar-bg: #1e3a8a;
+  --sidebar-text: #e0e7ff;
   --sidebar-text-hover: #ffffff;
-  --sidebar-border: #1E8449;
+  --sidebar-border: #1d4ed8;
   --header-bg: rgba(255, 255, 255, 0.85);
   --card-bg: #ffffff;
   --input-bg: #ffffff;
@@ -43,10 +43,10 @@
     --accent-color: #10b981;
     --danger-color: #f87171;
     --warning-color: #fbbf24;
-    --sidebar-bg: #0E3D22;
-    --sidebar-text: #E8F8F0;
+    --sidebar-bg: #0f172a;
+    --sidebar-text: #e0e7ff;
     --sidebar-text-hover: #ffffff;
-    --sidebar-border: #145A32;
+    --sidebar-border: #1e293b;
     --header-bg: rgba(7, 10, 18, 0.88);
     --card-bg: #111827;
     --input-bg: #090d16;
