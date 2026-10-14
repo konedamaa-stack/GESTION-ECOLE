@@ -853,8 +853,8 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                       <table style={{width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed'}}>
                         <colgroup>
                           <col style={{width: '100px'}} />
-                          <col style={{width: '240px'}} />
-                          <col style={{width: '280px'}} />
+                          <col style={{width: '200px'}} />
+                          <col style={{width: '200px'}} />
                           <col style={{width: '100px'}} />
                           <col style={{width: '150px'}} />
                         </colgroup>

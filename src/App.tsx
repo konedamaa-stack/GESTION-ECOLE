@@ -4061,14 +4061,14 @@ function App() {
         <table style={{width: '100%', borderCollapse: 'collapse', marginTop: 10}}>
           <thead>
             <tr style={{borderBottom: '1px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
-              <th style={{padding: '12px 8px', fontWeight: 500, width: '100px'}}>{t('admin.students.col_matricule', 'Matricule')}</th>
+              <th style={{padding: '12px 10px', fontWeight: 500, width: '100px', whiteSpace: 'nowrap'}}>{t('admin.students.col_matricule', 'Matricule')}</th>
               <th 
-                style={{padding: '12px 10px', fontWeight: 600, cursor: 'pointer', userSelect: 'none', minWidth: '200px'}}
+                style={{padding: '12px 10px', fontWeight: 600, cursor: 'pointer', userSelect: 'none'}}
                 onClick={() => setStudentSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
                 title="Cliquer pour basculer le tri A-Z / Z-A"
               >
                 <div style={{display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)'}}>
-                  <span>{t('admin.students.col_lastname', 'Nom')}</span>
+                  <span>{t('admin.students.col_name', 'Nom & Prénom(s)')}</span>
                   <span style={{
                     fontSize: '0.72rem', 
                     padding: '2px 8px', 
@@ -4082,36 +4082,31 @@ function App() {
                   </span>
                 </div>
               </th>
-              <th style={{padding: '12px 10px', fontWeight: 600, minWidth: '250px'}}>{t('admin.students.col_firstname', 'Prénom(s)')}</th>
-              <th style={{padding: '12px 8px', fontWeight: 500, minWidth: '110px'}}>{t('admin.students.col_class', 'Classe')}</th>
-              <th style={{padding: '12px 8px', fontWeight: 500, minWidth: '190px'}}>{t('admin.students.col_status', 'Statut')}</th>
-              <th style={{padding: '12px 8px', fontWeight: 500, textAlign: 'right', minWidth: '110px'}}>{t('admin.students.col_actions', 'Actions')}</th>
+              <th style={{padding: '12px 10px', fontWeight: 500, width: '120px', whiteSpace: 'nowrap'}}>{t('admin.students.col_class', 'Classe')}</th>
+              <th style={{padding: '12px 10px', fontWeight: 500, width: '180px', whiteSpace: 'nowrap'}}>{t('admin.students.col_status', 'Statut')}</th>
+              <th style={{padding: '12px 10px', fontWeight: 500, textAlign: 'right', width: '110px', whiteSpace: 'nowrap'}}>{t('admin.students.col_actions', 'Actions')}</th>
             </tr>
           </thead>
           <tbody>
             {filteredStudents.length > 0 ? filteredStudents.map((row, i) => (
               <tr key={i} style={{borderBottom: '1px solid var(--border-color)'}}>
-                <td style={{padding: '16px 8px', fontFamily: 'monospace', color: 'var(--primary-color)'}}>{row.matricule}</td>
-                <td style={{padding: '16px 10px', fontWeight: 700, minWidth: '200px'}}>
+                <td style={{padding: '14px 10px', fontFamily: 'monospace', color: 'var(--primary-color)', whiteSpace: 'nowrap'}}>{row.matricule}</td>
+                <td style={{padding: '14px 10px'}}>
                   <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
                     {row.photo_url ? (
-                      <img src={row.photo_url} alt="Photo" style={{width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover'}} />
+                      <img src={row.photo_url} alt="Photo" style={{width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0}} />
                     ) : (
-                      <div style={{width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)'}}>
+                      <div style={{width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', flexShrink: 0}}>
                         <Icons.Users />
                       </div>
                     )}
                     <div style={{cursor: 'pointer', color: 'var(--primary-color)'}} onClick={() => { setSelectedStudent(row); setActiveModal('studentDossier'); }}>
-                      {row.last_name ? String(row.last_name).toUpperCase() : '-'}
+                      <span style={{fontWeight: 700, color: 'var(--text-primary)'}}>{row.last_name ? String(row.last_name).toUpperCase() : ''}</span>{' '}
+                      <span style={{fontWeight: 500, color: 'var(--text-secondary)'}}>{row.first_name ? String(row.first_name).toUpperCase() : ''}</span>
                     </div>
                   </div>
                 </td>
-                <td style={{padding: '16px 10px', fontWeight: 600, minWidth: '250px'}}>
-                  <div style={{cursor: 'pointer', color: 'var(--text-primary)'}} onClick={() => { setSelectedStudent(row); setActiveModal('studentDossier'); }}>
-                    {row.first_name ? String(row.first_name).toUpperCase() : '-'}
-                  </div>
-                </td>
-                <td style={{padding: '16px 8px'}}>
+                <td style={{padding: '14px 10px', whiteSpace: 'nowrap'}}>
                   <div>{row.classes?.name || t('admin.students.unassigned', 'Non assigné')}</div>
                 </td>
                 <td style={{padding: '16px 0', minWidth: '190px', whiteSpace: 'nowrap'}}>
@@ -6632,8 +6627,8 @@ function App() {
             <thead>
               <tr style={{borderBottom: '2px solid var(--border-color)', textAlign: 'left', color: 'var(--text-secondary)'}}>
                 <th style={{padding: '12px 10px 12px 14px', fontWeight: 700, width: '90px', whiteSpace: 'nowrap'}}>Matricule</th>
-                <th style={{padding: '12px 8px', fontWeight: 700, minWidth: '220px'}}>Élève</th>
-                <th style={{padding: '12px 8px', fontWeight: 700, minWidth: '180px'}}>Parent</th>
+                <th style={{padding: '12px 8px', fontWeight: 700}}>Élève</th>
+                <th style={{padding: '12px 8px', fontWeight: 700}}>Parent</th>
                 <th style={{padding: '12px 8px', fontWeight: 700, whiteSpace: 'nowrap'}}>Contact</th>
                 <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap'}}>Attendu</th>
                 <th style={{padding: '12px 8px', fontWeight: 700, textAlign: 'right', color: 'var(--success-color)', whiteSpace: 'nowrap'}}>Total Versé</th>
@@ -7359,8 +7354,8 @@ function App() {
                   <colgroup>
                     <col style={{width: '30px'}} />
                     <col style={{width: '100px'}} />
-                    <col style={{width: '220px'}} />
-                    <col style={{width: '260px'}} />
+                    <col style={{width: '150px'}} />
+                    <col style={{width: '180px'}} />
                     <col style={{width: '100px'}} />
                     <col style={{width: '150px'}} />
                     <col style={{width: '180px'}} />
@@ -12456,8 +12451,7 @@ function App() {
         <thead>
           <tr>
             <th style={{ width: '65px', textAlign: 'center', whiteSpace: 'nowrap' }}>Matricule</th>
-            <th style={{ minWidth: '140px', textAlign: 'left' }}>Nom</th>
-            <th style={{ minWidth: '180px', textAlign: 'left' }}>Prénoms</th>
+            <th>Nom & Prénom</th>
             <th style={{ width: '55px', textAlign: 'center', whiteSpace: 'nowrap' }}>Sexe</th>
             <th style={{ width: '90px', textAlign: 'center', whiteSpace: 'nowrap' }}>Classe</th>
             <th style={{ width: '85px', textAlign: 'center', whiteSpace: 'nowrap' }}>Affectation</th>
@@ -12480,8 +12474,7 @@ function App() {
             return (
               <tr key={i}>
                 <td style={{ fontFamily: 'monospace', textAlign: 'center', whiteSpace: 'nowrap' }}>{row.matricule}</td>
-                <td style={{ fontWeight: 700 }}>{row.last_name ? String(row.last_name).toUpperCase() : '-'}</td>
-                <td style={{ fontWeight: 600 }}>{row.first_name ? String(row.first_name).toUpperCase() : '-'}</td>
+                <td style={{ fontWeight: 600 }}>{row.last_name ? `${String(row.last_name).toUpperCase()} ${row.first_name ? String(row.first_name).toUpperCase() : ''}` : (row.first_name ? String(row.first_name).toUpperCase() : '-')}</td>
                 <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>{row.gender || 'Masculin'}</td>
                 <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>{row.classes?.name || 'Non assigné'}</td>
                 <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>{isStudentExempt(row) ? '⭐ Exonéré' : (row.affecte || 'Non affecté')}</td>
