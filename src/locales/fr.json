@@ -185,6 +185,8 @@
       "search_ph": "Rechercher par nom, matricule...",
       "col_matricule": "Matricule",
       "col_name": "Nom & Prénom",
+      "col_lastname": "Nom",
+      "col_firstname": "Prénom(s)",
       "col_class": "Classe",
       "col_status": "Statut",
       "col_actions": "Actions",

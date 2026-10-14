@@ -189,6 +189,8 @@
       "search_ph": "ابحث بالاسم أو رقم التسجيل...",
       "col_matricule": "Matricule",
       "col_name": "الاسم واللقب",
+      "col_lastname": "اللقب",
+      "col_firstname": "الاسم",
       "col_class": "الفصل",
       "col_status": "الحالة",
       "col_actions": "إجراءات",

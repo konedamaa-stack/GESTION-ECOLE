@@ -152,9 +152,17 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
   const parentObj = student?.student_parents && student.student_parents.length > 0 ? student.student_parents[0].parents : null;
   const parentName = parentObj ? `${parentObj.first_name || ''} ${parentObj.last_name || ''}`.trim().toUpperCase() : (student?.parent_name ? String(student.parent_name).trim().toUpperCase() : "-");
   const isSoldé = isExonere || reste <= 0;
-  let defaultApptDate = new Date(invoice?.paid_at || new Date());
-  defaultApptDate.setMonth(defaultApptDate.getMonth() + 2);
-  const nextAppt = formatDate(invoice?.next_appointment || defaultApptDate.toISOString());
+  // Calcul de la date du prochain rendez-vous / versement selon l'échéancier officiel (2ème versement: 30/11/2026, 3ème versement: 30/01/2027)
+  let nextAppt = '';
+  if (invoice?.next_appointment) {
+    nextAppt = formatDate(invoice.next_appointment);
+  } else if (installmentNum === 1) {
+    nextAppt = '30/11/2026';
+  } else if (installmentNum === 2) {
+    nextAppt = '30/01/2027';
+  } else if (!isSoldé) {
+    nextAppt = '30/01/2027';
+  }
 
   // Détermination intelligente du titre du caissier (Le Caissier / La Caissière / أمين الصندوق / أمينة الصندوق)
   const isMaleCashier = (() => {
@@ -303,7 +311,9 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
         <div style={{ marginBottom: '4px', textDecoration: 'underline', fontWeight: 'bold' }}>{cashierLabel}</div>
         <div style={{ marginBottom: '25px', fontSize: '10px' }}>{schoolInfo?.cashier_name || (isAr ? 'الإدارة / الصندوق' : 'La Caisse')}</div>
         <div style={{ fontWeight: 'bold' }}>{isAr ? 'شكراً لثقتكم!' : 'Merci de Votre confiance!'}</div>
-        <div style={{ marginTop: '4px' }}>{isAr ? ('موعدنا القادم يوم: ' + nextAppt) : ('Rendez-vous le: ' + nextAppt)}</div>
+        {!isSoldé && nextAppt && (
+          <div style={{ marginTop: '4px' }}>{isAr ? ('موعدنا القادم يوم: ' + nextAppt) : ('Rendez-vous le: ' + nextAppt)}</div>
+        )}
       </div>
 
       <style dangerouslySetInnerHTML={{__html: `
