@@ -306,7 +306,7 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
       tableData.push([
         index + 1,
         student.matricule || '---',
-        `${student.last_name || ''} ${student.first_name || ''}`.trim(),
+        `${student.first_name || ''} ${student.last_name || ''}`.trim(),
         scoreStr,
         appreciation
       ]);
@@ -752,8 +752,8 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                             />
                           </td>
                           <td style={{padding: '8px', borderRight: '1px solid #eee', fontWeight: 'bold'}}>{student.matricule || `MAT-${student.id.substring(0,4)}`}</td>
-                          <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{student.last_name.toUpperCase()}</td>
-                          <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{student.first_name}</td>
+                          <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{student.first_name ? student.first_name.toUpperCase() : ''}</td>
+                          <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{student.last_name || ''}</td>
                           <td style={{padding: '8px', borderRight: '1px solid #eee'}}>{selectedEvaluation.classes?.name}</td>
                           <td style={{padding: '8px', borderRight: '1px solid #eee'}}>
                             <input 
@@ -871,8 +871,8 @@ export default function TeacherPortal({ session, onLogout }: { session: any, onL
                           {studentsData.filter(s => s.class_id === selectedClass).map((student) => (
                             <tr key={student.id} style={{borderBottom: '1px solid #eee', background: '#fff', color: '#333'}}>
                               <td style={{padding: '12px', borderRight: '1px solid #eee', fontWeight: 'bold'}}>{student.matricule || `MAT-${student.id.substring(0,4)}`}</td>
-                              <td style={{padding: '12px', borderRight: '1px solid #eee'}}>{student.last_name.toUpperCase()}</td>
-                              <td style={{padding: '12px', borderRight: '1px solid #eee'}}>{student.first_name}</td>
+                              <td style={{padding: '12px', borderRight: '1px solid #eee'}}>{student.first_name ? student.first_name.toUpperCase() : ''}</td>
+                              <td style={{padding: '12px', borderRight: '1px solid #eee'}}>{student.last_name || ''}</td>
                               <td style={{padding: '12px', borderRight: '1px solid #eee'}}><span className={`badge ${student.status === 'Inscrit' ? 'badge-success' : 'badge-warning'}`}>{student.status || 'Inscrit'}</span></td>
                               <td style={{padding: '12px'}}>
                                 {classesData.find(c => c.id === selectedClass)?.principal_teacher_id === session.id ? (
