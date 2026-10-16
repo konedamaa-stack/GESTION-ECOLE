@@ -4084,7 +4084,7 @@ function App() {
               </th>
               <th style={{padding: '12px 10px', fontWeight: 500, width: '120px', whiteSpace: 'nowrap'}}>{t('admin.students.col_class', 'Classe')}</th>
               <th style={{padding: '12px 10px', fontWeight: 500, width: '180px', whiteSpace: 'nowrap'}}>{t('admin.students.col_status', 'Statut')}</th>
-              <th style={{padding: '12px 10px', fontWeight: 500, textAlign: 'right', width: '110px', whiteSpace: 'nowrap'}}>{t('admin.students.col_actions', 'Actions')}</th>
+              <th style={{padding: '12px 10px', fontWeight: 500, textAlign: 'right', whiteSpace: 'nowrap'}}>{t('admin.students.col_actions', 'Actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -4157,51 +4157,53 @@ function App() {
                     </span>
                   </div>
                 </td>
-                <td style={{padding: '16px 0', textAlign: 'right'}}>
-                  {currentAdminRole !== 'Supervisor' && (
-                    <>
-                      <button 
-                        className="btn btn-primary" 
-                        title="Encaisser les frais de scolarité" 
-                        style={{padding: '6px 12px', marginRight: '8px', background: '#10b981', borderColor: '#10b981', color: 'white', fontWeight: 600}} 
-                        onClick={() => { 
-                          setPreselectedStudentId(row.id); 
-                          setActiveModal('payment'); 
-                        }}
-                      >
-                        💳 Encaisser
-                      </button>
-                      <button className="btn btn-outline" title="Réinscrire" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--accent-color)', borderColor: 'var(--accent-color)'}} onClick={() => { 
-                        const studentInvoices = invoicesData.filter(inv => inv.student_id === row.id);
-                        const studentPaye = studentInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
-                        const studentTotal = getStudentTuitionTotal(row, row.classes);
-                        const studentReste = isStudentExempt(row) ? 0 : Math.max(0, studentTotal - studentPaye);
-                        if (studentReste > 0) {
-                          alert(`Impossible de réinscrire cet élève. Il a un reste de scolarité non payé de ${studentReste} CFA. Veuillez d'abord solder sa scolarité.`);
-                        } else {
-                          setEditEntity(row); setActiveModal('reinscription'); 
-                        }
-                      }}><Icons.RefreshCw /></button>
-                      <button className="btn btn-outline" title="Modifier" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { setEditEntity(row); setActiveModal('student'); }}>✏️</button>
-                      <button className="btn btn-outline" title="Supprimer" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--error-color)', borderColor: 'var(--error-color)'}} onClick={() => handleDeleteStudent(row.id)}>🗑️</button>
-                    </>
-                  )}
-                  <button className="btn btn-outline" title="Bulletin" style={{padding: '6px 12px', marginRight: '8px', color: 'var(--success-color)', borderColor: 'var(--success-color)'}} onClick={() => { 
-                    if(row.class_id) {
-                      loadBulletinData(row.class_id, '1er Trimestre', row.id);
-                    } else {
-                      alert(t('admin.students.msg_no_class', "Cet élève n'est assigné à aucune classe."));
-                    }
-                  }}>📄 Bulletin</button>
-                  <button className="btn btn-outline" title="Emploi du temps" style={{padding: '6px 12px', marginRight: '8px'}} onClick={() => { 
-                    if(row.class_id) {
-                      setSelectedClassForSchedule(row.class_id);
-                      setActiveTab('schedules');
-                    } else {
-                      alert(t('admin.students.msg_no_class', "Cet élève n'est assigné à aucune classe."));
-                    }
-                  }}><Icons.Calendar /> Voir l'emploi du temps</button>
-                  <button className="btn btn-outline" style={{padding: '6px 12px'}} onClick={() => { setSelectedStudent(row); setActiveModal('studentDossier'); }}>{t('admin.students.btn_dossier', 'Dossier')}</button>
+                <td style={{padding: '12px 10px', textAlign: 'right', whiteSpace: 'nowrap'}}>
+                  <div style={{display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', whiteSpace: 'nowrap', flexWrap: 'nowrap'}}>
+                    {currentAdminRole !== 'Supervisor' && (
+                      <>
+                        <button 
+                          className="btn btn-primary" 
+                          title="Encaisser les frais de scolarité" 
+                          style={{padding: '6px 12px', background: '#10b981', borderColor: '#10b981', color: 'white', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0}} 
+                          onClick={() => { 
+                            setPreselectedStudentId(row.id); 
+                            setActiveModal('payment'); 
+                          }}
+                        >
+                          💳 Encaisser
+                        </button>
+                        <button className="btn btn-outline" title="Réinscrire" style={{padding: '6px 10px', color: 'var(--accent-color)', borderColor: 'var(--accent-color)', flexShrink: 0}} onClick={() => { 
+                          const studentInvoices = invoicesData.filter(inv => inv.student_id === row.id);
+                          const studentPaye = studentInvoices.filter(inv => inv.status === 'Payée').reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+                          const studentTotal = getStudentTuitionTotal(row, row.classes);
+                          const studentReste = isStudentExempt(row) ? 0 : Math.max(0, studentTotal - studentPaye);
+                          if (studentReste > 0) {
+                            alert(`Impossible de réinscrire cet élève. Il a un reste de scolarité non payé de ${studentReste} CFA. Veuillez d'abord solder sa scolarité.`);
+                          } else {
+                            setEditEntity(row); setActiveModal('reinscription'); 
+                          }
+                        }}><Icons.RefreshCw /></button>
+                        <button className="btn btn-outline" title="Modifier" style={{padding: '6px 10px', flexShrink: 0}} onClick={() => { setEditEntity(row); setActiveModal('student'); }}>✏️</button>
+                        <button className="btn btn-outline" title="Supprimer" style={{padding: '6px 10px', color: 'var(--error-color)', borderColor: 'var(--error-color)', flexShrink: 0}} onClick={() => handleDeleteStudent(row.id)}>🗑️</button>
+                      </>
+                    )}
+                    <button className="btn btn-outline" title="Bulletin" style={{padding: '6px 12px', color: 'var(--success-color)', borderColor: 'var(--success-color)', whiteSpace: 'nowrap', flexShrink: 0}} onClick={() => { 
+                      if(row.class_id) {
+                        loadBulletinData(row.class_id, '1er Trimestre', row.id);
+                      } else {
+                        alert(t('admin.students.msg_no_class', "Cet élève n'est assigné à aucune classe."));
+                      }
+                    }}>📄 Bulletin</button>
+                    <button className="btn btn-outline" title="Emploi du temps" style={{padding: '6px 12px', color: 'var(--primary-color)', borderColor: 'var(--primary-color)', whiteSpace: 'nowrap', flexShrink: 0}} onClick={() => { 
+                      if(row.class_id) {
+                        setSelectedClassForSchedule(row.class_id);
+                        setActiveTab('schedules');
+                      } else {
+                        alert(t('admin.students.msg_no_class', "Cet élève n'est assigné à aucune classe."));
+                      }
+                    }}><Icons.Calendar /> Voir l'emploi du temps</button>
+                    <button className="btn btn-outline" style={{padding: '6px 12px', whiteSpace: 'nowrap', flexShrink: 0}} onClick={() => { setSelectedStudent(row); setActiveModal('studentDossier'); }}>{t('admin.students.btn_dossier', 'Dossier')}</button>
+                  </div>
                 </td>
               </tr>
             )) : (
