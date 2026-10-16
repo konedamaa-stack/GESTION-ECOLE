@@ -4101,8 +4101,8 @@ function App() {
                       </div>
                     )}
                     <div style={{cursor: 'pointer', color: 'var(--primary-color)'}} onClick={() => { setSelectedStudent(row); setActiveModal('studentDossier'); }}>
-                      <span style={{fontWeight: 700, color: 'var(--text-primary)'}}>{row.last_name ? String(row.last_name).toUpperCase() : ''}</span>{' '}
-                      <span style={{fontWeight: 500, color: 'var(--text-secondary)'}}>{row.first_name ? String(row.first_name).toUpperCase() : ''}</span>
+                      <span style={{fontWeight: 700, color: 'var(--text-primary)'}}>{row.first_name ? String(row.first_name).toUpperCase() : ''}</span>{' '}
+                      <span style={{fontWeight: 600, color: 'var(--text-secondary)'}}>{row.last_name ? String(row.last_name).toUpperCase() : ''}</span>
                     </div>
                   </div>
                 </td>
@@ -12474,7 +12474,7 @@ function App() {
             return (
               <tr key={i}>
                 <td style={{ fontFamily: 'monospace', textAlign: 'center', whiteSpace: 'nowrap' }}>{row.matricule}</td>
-                <td style={{ fontWeight: 600 }}>{row.last_name ? `${String(row.last_name).toUpperCase()} ${row.first_name ? String(row.first_name).toUpperCase() : ''}` : (row.first_name ? String(row.first_name).toUpperCase() : '-')}</td>
+                <td style={{ fontWeight: 600 }}>{row.first_name ? `${String(row.first_name).toUpperCase()} ${row.last_name ? String(row.last_name).toUpperCase() : ''}` : (row.last_name ? String(row.last_name).toUpperCase() : '-')}</td>
                 <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>{row.gender || 'Masculin'}</td>
                 <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>{row.classes?.name || 'Non assigné'}</td>
                 <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>{isStudentExempt(row) ? '⭐ Exonéré' : (row.affecte || 'Non affecté')}</td>
