@@ -677,7 +677,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
           <td style={{padding: '5px 8px', textAlign: 'left', fontWeight: 'bold'}}>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
               <span style={{fontSize: '0.82rem'}}>{s}</span>
-              <span style={{fontSize: '0.85rem', fontFamily: '"Cairo", "Traditional Arabic", serif', direction: 'rtl', color: '#0f172a'}}>
+              <span style={{fontSize: '0.85rem', fontFamily: '"Noto Naskh Arabic", "Cairo", "Tajawal", sans-serif', direction: 'rtl', color: '#0f172a'}}>
                 {arName}
               </span>
             </div>
@@ -752,7 +752,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
             <div style={{fontSize: '1rem', fontWeight: 900, fontFamily: '"Cairo", serif', direction: 'rtl', color: brandColor, marginBottom: '1px'}}>
               ! الله أكبر
             </div>
-            <div style={{fontSize: '1.25rem', fontWeight: 900, fontFamily: '"Cairo", "Traditional Arabic", serif', direction: 'rtl', color: brandColor, margin: '1px 0'}}>
+            <div style={{fontSize: '1.25rem', fontWeight: 900, fontFamily: '"Noto Naskh Arabic", "Cairo", "Tajawal", sans-serif', direction: 'rtl', color: brandColor, margin: '1px 0'}}>
               كشف الدرجات
             </div>
             <h2 style={{color: brandColor, margin: '1px 0 2px 0', fontSize: '1.05rem', fontWeight: 800, letterSpacing: '0.5px'}}>
@@ -788,7 +788,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
                 Établissement : <strong style={{color: '#0f172a'}}>{(schoolInfo?.school_name || schoolInfo?.name || "ÉTABLISSEMENT SCOLAIRE").toUpperCase()}</strong>
               </p>
               {schoolInfo?.school_name_ar ? (
-                <span style={{fontSize: '1.15rem', fontWeight: 900, fontFamily: '"Cairo", "Traditional Arabic", serif', direction: 'rtl', color: brandColor}}>
+                <span style={{fontSize: '1.15rem', fontWeight: 900, fontFamily: '"Noto Naskh Arabic", "Cairo", "Tajawal", sans-serif', direction: 'rtl', color: brandColor}}>
                   {schoolInfo.school_name_ar}
                 </span>
               ) : null}
@@ -1183,7 +1183,7 @@ export const BulletinPreview: React.FC<BulletinPreviewProps> = ({
       : `${st.first_name || ''} ${st.last_name || ''}`.trim();
 
     return (
-      <div key={st.id} className="bulletin-classic-page" dir="rtl" style={{fontFamily: '"Cairo", "Traditional Arabic", "Segoe UI", serif', textAlign: 'right'}}>
+      <div key={st.id} className="bulletin-classic-page" dir="rtl" style={{fontFamily: '"Noto Naskh Arabic", "Cairo", "Tajawal", sans-serif', textAlign: 'right'}}>
         {/* 1. Header Row (100% Arabic) */}
         <div className="bulletin-classic-header">
           <div className="header-right" style={{lineHeight: 1.3, textAlign: 'right'}}>

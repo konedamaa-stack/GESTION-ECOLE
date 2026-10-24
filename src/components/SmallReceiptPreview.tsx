@@ -188,7 +188,7 @@ export const SmallReceiptPreview: React.FC<SmallReceiptPreviewProps> = ({
       padding: '10px',
       backgroundColor: 'white',
       color: 'black',
-      fontFamily: isAr ? "'Traditional Arabic', 'Cairo', 'Tajawal', serif" : '"Courier New", Courier, monospace',
+      fontFamily: isAr ? "'Noto Naskh Arabic', 'Cairo', 'Tajawal', 'Amiri', sans-serif" : '"Courier New", "Noto Naskh Arabic", "Cairo", Courier, monospace',
       fontSize: isAr ? '14px' : '12px',
       lineHeight: '1.4',
       position: 'relative'

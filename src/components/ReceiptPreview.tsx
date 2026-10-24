@@ -187,9 +187,9 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
       padding: '10px',
       backgroundColor: 'white',
       color: 'black',
-      fontFamily: isAr ? "'Traditional Arabic', 'Cairo', 'Tajawal', serif" : '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+      fontFamily: isAr ? "'Noto Naskh Arabic', 'Cairo', 'Tajawal', 'Amiri', sans-serif" : "'Inter', 'Noto Naskh Arabic', 'Cairo', 'Segoe UI', Tahoma, sans-serif",
       fontWeight: 'bold',
-      fontSize: isAr ? '16.5px' : '14px',
+      fontSize: isAr ? '15px' : '14px',
     }} dir={isAr ? 'rtl' : 'ltr'}>
       <div style={{
         border: '2px solid black',

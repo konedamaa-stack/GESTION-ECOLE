@@ -20,7 +20,7 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Inter', 'Noto Naskh Arabic', 'Cairo', 'Tajawal', 'Amiri', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--lp-text);
   background-color: var(--lp-light);
   overflow-x: hidden;

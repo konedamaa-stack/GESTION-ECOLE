@@ -21,7 +21,7 @@
   --table-header-bg: #f8fafc;
   --table-row-hover: #f1f5f9;
   
-  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Cairo', Arial, sans-serif;
+  --font-main: 'Inter', 'Noto Naskh Arabic', 'Cairo', 'Tajawal', 'Amiri', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   
   --sidebar-width: 240px;
   --header-height: 60px;
@@ -61,6 +61,10 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
 }
 
 body {
@@ -218,7 +222,7 @@ html {
 
 /* RTL Support */
 [dir="rtl"] {
-  --font-main: 'Tajawal', 'Cairo', system-ui, sans-serif;
+  --font-main: 'Noto Naskh Arabic', 'Cairo', 'Tajawal', 'Amiri', -apple-system, BlinkMacSystemFont, sans-serif;
   text-align: right;
 }
 
@@ -265,7 +269,7 @@ html {
   padding: 20mm;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   color: #1e293b;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Noto Naskh Arabic', 'Cairo', 'Tajawal', 'Amiri', sans-serif;
   box-sizing: border-box;
 }
 
@@ -384,7 +388,7 @@ html {
   gap: 20px;
   background-color: #f1f5f9;
   padding: 20px;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', 'Noto Naskh Arabic', 'Cairo', 'Tajawal', 'Amiri', Arial, sans-serif;
   color: #000;
 }
 
@@ -620,7 +624,7 @@ html {
   padding: 6mm 10mm;
   box-sizing: border-box;
   font-size: 0.72rem;
-  font-family: Arial, sans-serif;
+  font-family: 'Inter', 'Noto Naskh Arabic', 'Cairo', 'Tajawal', 'Amiri', Arial, sans-serif;
   color: #0f172a;
   overflow: hidden;
   position: relative;
@@ -644,7 +648,7 @@ html {
   padding: 12mm 15mm;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', 'Noto Naskh Arabic', 'Cairo', 'Tajawal', 'Amiri', system-ui, sans-serif;
   color: #1e293b;
   border-radius: 12px;
 }
@@ -1252,13 +1256,18 @@ html {
 
 /* Force Arabic fonts when direction is RTL */
 :root[dir="rtl"], html[dir="rtl"], body[dir="rtl"], [dir="rtl"] * {
-  --font-main: 'Traditional Arabic', 'Cairo', 'Tajawal', serif !important;
-  font-family: 'Traditional Arabic', 'Cairo', 'Tajawal', serif !important;
+  --font-main: 'Noto Naskh Arabic', 'Cairo', 'Tajawal', 'Amiri', sans-serif !important;
+  font-family: 'Noto Naskh Arabic', 'Cairo', 'Tajawal', 'Amiri', sans-serif !important;
 }
 
-/* Scale up all text elements globally in Arabic (RTL) mode since Traditional Arabic renders small */
+/* Noto Naskh Arabic / Cairo est naturellement bien proportionné et lisible */
 :root[dir="rtl"], html[dir="rtl"], body[dir="rtl"] {
-  font-size: 16.5px !important;
+  font-size: 14.5px !important;
+}
+
+/* Style dédié pour tout texte en arabe */
+.font-arabic, [lang="ar"], :lang(ar) {
+  font-family: 'Noto Naskh Arabic', 'Cairo', 'Tajawal', 'Amiri', sans-serif !important;
 }
 
 [dir="rtl"] .logo-text {

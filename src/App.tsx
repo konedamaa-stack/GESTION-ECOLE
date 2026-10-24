@@ -4201,7 +4201,7 @@ function App() {
                       } else {
                         alert(t('admin.students.msg_no_class', "Cet élève n'est assigné à aucune classe."));
                       }
-                    }}><Icons.Calendar /> Voir l'emploi du temps</button>
+                    }}><Icons.Calendar /> EDT</button>
                     <button className="btn btn-outline" style={{padding: '6px 12px', whiteSpace: 'nowrap', flexShrink: 0}} onClick={() => { setSelectedStudent(row); setActiveModal('studentDossier'); }}>{t('admin.students.btn_dossier', 'Dossier')}</button>
                   </div>
                 </td>
