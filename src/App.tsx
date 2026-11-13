@@ -21,6 +21,7 @@ import { PasswordRecovery } from './components/PasswordRecovery';
 import { FraisAnnexesManager } from './components/FraisAnnexesManager';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import { applyThemeSettings } from './lib/theme';
 import { QuickStartGuideModal } from './components/QuickStartGuideModal';
 import { IdleTimeoutManager } from './components/IdleTimeoutManager';
@@ -3862,6 +3863,96 @@ function App() {
       : (currentSchoolId === 'a340e59e-7465-4a76-b8f3-43b204e3411d' || (currentSchoolObj?.name || '').includes('ECOLE') ? false : true)
   };
 
+  const handleExportStudents = (format: 'xlsx' | 'csv' = 'xlsx') => {
+    if (!filteredStudents || filteredStudents.length === 0) {
+      alert("Aucun élève à exporter pour les filtres sélectionnés.");
+      return;
+    }
+
+    const rows = filteredStudents.map((s, index) => {
+      const studentInvoices = invoicesData.filter(inv => inv.student_id === s.id);
+      const studentPaye = studentInvoices
+        .filter(inv => inv.status === 'Payée')
+        .reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+      const studentTotal = getStudentTuitionTotal(s, s.classes);
+      const studentReste = isStudentExempt(s) ? 0 : Math.max(0, studentTotal - studentPaye);
+      const primaryParent = s.student_parents?.[0]?.parents || null;
+
+      return {
+        'N°': index + 1,
+        'Matricule': s.matricule || '',
+        'Nom & Prénom(s)': `${(s.first_name || '').toUpperCase()} ${(s.last_name || '').toUpperCase()}`.trim(),
+        'Nom': (s.first_name || '').toUpperCase(),
+        'Prenoms': (s.last_name || '').toUpperCase(),
+        'Sexe': s.gender || 'Masculin',
+        'Date de Naissance': s.birth_date || '',
+        'Classe': s.classes?.name || 'Non assigné',
+        'Statut': s.status || 'Inscrit',
+        'Affecté': isStudentExempt(s) ? 'Exonéré' : (s.affecte || 'Non affecté'),
+        'Lieu': s.location || '',
+        'Scolarité Totale (FCFA)': studentTotal,
+        'Montant Payé (FCFA)': studentPaye,
+        'Reste à Payer (FCFA)': studentReste,
+        'Statut Paiement': isStudentExempt(s) ? 'Exonéré' : (studentReste <= 0 ? 'Soldé' : 'Non soldé'),
+        'Nom Parent': primaryParent?.last_name ? String(primaryParent.last_name).toUpperCase() : '',
+        'Prenoms Parent': primaryParent?.first_name ? String(primaryParent.first_name).toUpperCase() : '',
+        'Telephone Parent': primaryParent?.phone || '',
+        'Lieu Parent': primaryParent?.location || ''
+      };
+    });
+
+    const classLabel =
+      selectedClassFilter === 'all'
+        ? 'Toutes_Classes'
+        : selectedClassFilter === 'unassigned'
+          ? 'Sans_Classe'
+          : (classesData.find(c => c.id === selectedClassFilter)?.name || 'Classe').replace(/[^a-zA-Z0-9_-]/g, '_');
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const baseFileName = `Eleves_${classLabel}_${dateStr}`;
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    worksheet['!cols'] = [
+      { wch: 6 },  // N°
+      { wch: 14 }, // Matricule
+      { wch: 30 }, // Nom & Prénom(s)
+      { wch: 16 }, // Nom
+      { wch: 20 }, // Prenoms
+      { wch: 10 }, // Sexe
+      { wch: 14 }, // Date de Naissance
+      { wch: 16 }, // Classe
+      { wch: 12 }, // Statut
+      { wch: 14 }, // Affecté
+      { wch: 16 }, // Lieu
+      { wch: 20 }, // Scolarité Totale
+      { wch: 18 }, // Montant Payé
+      { wch: 18 }, // Reste à Payer
+      { wch: 15 }, // Statut Paiement
+      { wch: 16 }, // Nom Parent
+      { wch: 18 }, // Prenoms Parent
+      { wch: 16 }, // Telephone Parent
+      { wch: 16 }  // Lieu Parent
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Élèves');
+
+    if (format === 'csv') {
+      const csvContent = '\uFEFF' + XLSX.utils.sheet_to_csv(worksheet, { FS: ';' });
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${baseFileName}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } else {
+      XLSX.writeFile(workbook, `${baseFileName}.xlsx`);
+    }
+  };
+
   const renderStudents = () => {
 
     return (
@@ -3871,13 +3962,16 @@ function App() {
           <h1 className="page-title">{t('admin.students.title', 'Gestion des Élèves')}</h1>
           <p className="page-subtitle">{t('admin.students.subtitle', 'Annuaire complet, dossiers scolaires et suivi des absences.')}</p>
         </div>
-        <div className="header-actions" style={{display: 'flex', gap: '12px'}}>
+        <div className="header-actions" style={{display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
           {currentAdminRole !== 'Supervisor' && (
             <>
               <button className="btn btn-outline" onClick={() => setActiveModal('absence')} style={{color: 'var(--warning-color)', borderColor: 'var(--warning-color)'}}>
                 <Icons.Activity /> {t('admin.students.btn_absence', 'Signaler Absence')}
               </button>
               <button className="btn btn-outline" onClick={() => setActiveModal('import')}><Icons.Download /> {t('admin.students.btn_import', 'Importer')}</button>
+              <button className="btn btn-outline" onClick={() => handleExportStudents('xlsx')} style={{color: '#10b981', borderColor: '#10b981'}} title="Exporter la liste des élèves en fichier Excel (.xlsx)">
+                <Icons.Upload /> {t('admin.students.btn_export', 'Exporter')}
+              </button>
               <button className="btn btn-primary" onClick={() => setActiveModal('student')}>
                 <Icons.Plus /> {t('admin.students.btn_enroll', 'Inscrire')}
               </button>
@@ -3969,6 +4063,15 @@ function App() {
             {' • '}Ordre alphabétique ({studentSortDirection === 'asc' ? 'A → Z' : 'Z → A'})
           </div>
           <div className="student-filters" style={{display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap'}}>
+            <button 
+              className="btn btn-outline" 
+              onClick={() => handleExportStudents('xlsx')}
+              title="Exporter la liste affichée vers Excel (.xlsx)"
+              style={{padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981', borderColor: '#10b981', fontWeight: 600}}
+            >
+              <Icons.Upload />
+              Exporter Excel
+            </button>
             <button 
               className="btn btn-outline" 
               onClick={() => { 
