@@ -272,7 +272,8 @@ function App() {
         'bulletin',
         'parent_invoices',
         'parent_children',
-        'certificate'
+        'certificate',
+        'export'
       ];
       if (modal && !allowedModals.includes(modal)) {
         alert("Action non autorisée : Le rôle Superviseur est limité à la lecture et à l'impression.");
@@ -3863,13 +3864,32 @@ function App() {
       : (currentSchoolId === 'a340e59e-7465-4a76-b8f3-43b204e3411d' || (currentSchoolObj?.name || '').includes('ECOLE') ? false : true)
   };
 
-  const handleExportStudents = (format: 'xlsx' | 'csv' = 'xlsx') => {
-    if (!filteredStudents || filteredStudents.length === 0) {
+  const handleExportStudents = (format: 'xlsx' | 'csv' = 'xlsx', overrideClassFilter?: string) => {
+    const targetClassFilter = overrideClassFilter !== undefined ? overrideClassFilter : selectedClassFilter;
+    const targetList = overrideClassFilter !== undefined
+      ? sortStudentsList(
+          studentsData.filter(s => {
+            const matchStatus = selectedStatusFilter === 'all' || (s.status || 'Inscrit') === selectedStatusFilter;
+            const matchClass =
+              targetClassFilter === 'all'
+                ? true
+                : targetClassFilter === 'unassigned'
+                  ? !s.class_id
+                  : targetClassFilter === 'assigned'
+                    ? !!s.class_id
+                    : s.class_id === targetClassFilter;
+            return matchStatus && matchClass;
+          }),
+          studentSortDirection
+        )
+      : filteredStudents;
+
+    if (!targetList || targetList.length === 0) {
       alert("Aucun élève à exporter pour les filtres sélectionnés.");
       return;
     }
 
-    const rows = filteredStudents.map((s, index) => {
+    const rows = targetList.map((s, index) => {
       const studentInvoices = invoicesData.filter(inv => inv.student_id === s.id);
       const studentPaye = studentInvoices
         .filter(inv => inv.status === 'Payée')
@@ -3902,11 +3922,11 @@ function App() {
     });
 
     const classLabel =
-      selectedClassFilter === 'all'
+      targetClassFilter === 'all'
         ? 'Toutes_Classes'
-        : selectedClassFilter === 'unassigned'
+        : targetClassFilter === 'unassigned'
           ? 'Sans_Classe'
-          : (classesData.find(c => c.id === selectedClassFilter)?.name || 'Classe').replace(/[^a-zA-Z0-9_-]/g, '_');
+          : (classesData.find(c => c.id === targetClassFilter)?.name || 'Classe').replace(/[^a-zA-Z0-9_-]/g, '_');
 
     const dateStr = new Date().toISOString().slice(0, 10);
     const baseFileName = `Eleves_${classLabel}_${dateStr}`;
@@ -3969,13 +3989,15 @@ function App() {
                 <Icons.Activity /> {t('admin.students.btn_absence', 'Signaler Absence')}
               </button>
               <button className="btn btn-outline" onClick={() => setActiveModal('import')}><Icons.Download /> {t('admin.students.btn_import', 'Importer')}</button>
-              <button className="btn btn-outline" onClick={() => handleExportStudents('xlsx')} style={{color: '#10b981', borderColor: '#10b981'}} title="Exporter la liste des élèves en fichier Excel (.xlsx)">
-                <Icons.Upload /> {t('admin.students.btn_export', 'Exporter')}
-              </button>
-              <button className="btn btn-primary" onClick={() => setActiveModal('student')}>
-                <Icons.Plus /> {t('admin.students.btn_enroll', 'Inscrire')}
-              </button>
             </>
+          )}
+          <button className="btn btn-outline" onClick={() => setActiveModal('export')} style={{color: '#10b981', borderColor: '#10b981'}} title="Exporter les élèves en Excel ou CSV">
+            <Icons.Upload /> {t('admin.students.btn_export', 'Exporter')}
+          </button>
+          {currentAdminRole !== 'Supervisor' && (
+            <button className="btn btn-primary" onClick={() => setActiveModal('student')}>
+              <Icons.Plus /> {t('admin.students.btn_enroll', 'Inscrire')}
+            </button>
           )}
         </div>
       </div>
@@ -8878,6 +8900,7 @@ function App() {
    {activeModal === 'receipt_choice' && "Format du Reçu"}
    {activeModal === 'coefficients' && "Coefficients par Matière"}
    {activeModal === 'import' && "Importer des Élèves"}
+   {activeModal === 'export' && "Exporter des Élèves"}
               </h2>
               <button className="close-btn" onClick={closeModal}>
                 <Icons.X />
@@ -10114,6 +10137,55 @@ function App() {
                     <button type="submit" className="btn btn-primary">Lancer l'importation</button>
                   </div>
                 </form>
+              )}
+
+              {activeModal === 'export' && (
+                <div>
+                  <div style={{background: 'var(--surface-color-hover)', padding: '16px', borderRadius: '8px', marginBottom: '20px'}}>
+                    <h4 style={{marginBottom: '8px', fontWeight: 'bold'}}>Exportation de la liste des élèves</h4>
+                    <p style={{fontSize: '0.9rem', color: 'var(--text-secondary)', margin: 0}}>
+                      Téléchargez la liste complète ou filtrée des élèves avec leurs informations scolaires, financières (scolarité payée / reste à payer) et les coordonnées des parents.
+                    </p>
+                  </div>
+                  <div className="form-group" style={{marginBottom: '20px'}}>
+                    <label>Classe à exporter</label>
+                    <select id="export_class_id" className="form-select" defaultValue={selectedClassFilter}>
+                      <option value="all">Toutes les classes ({studentsData.length} élèves au total)</option>
+                      <option value="unassigned">Non Affectés (Sans classe)</option>
+                      {classesData.map(cls => (
+                        <option key={cls.id} value={cls.id}>
+                          {cls.name} ({studentsData.filter(s => s.class_id === cls.id).length} élèves)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{marginTop: '28px', display: 'flex', justifyContent: 'flex-end', gap: '12px', flexWrap: 'wrap'}}>
+                    <button type="button" className="btn btn-outline" onClick={closeModal}>{t('admin.modals.cancel', 'Annuler')}</button>
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={() => {
+                        const clsSelect = document.getElementById('export_class_id') as HTMLSelectElement;
+                        handleExportStudents('csv', clsSelect ? clsSelect.value : selectedClassFilter);
+                        closeModal();
+                      }}
+                    >
+                      <Icons.Download /> Télécharger CSV (.csv)
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      style={{background: '#10b981', borderColor: '#10b981'}}
+                      onClick={() => {
+                        const clsSelect = document.getElementById('export_class_id') as HTMLSelectElement;
+                        handleExportStudents('xlsx', clsSelect ? clsSelect.value : selectedClassFilter);
+                        closeModal();
+                      }}
+                    >
+                      <Icons.Download /> Télécharger Excel (.xlsx)
+                    </button>
+                  </div>
+                </div>
               )}
 
               {/* General Form for Employees/Teachers/Parents */}

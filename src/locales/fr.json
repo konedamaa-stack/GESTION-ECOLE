@@ -177,6 +177,7 @@
       "subtitle": "Annuaire complet, dossiers scolaires et suivi des absences.",
       "btn_absence": "Signaler Absence",
       "btn_import": "Importer",
+      "btn_export": "Exporter",
       "btn_enroll": "Inscrire",
       "stat_total": "Effectif Total",
       "stat_unjustified": "Absences Non Justifiées",
