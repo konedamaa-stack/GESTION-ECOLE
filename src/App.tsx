@@ -12608,8 +12608,8 @@ function App() {
 
     {/* Print Only Student List Container */}
     <div className="print-only-student-list-container">
-      <h2 style={{ textAlign: 'center', marginBottom: '8px' }}>{t('admin.students.panel_title', 'Annuaire des Élèves')}</h2>
-      <div style={{ textAlign: 'center', fontSize: '10px', color: '#666', marginBottom: '16px', borderBottom: '1px solid #ccc', paddingBottom: '6px' }}>
+      <h2 style={{ textAlign: 'center', marginBottom: '8px', fontSize: '1.4rem' }}>{t('admin.students.panel_title', 'Annuaire des Élèves')}</h2>
+      <div style={{ textAlign: 'center', fontSize: '12px', color: '#4b5563', marginBottom: '16px', borderBottom: '1px solid #ccc', paddingBottom: '8px' }}>
         <strong>Classe :</strong> {
           selectedClassFilter === 'all' ? 'Toutes' : 
           selectedClassFilter === 'unassigned' ? 'Sans classe' :
@@ -12627,13 +12627,13 @@ function App() {
       <table>
         <thead>
           <tr>
-            <th style={{ width: '65px', textAlign: 'center', whiteSpace: 'nowrap' }}>Matricule</th>
+            <th style={{ width: '70px', textAlign: 'center', whiteSpace: 'nowrap' }}>Matricule</th>
             <th>Nom & Prénom</th>
-            <th style={{ width: '55px', textAlign: 'center', whiteSpace: 'nowrap' }}>Sexe</th>
-            <th style={{ width: '90px', textAlign: 'center', whiteSpace: 'nowrap' }}>Classe</th>
-            <th style={{ width: '85px', textAlign: 'center', whiteSpace: 'nowrap' }}>Affectation</th>
+            <th style={{ width: '60px', textAlign: 'center', whiteSpace: 'nowrap' }}>Sexe</th>
+            <th style={{ width: '100px', textAlign: 'center', whiteSpace: 'nowrap' }}>Classe</th>
+            <th style={{ width: '95px', textAlign: 'center', whiteSpace: 'nowrap' }}>Affectation</th>
             <th>Nom du Parent</th>
-            <th style={{ width: '120px', textAlign: 'center', whiteSpace: 'nowrap' }}>Contact Parent</th>
+            <th style={{ width: '130px', textAlign: 'center', whiteSpace: 'nowrap' }}>Contact Parent</th>
           </tr>
         </thead>
         <tbody>
