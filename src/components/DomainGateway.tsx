@@ -14,7 +14,6 @@ export const DomainGateway: React.FC<DomainGatewayProps> = ({
 }) => {
   const [inputDomain, setInputDomain] = useState('');
   const [schools, setSchools] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isFocused, setIsFocused] = useState(false);
 
@@ -28,7 +27,7 @@ export const DomainGateway: React.FC<DomainGatewayProps> = ({
           .order('name', { ascending: true })
           .limit(50);
         if (data && !error) {
-          setSchools(data.filter((s) => s.subdomain));
+          setSchools(data.filter((s: any) => s.subdomain));
         }
       } catch (err) {
         console.warn('Erreur chargement des établissements:', err);

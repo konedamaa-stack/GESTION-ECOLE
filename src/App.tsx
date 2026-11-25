@@ -3,7 +3,6 @@ import { HonorCertificate } from './components/HonorCertificate';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { useTranslation } from 'react-i18next';
-import { LandingPage } from './components/LandingPage';
 import { DomainGateway } from './components/DomainGateway';
 import Auth from './components/Auth';
 import { SuperAdminAuth } from './components/SuperAdminAuth';
