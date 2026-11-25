@@ -299,18 +299,20 @@ export const DomainGateway: React.FC<DomainGatewayProps> = ({
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '8px',
-                  padding: '6px 14px',
+                  gap: '10px',
+                  padding: '9px 20px',
                   borderRadius: '999px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  fontSize: '0.75rem',
+                  backgroundColor: 'rgba(255, 255, 255, 0.22)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.35)',
+                  fontSize: '1.15rem',
                   fontWeight: 800,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                  color: '#ffffff',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
+                  letterSpacing: '0.01em',
                 }}
               >
-                <span>🏫</span>
+                <span style={{ fontSize: '1.3rem' }}>🏫</span>
                 <span>Gestion Établissement Scolaire</span>
               </div>
 
