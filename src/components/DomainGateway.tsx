@@ -311,7 +311,7 @@ export const DomainGateway: React.FC<DomainGatewayProps> = ({
                 }}
               >
                 <span>🏫</span>
-                <span>مدرسة راية الإسلام • Solution Écoles</span>
+                <span>Gestion Établissement Scolaire</span>
               </div>
 
               {/* Banner Main Title */}
