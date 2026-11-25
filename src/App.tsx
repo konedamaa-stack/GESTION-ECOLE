@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { useTranslation } from 'react-i18next';
 import { LandingPage } from './components/LandingPage';
+import { DomainGateway } from './components/DomainGateway';
 import Auth from './components/Auth';
 import { SuperAdminAuth } from './components/SuperAdminAuth';
 import StudentPortal from './components/StudentPortal';
@@ -8464,7 +8465,25 @@ function App() {
   }
 
     if (currentView === 'landing' && !detectedSubdomain && !session && !studentSession && !teacherSession && !employeeSession && !showSuperAdmin) {
-    return <LandingPage onLoginClick={() => setCurrentView('app')} onSuperAdminClick={() => { setIsSuperAdminFlow(true); setCurrentView('app'); }} />;
+    return (
+      <DomainGateway
+        onSchoolSelected={(sub) => {
+          setDetectedSubdomain(sub);
+          setCurrentView('app');
+          supabase.from('schools').select('*').eq('subdomain', sub).single().then(({ data }) => {
+            if (data) {
+              setSubdomainSchool(data);
+              setCurrentSchoolId(data.id);
+            }
+          });
+        }}
+        onLoginClick={() => setCurrentView('app')}
+        onSuperAdminClick={() => {
+          setIsSuperAdminFlow(true);
+          setCurrentView('app');
+        }}
+      />
+    );
   }
 
   if (!session && !studentSession && !teacherSession && !employeeSession && !showSuperAdmin) {
